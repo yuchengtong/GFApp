@@ -1,0 +1,37 @@
+﻿  LocOpe.cxx
+  LocOpe_BuildShape.cxx
+  LocOpe_BuildWires.cxx
+  LocOpe_CSIntersector.cxx
+  LocOpe_CurveShapeIntersector.cxx
+  LocOpe_DPrism.cxx
+  LocOpe_FindEdges.cxx
+  LocOpe_FindEdgesInFace.cxx
+  LocOpe_GeneratedShape.cxx
+  LocOpe_Generator.cxx
+  LocOpe_GluedShape.cxx
+  LocOpe_Gluer.cxx
+  LocOpe_LinearForm.cxx
+  LocOpe_Pipe.cxx
+  LocOpe_Prism.cxx
+  LocOpe_Revol.cxx
+  LocOpe_RevolutionForm.cxx
+  LocOpe_SplitDrafts.cxx
+  LocOpe_SplitShape.cxx
+  LocOpe_Spliter.cxx
+  LocOpe_WiresOnShape.cxx
+  BRepFeat.cxx
+  BRepFeat_Builder.cxx
+  BRepFeat_Form.cxx
+  BRepFeat_Gluer.cxx
+  BRepFeat_MakeCylindricalHole.cxx
+  BRepFeat_MakeDPrism.cxx
+  BRepFeat_MakeLinearForm.cxx
+  BRepFeat_MakePipe.cxx
+  BRepFeat_MakePrism.cxx
+  BRepFeat_MakeRevol.cxx
+  BRepFeat_MakeRevolutionForm.cxx
+  BRepFeat_RibSlot.cxx
+  BRepFeat_SplitShape.cxx
+  BRepFeat_trace.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKFeat.lib 和对象 ..\..\..\win64\vc14\libd\TKFeat.exp
+  TKFeat.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKFeat.dll

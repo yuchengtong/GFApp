@@ -1,0 +1,36 @@
+﻿  BRepOffsetAPI_DraftAngle.cxx
+  BRepOffsetAPI_FindContigousEdges.cxx
+  BRepOffsetAPI_MakeDraft.cxx
+  BRepOffsetAPI_MakeEvolved.cxx
+  BRepOffsetAPI_MakeFilling.cxx
+  BRepOffsetAPI_MakeOffset.cxx
+  BRepOffsetAPI_MakeOffsetShape.cxx
+  BRepOffsetAPI_MakePipe.cxx
+  BRepOffsetAPI_MakePipeShell.cxx
+  BRepOffsetAPI_MakeThickSolid.cxx
+  BRepOffsetAPI_MiddlePath.cxx
+  BRepOffsetAPI_NormalProjection.cxx
+  BRepOffsetAPI_ThruSections.cxx
+  Draft.cxx
+  Draft_EdgeInfo.cxx
+  Draft_FaceInfo.cxx
+  Draft_Modification.cxx
+  Draft_Modification_1.cxx
+  Draft_VertexInfo.cxx
+  BRepOffset.cxx
+  BRepOffset_Analyse.cxx
+  BRepOffset_Inter2d.cxx
+  BRepOffset_Inter3d.cxx
+  BRepOffset_Interval.cxx
+  BRepOffset_MakeLoops.cxx
+  BRepOffset_MakeOffset.cxx
+  BRepOffset_MakeOffset_1.cxx
+  BRepOffset_MakeSimpleOffset.cxx
+  BRepOffset_Offset.cxx
+  BRepOffset_SimpleOffset.cxx
+  BRepOffset_Tool.cxx
+  BiTgte_Blend.cxx
+  BiTgte_CurveOnEdge.cxx
+  BiTgte_CurveOnVertex.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKOffset.lib 和对象 ..\..\..\win64\vc14\libd\TKOffset.exp
+  TKOffset.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKOffset.dll

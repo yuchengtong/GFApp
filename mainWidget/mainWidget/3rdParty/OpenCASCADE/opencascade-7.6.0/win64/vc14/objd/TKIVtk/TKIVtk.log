@@ -1,0 +1,21 @@
+﻿  IVtk_IShape.cxx
+  IVtk_IShapeData.cxx
+  IVtk_IShapeMesher.cxx
+  IVtk_IShapePickerAlgo.cxx
+  IVtk_IView.cxx
+  IVtk_Interface.cxx
+  IVtkOCC_SelectableObject.cxx
+  IVtkOCC_Shape.cxx
+  IVtkOCC_ShapeMesher.cxx
+  IVtkOCC_ShapePickerAlgo.cxx
+  IVtkOCC_ViewerSelector.cxx
+  IVtkVTK_ShapeData.cxx
+  IVtkVTK_View.cxx
+  IVtkTools.cxx
+  IVtkTools_DisplayModeFilter.cxx
+  IVtkTools_ShapeDataSource.cxx
+  IVtkTools_ShapeObject.cxx
+  IVtkTools_ShapePicker.cxx
+  IVtkTools_SubPolyDataFilter.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKIVtk.lib 和对象 ..\..\..\win64\vc14\libd\TKIVtk.exp
+  TKIVtk.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKIVtk.dll

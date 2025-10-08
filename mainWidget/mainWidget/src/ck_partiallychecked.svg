@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_图层_2" data-name="图层 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3 {
+        fill: none;
+      }
+
+      .cls-2 {
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2, .cls-4 {
+        opacity: .3;
+      }
+
+      .cls-3 {
+        stroke: #fff;
+        stroke-linejoin: round;
+      }
+
+      .cls-5 {
+        fill: url(#_未命名的渐变_867);
+      }
+
+      .cls-6 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="_未命名的渐变_867" data-name="未命名的渐变 867" x1="8" y1="13.5" x2="8" y2="2.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="1" stop-color="#d2dce6"/>
+    </linearGradient>
+  </defs>
+  <g id="_图层_1-2" data-name="图层 1">
+    <g>
+      <g>
+        <rect class="cls-2" x="2" y="2" width="12" height="12" rx="2" ry="2"/>
+        <g>
+          <rect class="cls-5" x="2.5" y="2.5" width="11" height="11" rx="1.5" ry="1.5"/>
+          <path class="cls-6" d="M12,3c.55,0,1,.45,1,1v8c0,.55-.45,1-1,1H4c-.55,0-1-.45-1-1V4c0-.55.45-1,1-1h8M12,2H4c-1.1,0-2,.9-2,2v8c0,1.1.9,2,2,2h8c1.1,0,2-.9,2-2V4c0-1.1-.9-2-2-2h0Z"/>
+        </g>
+        <polygon class="cls-3" points="3 9 7.55 13 13 4 11.18 3 7.55 10 4.82 7 3 9"/>
+        <polygon class="cls-4" points="3 9 7.55 13 13 4 11.18 3 7.55 10 4.82 7 3 9"/>
+      </g>
+      <rect class="cls-1" width="16" height="16"/>
+    </g>
+  </g>
+</svg>

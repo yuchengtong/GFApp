@@ -1,0 +1,1528 @@
+﻿#pragma execution_character_set("utf-8")
+#include "GFTreeModelWidget.h"
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QApplication>
+#include <QIcon>
+#include <QFileDialog>
+#include <QDateTime>
+#include <algorithm>
+#include <QRegExp>
+#include <QRegularExpression> 
+#include <QValidator>
+#include <QThread>
+
+
+#include <AIS_Shape.hxx>
+#include <AIS_ColorScale.hxx>
+#include <STEPControl_Reader.hxx>
+#include <TopoDS_Edge.hxx>
+#include <TopoDS_Vertex.hxx>
+#include <Quantity_ColorRGBA.hxx>
+#include <Prs3d_LineAspect.hxx>
+#include <Prs3d_Drawer.hxx>
+
+#include <MeshVS_Mesh.hxx>
+#include <MeshVS_Drawer.hxx>
+#include <MeshVS_DrawerAttribute.hxx>
+#include <MeshVS_MeshPrsBuilder.hxx>
+#include <MeshVS_NodalColorPrsBuilder.hxx>
+#include <V3d_View.hxx>
+#include <V3d_Viewer.hxx> 
+
+#include <BRepBndLib.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRep_Builder.hxx>
+#include <StlAPI_Reader.hxx>
+#include <RWStl.hxx>
+
+#include <TColStd_HArray2OfInteger.hxx>
+#include <TColStd_HArray2OfReal.hxx>
+#include <TColStd_Array1OfReal.hxx>
+#include <TColStd_Array1OfInteger.hxx>
+
+#include "GFImportModelWidget.h"
+#include "TriangleStructure.h"
+#include "occView.h"
+#include "ModelDataManager.h"
+#include "ProgressDialog.h"
+#include "GeometryImportWorker.h"
+#include <HLRBRep_Algo.hxx>
+#include <BRepProj_Projection.hxx>
+#include <TopExp_Explorer.hxx>
+#include <BRepBuilderAPI_MakeEdge2d.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <HLRBRep_HLRToShape.hxx>
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAlgo_FaceRestrictor.hxx>
+#include <GProp_GProps.hxx>
+#include <BRepAlgo_FaceRestrictor.hxx>
+#include <BRepTools.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
+#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopExp.hxx>
+#include <BRepAlgoAPI_Section.hxx> 
+#include <ShapeAnalysis_FreeBounds.hxx>
+#include <BRepTools.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopTools_ListOfShape.hxx>
+#include <Geom2d_Curve.hxx>
+#include <BRep_Tool.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <Bnd_Box2d.hxx>
+#include <BRepAlgoAPI_Splitter.hxx>
+#include <Geom_Plane.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+// 仅处理 double 类型的 clamp 函数
+double my_clamp(double value, double low, double high) {
+	if (value < low) return low;
+	if (value > high) return high;
+	return value;
+}
+
+double getAverage(std::vector<double> data) {
+	return std::accumulate(data.begin(), data.end(), 0.0) / data.size();
+}
+
+double getStd(std::vector<double> data) {
+	double mean = getAverage(data);
+	double accum = 0.0;
+	std::for_each(std::begin(data), std::end(data), [&](const double d) {
+		accum += (d - mean) * (d - mean);
+	});
+	return sqrt(accum / data.size()); //除以n-1是无偏估计方差, 除以n是概率分布方差, 都行
+}
+
+GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
+	:QWidget(parent)
+{
+	qRegisterMetaType<ModelGeometryInfo>("ModelGeometryInfo");
+
+	QIcon error_icon(":/src/Error.svg");
+	QIcon checked_icon(":/src/Checked.svg");
+
+	treeWidget = new GFTreeWidget(this);
+	//treeWidget->setStyleSheet(R"(
+	// QTreeWidget::branch:has-children:!has-siblings:closed,
+	// QTreeWidget::branch:closed:has-children:has-siblings {
+	//         border-image: none;
+	//         image: url(:/src/treeclose.svg);
+	// }
+	//
+	// QTreeWidget::branch:open:has-children:!has-siblings,
+	// QTreeWidget::branch:open:has-children:has-siblings  {
+	//         border-image: none;
+	//         image: url(:/src/treeopen.svg);
+	// }
+	//)");
+
+	treeWidget->setColumnCount(1);
+	treeWidget->setHeaderLabels({ "项目结构" });
+	treeWidget->setHeaderHidden(true);
+
+	// 创建根节点
+	QTreeWidgetItem*rootItem = new QTreeWidgetItem(treeWidget);
+	rootItem->setText(0, "工程文件");
+	rootItem->setData(0, Qt::UserRole, "Project");
+	rootItem->setExpanded(true);
+	//rootItem->setIcon(0, icon);
+
+	// 几何模型节点
+	QTreeWidgetItem* geometryNode = new QTreeWidgetItem(rootItem);
+	geometryNode->setText(0, "几何模型");
+	geometryNode->setData(0, Qt::UserRole, "Geometry");
+	geometryNode->setIcon(0, error_icon);
+
+	// 材料节点
+	QTreeWidgetItem* databaseNode = new QTreeWidgetItem(rootItem);
+	databaseNode->setText(0, "数据库");
+	databaseNode->setData(0, Qt::UserRole, "Database");
+	databaseNode->setIcon(0, error_icon);
+
+	QTreeWidgetItem* materialNode = new QTreeWidgetItem();
+	materialNode->setText(0, "材料库");
+	materialNode->setData(0, Qt::UserRole, "Material");
+	materialNode->setIcon(0, error_icon);
+
+	databaseNode->addChild(materialNode);
+
+
+	QTreeWidgetItem* steel = new QTreeWidgetItem();
+	steel->setText(0, "壳体材料");
+	steel->setData(0, Qt::UserRole, "Steel");
+	steel->setIcon(0, error_icon);
+
+	QTreeWidgetItem* propellant = new QTreeWidgetItem();
+	propellant->setText(0, "推进剂材料");
+	propellant->setData(0, Qt::UserRole, "Propellant");
+	propellant->setIcon(0, error_icon);
+
+	QTreeWidgetItem* outheat = new QTreeWidgetItem();
+	outheat->setText(0, "外防热材料");
+	outheat->setData(0, Qt::UserRole, "Outheat");
+	outheat->setIcon(0, error_icon);
+
+	QTreeWidgetItem* insulatingheat = new QTreeWidgetItem();
+	insulatingheat->setText(0, "防隔热材料");
+	insulatingheat->setData(0, Qt::UserRole, "Insulatingheat");
+	insulatingheat->setIcon(0, error_icon);
+
+	materialNode->addChild(steel);
+	materialNode->addChild(propellant);
+	materialNode->addChild(outheat);
+	materialNode->addChild(insulatingheat);
+
+	QTreeWidgetItem* judgment = new QTreeWidgetItem();
+	judgment->setText(0, "评判标准数据库");
+	judgment->setData(0, Qt::UserRole, "Judgment");
+	judgment->setIcon(0, error_icon);
+
+	QTreeWidgetItem* calculation = new QTreeWidgetItem();
+	calculation->setText(0, "计算模型数据库");
+	calculation->setData(0, Qt::UserRole, "Calculation");
+	calculation->setIcon(0, checked_icon);
+
+	
+	databaseNode->addChild(judgment);
+	databaseNode->addChild(calculation);
+
+	//网格节点
+	QTreeWidgetItem* meshItem = new QTreeWidgetItem(rootItem);
+	meshItem->setText(0, "网格");
+	meshItem->setData(0, Qt::UserRole, "Mesh");
+	meshItem->setIcon(0, error_icon);
+
+	// 分析设置节点
+	QTreeWidgetItem* analysisNode = new QTreeWidgetItem(rootItem);
+	analysisNode->setText(0, "工况设置");
+	analysisNode->setData(0, Qt::UserRole, "Analysis");
+	analysisNode->setIcon(0, error_icon);
+
+	QTreeWidgetItem* fallAnalysis = new QTreeWidgetItem();
+	fallAnalysis->setText(0, "1.跌落试验");
+	fallAnalysis->setData(0, Qt::UserRole, "FallAnalysis");
+	//fallAnalysis->setCheckState(0, Qt::Unchecked);
+	fallAnalysis->setIcon(0, error_icon);
+
+
+	QTreeWidgetItem* stressResult = new QTreeWidgetItem();
+	stressResult->setText(0, "应力分析");
+	stressResult->setData(0, Qt::UserRole, "StressResult");
+	stressResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* temperatureResult = new QTreeWidgetItem();
+	temperatureResult->setText(0, "温度分析");
+	temperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	temperatureResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* overpressureResult = new QTreeWidgetItem();
+	overpressureResult->setText(0, "超压分析");
+	overpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	overpressureResult->setIcon(0, error_icon);
+
+	fallAnalysis->addChild(stressResult);
+	fallAnalysis->addChild(temperatureResult);
+	fallAnalysis->addChild(overpressureResult);
+
+	QTreeWidgetItem* fastCombustionAnalysis = new QTreeWidgetItem();
+	fastCombustionAnalysis->setText(0, "2.快速烤燃试验");
+	fastCombustionAnalysis->setData(0, Qt::UserRole, "FastCombustionAnalysis");
+	//fastCombustionAnalysis->setCheckState(0, Qt::Unchecked);
+	fastCombustionAnalysis->setIcon(0, error_icon);
+
+	QTreeWidgetItem* fastCombustionTemperatureResult = new QTreeWidgetItem();
+	fastCombustionTemperatureResult->setText(0, "温度分析");
+	fastCombustionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	fastCombustionTemperatureResult->setIcon(0, error_icon);
+
+	fastCombustionAnalysis->addChild(fastCombustionTemperatureResult);
+
+
+	QTreeWidgetItem* slowCombustionAnalysis = new QTreeWidgetItem();
+	slowCombustionAnalysis->setText(0, "3.慢速烤燃试验");
+	slowCombustionAnalysis->setData(0, Qt::UserRole, "SlowCombustionAnalysis");
+	//slowCombustionAnalysis->setCheckState(0, Qt::Unchecked);
+	slowCombustionAnalysis->setIcon(0, error_icon);
+
+	QTreeWidgetItem* slowCombustionTemperatureResult = new QTreeWidgetItem();
+	slowCombustionTemperatureResult->setText(0, "温度分析");
+	slowCombustionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	slowCombustionTemperatureResult->setIcon(0, error_icon);
+
+	slowCombustionAnalysis->addChild(slowCombustionTemperatureResult);
+
+	
+	QTreeWidgetItem* shootAnalysis = new QTreeWidgetItem();
+	shootAnalysis->setText(0, "4.枪击试验");
+	shootAnalysis->setData(0, Qt::UserRole, "ShootAnalysis");
+	//shootAnalysis->setCheckState(0, Qt::Unchecked);
+	shootAnalysis->setIcon(0, error_icon);
+
+	QTreeWidgetItem* shootStressResult = new QTreeWidgetItem();
+	shootStressResult->setText(0, "应力分析");
+	shootStressResult->setData(0, Qt::UserRole, "StressResult");
+	shootStressResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* shootTemperatureResult = new QTreeWidgetItem();
+	shootTemperatureResult->setText(0, "温度分析");
+	shootTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	shootTemperatureResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* shootOverpressureResult = new QTreeWidgetItem();
+	shootOverpressureResult->setText(0, "超压分析");
+	shootOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	shootOverpressureResult->setIcon(0, error_icon);
+
+	shootAnalysis->addChild(shootStressResult);
+	shootAnalysis->addChild(shootTemperatureResult);
+	shootAnalysis->addChild(shootOverpressureResult);
+
+
+	QTreeWidgetItem* jetImpactAnalysis = new QTreeWidgetItem();
+	jetImpactAnalysis->setText(0, "5.射流冲击试验");
+	jetImpactAnalysis->setData(0, Qt::UserRole, "JetImpactAnalysis");
+	//jetImpactAnalysis->setCheckState(0, Qt::Unchecked);
+	jetImpactAnalysis->setIcon(0, error_icon);
+
+	QTreeWidgetItem* jetImpactStressResult = new QTreeWidgetItem();
+	jetImpactStressResult->setText(0, "应力分析");
+	jetImpactStressResult->setData(0, Qt::UserRole, "StressResult");
+	jetImpactStressResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* jetImpactTemperatureResult = new QTreeWidgetItem();
+	jetImpactTemperatureResult->setText(0, "温度分析");
+	jetImpactTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	jetImpactTemperatureResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* jetImpactOverpressureResult = new QTreeWidgetItem();
+	jetImpactOverpressureResult->setText(0, "超压分析");
+	jetImpactOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	jetImpactOverpressureResult->setIcon(0, error_icon);
+
+	jetImpactAnalysis->addChild(jetImpactStressResult);
+	jetImpactAnalysis->addChild(jetImpactTemperatureResult);
+	jetImpactAnalysis->addChild(jetImpactOverpressureResult);
+
+
+	QTreeWidgetItem* fragmentationImpactAnalysis = new QTreeWidgetItem();
+	fragmentationImpactAnalysis->setText(0, "6.破片撞击试验");
+	fragmentationImpactAnalysis->setData(0, Qt::UserRole, "FragmentationImpactAnalysis");
+	//fragmentationImpactAnalysis->setCheckState(0, Qt::Unchecked);
+	fragmentationImpactAnalysis->setIcon(0, error_icon);
+
+	QTreeWidgetItem* fragmentationImpactStressResult = new QTreeWidgetItem();
+	fragmentationImpactStressResult->setText(0, "应力分析");
+	fragmentationImpactStressResult->setData(0, Qt::UserRole, "StressResult");
+	fragmentationImpactStressResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* fragmentationImpactTemperatureResult = new QTreeWidgetItem();
+	fragmentationImpactTemperatureResult->setText(0, "温度分析");
+	fragmentationImpactTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	fragmentationImpactTemperatureResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* fragmentationImpactOverpressureResult = new QTreeWidgetItem();
+	fragmentationImpactOverpressureResult->setText(0, "超压分析");
+	fragmentationImpactOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	fragmentationImpactOverpressureResult->setIcon(0, error_icon);
+
+	fragmentationImpactAnalysis->addChild(fragmentationImpactStressResult);
+	fragmentationImpactAnalysis->addChild(fragmentationImpactTemperatureResult);
+	fragmentationImpactAnalysis->addChild(fragmentationImpactOverpressureResult);
+
+
+	QTreeWidgetItem* explosiveBlastAnalysis = new QTreeWidgetItem();
+	explosiveBlastAnalysis->setText(0, "7.爆炸冲击波试验");
+	explosiveBlastAnalysis->setData(0, Qt::UserRole, "ExplosiveBlastAnalysis");
+	//explosiveBlastAnalysis->setCheckState(0, Qt::Unchecked);
+	explosiveBlastAnalysis->setIcon(0, error_icon);
+
+	QTreeWidgetItem* explosiveBlastStressResult = new QTreeWidgetItem();
+	explosiveBlastStressResult->setText(0, "应力分析");
+	explosiveBlastStressResult->setData(0, Qt::UserRole, "StressResult");
+	explosiveBlastStressResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* explosiveBlastTemperatureResult = new QTreeWidgetItem();
+	explosiveBlastTemperatureResult->setText(0, "温度分析");
+	explosiveBlastTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	explosiveBlastTemperatureResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* explosiveBlastOverpressureResult = new QTreeWidgetItem();
+	explosiveBlastOverpressureResult->setText(0, "超压分析");
+	explosiveBlastOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	explosiveBlastOverpressureResult->setIcon(0, error_icon);
+
+	explosiveBlastAnalysis->addChild(explosiveBlastStressResult);
+	explosiveBlastAnalysis->addChild(explosiveBlastTemperatureResult);
+	explosiveBlastAnalysis->addChild(explosiveBlastOverpressureResult);
+
+
+	QTreeWidgetItem* sacrificeExplosionAnalysis = new QTreeWidgetItem();
+	sacrificeExplosionAnalysis->setText(0, "8.殉爆试验");
+	sacrificeExplosionAnalysis->setData(0, Qt::UserRole, "SacrificeExplosionAnalysis");
+	//sacrificeExplosionAnalysis->setCheckState(0, Qt::Unchecked);
+	sacrificeExplosionAnalysis->setIcon(0, error_icon);
+	
+	QTreeWidgetItem* sacrificeExplosionStressResult = new QTreeWidgetItem();
+	sacrificeExplosionStressResult->setText(0, "应力分析");
+	sacrificeExplosionStressResult->setData(0, Qt::UserRole, "StressResult");
+	sacrificeExplosionStressResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* sacrificeExplosionTemperatureResult = new QTreeWidgetItem();
+	sacrificeExplosionTemperatureResult->setText(0, "温度分析");
+	sacrificeExplosionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	sacrificeExplosionTemperatureResult->setIcon(0, error_icon);
+
+	QTreeWidgetItem* sacrificeExplosionOverpressureResult = new QTreeWidgetItem();
+	sacrificeExplosionOverpressureResult->setText(0, "超压分析");
+	sacrificeExplosionOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	sacrificeExplosionOverpressureResult->setIcon(0, error_icon);
+
+	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStressResult);
+	sacrificeExplosionAnalysis->addChild(sacrificeExplosionTemperatureResult);
+	sacrificeExplosionAnalysis->addChild(sacrificeExplosionOverpressureResult);
+
+
+	analysisNode->addChild(fallAnalysis);
+	analysisNode->addChild(fastCombustionAnalysis);
+	analysisNode->addChild(slowCombustionAnalysis);
+	
+	analysisNode->addChild(shootAnalysis);
+	analysisNode->addChild(jetImpactAnalysis);
+	analysisNode->addChild(fragmentationImpactAnalysis);
+	analysisNode->addChild(explosiveBlastAnalysis);
+	analysisNode->addChild(sacrificeExplosionAnalysis);
+	
+	
+	// 安全特性分析
+	QTreeWidgetItem* paramAnalyNode = new QTreeWidgetItem(rootItem);
+	paramAnalyNode->setText(0, "安全特性分析");
+	paramAnalyNode->setData(0, Qt::UserRole, "Results");
+	paramAnalyNode->setIcon(0, error_icon);
+
+	QTreeWidgetItem* paramAnalyResult = new QTreeWidgetItem();
+	paramAnalyResult->setText(0, "分析报告");
+	paramAnalyResult->setData(0, Qt::UserRole, "paramAnalyResult");
+	paramAnalyResult->setIcon(0, error_icon);
+
+	paramAnalyNode->addChild(paramAnalyResult);
+
+	// 数据智能分析
+	QTreeWidgetItem* intelligentAnalyNode = new QTreeWidgetItem(rootItem);
+	intelligentAnalyNode->setText(0, "数据智能分析");
+	intelligentAnalyNode->setData(0, Qt::UserRole, "Results");
+	intelligentAnalyNode->setIcon(0, error_icon);
+
+	QTreeWidgetItem* intelligentAnalyResult = new QTreeWidgetItem();
+	intelligentAnalyResult->setText(0, "分析报告");
+	intelligentAnalyResult->setData(0, Qt::UserRole, "intelligentAnalyResult");
+	intelligentAnalyResult->setIcon(0, error_icon);
+
+	intelligentAnalyNode->addChild(intelligentAnalyResult);
+
+	// 安全性指标预计、权衡和辅助分析
+	QTreeWidgetItem* auxiliaryAnalyNode = new QTreeWidgetItem(rootItem);
+	auxiliaryAnalyNode->setText(0, "安全性指标预计、权衡和辅助分析");
+	auxiliaryAnalyNode->setData(0, Qt::UserRole, "Results");
+	auxiliaryAnalyNode->setIcon(0, error_icon);
+
+	QTreeWidgetItem* auxiliaryAnalyResult = new QTreeWidgetItem();
+	auxiliaryAnalyResult->setText(0, "分析报告");
+	auxiliaryAnalyResult->setData(0, Qt::UserRole, "auxiliaryAnalyResult");
+	auxiliaryAnalyResult->setIcon(0, error_icon);
+
+	auxiliaryAnalyNode->addChild(auxiliaryAnalyResult);
+
+	// 安全性分析与评估
+	QTreeWidgetItem* analyEvalNode = new QTreeWidgetItem(rootItem);
+	analyEvalNode->setText(0, "安全性分析与评估");
+	analyEvalNode->setData(0, Qt::UserRole, "Results");
+	analyEvalNode->setIcon(0, error_icon);
+
+	QTreeWidgetItem* analyEvalResult = new QTreeWidgetItem();
+	analyEvalResult->setText(0, "分析报告");
+	analyEvalResult->setData(0, Qt::UserRole, "analyEvalResult");
+	analyEvalResult->setIcon(0, error_icon);
+
+	analyEvalNode->addChild(analyEvalResult);
+
+	
+
+	QVBoxLayout*layout = new QVBoxLayout();
+	layout->addWidget(treeWidget);
+	layout->setContentsMargins(0, 0, 0, 0);
+	this->setLayout(layout);
+
+
+	// 连接信号槽
+	connect(treeWidget, &QTreeWidget::itemClicked, this, &GFTreeModelWidget::onTreeItemClicked);
+}
+
+GFTreeModelWidget::~GFTreeModelWidget()
+{
+}
+
+void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
+{
+	QString itemData = item->data(0, Qt::UserRole).toString();
+	emit itemClicked(itemData);
+}
+
+void GFTreeModelWidget::updataIcon()
+{
+	QIcon error_icon(":/src/Error.svg");
+	QIcon checked_icon(":/src/Checked.svg");
+
+	auto ins=ModelDataManager::GetInstance();
+	auto geomInfo = ins->GetModelGeometryInfo();
+	auto meshInfo = ins->GetModelMeshInfo();
+
+	auto steelInfo = ins->GetSteelPropertyInfo();
+	auto propellantInfo = ins->GetPropellantPropertyInfo();
+	auto calculationInfo = ins->GetCalculationPropertyInfo();
+	auto judgementPropertyInfo = ins->GetJudgementPropertyInfo();
+	auto insulatingheatPropertyInfo = ins->GetInsulatingheatPropertyInfo();
+	auto outheatPropertyInfo = ins->GetOutheatPropertyInfo();
+
+	int size = treeWidget->topLevelItemCount();
+	QTreeWidgetItem *child;
+	for (int i = 0; i < size; i++)
+	{
+		child = treeWidget->topLevelItem(i);
+		int childCount = child->childCount();
+		for (int j = 0; j < childCount; ++j)
+		{
+			if (child->child(j)->text(0).contains("几何模型"))
+			{
+				if (geomInfo.path.isEmpty())
+				{
+					child->child(j)->setIcon(0, error_icon);
+				}
+				else
+				{
+					child->child(j)->setIcon(0, checked_icon);
+				}
+			}
+			else if (child->child(j)->text(0).contains("网格"))
+			{
+				if (!meshInfo.isChecked)
+				{
+					child->child(j)->setIcon(0, error_icon);
+				}
+				else
+				{
+					child->child(j)->setIcon(0, checked_icon);
+				}
+			}
+			else if (child->child(j)->text(0).contains("数据库"))
+			{
+				QTreeWidgetItem *clChild = child->child(j);
+				int clChildCount = clChild->childCount();
+				for (int m = 0; m < clChildCount; ++m) {
+
+					if (clChild->child(m)->text(0).contains("评判标准数据库"))
+					{
+						if (!judgementPropertyInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("材料库"))
+					{
+						QTreeWidgetItem *clChild_child = clChild->child(m);
+						int clChildCount = clChild_child->childCount();
+						for (int n = 0; n < clChildCount; ++n) {
+							if (clChild_child->child(n)->text(0).contains("壳体材料"))
+							{
+								if (!steelInfo.isChecked)
+								{
+									clChild_child->child(n)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clChild_child->child(n)->setIcon(0, checked_icon);
+								}
+							}
+							if (clChild_child->child(n)->text(0).contains("推进剂材料"))
+							{
+								if (!propellantInfo.isChecked)
+								{
+									clChild_child->child(n)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clChild_child->child(n)->setIcon(0, checked_icon);
+								}
+							}
+							if (clChild_child->child(n)->text(0).contains("防隔热材料"))
+							{
+								if (!insulatingheatPropertyInfo.isChecked)
+								{
+									clChild_child->child(n)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clChild_child->child(n)->setIcon(0, checked_icon);
+								}
+							}
+							if (clChild_child->child(n)->text(0).contains("外防热材料"))
+							{
+								if (!outheatPropertyInfo.isChecked)
+								{
+									clChild_child->child(n)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clChild_child->child(n)->setIcon(0, checked_icon);
+								}
+							}
+						}
+						if (outheatPropertyInfo.isChecked && insulatingheatPropertyInfo.isChecked && propellantInfo.isChecked && steelInfo.isChecked)
+						{
+							clChild_child->setIcon(0, checked_icon);
+						}
+					}
+				}
+				if (judgementPropertyInfo.isChecked && outheatPropertyInfo.isChecked && insulatingheatPropertyInfo.isChecked && propellantInfo.isChecked && steelInfo.isChecked)
+				{
+					clChild->setIcon(0, checked_icon);
+				}
+			}
+			else if (child->child(j)->text(0).contains("材料库"))
+			{
+				QTreeWidgetItem *clChild = child->child(j);
+				int clChildCount = clChild->childCount();
+				for (int m = 0; m < clChildCount; ++m) {
+					if (clChild->child(m)->text(0).contains("壳体材料"))
+					{
+						if (!steelInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					if (clChild->child(m)->text(0).contains("推进剂材料"))
+					{
+						if (!propellantInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					if (clChild->child(m)->text(0).contains("防隔热材料"))
+					{
+						if (!insulatingheatPropertyInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					if (clChild->child(m)->text(0).contains("外防热材料"))
+					{
+						if (!outheatPropertyInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					if (clChild->child(m)->text(0).contains("评判标准数据库"))
+					{
+						if (!judgementPropertyInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+				}
+				
+			}
+		}
+	}
+}
+
+void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+	QTreeWidgetItem *item = treeWidget->itemAt(event->pos());
+	if (!item) {
+		return;
+	}
+	//QString type = item->data(0, Qt::UserRole).toString();
+	QString text = item->text(0);
+	if (text == "工况设置")
+	{
+		contextMenu = new QMenu(this);
+		QAction* calAction = new QAction("计算", this);
+		QAction* exportAction = new QAction("导出报告", this);
+
+		int childCount = item->childCount();
+		QList<QTreeWidgetItem*> checkedChildItems;
+		for (int i = 0; i < childCount; ++i) {
+			QTreeWidgetItem* childItem = item->child(i);
+			if (childItem->checkState(0) == Qt::Checked) {
+				checkedChildItems.append(childItem);
+			}
+		}
+
+		connect(exportAction, &QAction::triggered, [this, text]() {
+			QWidget* parent = parentWidget();
+			while (parent)
+			{
+				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+				if (gfParent)
+				{						
+					auto occView = gfParent->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					auto view = occView->getView();
+					context->RemoveAll(true);
+
+					auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+					TopoDS_Shape model_shape=modelInfo.shape;
+
+					auto projectToXOY_Manual = [](const TopoDS_Shape& edges3D) -> TopoDS_Shape {
+						TopoDS_Compound comp;
+						BRep_Builder builder;
+						builder.MakeCompound(comp);
+
+						for (TopExp_Explorer explorer(edges3D, TopAbs_EDGE); explorer.More(); explorer.Next()) {
+							TopoDS_Edge edge = TopoDS::Edge(explorer.Current());
+
+							BRepAdaptor_Curve curve(edge);
+							Standard_Real startParam, endParam;
+							BRep_Tool::Range(edge, startParam, endParam);
+							gp_Pnt startPoint = curve.Value(startParam);
+							gp_Pnt endPoint = curve.Value(endParam);
+								
+							gp_Pnt2d p2D_Start(startPoint.X(), startPoint.Y());
+							gp_Pnt2d p2D_End(endPoint.X(), endPoint.Y());
+							BRepBuilderAPI_MakeEdge2d makeEdge2d(p2D_Start, p2D_End);
+							if (makeEdge2d.IsDone()) {
+								builder.Add(comp, makeEdge2d.Edge());
+							}
+						}
+						return comp;
+					};
+			
+					gp_Ax2 viewAxes(
+						gp_Pnt(0, 0, 0),    // 原点（投影坐标系原点）
+						gp_Dir(0, 0, -1),   // 视图方向（Z轴负方向，看向XOY平面）
+						gp_Dir(1, 0, 0)     // X轴方向（投影平面X轴，必须与视图方向垂直）
+					);
+
+					HLRAlgo_Projector projector(viewAxes);
+
+					Handle(HLRBRep_Algo) hlrAlgo = new HLRBRep_Algo();
+					hlrAlgo->Projector(projector); // 设置投影器
+					hlrAlgo->Add(model_shape);     // 添加模型
+					hlrAlgo->Update();             // 执行计算
+
+					HLRBRep_HLRToShape hlrToShape(hlrAlgo);
+					TopoDS_Shape visibleEdges3D = hlrToShape.VCompound();
+
+					// 检查可见边缘是否有效（替代Update的返回值判断）
+					if (visibleEdges3D.IsNull()) {
+						std::cerr << "HLR计算失败：未提取到可见边缘！" << std::endl;
+						return 1;
+					}
+
+					// 6. 后续投影与坐标提取（不变）
+					TopoDS_Shape visibleEdges2D = projectToXOY_Manual(visibleEdges3D);
+
+					Handle(AIS_Shape) aisContour = new AIS_Shape(visibleEdges2D);
+					aisContour->SetColor(Quantity_Color(Quantity_NOC_BLUE));
+					context->Display(aisContour, Standard_True);
+
+					view->FitAll();
+
+
+
+
+
+
+
+
+					// 计算模型的中心点
+					auto CalculateModelCenter = [](const TopoDS_Shape& model) -> gp_Pnt {
+						GProp_GProps props;
+						BRepGProp::VolumeProperties(model, props);
+						return props.CentreOfMass();
+					};
+
+					// 通过检查首尾点是否重合来判断线框是否封闭
+					auto IsWireClosedByEndPoints = [](const TopoDS_Wire& wire) -> bool {
+						if (wire.IsNull()) return false;
+
+						// 获取所有边
+						std::vector<TopoDS_Edge> edges;
+						for (TopExp_Explorer edgeExp(wire, TopAbs_EDGE); edgeExp.More(); edgeExp.Next()) {
+							edges.push_back(TopoDS::Edge(edgeExp.Current()));
+						}
+
+						if (edges.empty()) return false;
+
+						// 获取第一个边的起点
+						TopoDS_Edge firstEdge = edges.front();
+						Standard_Real first, last;
+						Handle(Geom_Curve) firstCurve = BRep_Tool::Curve(firstEdge, first, last);
+						if (firstCurve.IsNull()) return false;
+
+						gp_Pnt startPoint = firstCurve->Value(first);
+
+						// 获取最后一个边的终点
+						TopoDS_Edge lastEdge = edges.back();
+						Handle(Geom_Curve) lastCurve = BRep_Tool::Curve(lastEdge, first, last);
+						if (lastCurve.IsNull()) return false;
+
+						gp_Pnt endPoint = lastCurve->Value(last);
+
+						// 检查首尾点距离
+						return startPoint.Distance(endPoint) < 1e-6;
+					};
+
+					// 健壮的封闭性检查函数
+					auto IsWireClosed = [&](const TopoDS_Wire& wire) -> bool {
+						if (wire.IsNull()) return false;
+
+						// 方法1: 尝试创建面来判断是否封闭
+						try {
+							BRepBuilderAPI_MakeFace faceMaker(wire, Standard_True);
+							if (faceMaker.IsDone()) {
+								return true;
+							}
+						}
+						catch (Standard_Failure&) {
+							// 方法1失败，继续尝试其他方法
+						}
+
+						// 方法2: 检查首尾点是否重合
+						return IsWireClosedByEndPoints(wire);
+					};
+
+					// 修正的连接边到线框的函数，返回线框序列
+					auto ConnectEdgesToWires_Corrected = [&](const TopoDS_Shape& edgesShape)->Handle(TopTools_HSequenceOfShape) {
+						Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+
+						// 收集所有边到序列
+						Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+						for (TopExp_Explorer exp(edgesShape, TopAbs_EDGE); exp.More(); exp.Next()) {
+							edges->Append(exp.Current());
+						}
+
+						if (edges->IsEmpty()) {
+							return wires;
+						}
+
+						// 使用静态方法连接边到线框，使用容差1e-6，不共享顶点（通过距离连接）
+						ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-6, Standard_False, wires);
+
+						return wires;
+					};
+
+					// 使用BRepAlgoAPI_Section的轮廓提取lambda函数
+					auto GetOuterContour_Lambda = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
+
+							// 计算模型的中心点
+							gp_Pnt modelCenter = CalculateModelCenter(model);
+
+							// 创建XOY平面，Z坐标位于模型中心
+							gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
+
+							// 创建平面面，大小足够覆盖整个模型
+							Bnd_Box bbox;
+							BRepBndLib::Add(model, bbox);
+
+							Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+							bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+							// 计算平面的边界，比模型稍大
+							Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
+							Standard_Real xSize = (xMax - xMin) + 2 * margin;
+							Standard_Real ySize = (yMax - yMin) + 2 * margin;
+
+							TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
+								xoyPlaneAtCenter,
+								-xSize / 2, xSize / 2,
+								-ySize / 2, ySize / 2
+							);
+
+							// 使用BRepAlgoAPI_Section计算截面
+							BRepAlgoAPI_Section section(planeFace, model, Standard_False);
+							section.Build();
+
+							auto sectionShape = section.Shape();
+							return sectionShape;
+							
+							//// 如果截面为空，返回空线框
+							//if (sectionShape.IsNull()) {
+							//	return TopoDS_Wire();
+							//}
+
+							//// 连接边形成线框
+							//Handle(TopTools_HSequenceOfShape) wires = ConnectEdgesToWires_Corrected(sectionShape);
+
+							//if (wires->IsEmpty()) {
+							//	std::cout << "未能形成线框" << std::endl;
+							//	return TopoDS_Wire();
+							//}
+
+							//// 分派线框到闭合和开放化合物
+							//TopoDS_Compound closedWires, openWires;
+							//BRep_Builder builder;
+							//builder.MakeCompound(closedWires);
+							//builder.MakeCompound(openWires);
+							//ShapeAnalysis_FreeBounds::DispatchWires(wires, closedWires, openWires);
+
+							//// 找到最大的闭合线框（最外轮廓）
+							//TopoDS_Wire outerWire;
+							//Standard_Real maxArea = -1.0;
+
+							//for (TopExp_Explorer exp(closedWires, TopAbs_WIRE); exp.More(); exp.Next()) {
+							//	TopoDS_Wire wire = TopoDS::Wire(exp.Current());
+
+							//	if (wire.IsNull()) {
+							//		continue;
+							//	}
+
+							//	// 检查线框是否封闭 - 如果不是封闭的，直接跳过（按理说DispatchWires已经分出了闭合线框，但我们可以再检查一次）
+							//	if (!IsWireClosed(wire)) {
+							//		std::cout << "跳过非封闭轮廓线" << std::endl;
+							//		continue;
+							//	}
+
+							//	// 方法1: 尝试创建面并计算几何面积
+							//	BRepBuilderAPI_MakeFace tempFace(wire, Standard_True);
+							//	if (tempFace.IsDone()) {
+							//		try {
+							//			GProp_GProps props;
+							//			BRepGProp::SurfaceProperties(tempFace.Face(), props);
+							//			Standard_Real area = props.Mass();
+
+							//			if (area > maxArea) {
+							//				maxArea = area;
+							//				outerWire = wire;
+							//			}
+							//			continue;
+							//		}
+							//		catch (Standard_Failure&) {
+							//			// 面积计算失败，回退到方法2
+							//		}
+							//	}
+
+							//	// 方法2: 使用边界框面积作为近似
+							//	Bnd_Box wireBbox;
+							//	BRepBndLib::Add(wire, wireBbox);
+
+							//	if (!wireBbox.IsVoid()) {
+							//		Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+							//		wireBbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+							//		Standard_Real bboxArea = (xMax - xMin) * (yMax - yMin);
+
+							//		if (bboxArea > maxArea) {
+							//			maxArea = bboxArea;
+							//			outerWire = wire;
+							//		}
+							//	}
+							//}
+
+							//return outerWire;
+							
+
+					};
+
+					// 提取最外轮廓（自动使用模型中心的XOY平面）
+					//auto outerContour = GetOuterContour_Lambda(model_shape);
+
+					//Handle(AIS_Shape) aisMerged = new AIS_Shape(outerContour);
+					//aisMerged->SetColor(Quantity_Color(Quantity_NOC_RED));  // 统一用黑色
+					//aisMerged->SetWidth(2.0);                                 // 统一线宽
+					//context->Display(aisMerged, Standard_True);               // 显示复合形状
+
+					// Lambda表达式：用TopoDS_Face（平面）与模型求交，获取所有相交面
+					auto getIntersectionFacesWithCenterXOY = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
+
+						// 计算模型的中心点
+						gp_Pnt modelCenter = CalculateModelCenter(model);
+
+						// 创建XOY平面，Z坐标位于模型中心
+						gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
+
+						// 创建平面面，大小足够覆盖整个模型
+						Bnd_Box bbox;
+						BRepBndLib::Add(model, bbox);
+
+						Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+						bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+						// 计算平面的边界，比模型稍大
+						Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
+						Standard_Real xSize = (xMax - xMin) + 2 * margin;
+						Standard_Real ySize = (yMax - yMin) + 2 * margin;
+
+						TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
+							xoyPlaneAtCenter,
+							-xSize / 2, xSize / 2,
+							-ySize / 2, ySize / 2
+						);
+
+						// 步骤3：用BRepAlgoAPI_Common求模型与拓扑面的交集
+						BRepAlgoAPI_Common common(model, planeFace);
+						common.Build();
+						if (!common.IsDone()) {
+							std::cerr << "模型与平面求交失败！" << std::endl;
+							return TopoDS_Shape();
+						}
+						TopoDS_Shape intersection = common.Shape(); // 交集结果
+
+						// 步骤4：从交集中提取所有位于原XOY平面上的面
+						TopoDS_Compound resultCompound;
+						BRep_Builder builder;
+						builder.MakeCompound(resultCompound);
+						Standard_Real tolerance = 0; // 共面判断容差
+
+						// 遍历交集结果中的所有面（过滤非面形状）
+						for (TopExp_Explorer faceExp(intersection, TopAbs_FACE); faceExp.More(); faceExp.Next()) {
+							TopoDS_Face face = TopoDS::Face(faceExp.Current());
+							Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
+							Handle(Geom_Plane) facePlane = Handle(Geom_Plane)::DownCast(surface);
+							if (facePlane.IsNull()) continue; // 非平面，跳过
+
+							// 检查是否与原XOY平面共面
+							const gp_Pln& pln = facePlane->Pln();
+							if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance)) {
+								builder.Add(resultCompound, face); // 添加到结果
+							}
+						}
+
+
+						return intersection;
+					};
+
+					TopoDS_Shape intersectionFaces = getIntersectionFacesWithCenterXOY(model_shape);
+
+
+						Handle(AIS_Shape) aisFaces = new AIS_Shape(intersectionFaces);
+						aisFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 洋红色标识相交面
+						context->Display(aisFaces, Standard_True); // 显示
+
+					
+					// 调整视图以适配所有内容
+					view->FitAll();
+
+
+
+
+					break;
+				}
+				else
+				{
+					parent = parent->parentWidget();
+				}
+			}
+			});
+
+		connect(calAction, &QAction::triggered, this, [item, this]() {
+			QWidget* parent = parentWidget();
+			while (parent)
+			{
+				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+				if (gfParent)
+				{			
+					QDateTime currentTime = QDateTime::currentDateTime();
+					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+					auto logWidget = gfParent->GetLogWidget();
+					auto textEdit = logWidget->GetTextEdit();
+					QString text = timeStr + "[信息]>开始进行跌落试验";
+					textEdit->appendPlainText(text);
+					logWidget->update();
+
+					// 关键：强制刷新UI，确保日志立即显示
+					QApplication::processEvents();
+					
+					auto occView = gfParent->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					auto view = occView->getView();
+					context->RemoveAll(true);
+
+					view->SetProj(V3d_Yneg);
+					view->Redraw();
+
+					QString currentWorkDir = QDir::currentPath();
+					// 读取STL文件
+					auto theFile = currentWorkDir + "/480-pou-daiyuantong.stl";
+					QString theFile1 = theFile.replace("/", "\\\\"); // 处理路径分隔符
+					std::string utf8Path = theFile1.toUtf8().constData();
+
+					// 读取STL文件获取三角化数据
+					Handle(Poly_Triangulation) stlMesh = RWStl::ReadFile(utf8Path.c_str());
+					if (stlMesh.IsNull()) {
+						// 处理文件读取失败
+						return;
+					}
+
+					// 初始化TriangleStructure并添加STL的三角化数据
+					Handle(TriangleStructure) aDataSource = new TriangleStructure();
+					TopLoc_Location loc; // 默认位置变换（无变换）
+					aDataSource->AddTriangulation(stlMesh, loc);
+					aDataSource->ExtractEdges();
+
+					// 创建MeshVS_Mesh并关联数据源
+					Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
+					aMesh->SetDataSource(aDataSource);
+
+					// 获取节点信息（与原逻辑一致）
+					auto allnode = aDataSource->GetAllNodes();
+					auto nodecoords = aDataSource->GetmyNodeCoords();
+
+					/*std::vector<double> nodeValues;*/
+
+					auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+					auto propellantInfo = ModelDataManager::GetInstance()->GetPropellantPropertyInfo();
+					auto calInfo = ModelDataManager::GetInstance()->GetCalculationPropertyInfo();
+					auto fallInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+					auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+
+					auto A = 1;
+					auto B = steelInfo.density;
+					auto C = 0;
+					auto D = steelInfo.thermalConductivity;
+					auto E = steelInfo.specificHeatCapacity;
+
+					auto F = propellantInfo.density;
+					auto G = 0;
+					auto H = propellantInfo.thermalConductivity;
+					auto I = propellantInfo.specificHeatCapacity;
+					auto J = fallInfo.high * 1000;//跌落高度
+					auto K = modelGeomInfo.length;//长
+					auto L = modelGeomInfo.width;//宽
+					auto M = 5;//厚
+
+					auto formulaCal = calInfo.calculation;
+
+					auto calculateFormula = [](const QString& formula,
+						double B, double C, double D, double E,
+						double F, double G, double H, double I,
+						double J, double K, double L, double M, double A)
+					{
+						// lambda表达式：根据变量名返回对应的值
+						auto getVar = [&](const QString& var) {
+							if (var == "B") return B;
+							else if (var == "C") return C;
+							else if (var == "D") return D;
+							else if (var == "E") return E;
+							else if (var == "F") return F;
+							else if (var == "G") return G;
+							else if (var == "H") return H;
+							else if (var == "I") return I;
+							else if (var == "J") return J;
+							else if (var == "K") return K;
+							else if (var == "L") return L;
+							else if (var == "M") return M;
+							else if (var == "A") return A;
+							return 0.0;
+						};
+
+						double result = 0.0;
+						//QRegExp regExp("([+-]?\\d+\\.?\\d*)\\*([A-Z])");
+						//QRegExp regExp("(([-+]?)(\d+(?:\.\d*)?|\.\d+)\*([A-Z]))");
+						QRegExp regExp("([+-]?\\d+\\.\\d+)(\\*[A-Z])?");
+						regExp.setMinimal(true);
+
+						int pos = 0;
+						//while ((pos = regExp.indexIn(formula, pos)) != -1) {
+						//	QString coeffStr = regExp.cap(1); // 系数值
+						//	QString varPart = regExp.cap(2); // 直接获取变量名
+
+						//	double coeff = coeffStr.toDouble();
+						//	
+
+						//	if (varPart.isEmpty()) {
+						//		result += coeff;
+						//	}
+						//	else {
+						//		result += coeff * getVar(varPart);
+						//	}
+						//	pos += regExp.matchedLength();
+						//}
+						//return result;
+					};
+
+					/*std::vector<double> results;
+					results.reserve(formulaCal.size());
+					for (int i = 0; i < formulaCal.size(); ++i)
+					{
+						double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+						results.push_back(res);
+					}*/
+
+					std::vector<double> results;
+					results.push_back(21.5318 + 0.0194 * B + 0.0000 * C - 0.2494 * D + 0.0193 * E + 0.0269 * F - 0.0000 * G - 0.4904 * H + 0.0415 * I + 0.0065 * J - 0.0493 * K - 0.6703 * L - 13.5786 * M);
+					results.push_back(-1913.1332 + 0.0631 * B + 0.0000 * C + 0.6478 * D - 0.0608 * E + 0.1858 * F - 0.0000 * G + 1.9523 * H - 0.0042 * I + 0.0237 * J - 0.0058 * K + 2.4911 * L + 100.7872 * M);
+					results.push_back(-1193.7939 + 0.0333 * B + 0.0000 * C + 1.3217 * D - 0.0832 * E + 0.1239 * F + 0.0000 * G + 0.3170 * H - 0.0271 * I + 0.0169 * J - 0.1005 * K + 2.3840 * L + 51.3554 * M);
+					results.push_back(-1877.9646 + 0.0632 * B + 0.0000 * C + 0.6640 * D - 0.0716 * E + 0.1865 * F - 0.0000 * G + 1.6218 * H - 0.0011 * I + 0.0239 * J - 0.0234 * K + 2.5297 * L + 98.2791 * M);
+					results.push_back(18.5237 + 0.0194 * B + 0.0000 * C - 0.2605 * D + 0.0194 * E + 0.0276 * F - 0.0000 * G - 0.4854 * H + 0.0407 * I + 0.0065 * J - 0.0474 * K - 0.6679 * L - 13.4602 * M);
+					results.push_back(88.9088 + 0.0420 * B + 0.0000 * C - 1.0392 * D - 0.0118 * E + 0.1325 * F - 0.0000 * G - 0.3935 * H + 0.0719 * I + 0.0207 * J - 0.2300 * K - 0.4417 * L - 63.8459 * M);
+					results.push_back(-238.5778 + 0.0041 * B - 0.0000 * C + 0.2595 * D - 0.0217 * E + 0.0338 * F + 0.0000 * G + 0.4805 * H - 0.0099 * I + 0.0036 * J - 0.0005 * K + 0.6810 * L - 0.3672 * M);
+					results.push_back(-122.1322 + 0.0026 * B - 0.0000 * C + 0.1534 * D - 0.0183 * E + 0.0225 * F + 0.0000 * G + 0.1976 * H - 0.0058 * I + 0.0024 * J - 0.0211 * K + 0.4253 * L - 1.8724 * M);
+					results.push_back(-237.7550 + 0.0042 * B - 0.0000 * C + 0.2624 * D - 0.0217 * E + 0.0335 * F + 0.0000 * G + 0.4934 * H - 0.0100 * I + 0.0036 * J - 0.0013 * K + 0.6779 * L - 0.3510 * M);
+					results.push_back(64.9370 + 0.0420 * B + 0.0000 * C - 1.0402 * D - 0.0172 * E + 0.1302 * F - 0.0000 * G - 0.5280 * H + 0.0777 * I + 0.0206 * J - 0.2174 * K - 0.4406 * L - 64.0496 * M);
+					results.push_back(77.3406 + 0.0248 * B + 0.0000 * C - 0.6045 * D + 0.0091 * E + 0.0988 * F - 0.0000 * G - 0.5802 * H + 0.0961 * I + 0.0147 * J - 0.1023 * K - 0.8176 * L - 50.9113 * M);
+					results.push_back(-110.6043 + 0.0033 * B + 0.0000 * C + 0.1579 * D - 0.0117 * E + 0.0202 * F + 0.0000 * G + 0.3026 * H + 0.0002 * I + 0.0025 * J - 0.0077 * K + 0.1316 * L + 0.7883 * M);
+					results.push_back(-76.1121 + 0.0025 * B + 0.0000 * C + 0.1049 * D - 0.0095 * E + 0.0176 * F + 0.0000 * G + 0.0990 * H + 0.0015 * I + 0.0020 * J - 0.0148 * K + 0.0705 * L + 1.0281 * M);
+					results.push_back(-110.7208 + 0.0033 * B + 0.0000 * C + 0.1573 * D - 0.0118 * E + 0.0202 * F + 0.0000 * G + 0.3070 * H + 0.0002 * I + 0.0025 * J - 0.0075 * K + 0.1321 * L + 0.8091 * M);
+					results.push_back(76.5164 + 0.0245 * B + 0.0000 * C - 0.6145 * D + 0.0117 * E + 0.0992 * F - 0.0000 * G - 0.5656 * H + 0.1013 * I + 0.0147 * J - 0.1026 * K - 0.8320 * L - 51.5045 * M);
+					results.push_back(-694.6278 + 0.0455 * B + 0.0000 * C - 0.5442 * D + 0.0598 * E + 0.2649 * F - 0.0000 * G + 0.3780 * H + 0.1002 * I + 0.0316 * J - 0.3283 * K + 3.7371 * L - 101.4766 * M);
+					results.push_back(-109.7874 + 0.0030 * B + 0.0000 * C + 0.1384 * D - 0.0073 * E + 0.0183 * F + 0.0000 * G + 0.2460 * H + 0.0026 * I + 0.0022 * J - 0.0020 * K + 0.1426 * L + 1.0918 * M);
+					results.push_back(-138.3104 + 0.0031 * B + 0.0000 * C + 0.1431 * D - 0.0068 * E + 0.0217 * F + 0.0000 * G + 0.1444 * H + 0.0037 * I + 0.0024 * J - 0.0058 * K + 0.2022 * L + 3.1402 * M);
+					results.push_back(-109.3954 + 0.0030 * B + 0.0000 * C + 0.1381 * D - 0.0072 * E + 0.0182 * F + 0.0000 * G + 0.2458 * H + 0.0028 * I + 0.0022 * J - 0.0022 * K + 0.1420 * L + 1.0652 * M);
+					results.push_back(-692.2612 + 0.0454 * B + 0.0000 * C - 0.5559 * D + 0.0637 * E + 0.2656 * F - 0.0000 * G + 0.2209 * H + 0.1029 * I + 0.0316 * J - 0.3299 * K + 3.7233 * L - 101.6211 * M);
+					results.push_back(-674.8931 + 0.0338 * B + 0.0000 * C - 0.4322 * D + 0.0727 * E + 0.2302 * F - 0.0000 * G + 1.0625 * H + 0.1003 * I + 0.0232 * J - 0.2966 * K + 3.1683 * L - 56.3468 * M);
+					results.push_back(-77.9199 + 0.0014 * B + 0.0000 * C + 0.0972 * D - 0.0017 * E + 0.0129 * F + 0.0000 * G + 0.1729 * H + 0.0026 * I + 0.0014 * J - 0.0043 * K + 0.1606 * L + 0.5266 * M);
+					results.push_back(-142.1110 + 0.0023 * B + 0.0000 * C + 0.1463 * D - 0.0005 * E + 0.0221 * F + 0.0000 * G + 0.2520 * H + 0.0057 * I + 0.0020 * J + 0.0102 * K + 0.1978 * L + 3.1599 * M);
+					results.push_back(-77.4417 + 0.0014 * B + 0.0000 * C + 0.0973 * D - 0.0016 * E + 0.0129 * F + 0.0000 * G + 0.1705 * H + 0.0026 * I + 0.0013 * J - 0.0045 * K + 0.1602 * L + 0.5039 * M);
+					results.push_back(-692.0747 + 0.0339 * B + 0.0000 * C - 0.4239 * D + 0.0715 * E + 0.2302 * F - 0.0000 * G + 1.0910 * H + 0.1004 * I + 0.0232 * J - 0.2904 * K + 3.1855 * L - 56.4163 * M);
+					results.push_back(140.5368 + 0.0081 * B + 0.0000 * C - 0.1295 * D + 0.0322 * E + 0.0347 * F - 0.0000 * G - 0.0987 * H + 0.0655 * I + 0.0055 * J - 0.0201 * K - 0.9373 * L - 16.4131 * M);
+					results.push_back(-20.8395 + 0.0009 * B + 0.0000 * C + 0.0451 * D - 0.0004 * E + 0.0055 * F + 0.0000 * G + 0.0358 * H + 0.0043 * I + 0.0006 * J + 0.0040 * K - 0.0468 * L + 0.4814 * M);
+					results.push_back(-51.0432 + 0.0013 * B + 0.0000 * C + 0.0511 * D + 0.0022 * E + 0.0117 * F + 0.0000 * G + 0.1186 * H + 0.0073 * I + 0.0010 * J + 0.0140 * K - 0.0795 * L + 1.8213 * M);
+					results.push_back(-20.8532 + 0.0009 * B + 0.0000 * C + 0.0451 * D - 0.0004 * E + 0.0055 * F + 0.0000 * G + 0.0373 * H + 0.0043 * I + 0.0006 * J + 0.0041 * K - 0.0474 * L + 0.4729 * M);
+					results.push_back(133.4387 + 0.0082 * B + 0.0000 * C - 0.1363 * D + 0.0305 * E + 0.0352 * F - 0.0000 * G - 0.0152 * H + 0.0661 * I + 0.0055 * J - 0.0167 * K - 0.9431 * L - 16.1459 * M);
+					results.push_back(76.1087 + 0.0042 * B + 0.0000 * C - 0.2895 * D + 0.0080 * E + 0.0491 * F - 0.0000 * G + 0.2943 * H + 0.0487 * I + 0.0063 * J - 0.0617 * K - 0.2377 * L - 19.7193 * M);
+					results.push_back(-16.8568 + 0.0009 * B + 0.0000 * C + 0.0160 * D + 0.0003 * E + 0.0040 * F + 0.0000 * G + 0.0481 * H + 0.0017 * I + 0.0005 * J + 0.0014 * K - 0.0276 * L + 0.5890 * M);
+					results.push_back(-45.4109 + 0.0017 * B + 0.0000 * C + 0.0055 * D + 0.0039 * E + 0.0085 * F + 0.0000 * G + 0.0961 * H + 0.0048 * I + 0.0008 * J + 0.0090 * K - 0.0433 * L + 1.7050 * M);
+					results.push_back(-16.5876 + 0.0009 * B + 0.0000 * C + 0.0161 * D + 0.0004 * E + 0.0040 * F + 0.0000 * G + 0.0468 * H + 0.0018 * I + 0.0005 * J + 0.0014 * K - 0.0281 * L + 0.5775 * M);
+					results.push_back(73.6455 + 0.0038 * B + 0.0000 * C - 0.2832 * D + 0.0087 * E + 0.0498 * F - 0.0000 * G + 0.3138 * H + 0.0510 * I + 0.0063 * J - 0.0602 * K - 0.2378 * L - 20.1816 * M);
+					results.push_back(-121.5260 + 0.0286 * B + 0.0000 * C - 0.0337 * D - 0.0226 * E - 0.0075 * F + 0.0000 * G - 0.1776 * H + 0.0216 * I + 0.0051 * J + 0.0323 * K - 0.0420 * L - 5.4284 * M);
+					results.push_back(-112.7293 + 0.0142 * B + 0.0000 * C + 0.0163 * D + 0.0047 * E + 0.0228 * F + 0.0000 * G + 0.5184 * H + 0.0677 * I + 0.0074 * J - 0.0766 * K + 0.0898 * L - 16.3086 * M);
+					results.push_back(-199.9882 + 0.0120 * B + 0.0000 * C + 0.0586 * D + 0.0291 * E + 0.0798 * F - 0.0000 * G + 1.7482 * H + 0.0265 * I + 0.0094 * J + 0.1803 * K + 0.3600 * L - 28.9311 * M);
+					results.push_back(-112.6211 + 0.0142 * B + 0.0000 * C + 0.0327 * D + 0.0052 * E + 0.0226 * F + 0.0000 * G + 0.4886 * H + 0.0684 * I + 0.0074 * J - 0.0745 * K + 0.0874 * L - 16.6976 * M);
+					results.push_back(-113.9565 + 0.0280 * B + 0.0000 * C + 0.0057 * D - 0.0166 * E - 0.0048 * F + 0.0000 * G - 0.1665 * H + 0.0169 * I + 0.0051 * J + 0.0195 * K - 0.0274 * L - 4.8968 * M);
+
+					for (size_t i = 0; i < results.size(); ++i) {
+						results[i] = results[i] * 0.7 * 0.6;
+						if (results[i] < 0)
+						{
+							results[i] = 0;
+						}
+					}
+
+
+
+					double min_value = *std::min_element(results.begin(), results.end());
+					double max_value = *std::max_element(results.begin(), results.end());
+
+					// 更新结果
+
+					double shellMaxValue = max_value; // 发动机壳体最大应力
+					double shellMinValue = 0; // 发动机壳体最小应力
+					double shellAvgValue = shellMaxValue * 0.6; // 发动机壳体平均应力
+					double shellStandardValue = getStd(results); // 发动机壳体应力标准差
+					double maxValue = max_value * 0.6; // 固体推进剂最大应力
+					double minValue = 0; // 固体推进剂最小应力
+					double avgValue = maxValue * 0.6; // 固体推进剂平均应力
+					double standardValue = 0; // 固体推进剂应力标准差
+					gfParent->GetStressResultWidget()->updateData(shellMaxValue, shellMinValue, shellAvgValue, shellStandardValue, maxValue, minValue, avgValue, standardValue);
+
+
+					FallAnalysisResultInfo fallAnalysisResultInfo;
+
+					fallAnalysisResultInfo.isChecked = true;
+					fallAnalysisResultInfo.triangleStructure = aDataSource;
+					fallAnalysisResultInfo.maxValue = max_value;
+					fallAnalysisResultInfo.minValue = min_value;
+					ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
+
+					{
+						QDateTime currentTime = QDateTime::currentDateTime();
+						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+						auto logWidget = gfParent->GetLogWidget();
+						auto textEdit = logWidget->GetTextEdit();
+						QString text = timeStr + "[信息]>跌落试验计算完成";
+						textEdit->appendPlainText(text);
+						logWidget->update();
+					}
+
+					break;
+				}
+				else
+				{
+					parent = parent->parentWidget();
+				}
+			}
+
+			});
+		//connect(exportAction, &QAction::triggered, [this, text]() {
+		//	exportWord("Hello, World!"); // 直接在Lambda中传递参数
+		//	});
+		contextMenu->addAction(calAction); // 将动作添加到菜单中
+		contextMenu->addAction(exportAction);
+		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
+	}
+	else if (text == "几何模型")
+	{
+		contextMenu = new QMenu(this); // 创建菜单对象
+		QAction *customAction = new QAction("导入", this); // 创建动作对象并添加到菜单中
+		connect(customAction, &QAction::triggered, this, [item, this]() {
+			QWidget* parent = parentWidget();
+			while (parent) {
+				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+				if (gfParent)
+				{
+					QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(),
+						"STEP Files (*.stp *.step);;STL Files (*.stl);;IGES Files (*.iges *.igs);;All Files (*.*)");
+
+					if (filePath.isEmpty())
+					{
+						return;
+					}
+				
+					QDateTime currentTime = QDateTime::currentDateTime();
+					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+					auto logWidget = gfParent->GetLogWidget();
+					auto textEdit = logWidget->GetTextEdit();
+					QString text = timeStr + "[信息]>开始导入几何模型";
+					textEdit->appendPlainText(text);
+					logWidget->update();
+
+					// 关键：强制刷新UI，确保日志立即显示
+					QApplication::processEvents();
+					
+
+					// 创建进度对话框
+					ProgressDialog* progressDialog = new ProgressDialog("几何模型导入进度", gfParent);
+					progressDialog->show();
+
+					// 创建工作线程和工作对象
+					GeometryImportWorker* worker = new GeometryImportWorker(filePath);
+					QThread* workerThread = new QThread();
+					worker->moveToThread(workerThread);
+
+					// 连接信号槽
+					connect(workerThread, &QThread::started, worker, &GeometryImportWorker::DoWork);
+					connect(worker, &GeometryImportWorker::ProgressUpdated,
+						progressDialog, &ProgressDialog::SetProgress);
+					connect(worker, &GeometryImportWorker::StatusUpdated,
+						progressDialog, &ProgressDialog::SetStatusText);
+					connect(progressDialog, &ProgressDialog::Canceled,
+						worker, &GeometryImportWorker::RequestInterruption);
+
+					// 处理导入结果
+					connect(worker, &GeometryImportWorker::WorkFinished, this,
+						[=](bool success, const QString& msg, const ModelGeometryInfo& info) {
+							// 更新日志
+							QDateTime finishTime = QDateTime::currentDateTime();
+							QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
+							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+
+							if (success && !info.shape.IsNull())
+							{
+								// 保存模型信息
+								ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
+								updataIcon();
+
+								// 更新显示
+								auto occView = gfParent->GetOccView();
+								Handle(AIS_InteractiveContext) context = occView->getContext();
+								context->RemoveAll(true);
+
+								Handle(AIS_Shape) modelPresentation = new AIS_Shape(info.shape);
+								context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
+								context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
+								context->Display(modelPresentation, false);
+								occView->fitAll();
+
+								// 更新属性窗口
+								auto geomProWid = gfParent->findChild<GeomPropertyWidget*>();
+								geomProWid->UpdataPropertyInfo();
+
+							}
+							else if (!success)
+							{
+								QMessageBox::warning(this, "导入失败", msg);
+							}
+
+							// 清理资源
+							progressDialog->close();
+							workerThread->quit();
+							workerThread->wait();
+							worker->deleteLater();
+							workerThread->deleteLater();
+							progressDialog->deleteLater();
+						});
+
+					// 启动线程
+					workerThread->start();
+					break;					
+				}
+				else
+				{
+					parent = parent->parentWidget();
+				}
+			}
+		});
+		contextMenu->addAction(customAction); // 将动作添加到菜单中
+		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
+	}
+	else if (text == "网格")
+	{
+		contextMenu = new QMenu(this);
+		QAction *meshAction = new QAction("网格划分", this);
+		connect(meshAction, &QAction::triggered, this, [item, this]() {
+			QWidget* parent = parentWidget();
+			while (parent)
+			{
+				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+				if (gfParent)
+				{
+					{
+						QDateTime currentTime = QDateTime::currentDateTime();
+						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+						auto logWidget = gfParent->GetLogWidget();
+						auto textEdit = logWidget->GetTextEdit();
+						QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
+						textEdit->appendPlainText(text);
+						logWidget->update();
+
+						// 关键：强制刷新UI，确保日志立即显示
+						QApplication::processEvents();
+					}
+
+					ModelMeshInfo meshInfo;
+
+					auto occView = gfParent->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					auto view = occView->getView();
+					context->RemoveAll(true);
+
+					Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
+
+					auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+
+					auto aDataSource = new TriangleStructure(geomInfo.shape, 0.5);
+
+
+					meshInfo.isChecked = true;
+					meshInfo.triangleStructure = *aDataSource;
+					ModelDataManager::GetInstance()->SetModelMeshInfo(meshInfo);
+
+
+					BRep_Builder builder;
+					TopoDS_Compound compound;
+					builder.MakeCompound(compound);
+
+					auto myEdges = aDataSource->GetMyEdge();
+
+					auto myNodeCoords = aDataSource->GetmyNodeCoords();
+
+					for (const auto& edge : myEdges)
+					{
+						Standard_Integer node1ID = edge.first;
+						Standard_Integer node2ID = edge.second;
+
+						Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
+						Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
+						Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
+
+						Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
+						Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
+						Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
+
+						gp_Pnt p1(x1, y1, z1);
+						gp_Pnt p2(x2, y2, z2);
+
+						TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
+						TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
+
+						TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
+
+						// 将边线添加到复合形状中
+						builder.Add(compound, edgeShape);
+
+						//Handle(AIS_Shape) aisEdge = new AIS_Shape(edgeShape);
+						//context->Display(aisEdge, Standard_True);
+					}
+
+					Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
+					context->Display(aisCompound, Standard_True);
+
+					updataIcon();
+
+					{
+						QDateTime currentTime = QDateTime::currentDateTime();
+						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+						auto logWidget = gfParent->GetLogWidget();
+						auto textEdit = logWidget->GetTextEdit();
+						QString text = timeStr + "[信息]>网格划分完成";
+						textEdit->appendPlainText(text);
+					}
+
+					auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
+					meshProWid->UpdataPropertyInfo();
+
+					break;
+				}
+				else
+				{
+					parent = parent->parentWidget();
+				}
+			}
+		});
+		contextMenu->addAction(meshAction);
+		contextMenu->exec(event->globalPos());
+	}
+}
+
+void GFTreeModelWidget::exportWord(const QString& text)
+{
+	QMap<QString, QString> data;
+	data.insert("{{工程名称}}", "工程名称001");
+	data.insert("{{工程地点}}", "工程地点001");
+	data.insert("{{测试设备}}", "测试设备001");
+	data.insert("{{发动机型号}}", "发动机型号001");
+	data.insert("{{工程时间}}", "工程时间001");
+	data.insert("{{测试标准}}", "测试标准001");
+	data.insert("{{测试模型}}", "测试模型001");
+	data.insert("{{壳体材料}}", "壳体材料001");
+	data.insert("{{防隔热材料}}}", "防隔热材料001");
+	data.insert("{{外防热材料}}", "外防热材料001");
+	data.insert("{{推进剂材料}}", "推进剂材料001");
+
+	exportFromTemplate("D:/template.docx", "D:/output.docx", data);
+	QMessageBox::information(this, "提示", QString("跌落试验结果导出成功"));
+}
+
+bool GFTreeModelWidget::exportFromTemplate(const QString &templatePath, const QString &outputPath, const QMap<QString, QString> &data) 
+{
+	
+	return true;
+}

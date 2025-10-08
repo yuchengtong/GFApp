@@ -1,0 +1,45 @@
+<RCC>
+    <qresource prefix="/">
+        <file>src/View all From +X.png</file>
+        <file>src/View all From +Y.png</file>
+        <file>src/View all From +Z.png</file>
+        <file>src/View all From -X.png</file>
+        <file>src/View all From -Y.png</file>
+        <file>src/View all From -Z.png</file>
+        <file>src/Export.svg</file>
+        <file>src/Import.svg</file>
+        <file>src/Save.svg</file>
+        <file>src/Save_as.svg</file>
+        <file>src/Move.svg</file>
+        <file>src/Rotate.svg</file>
+        <file>src/Setting.svg</file>
+        <file>src/FitAll.png</file>
+        <file>src/Zoom.png</file>
+        <file>src/Reset.svg</file>
+        <file>src/engine.svg</file>
+        <file>src/key_line.svg</file>
+        <file>src/Error.svg</file>
+        <file>src/Complete.svg</file>
+        <file>src/Checked.svg</file>
+        <file>src/data_add.svg</file>
+        <file>src/data_copy.svg</file>
+        <file>src/data_export.svg</file>
+        <file>src/data_import.svg</file>
+        <file>src/data_query.svg</file>
+        <file>src/data_remove.svg</file>
+        <file>src/data_save.svg</file>
+        <file>src/data_reset.svg</file>
+        <file>src/data_calculation.svg</file>
+        <file>src/data_insulatingheat.svg</file>
+        <file>src/data_judgment.svg</file>
+        <file>src/data_metals.svg</file>
+        <file>src/data_outheat.svg</file>
+        <file>src/data_propellants.svg</file>
+        <file>src/data_user.svg</file>
+        <file>src/ck_checked.svg</file>
+        <file>src/ck_partiallychecked.svg</file>
+        <file>src/ck_unchecked.svg</file>
+        <file>src/treeclose.svg</file>
+        <file>src/treeopen.svg</file>
+    </qresource>
+</RCC>

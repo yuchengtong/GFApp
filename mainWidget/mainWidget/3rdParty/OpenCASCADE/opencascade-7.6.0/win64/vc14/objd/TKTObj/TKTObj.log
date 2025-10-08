@@ -1,0 +1,22 @@
+﻿  TObj_Application.cxx
+  TObj_Assistant.cxx
+  TObj_CheckModel.cxx
+  TObj_HiddenPartition.cxx
+  TObj_LabelIterator.cxx
+  TObj_Model.cxx
+  TObj_ModelIterator.cxx
+  TObj_Object.cxx
+  TObj_ObjectIterator.cxx
+  TObj_OcafObjectIterator.cxx
+  TObj_Partition.cxx
+  TObj_Persistence.cxx
+  TObj_ReferenceIterator.cxx
+  TObj_SequenceIterator.cxx
+  TObj_TIntSparseArray.cxx
+  TObj_TModel.cxx
+  TObj_TNameContainer.cxx
+  TObj_TObject.cxx
+  TObj_TReference.cxx
+  TObj_TXYZ.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKTObj.lib 和对象 ..\..\..\win64\vc14\libd\TKTObj.exp
+  TKTObj.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKTObj.dll

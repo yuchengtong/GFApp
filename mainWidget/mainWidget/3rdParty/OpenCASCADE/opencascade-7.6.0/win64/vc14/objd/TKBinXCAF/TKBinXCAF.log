@@ -1,0 +1,20 @@
+﻿  BinXCAFDrivers.cxx
+  BinXCAFDrivers_DocumentRetrievalDriver.cxx
+  BinXCAFDrivers_DocumentStorageDriver.cxx
+  BinMXCAFDoc.cxx
+  BinMXCAFDoc_AssemblyItemRefDriver.cxx
+  BinMXCAFDoc_CentroidDriver.cxx
+  BinMXCAFDoc_ColorDriver.cxx
+  BinMXCAFDoc_DatumDriver.cxx
+  BinMXCAFDoc_DimTolDriver.cxx
+  BinMXCAFDoc_GraphNodeDriver.cxx
+  BinMXCAFDoc_LengthUnitDriver.cxx
+  BinMXCAFDoc_LocationDriver.cxx
+  BinMXCAFDoc_MaterialDriver.cxx
+  BinMXCAFDoc_NoteBinDataDriver.cxx
+  BinMXCAFDoc_NoteCommentDriver.cxx
+  BinMXCAFDoc_NoteDriver.cxx
+  BinMXCAFDoc_VisMaterialDriver.cxx
+  BinMXCAFDoc_VisMaterialToolDriver.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKBinXCAF.lib 和对象 ..\..\..\win64\vc14\libd\TKBinXCAF.exp
+  TKBinXCAF.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKBinXCAF.dll

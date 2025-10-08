@@ -1,0 +1,8 @@
+﻿  STEPCAFControl_ActorWrite.cxx
+  STEPCAFControl_Controller.cxx
+  STEPCAFControl_ExternFile.cxx
+  STEPCAFControl_GDTProperty.cxx
+  STEPCAFControl_Reader.cxx
+  STEPCAFControl_Writer.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKXDESTEP.lib 和对象 ..\..\..\win64\vc14\libd\TKXDESTEP.exp
+  TKXDESTEP.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKXDESTEP.dll

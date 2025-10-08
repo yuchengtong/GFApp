@@ -1,0 +1,11 @@
+﻿  XDEDRAW.cxx
+  XDEDRAW_Colors.cxx
+  XDEDRAW_Common.cxx
+  XDEDRAW_GDTs.cxx
+  XDEDRAW_Layers.cxx
+  XDEDRAW_Notes.cxx
+  XDEDRAW_Props.cxx
+  XDEDRAW_Shapes.cxx
+  XDEDRAW_Views.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKXDEDRAW.lib 和对象 ..\..\..\win64\vc14\libd\TKXDEDRAW.exp
+  TKXDEDRAW.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKXDEDRAW.dll

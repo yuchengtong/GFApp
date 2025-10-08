@@ -1,0 +1,36 @@
+﻿  BRepPrim_Builder.cxx
+  BRepPrim_Cone.cxx
+  BRepPrim_Cylinder.cxx
+  BRepPrim_FaceBuilder.cxx
+  BRepPrim_GWedge.cxx
+  BRepPrim_OneAxis.cxx
+  BRepPrim_Revolution.cxx
+  BRepPrim_Sphere.cxx
+  BRepPrim_Torus.cxx
+  BRepPrim_Wedge.cxx
+  BRepSweep_Builder.cxx
+  BRepSweep_Iterator.cxx
+  BRepSweep_NumLinearRegularSweep.cxx
+  BRepSweep_Prism.cxx
+  BRepSweep_Revol.cxx
+  BRepSweep_Rotation.cxx
+  BRepSweep_Tool.cxx
+  BRepSweep_Translation.cxx
+  BRepSweep_Trsf.cxx
+  Sweep_NumShape.cxx
+  Sweep_NumShapeIterator.cxx
+  Sweep_NumShapeTool.cxx
+  BRepPreviewAPI_MakeBox.cxx
+  BRepPrimAPI_MakeBox.cxx
+  BRepPrimAPI_MakeCone.cxx
+  BRepPrimAPI_MakeCylinder.cxx
+  BRepPrimAPI_MakeHalfSpace.cxx
+  BRepPrimAPI_MakeOneAxis.cxx
+  BRepPrimAPI_MakePrism.cxx
+  BRepPrimAPI_MakeRevol.cxx
+  BRepPrimAPI_MakeRevolution.cxx
+  BRepPrimAPI_MakeSphere.cxx
+  BRepPrimAPI_MakeTorus.cxx
+  BRepPrimAPI_MakeWedge.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKPrim.lib 和对象 ..\..\..\win64\vc14\libd\TKPrim.exp
+  TKPrim.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKPrim.dll

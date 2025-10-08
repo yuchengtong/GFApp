@@ -1,0 +1,30 @@
+﻿  StdDrivers.cxx
+  StdDrivers_DocumentRetrievalDriver.cxx
+  StdObject_Location.cxx
+  StdObject_Shape.cxx
+  StdPersistent.cxx
+  StdPersistent_DataXtd.cxx
+  StdPersistent_DataXtd_Constraint.cxx
+  StdPersistent_DataXtd_PatternStd.cxx
+  StdPersistent_Naming.cxx
+  StdPersistent_PPrsStd.cxx
+  StdPersistent_TopLoc.cxx
+  StdStorage.cxx
+  StdStorage_BacketOfPersistent.cxx
+  StdStorage_Data.cxx
+  StdStorage_HeaderData.cxx
+  StdStorage_Root.cxx
+  StdStorage_RootData.cxx
+  StdStorage_TypeData.cxx
+  ShapePersistent.cxx
+  ShapePersistent_BRep.cxx
+  ShapePersistent_Geom.cxx
+  ShapePersistent_Geom2d.cxx
+  ShapePersistent_Geom2d_Curve.cxx
+  ShapePersistent_Geom_Curve.cxx
+  ShapePersistent_Geom_Surface.cxx
+  ShapePersistent_HSequence.cxx
+  ShapePersistent_Poly.cxx
+  ShapePersistent_TopoDS.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKStd.lib 和对象 ..\..\..\win64\vc14\libd\TKStd.exp
+  TKStd.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKStd.dll

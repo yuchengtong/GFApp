@@ -1,0 +1,74 @@
+﻿  Generate moc_predefs.h
+  LRELEASE e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/Common-icon.ts
+  Updating 'e:\install\OCCT-760_OCCT-760\Windows-64-VC141-opt\OCCT\samples\qt\IESample\win64\VC14\res/Common-icon.qm'...
+      Generated 35 translation(s) (35 finished and 0 unfinished)
+  LRELEASE e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/Common-string.ts
+  Updating 'e:\install\OCCT-760_OCCT-760\Windows-64-VC141-opt\OCCT\samples\qt\IESample\win64\VC14\res/Common-string.qm'...
+      Generated 113 translation(s) (113 finished and 0 unfinished)
+  LRELEASE e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Interface/src/Interface-string.ts
+  Updating 'e:\install\OCCT-760_OCCT-760\Windows-64-VC141-opt\OCCT\samples\qt\IESample\win64\VC14\res/Interface-string.qm'...
+      Generated 50 translation(s) (50 finished and 0 unfinished)
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/antialiasing.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/cascade.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/close.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/cursor_rotate.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/cursor_zoom.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/document.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/help.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/lamp.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/new.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/raytracing.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/reflections.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/shadows.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tile.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool-shading.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool_color.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool_delete.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool_material.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool_shading.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool_transparency.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/tool_wireframe.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_axo.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_back.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_bottom.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_comp_off.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_comp_on.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_fitall.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_fitarea.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_front.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_glpan.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_left.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_pan.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_reset.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_right.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_rotate.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_top.png
+  Copy resource e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/res/view_zoom.png
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Interface/src/Application.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/ApplicationCommon.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/DocumentCommon.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/MDIWindow.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/Material.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Interface/src/Translate.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/Transparency.h
+  MOC e:/install/OCCT-760_OCCT-760/Windows-64-VC141-opt/OCCT/samples/qt/Common/src/View.h
+  {{xgSpeculativeTaskID=00000012}}
+  {{xgSpeculativeTaskID=00000013}}
+  {{xgSpeculativeTaskID=00000014}}
+  {{xgSpeculativeTaskID=00000015}}
+  {{xgSpeculativeTaskID=00000016}}
+  {{xgSpeculativeTaskID=00000017}}
+  {{xgSpeculativeTaskID=00000018}}
+  {{xgSpeculativeTaskID=00000019}}
+  {{xgSpeculativeTaskID=0000001A}}
+  {{xgSpeculativeTaskID=0000001B}}
+  {{xgSpeculativeTaskID=0000001C}}
+  {{xgSpeculativeTaskID=0000001D}}
+  {{xgSpeculativeTaskID=0000001E}}
+  {{xgSpeculativeTaskID=0000001F}}
+  {{xgSpeculativeTaskID=00000020}}
+  {{xgSpeculativeTaskID=00000021}}
+  {{xgSpeculativeTaskID=00000022}}
+  {{xgSpeculativeTaskID=00000023}}
+  {{xgSpeculativeTaskID=00000024}}
+  IESample.vcxproj -> e:\install\OCCT-760_OCCT-760\Windows-64-VC141-opt\OCCT\samples\qt\IESample\win64\VC14\bin\IESample.exe

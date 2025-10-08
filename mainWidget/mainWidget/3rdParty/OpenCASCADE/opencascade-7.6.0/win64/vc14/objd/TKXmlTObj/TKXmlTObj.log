@@ -1,0 +1,10 @@
+﻿  XmlTObjDrivers.cxx
+  XmlTObjDrivers_DocumentRetrievalDriver.cxx
+  XmlTObjDrivers_DocumentStorageDriver.cxx
+  XmlTObjDrivers_IntSparseArrayDriver.cxx
+  XmlTObjDrivers_ModelDriver.cxx
+  XmlTObjDrivers_ObjectDriver.cxx
+  XmlTObjDrivers_ReferenceDriver.cxx
+  XmlTObjDrivers_XYZDriver.cxx
+    正在创建库 ..\..\..\win64\vc14\libd\TKXmlTObj.lib 和对象 ..\..\..\win64\vc14\libd\TKXmlTObj.exp
+  TKXmlTObj.vcxproj -> D:\Software\OCC\OpenCASCADE-7.6.0-vc14-64\opencascade-7.6.0\adm\msvc\vc141\.\..\..\..\win64\vc14\bind\TKXmlTObj.dll
