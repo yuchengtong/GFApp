@@ -32,7 +32,7 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>msvc2017_64</QtInstall>
-    <QtModules>core;gui;widgets;charts</QtModules>
+    <QtModules>core;gui;axcontainer;widgets;charts</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
@@ -67,12 +67,12 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Algrithm;$(ProjectDir)DataStructure;$(ProjectDir)PropertyWidget;$(ProjectDir)3rdParty\OpenCASCADE\opencascade-7.6.0\inc;$(ProjectDir)3rdParty\QXlsx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Algrithm;$(ProjectDir)DataStructure;$(ProjectDir)PropertyWidget;$(ProjectDir)3rdParty\OpenCASCADE\opencascade-7.6.0\inc;$(ProjectDir)3rdParty\QXlsx\include;$(QTDIR)\include\ActiveQt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(ProjectDir)3rdParty\OpenCASCADE\opencascade-7.6.0\win64\vc14\lib;$(ProjectDir)3rdParty\QXlsx\bin64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>QXlsx.lib;$(Qt_LIBS_);TKBin.lib;TKBinL.lib;TKBinTObj.lib;TKBinXCAF.lib;TKBO.lib;TKBool.lib;TKBRep.lib;TKCAF.lib;TKCDF.lib;TKD3DHost.lib;TKD3DHostTest.lib;TKDCAF.lib;TKDFBrowser.lib;TKDraw.lib;TKernel.lib;TKFeat.lib;TKFillet.lib;TKG2d.lib;TKG3d.lib;TKGeomAlgo.lib;TKGeomBase.lib;TKHLR.lib;TKIGES.lib;TKIVtk.lib;TKIVtkDraw.lib;TKLCAF.lib;TKMath.lib;TKMesh.lib;TKMeshVS.lib;TKMessageModel.lib;TKMessageView.lib;TKOffset.lib;TKOpenGl.lib;TKOpenGles.lib;TKOpenGlesTest.lib;TKOpenGlTest.lib;TKPrim.lib;TKQADraw.lib;TKRWMesh.lib;TKService.lib;TKShapeView.lib;TKShHealing.lib;TKStd.lib;TKStdL.lib;TKSTEP.lib;TKSTEP209.lib;TKSTEPAttr.lib;TKSTEPBase.lib;TKSTL.lib;TKTInspector.lib;TKTInspectorAPI.lib;TKTObj.lib;TKTObjDRAW.lib;TKToolsDraw.lib;TKTopAlgo.lib;TKTopTest.lib;TKTreeModel.lib;TKV3d.lib;TKVCAF.lib;TKView.lib;TKViewerTest.lib;TKVInspector.lib;TKVRML.lib;TKXCAF.lib;TKXDEDRAW.lib;TKXDEIGES.lib;TKXDESTEP.lib;TKXMesh.lib;TKXml.lib;TKXmlL.lib;TKXmlTObj.lib;TKXmlXCAF.lib;TKXSBase.lib;TKXSDRAW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)3rdParty\OpenCASCADE\opencascade-7.6.0\win64\vc14\lib;$(ProjectDir)3rdParty\QXlsx\bin64;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Qt5AxContainer.lib;Qt5AxBase.lib;QXlsx.lib;$(Qt_LIBS_);TKBin.lib;TKBinL.lib;TKBinTObj.lib;TKBinXCAF.lib;TKBO.lib;TKBool.lib;TKBRep.lib;TKCAF.lib;TKCDF.lib;TKD3DHost.lib;TKD3DHostTest.lib;TKDCAF.lib;TKDFBrowser.lib;TKDraw.lib;TKernel.lib;TKFeat.lib;TKFillet.lib;TKG2d.lib;TKG3d.lib;TKGeomAlgo.lib;TKGeomBase.lib;TKHLR.lib;TKIGES.lib;TKIVtk.lib;TKIVtkDraw.lib;TKLCAF.lib;TKMath.lib;TKMesh.lib;TKMeshVS.lib;TKMessageModel.lib;TKMessageView.lib;TKOffset.lib;TKOpenGl.lib;TKOpenGles.lib;TKOpenGlesTest.lib;TKOpenGlTest.lib;TKPrim.lib;TKQADraw.lib;TKRWMesh.lib;TKService.lib;TKShapeView.lib;TKShHealing.lib;TKStd.lib;TKStdL.lib;TKSTEP.lib;TKSTEP209.lib;TKSTEPAttr.lib;TKSTEPBase.lib;TKSTL.lib;TKTInspector.lib;TKTInspectorAPI.lib;TKTObj.lib;TKTObjDRAW.lib;TKToolsDraw.lib;TKTopAlgo.lib;TKTopTest.lib;TKTreeModel.lib;TKV3d.lib;TKVCAF.lib;TKView.lib;TKViewerTest.lib;TKVInspector.lib;TKVRML.lib;TKXCAF.lib;TKXDEDRAW.lib;TKXDEIGES.lib;TKXDESTEP.lib;TKXMesh.lib;TKXml.lib;TKXmlL.lib;TKXmlTObj.lib;TKXmlXCAF.lib;TKXSBase.lib;TKXSDRAW.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -128,23 +128,31 @@
     <ClCompile Include="ProgressDialog.cpp" />
     <ClCompile Include="PropertyWidget\BasePropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\CalculationPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\DatabasePropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\ExplosiveBlastPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\FallPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\FastCombustionPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\FragmentationImpactPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\GeomPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\InsulatingheatPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\JetImpactPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\JudgmentPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\MaterialPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\MeshPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\OutheatPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\ProjectPropertyWidge.cpp" />
     <ClCompile Include="PropertyWidget\PropellantPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\SacrificeExplosionPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\ShootPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\SteelPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\OverpressureResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\ResultsPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\SettingPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\SlowCombustionPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\StrainResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\StressResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\TemperatureResultWidget.cpp" />
+    <ClCompile Include="WordExporter.cpp" />
     <QtRcc Include="mainWidget.qrc" />
     <QtRcc Include="Resource.qrc" />
     <QtUic Include="AuxiliaryAnalysisWidget.ui" />
@@ -222,6 +230,14 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="WordExporter.h" />
+    <QtMoc Include="PropertyWidget\StrainResultWidget.h" />
+    <QtMoc Include="PropertyWidget\ShootPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\SacrificeExplosionPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\JetImpactPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\FragmentationImpactPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\ExplosiveBlastPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\DatabasePropertyWidget.h" />
     <QtMoc Include="GeometryImportWorker.h" />
     <QtMoc Include="ProgressDialog.h" />
     <QtMoc Include="GFTreeWidget.h" />

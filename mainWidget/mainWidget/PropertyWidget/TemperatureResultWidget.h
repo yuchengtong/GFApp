@@ -8,6 +8,8 @@ class TemperatureResultWidget : public BasePropertyWidget
 public:
 	explicit TemperatureResultWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

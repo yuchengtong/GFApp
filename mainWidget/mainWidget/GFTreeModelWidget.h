@@ -4,9 +4,12 @@
 #include <QAction>
 #include <QContextMenuEvent>
 #include <QMessageBox>
+#include <QComboBox>
+
 
 #include <TopoDS_Shape.hxx>
 #include "GFTreeWidget.h"
+#include "WordExporter.h"
 
 class GFTreeModelWidget :public QWidget
 {
@@ -29,9 +32,7 @@ signals:
 private slots:
 	void onTreeItemClicked(QTreeWidgetItem* item, int column);
 
-	void exportWord(const QString& text);
-
-	bool exportFromTemplate(const QString &templatePath, const QString &outputPath, const QMap<QString, QString> &data);
+	void exportWord(const QString& directory, const QString& text);
 
 
 private:
@@ -39,5 +40,7 @@ private:
 
 	GFTreeWidget* treeWidget = nullptr;
 	TopoDS_Shape m_aShape;
+
+	WordExporter* wordExporter;
 };
 

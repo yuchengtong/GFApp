@@ -12,17 +12,17 @@ GeomPropertyWidget::GeomPropertyWidget(QWidget* parent)
 
 void GeomPropertyWidget::UpdataPropertyInfo()
 {
-	auto modelInfo=ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	QTableWidgetItem* path_item = m_tableWidget->item(2, 2);
 	QTableWidgetItem* length_item = m_tableWidget->item(3, 2);
 	QTableWidgetItem* width_item = m_tableWidget->item(4, 2);
 	QTableWidgetItem* height_item = m_tableWidget->item(5, 2);
-	if (path_item&&length_item&&width_item&&height_item)
+	if (path_item && length_item && width_item && height_item)
 	{
 		path_item->setText(modelInfo.path);
 		length_item->setText(QString::number(modelInfo.length, 'f', 3));
-		width_item->setText(QString::number(modelInfo.width ,'f', 3));
-		height_item->setText(QString::number(modelInfo.height ,'f', 3));
+		width_item->setText(QString::number(modelInfo.width, 'f', 3));
+		height_item->setText(QString::number(modelInfo.height, 'f', 3));
 	}
 }
 
@@ -33,7 +33,7 @@ void GeomPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 	// 设置行列数，这里固定 5 行 4 列
-	m_tableWidget->setRowCount(6);
+	m_tableWidget->setRowCount(7);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -45,8 +45,8 @@ void GeomPropertyWidget::initWidget()
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->resizeSection(0, 5);
-	m_tableWidget->horizontalHeader()->resizeSection(2, 60);
-	m_tableWidget->horizontalHeader()->resizeSection(4, 5);
+	m_tableWidget->horizontalHeader()->resizeSection(1, 60);
+	m_tableWidget->horizontalHeader()->resizeSection(3, 5);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
 	// 让表格充满布局，自动调整行列大小
@@ -58,7 +58,7 @@ void GeomPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "几何模型","发动机型号","来源","长","宽", "高度" };
+	QStringList labels = { "几何模型","发动机型号","来源","长","宽", "高度","壳体厚度" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -73,7 +73,7 @@ void GeomPropertyWidget::initWidget()
 	}
 
 	//第2列用空Label
-	QStringList emptyLabels = { " "," ","", "", "", "" };
+	QStringList emptyLabels = { " "," ","", "", "", "", "" };
 	for (int row = 0; row < emptyLabels.size(); ++row) {
 		if (row == 1)
 		{
@@ -87,9 +87,10 @@ void GeomPropertyWidget::initWidget()
 			m_tableWidget->setItem(row, 2, labelItem);
 		}
 	}
+	QTableWidgetItem* labelItem = new QTableWidgetItem("");
+	m_tableWidget->setItem(6, 2, labelItem);
 
-
-	QStringList unitLabels = { " "," ","", "mm", "mm", "mm" };
+	QStringList unitLabels = { " "," ","", "mm", "mm", "mm","mm" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -100,17 +101,18 @@ void GeomPropertyWidget::initWidget()
 	}
 
 	// 设置列宽度
-	QTableWidgetItem *colimnItem = m_tableWidget->item(1, 1);
+	QTableWidgetItem* colimnItem = m_tableWidget->item(1, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 将第0行0列的单元格文本字体加粗
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
 		headerItem->setFont(font);
 	}
+
 
 
 	//文本左对齐
@@ -119,7 +121,14 @@ void GeomPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}

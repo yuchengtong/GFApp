@@ -1,16 +1,17 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #include "JudgmentPropertyWidget.h"
+#include "xlsxdocument.h"
+
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QComboBox>
-#include "xlsxdocument.h"
 #include <QDir>
 #include <QPushButton>
 #include <QDialog>
 #include "ModelDataManager.h"
-#include "GFTreeModelWidget.h"
-#include "GFImportModelWidget.h"
+#include "../GFTreeModelWidget.h"
+#include "../GFImportModelWidget.h"
 
 #include <QDateTime>
 #include <QApplication>
@@ -23,12 +24,13 @@ JudgmentPropertyWidget::JudgmentPropertyWidget(QWidget* parent)
 
 void JudgmentPropertyWidget::initWidget()
 {
+
 	QVBoxLayout* vlayout = new QVBoxLayout(this);
 	vlayout->setContentsMargins(0, 0, 0, 0);
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(3);
+	m_tableWidget->setRowCount(11);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -51,7 +53,7 @@ void JudgmentPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "评判标准数据库","评判类型", "评判数据", "热膨胀系数", "杨氏模量","泊松比","屈服强度","抗拉强度","热导率","比热容" };
+	QStringList labels = { "评判标准数据库","标准号","标准名称", "跌落试验", "快速烤燃试验", "慢速烤燃试验","枪击试验","射流冲击试验","破片撞击试验","爆炸冲击波试验","殉爆试验" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -76,14 +78,23 @@ void JudgmentPropertyWidget::initWidget()
 	}
 
 	// 设置列宽度
-	/*QTableWidgetItem *colimnItem = m_tableWidget->item(3, 1);
+	QTableWidgetItem* colimnItem = m_tableWidget->item(8, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
-	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());*/
+	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	
+	QStringList unitLabels = { " ", " "," ","m", "℃", "℃", "m/s","mm","m/s","kg","mm" };
+	for (int row = 0; row < unitLabels.size(); ++row) {
+		if (row != 0)
+		{
+			QTableWidgetItem* labelItem = new QTableWidgetItem(unitLabels[row]);
+			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
+			m_tableWidget->setItem(row, 3, labelItem);
+		}
+
+	}
 
 	// 将第0行0列的单元格文本字体加粗
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
@@ -91,16 +102,23 @@ void JudgmentPropertyWidget::initWidget()
 	}
 
 	// 导入按钮
-	QWidget *importWidget = new QWidget();
-	QPushButton *importButton = new QPushButton("导入");
+	QWidget* importWidget = new QWidget();
+	QPushButton* importButton = new QPushButton("导入");
+	importButton->setFixedSize(100, 50);
 	importButton->setMinimumHeight(30);
 	importButton->setStyleSheet("QPushButton {"
 		"background-color:  rgba(0, 0, 0, 0);"
+		"border: 2px solid #C1B1B1; "
+		"border-radius: 10px; "
+		"color: black; "
+		"font-weight: bold; "
+		"padding: 5px;"
+		"outline: none;"
 		"}"
 		"QPushButton:hover {"
-		"background-color: white;"
+		"background-color: rgba(230, 230, 230, 100);"
 		"}");
-	QVBoxLayout *importLayout = new QVBoxLayout(importWidget);
+	QVBoxLayout* importLayout = new QVBoxLayout(importWidget);
 	importLayout->addWidget(importButton);
 	importLayout->setAlignment(Qt::AlignCenter); // 按钮居中显示
 	importLayout->setMargin(0);
@@ -117,7 +135,14 @@ void JudgmentPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}
@@ -126,64 +151,66 @@ void JudgmentPropertyWidget::initWidget()
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
 		// 遍历行，设置行高
 		m_tableWidget->setRowHeight(row, 10);
-				if (row != 0)
+		QTableWidgetItem* item = m_tableWidget->item(row, 3);
+		if (item && !(item->flags() & Qt::ItemIsEditable))
 		{
-			QTableWidgetItem *unitItem = m_tableWidget->item(row, 2);
+			item->setBackground(QBrush(QColor(230, 230, 230)));
+		}
+		if (row != 0)
+		{
+			QTableWidgetItem* unitItem = m_tableWidget->item(row, 2);
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
+
 }
 
-void JudgmentPropertyWidget::showTableDialog()
-{
-	QDialog *dialog = new QDialog();
+void JudgmentPropertyWidget::showTableDialog() {
+
+
+	QDialog* dialog = new QDialog();
 	dialog->setWindowTitle("评判标准");
 	dialog->resize(1000, 500);
-	QVBoxLayout *layout = new QVBoxLayout(this);
+	QVBoxLayout* layout = new QVBoxLayout(this);
 
-	QTableWidget *diaTableWidget = new QTableWidget();
+	QTableWidget* diaTableWidget = new QTableWidget();
 	// 隐藏行号
 	diaTableWidget->verticalHeader()->setVisible(false);
 	// 隐藏列号
 	diaTableWidget->horizontalHeader()->setVisible(false);
+	QDir dir;
+	QString filepath = dir.absoluteFilePath("src/database/标准数据库.xlsx");
+	int m_rowCount = 0;
 
-	diaTableWidget->setRowCount(3);
-	diaTableWidget->setColumnCount(3);
+	if (!filepath.isEmpty()) {
+		QXlsx::Document xlsx(filepath);
+		int rowcount = xlsx.dimension().lastRow(); // 获取总行数
+		int colcount = xlsx.dimension().lastColumn(); // 获取总列数
+		m_rowCount = rowcount;
 
-	QTableWidgetItem *item1 = new QTableWidgetItem("序号");
-	diaTableWidget->setItem(0, 0, item1);
+		diaTableWidget->setRowCount(rowcount);
+		diaTableWidget->setColumnCount(colcount);
 
-	QTableWidgetItem *item2 = new QTableWidgetItem("评判标准");
-	diaTableWidget->setItem(0, 1, item2);
-	diaTableWidget->setItem(0, 2, new QTableWidgetItem("评判数据"));
+		for (int row = 1; row <= rowcount; ++row) {
+			for (int col = 1; col <= colcount; ++col) {
+				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
+				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+				diaTableWidget->setItem(row - 1, col - 1, item);
+			}
+		}
+	}
 
-	QTableWidgetItem *item3 = new QTableWidgetItem("1");
-	diaTableWidget->setItem(1, 0, item3);
-
-	QTableWidgetItem *item4 = new QTableWidgetItem("国军标");
-	diaTableWidget->setItem(1, 1, item4);
-	diaTableWidget->setItem(1, 2, new QTableWidgetItem("国军标数据"));
-
-	QTableWidgetItem *item5 = new QTableWidgetItem("2");
-	diaTableWidget->setItem(2, 0, item5);
-
-	QTableWidgetItem *item6 = new QTableWidgetItem("海军标");
-	diaTableWidget->setItem(2, 1, item6);
-	diaTableWidget->setItem(2, 2, new QTableWidgetItem("海军标数据"));
-
-	
 
 	//设置点击事件，双击单元格
 	connect(diaTableWidget, &QTableWidget::cellDoubleClicked, this, [this, dialog, diaTableWidget](int row, int column) {
 		if (row != 0)
 		{
-
 			int colcount = diaTableWidget->columnCount();
 			QString value = "";
 			for (int col = 1; col < colcount; ++col) {
 
 				QString content = diaTableWidget->item(row, col)->text();
-				if (col == 1)
+				if (col == 2)
 				{
 					value = content;
 				}
@@ -220,12 +247,12 @@ void JudgmentPropertyWidget::showTableDialog()
 					QApplication::processEvents();
 
 					// 写入数据库模块
-					MaterialPropertyWidget* m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
-					QTableWidget* materialTableWid= m_materialPropertyWidget->GetQTableWidget();
+					DatabasePropertyWidget* m_databasePropertyWidget = gfParent->GetDatabasePropertyWidget();
+					QTableWidget* databaseTableWid = m_databasePropertyWidget->GetQTableWidget();
 					QTableWidgetItem* valueItem = new QTableWidgetItem(value);
 					valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 					valueItem->setBackground(QBrush(QColor(230, 230, 230)));
-					materialTableWid->setItem(5, 2, valueItem);
+					databaseTableWid->setItem(1, 2, valueItem);
 
 					break;
 				}
@@ -237,7 +264,7 @@ void JudgmentPropertyWidget::showTableDialog()
 		}
 		dialog->close();
 
-	});
+		});
 	//双击单元格选中一行
 	 //设置选中整行
 	diaTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);

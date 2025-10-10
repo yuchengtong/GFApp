@@ -110,6 +110,8 @@ double getStd(std::vector<double> data) {
 GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	:QWidget(parent)
 {
+	wordExporter = new WordExporter(this);
+
 	qRegisterMetaType<ModelGeometryInfo>("ModelGeometryInfo");
 
 	QIcon error_icon(":/src/Error.svg");
@@ -224,6 +226,11 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	stressResult->setData(0, Qt::UserRole, "StressResult");
 	stressResult->setIcon(0, error_icon);
 
+	QTreeWidgetItem* strainResult = new QTreeWidgetItem();
+	strainResult->setText(0, "应变分析");
+	strainResult->setData(0, Qt::UserRole, "StrainResult");
+	strainResult->setIcon(0, error_icon);
+
 	QTreeWidgetItem* temperatureResult = new QTreeWidgetItem();
 	temperatureResult->setText(0, "温度分析");
 	temperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
@@ -235,6 +242,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	overpressureResult->setIcon(0, error_icon);
 
 	fallAnalysis->addChild(stressResult);
+	fallAnalysis->addChild(strainResult);
 	fallAnalysis->addChild(temperatureResult);
 	fallAnalysis->addChild(overpressureResult);
 
@@ -277,6 +285,11 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	shootStressResult->setData(0, Qt::UserRole, "StressResult");
 	shootStressResult->setIcon(0, error_icon);
 
+	QTreeWidgetItem* shootStrainResult = new QTreeWidgetItem();
+	shootStrainResult->setText(0, "应变分析");
+	shootStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	shootStrainResult->setIcon(0, error_icon);
+
 	QTreeWidgetItem* shootTemperatureResult = new QTreeWidgetItem();
 	shootTemperatureResult->setText(0, "温度分析");
 	shootTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
@@ -288,6 +301,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	shootOverpressureResult->setIcon(0, error_icon);
 
 	shootAnalysis->addChild(shootStressResult);
+	shootAnalysis->addChild(shootStrainResult);
 	shootAnalysis->addChild(shootTemperatureResult);
 	shootAnalysis->addChild(shootOverpressureResult);
 
@@ -303,6 +317,11 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	jetImpactStressResult->setData(0, Qt::UserRole, "StressResult");
 	jetImpactStressResult->setIcon(0, error_icon);
 
+	QTreeWidgetItem* jetStrainResult = new QTreeWidgetItem();
+	jetStrainResult->setText(0, "应变分析");
+	jetStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	jetStrainResult->setIcon(0, error_icon);
+
 	QTreeWidgetItem* jetImpactTemperatureResult = new QTreeWidgetItem();
 	jetImpactTemperatureResult->setText(0, "温度分析");
 	jetImpactTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
@@ -314,6 +333,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	jetImpactOverpressureResult->setIcon(0, error_icon);
 
 	jetImpactAnalysis->addChild(jetImpactStressResult);
+	jetImpactAnalysis->addChild(jetStrainResult);
 	jetImpactAnalysis->addChild(jetImpactTemperatureResult);
 	jetImpactAnalysis->addChild(jetImpactOverpressureResult);
 
@@ -329,6 +349,11 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	fragmentationImpactStressResult->setData(0, Qt::UserRole, "StressResult");
 	fragmentationImpactStressResult->setIcon(0, error_icon);
 
+	QTreeWidgetItem* fragmentationStrainResult = new QTreeWidgetItem();
+	fragmentationStrainResult->setText(0, "应变分析");
+	fragmentationStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	fragmentationStrainResult->setIcon(0, error_icon);
+
 	QTreeWidgetItem* fragmentationImpactTemperatureResult = new QTreeWidgetItem();
 	fragmentationImpactTemperatureResult->setText(0, "温度分析");
 	fragmentationImpactTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
@@ -340,6 +365,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	fragmentationImpactOverpressureResult->setIcon(0, error_icon);
 
 	fragmentationImpactAnalysis->addChild(fragmentationImpactStressResult);
+	fragmentationImpactAnalysis->addChild(fragmentationStrainResult);
 	fragmentationImpactAnalysis->addChild(fragmentationImpactTemperatureResult);
 	fragmentationImpactAnalysis->addChild(fragmentationImpactOverpressureResult);
 
@@ -355,6 +381,11 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	explosiveBlastStressResult->setData(0, Qt::UserRole, "StressResult");
 	explosiveBlastStressResult->setIcon(0, error_icon);
 
+	QTreeWidgetItem* explosiveBlastStrainResult = new QTreeWidgetItem();
+	explosiveBlastStrainResult->setText(0, "应变分析");
+	explosiveBlastStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	explosiveBlastStrainResult->setIcon(0, error_icon);
+
 	QTreeWidgetItem* explosiveBlastTemperatureResult = new QTreeWidgetItem();
 	explosiveBlastTemperatureResult->setText(0, "温度分析");
 	explosiveBlastTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
@@ -366,6 +397,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	explosiveBlastOverpressureResult->setIcon(0, error_icon);
 
 	explosiveBlastAnalysis->addChild(explosiveBlastStressResult);
+	explosiveBlastAnalysis->addChild(explosiveBlastStrainResult);
 	explosiveBlastAnalysis->addChild(explosiveBlastTemperatureResult);
 	explosiveBlastAnalysis->addChild(explosiveBlastOverpressureResult);
 
@@ -381,6 +413,11 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	sacrificeExplosionStressResult->setData(0, Qt::UserRole, "StressResult");
 	sacrificeExplosionStressResult->setIcon(0, error_icon);
 
+	QTreeWidgetItem* sacrificeExplosionStrainResult = new QTreeWidgetItem();
+	sacrificeExplosionStrainResult->setText(0, "应变分析");
+	sacrificeExplosionStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	sacrificeExplosionStrainResult->setIcon(0, error_icon);
+
 	QTreeWidgetItem* sacrificeExplosionTemperatureResult = new QTreeWidgetItem();
 	sacrificeExplosionTemperatureResult->setText(0, "温度分析");
 	sacrificeExplosionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
@@ -392,6 +429,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	sacrificeExplosionOverpressureResult->setIcon(0, error_icon);
 
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStressResult);
+	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStrainResult);
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionTemperatureResult);
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionOverpressureResult);
 
@@ -695,362 +733,362 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			}
 		}
 
-		connect(exportAction, &QAction::triggered, [this, text]() {
-			QWidget* parent = parentWidget();
-			while (parent)
-			{
-				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
-				if (gfParent)
-				{						
-					auto occView = gfParent->GetOccView();
-					Handle(AIS_InteractiveContext) context = occView->getContext();
-					auto view = occView->getView();
-					context->RemoveAll(true);
-
-					auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-					TopoDS_Shape model_shape=modelInfo.shape;
-
-					auto projectToXOY_Manual = [](const TopoDS_Shape& edges3D) -> TopoDS_Shape {
-						TopoDS_Compound comp;
-						BRep_Builder builder;
-						builder.MakeCompound(comp);
-
-						for (TopExp_Explorer explorer(edges3D, TopAbs_EDGE); explorer.More(); explorer.Next()) {
-							TopoDS_Edge edge = TopoDS::Edge(explorer.Current());
-
-							BRepAdaptor_Curve curve(edge);
-							Standard_Real startParam, endParam;
-							BRep_Tool::Range(edge, startParam, endParam);
-							gp_Pnt startPoint = curve.Value(startParam);
-							gp_Pnt endPoint = curve.Value(endParam);
-								
-							gp_Pnt2d p2D_Start(startPoint.X(), startPoint.Y());
-							gp_Pnt2d p2D_End(endPoint.X(), endPoint.Y());
-							BRepBuilderAPI_MakeEdge2d makeEdge2d(p2D_Start, p2D_End);
-							if (makeEdge2d.IsDone()) {
-								builder.Add(comp, makeEdge2d.Edge());
-							}
-						}
-						return comp;
-					};
-			
-					gp_Ax2 viewAxes(
-						gp_Pnt(0, 0, 0),    // 原点（投影坐标系原点）
-						gp_Dir(0, 0, -1),   // 视图方向（Z轴负方向，看向XOY平面）
-						gp_Dir(1, 0, 0)     // X轴方向（投影平面X轴，必须与视图方向垂直）
-					);
-
-					HLRAlgo_Projector projector(viewAxes);
-
-					Handle(HLRBRep_Algo) hlrAlgo = new HLRBRep_Algo();
-					hlrAlgo->Projector(projector); // 设置投影器
-					hlrAlgo->Add(model_shape);     // 添加模型
-					hlrAlgo->Update();             // 执行计算
-
-					HLRBRep_HLRToShape hlrToShape(hlrAlgo);
-					TopoDS_Shape visibleEdges3D = hlrToShape.VCompound();
-
-					// 检查可见边缘是否有效（替代Update的返回值判断）
-					if (visibleEdges3D.IsNull()) {
-						std::cerr << "HLR计算失败：未提取到可见边缘！" << std::endl;
-						return 1;
-					}
-
-					// 6. 后续投影与坐标提取（不变）
-					TopoDS_Shape visibleEdges2D = projectToXOY_Manual(visibleEdges3D);
-
-					Handle(AIS_Shape) aisContour = new AIS_Shape(visibleEdges2D);
-					aisContour->SetColor(Quantity_Color(Quantity_NOC_BLUE));
-					context->Display(aisContour, Standard_True);
-
-					view->FitAll();
-
-
-
-
-
-
-
-
-					// 计算模型的中心点
-					auto CalculateModelCenter = [](const TopoDS_Shape& model) -> gp_Pnt {
-						GProp_GProps props;
-						BRepGProp::VolumeProperties(model, props);
-						return props.CentreOfMass();
-					};
-
-					// 通过检查首尾点是否重合来判断线框是否封闭
-					auto IsWireClosedByEndPoints = [](const TopoDS_Wire& wire) -> bool {
-						if (wire.IsNull()) return false;
-
-						// 获取所有边
-						std::vector<TopoDS_Edge> edges;
-						for (TopExp_Explorer edgeExp(wire, TopAbs_EDGE); edgeExp.More(); edgeExp.Next()) {
-							edges.push_back(TopoDS::Edge(edgeExp.Current()));
-						}
-
-						if (edges.empty()) return false;
-
-						// 获取第一个边的起点
-						TopoDS_Edge firstEdge = edges.front();
-						Standard_Real first, last;
-						Handle(Geom_Curve) firstCurve = BRep_Tool::Curve(firstEdge, first, last);
-						if (firstCurve.IsNull()) return false;
-
-						gp_Pnt startPoint = firstCurve->Value(first);
-
-						// 获取最后一个边的终点
-						TopoDS_Edge lastEdge = edges.back();
-						Handle(Geom_Curve) lastCurve = BRep_Tool::Curve(lastEdge, first, last);
-						if (lastCurve.IsNull()) return false;
-
-						gp_Pnt endPoint = lastCurve->Value(last);
-
-						// 检查首尾点距离
-						return startPoint.Distance(endPoint) < 1e-6;
-					};
-
-					// 健壮的封闭性检查函数
-					auto IsWireClosed = [&](const TopoDS_Wire& wire) -> bool {
-						if (wire.IsNull()) return false;
-
-						// 方法1: 尝试创建面来判断是否封闭
-						try {
-							BRepBuilderAPI_MakeFace faceMaker(wire, Standard_True);
-							if (faceMaker.IsDone()) {
-								return true;
-							}
-						}
-						catch (Standard_Failure&) {
-							// 方法1失败，继续尝试其他方法
-						}
-
-						// 方法2: 检查首尾点是否重合
-						return IsWireClosedByEndPoints(wire);
-					};
-
-					// 修正的连接边到线框的函数，返回线框序列
-					auto ConnectEdgesToWires_Corrected = [&](const TopoDS_Shape& edgesShape)->Handle(TopTools_HSequenceOfShape) {
-						Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
-
-						// 收集所有边到序列
-						Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
-						for (TopExp_Explorer exp(edgesShape, TopAbs_EDGE); exp.More(); exp.Next()) {
-							edges->Append(exp.Current());
-						}
-
-						if (edges->IsEmpty()) {
-							return wires;
-						}
-
-						// 使用静态方法连接边到线框，使用容差1e-6，不共享顶点（通过距离连接）
-						ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-6, Standard_False, wires);
-
-						return wires;
-					};
-
-					// 使用BRepAlgoAPI_Section的轮廓提取lambda函数
-					auto GetOuterContour_Lambda = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
-
-							// 计算模型的中心点
-							gp_Pnt modelCenter = CalculateModelCenter(model);
-
-							// 创建XOY平面，Z坐标位于模型中心
-							gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
-
-							// 创建平面面，大小足够覆盖整个模型
-							Bnd_Box bbox;
-							BRepBndLib::Add(model, bbox);
-
-							Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-							bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-
-							// 计算平面的边界，比模型稍大
-							Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
-							Standard_Real xSize = (xMax - xMin) + 2 * margin;
-							Standard_Real ySize = (yMax - yMin) + 2 * margin;
-
-							TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
-								xoyPlaneAtCenter,
-								-xSize / 2, xSize / 2,
-								-ySize / 2, ySize / 2
-							);
-
-							// 使用BRepAlgoAPI_Section计算截面
-							BRepAlgoAPI_Section section(planeFace, model, Standard_False);
-							section.Build();
-
-							auto sectionShape = section.Shape();
-							return sectionShape;
-							
-							//// 如果截面为空，返回空线框
-							//if (sectionShape.IsNull()) {
-							//	return TopoDS_Wire();
-							//}
-
-							//// 连接边形成线框
-							//Handle(TopTools_HSequenceOfShape) wires = ConnectEdgesToWires_Corrected(sectionShape);
-
-							//if (wires->IsEmpty()) {
-							//	std::cout << "未能形成线框" << std::endl;
-							//	return TopoDS_Wire();
-							//}
-
-							//// 分派线框到闭合和开放化合物
-							//TopoDS_Compound closedWires, openWires;
-							//BRep_Builder builder;
-							//builder.MakeCompound(closedWires);
-							//builder.MakeCompound(openWires);
-							//ShapeAnalysis_FreeBounds::DispatchWires(wires, closedWires, openWires);
-
-							//// 找到最大的闭合线框（最外轮廓）
-							//TopoDS_Wire outerWire;
-							//Standard_Real maxArea = -1.0;
-
-							//for (TopExp_Explorer exp(closedWires, TopAbs_WIRE); exp.More(); exp.Next()) {
-							//	TopoDS_Wire wire = TopoDS::Wire(exp.Current());
-
-							//	if (wire.IsNull()) {
-							//		continue;
-							//	}
-
-							//	// 检查线框是否封闭 - 如果不是封闭的，直接跳过（按理说DispatchWires已经分出了闭合线框，但我们可以再检查一次）
-							//	if (!IsWireClosed(wire)) {
-							//		std::cout << "跳过非封闭轮廓线" << std::endl;
-							//		continue;
-							//	}
-
-							//	// 方法1: 尝试创建面并计算几何面积
-							//	BRepBuilderAPI_MakeFace tempFace(wire, Standard_True);
-							//	if (tempFace.IsDone()) {
-							//		try {
-							//			GProp_GProps props;
-							//			BRepGProp::SurfaceProperties(tempFace.Face(), props);
-							//			Standard_Real area = props.Mass();
-
-							//			if (area > maxArea) {
-							//				maxArea = area;
-							//				outerWire = wire;
-							//			}
-							//			continue;
-							//		}
-							//		catch (Standard_Failure&) {
-							//			// 面积计算失败，回退到方法2
-							//		}
-							//	}
-
-							//	// 方法2: 使用边界框面积作为近似
-							//	Bnd_Box wireBbox;
-							//	BRepBndLib::Add(wire, wireBbox);
-
-							//	if (!wireBbox.IsVoid()) {
-							//		Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-							//		wireBbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-
-							//		Standard_Real bboxArea = (xMax - xMin) * (yMax - yMin);
-
-							//		if (bboxArea > maxArea) {
-							//			maxArea = bboxArea;
-							//			outerWire = wire;
-							//		}
-							//	}
-							//}
-
-							//return outerWire;
-							
-
-					};
-
-					// 提取最外轮廓（自动使用模型中心的XOY平面）
-					//auto outerContour = GetOuterContour_Lambda(model_shape);
-
-					//Handle(AIS_Shape) aisMerged = new AIS_Shape(outerContour);
-					//aisMerged->SetColor(Quantity_Color(Quantity_NOC_RED));  // 统一用黑色
-					//aisMerged->SetWidth(2.0);                                 // 统一线宽
-					//context->Display(aisMerged, Standard_True);               // 显示复合形状
-
-					// Lambda表达式：用TopoDS_Face（平面）与模型求交，获取所有相交面
-					auto getIntersectionFacesWithCenterXOY = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
-
-						// 计算模型的中心点
-						gp_Pnt modelCenter = CalculateModelCenter(model);
-
-						// 创建XOY平面，Z坐标位于模型中心
-						gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
-
-						// 创建平面面，大小足够覆盖整个模型
-						Bnd_Box bbox;
-						BRepBndLib::Add(model, bbox);
-
-						Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-						bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-
-						// 计算平面的边界，比模型稍大
-						Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
-						Standard_Real xSize = (xMax - xMin) + 2 * margin;
-						Standard_Real ySize = (yMax - yMin) + 2 * margin;
-
-						TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
-							xoyPlaneAtCenter,
-							-xSize / 2, xSize / 2,
-							-ySize / 2, ySize / 2
-						);
-
-						// 步骤3：用BRepAlgoAPI_Common求模型与拓扑面的交集
-						BRepAlgoAPI_Common common(model, planeFace);
-						common.Build();
-						if (!common.IsDone()) {
-							std::cerr << "模型与平面求交失败！" << std::endl;
-							return TopoDS_Shape();
-						}
-						TopoDS_Shape intersection = common.Shape(); // 交集结果
-
-						// 步骤4：从交集中提取所有位于原XOY平面上的面
-						TopoDS_Compound resultCompound;
-						BRep_Builder builder;
-						builder.MakeCompound(resultCompound);
-						Standard_Real tolerance = 0; // 共面判断容差
-
-						// 遍历交集结果中的所有面（过滤非面形状）
-						for (TopExp_Explorer faceExp(intersection, TopAbs_FACE); faceExp.More(); faceExp.Next()) {
-							TopoDS_Face face = TopoDS::Face(faceExp.Current());
-							Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
-							Handle(Geom_Plane) facePlane = Handle(Geom_Plane)::DownCast(surface);
-							if (facePlane.IsNull()) continue; // 非平面，跳过
-
-							// 检查是否与原XOY平面共面
-							const gp_Pln& pln = facePlane->Pln();
-							if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance)) {
-								builder.Add(resultCompound, face); // 添加到结果
-							}
-						}
-
-
-						return intersection;
-					};
-
-					TopoDS_Shape intersectionFaces = getIntersectionFacesWithCenterXOY(model_shape);
-
-
-						Handle(AIS_Shape) aisFaces = new AIS_Shape(intersectionFaces);
-						aisFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 洋红色标识相交面
-						context->Display(aisFaces, Standard_True); // 显示
-
-					
-					// 调整视图以适配所有内容
-					view->FitAll();
-
-
-
-
-					break;
-				}
-				else
-				{
-					parent = parent->parentWidget();
-				}
-			}
-			});
+		//connect(exportAction, &QAction::triggered, [this, text]() {
+		//	QWidget* parent = parentWidget();
+		//	while (parent)
+		//	{
+		//		GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+		//		if (gfParent)
+		//		{						
+		//			auto occView = gfParent->GetOccView();
+		//			Handle(AIS_InteractiveContext) context = occView->getContext();
+		//			auto view = occView->getView();
+		//			context->RemoveAll(true);
+
+		//			auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+		//			TopoDS_Shape model_shape=modelInfo.shape;
+
+		//			auto projectToXOY_Manual = [](const TopoDS_Shape& edges3D) -> TopoDS_Shape {
+		//				TopoDS_Compound comp;
+		//				BRep_Builder builder;
+		//				builder.MakeCompound(comp);
+
+		//				for (TopExp_Explorer explorer(edges3D, TopAbs_EDGE); explorer.More(); explorer.Next()) {
+		//					TopoDS_Edge edge = TopoDS::Edge(explorer.Current());
+
+		//					BRepAdaptor_Curve curve(edge);
+		//					Standard_Real startParam, endParam;
+		//					BRep_Tool::Range(edge, startParam, endParam);
+		//					gp_Pnt startPoint = curve.Value(startParam);
+		//					gp_Pnt endPoint = curve.Value(endParam);
+		//						
+		//					gp_Pnt2d p2D_Start(startPoint.X(), startPoint.Y());
+		//					gp_Pnt2d p2D_End(endPoint.X(), endPoint.Y());
+		//					BRepBuilderAPI_MakeEdge2d makeEdge2d(p2D_Start, p2D_End);
+		//					if (makeEdge2d.IsDone()) {
+		//						builder.Add(comp, makeEdge2d.Edge());
+		//					}
+		//				}
+		//				return comp;
+		//			};
+		//	
+		//			gp_Ax2 viewAxes(
+		//				gp_Pnt(0, 0, 0),    // 原点（投影坐标系原点）
+		//				gp_Dir(0, 0, -1),   // 视图方向（Z轴负方向，看向XOY平面）
+		//				gp_Dir(1, 0, 0)     // X轴方向（投影平面X轴，必须与视图方向垂直）
+		//			);
+
+		//			HLRAlgo_Projector projector(viewAxes);
+
+		//			Handle(HLRBRep_Algo) hlrAlgo = new HLRBRep_Algo();
+		//			hlrAlgo->Projector(projector); // 设置投影器
+		//			hlrAlgo->Add(model_shape);     // 添加模型
+		//			hlrAlgo->Update();             // 执行计算
+
+		//			HLRBRep_HLRToShape hlrToShape(hlrAlgo);
+		//			TopoDS_Shape visibleEdges3D = hlrToShape.VCompound();
+
+		//			// 检查可见边缘是否有效（替代Update的返回值判断）
+		//			if (visibleEdges3D.IsNull()) {
+		//				std::cerr << "HLR计算失败：未提取到可见边缘！" << std::endl;
+		//				return 1;
+		//			}
+
+		//			// 6. 后续投影与坐标提取（不变）
+		//			TopoDS_Shape visibleEdges2D = projectToXOY_Manual(visibleEdges3D);
+
+		//			Handle(AIS_Shape) aisContour = new AIS_Shape(visibleEdges2D);
+		//			aisContour->SetColor(Quantity_Color(Quantity_NOC_BLUE));
+		//			context->Display(aisContour, Standard_True);
+
+		//			view->FitAll();
+
+
+
+
+
+
+
+
+		//			// 计算模型的中心点
+		//			auto CalculateModelCenter = [](const TopoDS_Shape& model) -> gp_Pnt {
+		//				GProp_GProps props;
+		//				BRepGProp::VolumeProperties(model, props);
+		//				return props.CentreOfMass();
+		//			};
+
+		//			// 通过检查首尾点是否重合来判断线框是否封闭
+		//			auto IsWireClosedByEndPoints = [](const TopoDS_Wire& wire) -> bool {
+		//				if (wire.IsNull()) return false;
+
+		//				// 获取所有边
+		//				std::vector<TopoDS_Edge> edges;
+		//				for (TopExp_Explorer edgeExp(wire, TopAbs_EDGE); edgeExp.More(); edgeExp.Next()) {
+		//					edges.push_back(TopoDS::Edge(edgeExp.Current()));
+		//				}
+
+		//				if (edges.empty()) return false;
+
+		//				// 获取第一个边的起点
+		//				TopoDS_Edge firstEdge = edges.front();
+		//				Standard_Real first, last;
+		//				Handle(Geom_Curve) firstCurve = BRep_Tool::Curve(firstEdge, first, last);
+		//				if (firstCurve.IsNull()) return false;
+
+		//				gp_Pnt startPoint = firstCurve->Value(first);
+
+		//				// 获取最后一个边的终点
+		//				TopoDS_Edge lastEdge = edges.back();
+		//				Handle(Geom_Curve) lastCurve = BRep_Tool::Curve(lastEdge, first, last);
+		//				if (lastCurve.IsNull()) return false;
+
+		//				gp_Pnt endPoint = lastCurve->Value(last);
+
+		//				// 检查首尾点距离
+		//				return startPoint.Distance(endPoint) < 1e-6;
+		//			};
+
+		//			// 健壮的封闭性检查函数
+		//			auto IsWireClosed = [&](const TopoDS_Wire& wire) -> bool {
+		//				if (wire.IsNull()) return false;
+
+		//				// 方法1: 尝试创建面来判断是否封闭
+		//				try {
+		//					BRepBuilderAPI_MakeFace faceMaker(wire, Standard_True);
+		//					if (faceMaker.IsDone()) {
+		//						return true;
+		//					}
+		//				}
+		//				catch (Standard_Failure&) {
+		//					// 方法1失败，继续尝试其他方法
+		//				}
+
+		//				// 方法2: 检查首尾点是否重合
+		//				return IsWireClosedByEndPoints(wire);
+		//			};
+
+		//			// 修正的连接边到线框的函数，返回线框序列
+		//			auto ConnectEdgesToWires_Corrected = [&](const TopoDS_Shape& edgesShape)->Handle(TopTools_HSequenceOfShape) {
+		//				Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+
+		//				// 收集所有边到序列
+		//				Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+		//				for (TopExp_Explorer exp(edgesShape, TopAbs_EDGE); exp.More(); exp.Next()) {
+		//					edges->Append(exp.Current());
+		//				}
+
+		//				if (edges->IsEmpty()) {
+		//					return wires;
+		//				}
+
+		//				// 使用静态方法连接边到线框，使用容差1e-6，不共享顶点（通过距离连接）
+		//				ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-6, Standard_False, wires);
+
+		//				return wires;
+		//			};
+
+		//			// 使用BRepAlgoAPI_Section的轮廓提取lambda函数
+		//			auto GetOuterContour_Lambda = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
+
+		//					// 计算模型的中心点
+		//					gp_Pnt modelCenter = CalculateModelCenter(model);
+
+		//					// 创建XOY平面，Z坐标位于模型中心
+		//					gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
+
+		//					// 创建平面面，大小足够覆盖整个模型
+		//					Bnd_Box bbox;
+		//					BRepBndLib::Add(model, bbox);
+
+		//					Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+		//					bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+		//					// 计算平面的边界，比模型稍大
+		//					Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
+		//					Standard_Real xSize = (xMax - xMin) + 2 * margin;
+		//					Standard_Real ySize = (yMax - yMin) + 2 * margin;
+
+		//					TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
+		//						xoyPlaneAtCenter,
+		//						-xSize / 2, xSize / 2,
+		//						-ySize / 2, ySize / 2
+		//					);
+
+		//					// 使用BRepAlgoAPI_Section计算截面
+		//					BRepAlgoAPI_Section section(planeFace, model, Standard_False);
+		//					section.Build();
+
+		//					auto sectionShape = section.Shape();
+		//					return sectionShape;
+		//					
+		//					//// 如果截面为空，返回空线框
+		//					//if (sectionShape.IsNull()) {
+		//					//	return TopoDS_Wire();
+		//					//}
+
+		//					//// 连接边形成线框
+		//					//Handle(TopTools_HSequenceOfShape) wires = ConnectEdgesToWires_Corrected(sectionShape);
+
+		//					//if (wires->IsEmpty()) {
+		//					//	std::cout << "未能形成线框" << std::endl;
+		//					//	return TopoDS_Wire();
+		//					//}
+
+		//					//// 分派线框到闭合和开放化合物
+		//					//TopoDS_Compound closedWires, openWires;
+		//					//BRep_Builder builder;
+		//					//builder.MakeCompound(closedWires);
+		//					//builder.MakeCompound(openWires);
+		//					//ShapeAnalysis_FreeBounds::DispatchWires(wires, closedWires, openWires);
+
+		//					//// 找到最大的闭合线框（最外轮廓）
+		//					//TopoDS_Wire outerWire;
+		//					//Standard_Real maxArea = -1.0;
+
+		//					//for (TopExp_Explorer exp(closedWires, TopAbs_WIRE); exp.More(); exp.Next()) {
+		//					//	TopoDS_Wire wire = TopoDS::Wire(exp.Current());
+
+		//					//	if (wire.IsNull()) {
+		//					//		continue;
+		//					//	}
+
+		//					//	// 检查线框是否封闭 - 如果不是封闭的，直接跳过（按理说DispatchWires已经分出了闭合线框，但我们可以再检查一次）
+		//					//	if (!IsWireClosed(wire)) {
+		//					//		std::cout << "跳过非封闭轮廓线" << std::endl;
+		//					//		continue;
+		//					//	}
+
+		//					//	// 方法1: 尝试创建面并计算几何面积
+		//					//	BRepBuilderAPI_MakeFace tempFace(wire, Standard_True);
+		//					//	if (tempFace.IsDone()) {
+		//					//		try {
+		//					//			GProp_GProps props;
+		//					//			BRepGProp::SurfaceProperties(tempFace.Face(), props);
+		//					//			Standard_Real area = props.Mass();
+
+		//					//			if (area > maxArea) {
+		//					//				maxArea = area;
+		//					//				outerWire = wire;
+		//					//			}
+		//					//			continue;
+		//					//		}
+		//					//		catch (Standard_Failure&) {
+		//					//			// 面积计算失败，回退到方法2
+		//					//		}
+		//					//	}
+
+		//					//	// 方法2: 使用边界框面积作为近似
+		//					//	Bnd_Box wireBbox;
+		//					//	BRepBndLib::Add(wire, wireBbox);
+
+		//					//	if (!wireBbox.IsVoid()) {
+		//					//		Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+		//					//		wireBbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+		//					//		Standard_Real bboxArea = (xMax - xMin) * (yMax - yMin);
+
+		//					//		if (bboxArea > maxArea) {
+		//					//			maxArea = bboxArea;
+		//					//			outerWire = wire;
+		//					//		}
+		//					//	}
+		//					//}
+
+		//					//return outerWire;
+		//					
+
+		//			};
+
+		//			// 提取最外轮廓（自动使用模型中心的XOY平面）
+		//			//auto outerContour = GetOuterContour_Lambda(model_shape);
+
+		//			//Handle(AIS_Shape) aisMerged = new AIS_Shape(outerContour);
+		//			//aisMerged->SetColor(Quantity_Color(Quantity_NOC_RED));  // 统一用黑色
+		//			//aisMerged->SetWidth(2.0);                                 // 统一线宽
+		//			//context->Display(aisMerged, Standard_True);               // 显示复合形状
+
+		//			// Lambda表达式：用TopoDS_Face（平面）与模型求交，获取所有相交面
+		//			auto getIntersectionFacesWithCenterXOY = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
+
+		//				// 计算模型的中心点
+		//				gp_Pnt modelCenter = CalculateModelCenter(model);
+
+		//				// 创建XOY平面，Z坐标位于模型中心
+		//				gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
+
+		//				// 创建平面面，大小足够覆盖整个模型
+		//				Bnd_Box bbox;
+		//				BRepBndLib::Add(model, bbox);
+
+		//				Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+		//				bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+		//				// 计算平面的边界，比模型稍大
+		//				Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
+		//				Standard_Real xSize = (xMax - xMin) + 2 * margin;
+		//				Standard_Real ySize = (yMax - yMin) + 2 * margin;
+
+		//				TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
+		//					xoyPlaneAtCenter,
+		//					-xSize / 2, xSize / 2,
+		//					-ySize / 2, ySize / 2
+		//				);
+
+		//				// 步骤3：用BRepAlgoAPI_Common求模型与拓扑面的交集
+		//				BRepAlgoAPI_Common common(model, planeFace);
+		//				common.Build();
+		//				if (!common.IsDone()) {
+		//					std::cerr << "模型与平面求交失败！" << std::endl;
+		//					return TopoDS_Shape();
+		//				}
+		//				TopoDS_Shape intersection = common.Shape(); // 交集结果
+
+		//				// 步骤4：从交集中提取所有位于原XOY平面上的面
+		//				TopoDS_Compound resultCompound;
+		//				BRep_Builder builder;
+		//				builder.MakeCompound(resultCompound);
+		//				Standard_Real tolerance = 0; // 共面判断容差
+
+		//				// 遍历交集结果中的所有面（过滤非面形状）
+		//				for (TopExp_Explorer faceExp(intersection, TopAbs_FACE); faceExp.More(); faceExp.Next()) {
+		//					TopoDS_Face face = TopoDS::Face(faceExp.Current());
+		//					Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
+		//					Handle(Geom_Plane) facePlane = Handle(Geom_Plane)::DownCast(surface);
+		//					if (facePlane.IsNull()) continue; // 非平面，跳过
+
+		//					// 检查是否与原XOY平面共面
+		//					const gp_Pln& pln = facePlane->Pln();
+		//					if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance)) {
+		//						builder.Add(resultCompound, face); // 添加到结果
+		//					}
+		//				}
+
+
+		//				return intersection;
+		//			};
+
+		//			TopoDS_Shape intersectionFaces = getIntersectionFacesWithCenterXOY(model_shape);
+
+
+		//				Handle(AIS_Shape) aisFaces = new AIS_Shape(intersectionFaces);
+		//				aisFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 洋红色标识相交面
+		//				context->Display(aisFaces, Standard_True); // 显示
+
+		//			
+		//			// 调整视图以适配所有内容
+		//			view->FitAll();
+
+
+
+
+		//			break;
+		//		}
+		//		else
+		//		{
+		//			parent = parent->parentWidget();
+		//		}
+		//	}
+		//	});
 
 		connect(calAction, &QAction::triggered, this, [item, this]() {
 			QWidget* parent = parentWidget();
@@ -1279,11 +1317,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					parent = parent->parentWidget();
 				}
 			}
-
-			});
-		//connect(exportAction, &QAction::triggered, [this, text]() {
-		//	exportWord("Hello, World!"); // 直接在Lambda中传递参数
-		//	});
+		});
+		connect(exportAction, &QAction::triggered, [this, text]() {
+			QString directory = QFileDialog::getExistingDirectory(nullptr,
+				tr("选择文件夹"),
+				"/home", // 默认的起始目录
+				QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks); // 选项
+			if (!directory.isEmpty()) {
+				exportWord(directory, "Hello, World!"); // 直接在Lambda中传递参数
+			}
+		});
 		contextMenu->addAction(calAction); // 将动作添加到菜单中
 		contextMenu->addAction(exportAction);
 		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
@@ -1405,6 +1448,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				if (gfParent)
 				{
 					{
+						// 测试截图
+						QString m_privateDirPath = "src/template/测试模型.png";
+						QDir privateDir(m_privateDirPath);
+						wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
+
+
 						QDateTime currentTime = QDateTime::currentDateTime();
 						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 						auto logWidget = gfParent->GetLogWidget();
@@ -1502,27 +1551,190 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 	}
 }
 
-void GFTreeModelWidget::exportWord(const QString& text)
+void GFTreeModelWidget::exportWord(const QString& directory, const QString& text)
 {
-	QMap<QString, QString> data;
-	data.insert("{{工程名称}}", "工程名称001");
-	data.insert("{{工程地点}}", "工程地点001");
-	data.insert("{{测试设备}}", "测试设备001");
-	data.insert("{{发动机型号}}", "发动机型号001");
-	data.insert("{{工程时间}}", "工程时间001");
-	data.insert("{{测试标准}}", "测试标准001");
-	data.insert("{{测试模型}}", "测试模型001");
-	data.insert("{{壳体材料}}", "壳体材料001");
-	data.insert("{{防隔热材料}}}", "防隔热材料001");
-	data.insert("{{外防热材料}}", "外防热材料001");
-	data.insert("{{推进剂材料}}", "推进剂材料001");
+	QWidget* parent = parentWidget();
+	while (parent) {
+		GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+		if (gfParent)
+		{
+			// 测试截图
+			QString m_privateDirPath = "src/template/跌落试验/应力云图.png";
+			QDir privateDir(m_privateDirPath);
+			wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
 
-	exportFromTemplate("D:/template.docx", "D:/output.docx", data);
-	QMessageBox::information(this, "提示", QString("跌落试验结果导出成功"));
-}
+			{
+				QDateTime currentTime = QDateTime::currentDateTime();
+				QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+				auto logWidget = gfParent->GetLogWidget();
+				auto textEdit = logWidget->GetTextEdit();
+				QString text = timeStr + "[信息]>开始导出跌落试验报告";
+				textEdit->appendPlainText(text);
+				logWidget->update();
 
-bool GFTreeModelWidget::exportFromTemplate(const QString &templatePath, const QString &outputPath, const QMap<QString, QString> &data) 
-{
+				// 关键：强制刷新UI，确保日志立即显示
+				QApplication::processEvents();
+			}
+
+			ProjectPropertyWidge *m_projectPropertyWidge = gfParent->GetProjectPropertyWidget();
+			QTableWidget* m_projectTableWid = m_projectPropertyWidge->GetQTableWidget();
+
+			GeomPropertyWidget *m_geomPropertyWidget = gfParent->GetGeomPropertyWidget();
+			QTableWidget* m_geomTableWid = m_geomPropertyWidget->GetQTableWidget();
+
+			MaterialPropertyWidget *m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
+			QTableWidget* m_materialTableWid = m_materialPropertyWidget->GetQTableWidget();
+
+			DatabasePropertyWidget *m_databasePropertyWidget = gfParent->GetDatabasePropertyWidget();
+			QTableWidget* m_databaseTableWid = m_databasePropertyWidget->GetQTableWidget();
+
+			FallPropertyWidget *m_fallPropertyWidget = gfParent->GetFallPropertyWidget();
+			QTableWidget* m_fallTableWid = m_fallPropertyWidget->GetQTableWidget();
+
+			StressResultWidget *m_stressResultWidget = gfParent->GetStressResultWidget();
+			QTableWidget* m_stressTableWid = m_stressResultWidget->GetQTableWidget();
+
+;			StrainResultWidget *m_strainResultWidget = gfParent->GetStrainResultWidget();
+			QTableWidget* m_strainTableWid = m_strainResultWidget->GetQTableWidget();
+
+			TemperatureResultWidget *m_temperatureResultWidget = gfParent->GetTemperatureResultWidget();
+			QTableWidget* m_temperatureTableWid = m_temperatureResultWidget->GetQTableWidget();
+
+			OverpressureResultWidget *m_overpressureResultWidge = gfParent->GetOverpressureResultWidget();
+			QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
+
+			QMap<QString, QVariant> data;
+			data.insert("工程名称", m_projectTableWid->item(1, 2)->text());
+			data.insert("工程地点", m_projectTableWid->item(2, 2)->text());
+			data.insert("测试设备", m_projectTableWid->item(4, 2)->text());
+			data.insert("发动机型号", m_geomTableWid->item(1, 2)->text());
+			data.insert("工程时间", m_projectTableWid->item(3, 2)->text());
+			data.insert("测试标准", m_databaseTableWid->item(1, 2)->text());
+			data.insert("壳体材料", m_materialTableWid->item(1, 2)->text());
+			data.insert("防隔热材料", m_materialTableWid->item(2, 2)->text());
+			data.insert("外防热材料", m_materialTableWid->item(3, 2)->text());
+			data.insert("推进剂材料", m_materialTableWid->item(4, 2)->text());
+			// 跌落输入数据
+			data.insert("测试项目", m_fallTableWid->item(1, 2)->text());
+			data.insert("跌落高度", m_fallTableWid->item(2, 2)->text());
+			QComboBox *comboBox = qobject_cast<QComboBox*>(m_fallTableWid->cellWidget(3, 2));
+			if (comboBox)
+			{
+				QString selectedText = comboBox->currentText();
+				data.insert("跌落姿态", selectedText);
+			}
+			else
+			{
+				data.insert("跌落姿态", "");
+			}
+			data.insert("跌落钢板硬度", m_fallTableWid->item(4, 2)->text());
+			data.insert("温度传感器数量", m_fallTableWid->item(5, 2)->text());
+			if (m_fallTableWid->item(6, 2))
+			{
+				data.insert("冲击波超压传感器数量",m_fallTableWid->item(6, 2)->text());
+			}
+			else
+			{
+				data.insert("冲击波超压传感器数量", "");
+			}
+			data.insert("风速", m_fallTableWid->item(7, 2)->text());
+
+			// 输出数据
+			data.insert("发动机壳体最大应力", m_stressTableWid->item(1, 2)->text());
+			data.insert("发动机壳体最小应力", m_stressTableWid->item(2, 2)->text());
+			data.insert("发动机壳体平均应力", m_stressTableWid->item(3, 2)->text());
+			data.insert("发动机壳体应力标准差", m_stressTableWid->item(4, 2)->text());
+			data.insert("固体推进剂最大应力", m_stressTableWid->item(5, 2)->text());
+			data.insert("固体推进剂最小应力", m_stressTableWid->item(6, 2)->text());
+			data.insert("固体推进剂平均应力", m_stressTableWid->item(7, 2)->text());
+			data.insert("固体推进剂应力标准差", m_stressTableWid->item(8, 2)->text());
+			data.insert("隔绝热最大应力", m_stressTableWid->item(9, 2)->text());
+			data.insert("隔绝热最小应力", m_stressTableWid->item(10, 2)->text());
+			data.insert("隔绝热平均应力", m_stressTableWid->item(11, 2)->text());
+			data.insert("隔绝热应力标准差", m_stressTableWid->item(12, 2)->text());
+			data.insert("外防热最大应力", m_stressTableWid->item(13, 2)->text());
+			data.insert("外防热最小应力", m_stressTableWid->item(14, 2)->text());
+			data.insert("外防热平均应力", m_stressTableWid->item(15, 2)->text());
+			data.insert("外防热应力标准差", m_stressTableWid->item(16, 2)->text());
+
+			data.insert("发动机壳体最大应变", m_strainTableWid->item(1, 2)->text());
+			data.insert("发动机壳体最小应变", m_strainTableWid->item(2, 2)->text());
+			data.insert("发动机壳体平均应变", m_strainTableWid->item(3, 2)->text());
+			data.insert("发动机壳体应变标准差", m_strainTableWid->item(4, 2)->text());
+			data.insert("固体推进剂最大应变", m_strainTableWid->item(5, 2)->text());
+			data.insert("固体推进剂最小应变", m_strainTableWid->item(6, 2)->text());
+			data.insert("固体推进剂平均应变", m_strainTableWid->item(7, 2)->text());
+			data.insert("固体推进剂应变标准差", m_strainTableWid->item(8, 2)->text());
+			data.insert("隔绝热最大应变", m_strainTableWid->item(9, 2)->text());
+			data.insert("隔绝热最小应变", m_strainTableWid->item(10, 2)->text());
+			data.insert("隔绝热平均应变", m_strainTableWid->item(11, 2)->text());
+			data.insert("隔绝热应变标准差", m_strainTableWid->item(12, 2)->text());
+			data.insert("外防热最大应变", m_strainTableWid->item(13, 2)->text());
+			data.insert("外防热最小应变", m_strainTableWid->item(14, 2)->text());
+			data.insert("外防热平均应变", m_strainTableWid->item(15, 2)->text());
+			data.insert("外防热应变标准差", m_strainTableWid->item(16, 2)->text());
+
+			data.insert("发动机壳体最高温度", m_temperatureTableWid->item(1, 2)->text());
+			data.insert("发动机壳体最低温度", m_temperatureTableWid->item(2, 2)->text());
+			data.insert("发动机壳体平均温度", m_temperatureTableWid->item(3, 2)->text());
+			data.insert("发动机壳体温度标准差", m_temperatureTableWid->item(4, 2)->text());
+			data.insert("固体推进剂最高温度", m_temperatureTableWid->item(5, 2)->text());
+			data.insert("固体推进剂最低温度", m_temperatureTableWid->item(6, 2)->text());
+			data.insert("固体推进剂平均温度", m_temperatureTableWid->item(7, 2)->text());
+			data.insert("固体推进剂温度标准差", m_temperatureTableWid->item(8, 2)->text());
+			data.insert("隔绝热最高温度", m_temperatureTableWid->item(9, 2)->text());
+			data.insert("隔绝热最低温度", m_temperatureTableWid->item(10, 2)->text());
+			data.insert("隔绝热平均温度", m_temperatureTableWid->item(11, 2)->text());
+			data.insert("隔绝热温度标准差", m_temperatureTableWid->item(12, 2)->text());
+			data.insert("外防热最高温度", m_temperatureTableWid->item(13, 2)->text());
+			data.insert("外防热最低温度", m_temperatureTableWid->item(14, 2)->text());
+			data.insert("外防热平均温度", m_temperatureTableWid->item(15, 2)->text());
+			data.insert("外防热温度标准差", m_temperatureTableWid->item(16, 2)->text());
+
+			data.insert("发动机壳体最大超压", m_overpressureTableWid->item(1, 2)->text());
+			data.insert("发动机壳体最小超压", m_overpressureTableWid->item(2, 2)->text());
+			data.insert("发动机壳体平均超压", m_overpressureTableWid->item(3, 2)->text());
+			data.insert("发动机壳体超压标准差", m_overpressureTableWid->item(4, 2)->text());
+			data.insert("固体推进剂最大超压", m_overpressureTableWid->item(5, 2)->text());
+			data.insert("固体推进剂最小超压", m_overpressureTableWid->item(6, 2)->text());
+			data.insert("固体推进剂平均超压", m_overpressureTableWid->item(7, 2)->text());
+			data.insert("固体推进剂超压标准差", m_overpressureTableWid->item(8, 2)->text());
+			data.insert("隔绝热最大超压", m_overpressureTableWid->item(9, 2)->text());
+			data.insert("隔绝热最小超压", m_overpressureTableWid->item(10, 2)->text());
+			data.insert("隔绝热平均超压", m_overpressureTableWid->item(11, 2)->text());
+			data.insert("隔绝热超压标准差", m_overpressureTableWid->item(12, 2)->text());
+			data.insert("外防热最大超压", m_overpressureTableWid->item(13, 2)->text());
+			data.insert("外防热最小超压", m_overpressureTableWid->item(14, 2)->text());
+			data.insert("外防热平均超压", m_overpressureTableWid->item(15, 2)->text());
+			data.insert("外防热超压标准差", m_overpressureTableWid->item(16, 2)->text());
+
+
+			QMap<QString, QString> imagePaths;
+			imagePaths.insert("测试模型", "D:/VSProject/gfapp_new/gfapp/mainWidget/mainWidget/src/template/测试模型.png");
+			imagePaths.insert("应力云图", "D:/VSProject/gfapp_new/gfapp/mainWidget/mainWidget/src/template/跌落试验/应力云图.png");
+			
+
+			wordExporter->exportToWord("D:/VSProject/gfapp_new/gfapp/mainWidget/mainWidget/src/template/跌落仿真计算数据表.docx", directory+ "/跌落仿真计算数据表.docx", data, imagePaths);
+			QMessageBox::information(this, "提示", QString("跌落试验结果导出成功"));
+			{
+				QDateTime currentTime = QDateTime::currentDateTime();
+				QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+				auto logWidget = gfParent->GetLogWidget();
+				auto textEdit = logWidget->GetTextEdit();
+				QString text = timeStr + "[信息]>成功导出跌落试验报告";
+				text = text + "\n" + timeStr + "[信息]>跌落试验报告：" + directory + "/跌落仿真计算数据表.docx";
+				textEdit->appendPlainText(text);
+				logWidget->update();
+
+				// 关键：强制刷新UI，确保日志立即显示
+				QApplication::processEvents();
+			}
+			break;
+		}
+		else
+		{
+			parent = parent->parentWidget();
+		}
+	}
 	
-	return true;
 }

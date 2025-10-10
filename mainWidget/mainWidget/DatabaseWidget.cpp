@@ -1,6 +1,7 @@
 #pragma execution_character_set("utf-8")
 #include "DatabaseWidget.h"
 #include "ModelDataManager.h"
+#include "xlsxdocument.h"
 
 #include <QSplitter>
 #include <QHBoxLayout>
@@ -9,7 +10,6 @@
 #include <QPushButton>
 #include <QTreeWidgetItem>
 #include <qmessagebox.h>
-#include "xlsxdocument.h"
 #include <QDir>
 #include <QToolTip>
 #include <QMessageBox>
@@ -18,7 +18,7 @@
 #include <QFileDialog>
 
 
-void setTableCenter(QTableWidget *tableWidget) {
+void setTableCenter(QTableWidget* tableWidget) {
 	// 遍历第一列的所有单元格，并设置内容居中
 	for (int row = 0; row < tableWidget->rowCount(); ++row) {
 		QTableWidgetItem* item = tableWidget->item(row, 0); // 获取第一列的单元格项
@@ -29,14 +29,14 @@ void setTableCenter(QTableWidget *tableWidget) {
 }
 
 
-DatabaseWidget::DatabaseWidget(QWidget *parent)
+DatabaseWidget::DatabaseWidget(QWidget* parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
 
 	ui.tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // tableWidge随窗口大小变化
 
-	QTableWidget *tableWidget = ui.tableWidget;
+	QTableWidget* tableWidget = ui.tableWidget;
 	tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
 	tableWidget->setColumnWidth(0, 3);
 
@@ -48,23 +48,23 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 	// 开启鼠标捕获
 	tableWidget->setMouseTracking(true);
 
-	QTreeWidget *treeWidget = ui.treeWidget;
+	QTreeWidget* treeWidget = ui.treeWidget;
 	treeWidget->clear();
 
-	QTreeWidgetItem *material = new QTreeWidgetItem(treeWidget);
+	QTreeWidgetItem* material = new QTreeWidgetItem(treeWidget);
 	material->setText(0, "材料库");
 	material->setIcon(0, QIcon(":/src/data_metals.svg"));
 
-	QTreeWidgetItem *metals = new QTreeWidgetItem();
+	QTreeWidgetItem* metals = new QTreeWidgetItem();
 	metals->setText(0, "壳体材料");
 	metals->setIcon(0, QIcon(":/src/data_metals.svg"));
-	QTreeWidgetItem *propellants = new QTreeWidgetItem();
+	QTreeWidgetItem* propellants = new QTreeWidgetItem();
 	propellants->setText(0, "推进剂材料");
 	propellants->setIcon(0, QIcon(":/src/data_propellants.svg"));
-	QTreeWidgetItem *outheat = new QTreeWidgetItem();
+	QTreeWidgetItem* outheat = new QTreeWidgetItem();
 	outheat->setText(0, "外防热材料");
 	outheat->setIcon(0, QIcon(":/src/data_outheat.svg"));
-	QTreeWidgetItem *insulatingheat = new QTreeWidgetItem();
+	QTreeWidgetItem* insulatingheat = new QTreeWidgetItem();
 	insulatingheat->setText(0, "防隔热材料");
 	insulatingheat->setIcon(0, QIcon(":/src/data_insulatingheat.svg"));
 
@@ -133,7 +133,7 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 	QTreeWidgetItem* sacrificeExplosionAnalysisData = new QTreeWidgetItem();
 	sacrificeExplosionAnalysisData->setText(0, "8.殉爆试验");
 	sacrificeExplosionAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
-	
+
 	calculation->addChild(fallAnalysisData);
 	calculation->addChild(fastCombustionAnalysisData);
 	calculation->addChild(slowCombustionAnalysisData);
@@ -149,21 +149,21 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 	user->setText(0, "用户数据库");
 	user->setIcon(0, QIcon(":/src/data_user.svg"));
 
-	QPushButton *addBtn = ui.addBtn;
+	QPushButton* addBtn = ui.addBtn;
 	addBtn->setIcon(QIcon(":/src/data_add.svg"));
-	QPushButton *removeBtn = ui.removeBtn;
+	QPushButton* removeBtn = ui.removeBtn;
 	removeBtn->setIcon(QIcon(":/src/data_remove.svg"));
-	QPushButton *queryBtn = ui.queryBtn;
+	QPushButton* queryBtn = ui.queryBtn;
 	queryBtn->setIcon(QIcon(":/src/data_query.svg"));
-	QPushButton *saveBtn = ui.saveBtn;
+	QPushButton* saveBtn = ui.saveBtn;
 	saveBtn->setIcon(QIcon(":/src/data_save.svg"));
-	QPushButton *importBtn = ui.importBtn;
+	QPushButton* importBtn = ui.importBtn;
 	importBtn->setIcon(QIcon(":/src/data_import.svg"));
-	QPushButton *exportBtn = ui.exportBtn;
+	QPushButton* exportBtn = ui.exportBtn;
 	exportBtn->setIcon(QIcon(":/src/data_export.svg"));
-	QPushButton *resetBtn = ui.resetBtn;
+	QPushButton* resetBtn = ui.resetBtn;
 	resetBtn->setIcon(QIcon(":/src/data_reset.svg"));
-	QLineEdit *keyword = ui.queryName;
+	QLineEdit* keyword = ui.queryName;
 
 
 	// TreeItem信号槽
@@ -174,118 +174,118 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 
 	// 连接右键菜单信号
 	connect(tableWidget, &QTableWidget::customContextMenuRequested,
-		this, [=](const QPoint &pos) {
-		// 获取右键点击的单元格
-		QTableWidgetItem *item = tableWidget->itemAt(pos);
-		if (!item) return;
-		int row = item->row();
-		if (row == 0) return;
-		QTableWidgetItem *index = tableWidget->item(row, 0);
-		if (!index) return;
+		this, [=](const QPoint& pos) {
+			// 获取右键点击的单元格
+			QTableWidgetItem* item = tableWidget->itemAt(pos);
+			if (!item) return;
+			int row = item->row();
+			if (row == 0) return;
+			QTableWidgetItem* index = tableWidget->item(row, 0);
+			if (!index) return;
 
-		tableWidget->setCurrentCell(row, 0); // 选中整行
-		contextMenu = new QMenu(this); // 创建菜单对象
-		QAction *addAction = new QAction("新增", this);
-		addAction->setIcon(QIcon(":/src/data_add.svg"));
-		QAction *copyAction = new QAction("复制", this);
-		copyAction->setIcon(QIcon(":/src/data_copy.svg"));
-		QAction *removeAction = new QAction("删除", this);
-		removeAction->setIcon(QIcon(":/src/data_remove.svg"));
-		QAction *importAction = new QAction("导入", this);
-		importAction->setIcon(QIcon(":/src/data_import.svg"));
-		QAction *exportAction = new QAction("导出", this);
-		exportAction->setIcon(QIcon(":/src/data_export.svg"));
-		
+			tableWidget->setCurrentCell(row, 0); // 选中整行
+			contextMenu = new QMenu(this); // 创建菜单对象
+			QAction* addAction = new QAction("新增", this);
+			addAction->setIcon(QIcon(":/src/data_add.svg"));
+			QAction* copyAction = new QAction("复制", this);
+			copyAction->setIcon(QIcon(":/src/data_copy.svg"));
+			QAction* removeAction = new QAction("删除", this);
+			removeAction->setIcon(QIcon(":/src/data_remove.svg"));
+			QAction* importAction = new QAction("导入", this);
+			importAction->setIcon(QIcon(":/src/data_import.svg"));
+			QAction* exportAction = new QAction("导出", this);
+			exportAction->setIcon(QIcon(":/src/data_export.svg"));
 
-		connect(addAction, &QAction::triggered, this, [this, row, tableWidget]() {
-			int rowCount = tableWidget->rowCount(); // 获取总行数
-			int colCount = tableWidget->columnCount(); // 获取总列数
-			tableWidget->insertRow(rowCount);
-			QTableWidgetItem *item = new QTableWidgetItem(QString::number(rowCount));
-			item->setTextAlignment(Qt::AlignCenter);
-			tableWidget->setItem(rowCount, 0, item);
-			m_rowCount = m_rowCount + 1;
-			// 滚动到新行
-			tableWidget->scrollToBottom();
-			tableWidget->selectRow(rowCount);
-		});
 
-		connect(copyAction, &QAction::triggered, this, [this, row, tableWidget]() {
-			int rowCount = tableWidget->rowCount(); // 获取总行数
-			int colCount = tableWidget->columnCount(); // 获取总列数
-			// 在末尾添加新行
-			tableWidget->insertRow(rowCount);
-			// 复制数据
-			for (int col = 0; col < m_columnCount; ++col) {
-				if (col == 0)
-				{
-					QTableWidgetItem *item = new QTableWidgetItem(QString::number(rowCount));
-					item->setTextAlignment(Qt::AlignCenter);
-					tableWidget->setItem(rowCount, col, item);
+			connect(addAction, &QAction::triggered, this, [this, row, tableWidget]() {
+				int rowCount = tableWidget->rowCount(); // 获取总行数
+				int colCount = tableWidget->columnCount(); // 获取总列数
+				tableWidget->insertRow(rowCount);
+				QTableWidgetItem* item = new QTableWidgetItem(QString::number(rowCount));
+				item->setTextAlignment(Qt::AlignCenter);
+				tableWidget->setItem(rowCount, 0, item);
+				m_rowCount = m_rowCount + 1;
+				// 滚动到新行
+				tableWidget->scrollToBottom();
+				tableWidget->selectRow(rowCount);
+				});
+
+			connect(copyAction, &QAction::triggered, this, [this, row, tableWidget]() {
+				int rowCount = tableWidget->rowCount(); // 获取总行数
+				int colCount = tableWidget->columnCount(); // 获取总列数
+				// 在末尾添加新行
+				tableWidget->insertRow(rowCount);
+				// 复制数据
+				for (int col = 0; col < m_columnCount; ++col) {
+					if (col == 0)
+					{
+						QTableWidgetItem* item = new QTableWidgetItem(QString::number(rowCount));
+						item->setTextAlignment(Qt::AlignCenter);
+						tableWidget->setItem(rowCount, col, item);
+					}
+					else
+					{
+						QTableWidgetItem* sourceItem = tableWidget->item(row, col);
+						if (sourceItem) {
+							tableWidget->setItem(rowCount, col, new QTableWidgetItem(sourceItem->text()));
+						}
+					}
+
 				}
-				else
+				m_rowCount = m_rowCount + 1;
+				// 滚动到新行
+				tableWidget->scrollToBottom();
+				tableWidget->selectRow(m_rowCount);
+				});
+
+			connect(removeAction, &QAction::triggered, this, [this, row, tableWidget]() {
+				QList<QTableWidgetItem*> items = tableWidget->selectedItems();
+				QSet<int> rows;
+				foreach(QTableWidgetItem * item, items)
 				{
-					QTableWidgetItem *sourceItem = tableWidget->item(row, col);
-					if (sourceItem) {
-						tableWidget->setItem(rowCount, col, new QTableWidgetItem(sourceItem->text()));
+					if (row != 0 || row > m_rowCount)
+					{
+						rows.insert(item->row());
 					}
 				}
-				
-			}
-			m_rowCount = m_rowCount + 1;
-			// 滚动到新行
-			tableWidget->scrollToBottom();
-			tableWidget->selectRow(m_rowCount);
-		});
-
-		connect(removeAction, &QAction::triggered, this, [this, row, tableWidget]() {
-			QList<QTableWidgetItem*> items = tableWidget->selectedItems();
-			QSet<int> rows;
-			foreach(QTableWidgetItem* item, items)
-			{
-				if (row != 0 || row > m_rowCount)
-				{
-					rows.insert(item->row());
+				foreach(int r, rows) {
+					tableWidget->removeRow(r);
 				}
-			}
-			foreach(int r, rows) {
-				tableWidget->removeRow(r);
-			}
-			rows.clear();
+				rows.clear();
+				});
+
+			connect(importAction, &QAction::triggered, this, &DatabaseWidget::importData);
+			connect(exportAction, &QAction::triggered, this, &DatabaseWidget::exportData);
+
+
+			contextMenu->addAction(addAction); // 将动作添加到菜单中
+			contextMenu->addAction(copyAction);
+			contextMenu->addAction(removeAction);
+			contextMenu->addAction(importAction);
+			contextMenu->addAction(exportAction);
+			contextMenu->exec(tableWidget->mapToGlobal(pos));
+
 		});
-
-		connect(importAction, &QAction::triggered, this, &DatabaseWidget::importData);
-		connect(exportAction, &QAction::triggered, this, &DatabaseWidget::exportData);
-
-
-		contextMenu->addAction(addAction); // 将动作添加到菜单中
-		contextMenu->addAction(copyAction); 
-		contextMenu->addAction(removeAction); 
-		contextMenu->addAction(importAction);
-		contextMenu->addAction(exportAction);
-		contextMenu->exec(tableWidget->mapToGlobal(pos));
-
-	});
 
 	// 新增
 	QObject::connect(addBtn, &QPushButton::clicked, [this, tableWidget]() {
 		int rowCount = tableWidget->rowCount(); // 获取总行数
 		int colCount = tableWidget->columnCount(); // 获取总列数
 		tableWidget->insertRow(rowCount);
-		QTableWidgetItem *item = new QTableWidgetItem(QString::number(rowCount));
+		QTableWidgetItem* item = new QTableWidgetItem(QString::number(rowCount));
 		item->setTextAlignment(Qt::AlignCenter);
 		tableWidget->setItem(rowCount, 0, item);
 		m_rowCount = m_rowCount + 1;
 		// 滚动到新行
 		tableWidget->scrollToBottom();
 		tableWidget->selectRow(rowCount);
-	});
+		});
 
 	// 删除
 	QObject::connect(removeBtn, &QPushButton::clicked, [this, tableWidget]() {
 		QList<QTableWidgetItem*> items = tableWidget->selectedItems();
 		QSet<int> rows;
-		foreach(QTableWidgetItem* item, items)
+		foreach(QTableWidgetItem * item, items)
 		{
 			if (item->row() != 0 || item->row() > m_rowCount)
 			{
@@ -297,7 +297,7 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 		}
 		rows.clear();
 		m_rowCount = m_rowCount - 1;
-	});
+		});
 
 	// 导入
 	connect(importBtn, &QPushButton::clicked, this, &DatabaseWidget::importData);
@@ -317,7 +317,7 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 		}
 		for (int row = 1; row < tableWidget->rowCount(); ++row) {
 			// 获取第二列的内容
-			QTableWidgetItem *item = tableWidget->item(row, 1);
+			QTableWidgetItem* item = tableWidget->item(row, 1);
 			if (!item) continue;
 
 			// 检查是否包含关键词
@@ -325,14 +325,14 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 			tableWidget->setRowHidden(row, !match);
 
 		}
-	});
+		});
 
 	// 查询
 	QObject::connect(resetBtn, &QPushButton::clicked, [this, tableWidget]() {
 		for (int row = 0; row < tableWidget->rowCount(); ++row) {
 			tableWidget->setRowHidden(row, false);
 		}
-	});
+		});
 
 	// 保存
 	QObject::connect(saveBtn, &QPushButton::clicked, [this, tableWidget]() {
@@ -385,7 +385,7 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 		{
 			for (int row = 0; row < rowCount; ++row) {
 				for (int col = 0; col < colCount; ++col) {
-					QTableWidgetItem *item = tableWidget->item(row, col);
+					QTableWidgetItem* item = tableWidget->item(row, col);
 					if (item) {
 						xlsx.write(row + 1, col + 1, item->text());
 
@@ -398,10 +398,10 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 			// 导出表格数据
 			int xlsxRow = 0;
 			for (int row = 0; row < rowCount; ++row) {
-				if (row == 0 || row >= m_rowCount)
+				if (row == 0 || row >= m_publicRowCount)
 				{
 					for (int col = 0; col < colCount; ++col) {
-						QTableWidgetItem *item = tableWidget->item(row, col);
+						QTableWidgetItem* item = tableWidget->item(row, col);
 						if (item) {
 							xlsx.write(xlsxRow + 1, col + 1, item->text());
 
@@ -418,7 +418,7 @@ DatabaseWidget::DatabaseWidget(QWidget *parent)
 		else {
 			QMessageBox::critical(this, "标题", "保存失败");
 		}
-	});
+		});
 
 }
 
@@ -434,9 +434,9 @@ QTreeWidget* DatabaseWidget::getQTreeWid()
 	return ui.treeWidget;
 }
 
-void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
+void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 
-	QTableWidget *tableWidge = getTableWid();
+	QTableWidget* tableWidge = getTableWid();
 	QString filepath = nullptr;
 	QDir dir;
 	currentDataaseType = item->text(0);
@@ -506,6 +506,11 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
 		filepath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
+	else if (currentDataaseType == "评判标准数据库")
+	{
+		filepath = dir.absoluteFilePath("src/database/标准数据库.xlsx");
+		ui.queryTitle->setText("材料牌号");
+	}
 	else
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型.xlsx");
@@ -519,6 +524,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
 
 		m_rowCount = rowcount;
 		m_columnCount = colcount;
+		m_publicRowCount = rowcount;
 
 		tableWidge->setRowCount(rowcount);
 		tableWidge->setColumnCount(colcount);
@@ -527,17 +533,21 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
 			for (int col = 1; col <= colcount; ++col) {
 				if (currentDataaseType != "用户数据库")
 				{
-					QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
+					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 					item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
 					if (row == 1)
 					{
 						item->setBackground(QBrush(QColor(0, 237, 252)));
 					}
+					else
+					{
+						item->setBackground(QBrush(QColor(230, 230, 230)));
+					}
 					tableWidge->setItem(row - 1, col - 1, item);
 				}
 				else
 				{
-					QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
+					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 					if (row == 1 || row == 2 || col == 1 || col == 2)
 					{
 						item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
@@ -551,7 +561,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
 			}
 		}
 	}
-	if (currentDataaseType != "用户数据库")
+	if (currentDataaseType != "用户数据库" || currentDataaseType != "评判标准数据库")
 	{
 		// 私有库
 		auto ins = ModelDataManager::GetInstance();
@@ -632,7 +642,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
 			int xlsxrow = m_rowCount;
 			for (int row = 2; row <= rowcount; ++row) {
 				for (int col = 1; col <= colcount; ++col) {
-					QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
+					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 					tableWidge->setItem(xlsxrow, col - 1, item);
 				}
 				xlsxrow++;
@@ -645,7 +655,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem *item) {
 }
 
 
-void DatabaseWidget::showTooltip(QTableWidgetItem *item)
+void DatabaseWidget::showTooltip(QTableWidgetItem* item)
 {
 	//int columnWidth = this->ui.tableWidget->columnWidth(2);
 	if (QToolTip::isVisible())
@@ -674,7 +684,7 @@ void DatabaseWidget::importData()
 	try {
 		// 打开XLSX文件
 		QXlsx::Document xlsx(filePath);
-		QXlsx::Worksheet *sheet = xlsx.currentWorksheet();
+		QXlsx::Worksheet* sheet = xlsx.currentWorksheet();
 
 		if (!sheet) {
 			QMessageBox::warning(this, "错误", "无法打开工作表");
@@ -690,31 +700,31 @@ void DatabaseWidget::importData()
 			QMessageBox::information(this, "提示", "文件内容为空");
 			return;
 		}
-		QTableWidget *tableWidget = getTableWid();
+		QTableWidget* tableWidget = getTableWid();
 		// 设置表格行列数
 		tableWidget->setRowCount(maxRow + m_rowCount - 1);
 
 		// 读取数据填充表格
-		//for (int row = 2; row <= maxRow; row++) {  // XLSX行号从1开始
-		//	for (int col = 1; col <= m_columnCount; col++) {  // XLSX列号从1开始
-		//		QXlsx::Cell *cell = sheet->cellAt(row, col);
-		//		if (cell) {
-		//			if (col == 1)
-		//			{
-		//				QTableWidgetItem *item = new QTableWidgetItem(QString::number(m_rowCount));
-		//				item->setTextAlignment(Qt::AlignCenter);
-		//				tableWidget->setItem(m_rowCount, col - 1, item);  
-		//			}
-		//			else
-		//			{
-		//				QTableWidgetItem *item = new QTableWidgetItem(cell->value().toString());
-		//				tableWidget->setItem(m_rowCount, col - 1, item);  
-		//			}
-		//			
-		//		}
-		//	}
-		//	m_rowCount = m_rowCount + 1;
-		//}
+		for (int row = 2; row <= maxRow; row++) {  // XLSX行号从1开始
+			for (int col = 1; col <= m_columnCount; col++) {  // XLSX列号从1开始
+				std::shared_ptr<QXlsx::Cell> cell = sheet->cellAt(row, col);
+				if (cell) {
+					if (col == 1)
+					{
+						QTableWidgetItem* item = new QTableWidgetItem(QString::number(m_rowCount));
+						item->setTextAlignment(Qt::AlignCenter);
+						tableWidget->setItem(m_rowCount, col - 1, item);
+					}
+					else
+					{
+						QTableWidgetItem* item = new QTableWidgetItem(cell->value().toString());
+						tableWidget->setItem(m_rowCount, col - 1, item);
+					}
+
+				}
+			}
+			m_rowCount = m_rowCount + 1;
+		}
 
 		QMessageBox::information(this, "成功", "导入成功");
 	}
@@ -738,31 +748,45 @@ void DatabaseWidget::exportData()
 
 	try {
 		QXlsx::Document xlsx;
-		QXlsx::Worksheet *sheet = xlsx.currentWorksheet();
+		QXlsx::Worksheet* sheet = xlsx.currentWorksheet();
 
-		QTableWidget *tableWidget = getTableWid();
+		QTableWidget* tableWidget = getTableWid();
 		int rowCount = tableWidget->rowCount();
 		int colCount = tableWidget->columnCount();
 
 		// 写入表头
 		for (int col = 0; col < colCount; col++) {
-			QTableWidgetItem *item = tableWidget->item(0, col);
+			QTableWidgetItem* item = tableWidget->item(0, col);
 			if (item) {
 				sheet->write(1, col + 1, item->text());
 			}
 		}
 
 		// 写入表格数据
-		for (int row = 1; row < rowCount; row++) {
-			for (int col = 0; col < colCount; col++) {
-				QTableWidgetItem *item = tableWidget->item(row, col);
-				if (item) {
-					sheet->write(row+1, col + 1, item->text());  
+		int realRow = 0;
+		for (int row = 0; row < rowCount; row++) {
+			if (row == 0 || row >= m_publicRowCount)
+			{
+				for (int col = 0; col < colCount; col++) {
+					if (col == 0 && row > 0)
+					{
+						sheet->write(realRow + 1, col + 1, realRow);
+					}
+					else
+					{
+						QTableWidgetItem* item = tableWidget->item(row, col);
+						if (item) {
+							sheet->write(realRow + 1, col + 1, item->text());
+						}
+					}
+
 				}
+				realRow = realRow + 1;
 			}
+
 		}
 
-		
+
 		// 保存文件
 		if (xlsx.saveAs(filePath)) {
 			QMessageBox::information(this, "成功", "导出成功：" + filePath);
@@ -824,9 +848,9 @@ void DatabaseWidget::resizeEvent(QResizeEvent* event)
 	}
 }
 
-void DatabaseWidget::findAllLayoutAndWidget(QObject *object) {
-	QLayout *layout = qobject_cast<QLayout*>(object);
-	QWidget *widget = qobject_cast<QWidget*>(object);
+void DatabaseWidget::findAllLayoutAndWidget(QObject* object) {
+	QLayout* layout = qobject_cast<QLayout*>(object);
+	QWidget* widget = qobject_cast<QWidget*>(object);
 	if (layout) {
 		if (layout->objectName() != "" && !allLayoutMap.contains(layout)) {
 			allLayoutMap.insert(layout, layout->geometry());

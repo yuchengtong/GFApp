@@ -4,7 +4,6 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QComboBox>
-//#include <xlsxdocument.h>
 #include <QDir>
 #include <QPushButton>
 #include <QDialog>
@@ -85,7 +84,14 @@ void CalculationPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}

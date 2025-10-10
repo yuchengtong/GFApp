@@ -19,7 +19,7 @@ void FastCombustionPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(9);
+	m_tableWidget->setRowCount(10);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -41,7 +41,7 @@ void FastCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","燃油类型", "弹药位置", "温度传感器数量", "冲击波超压传感器数量","风速","火焰温度达到550℃时间","结束时间","从达到550℃到弹药开始反应的平均温度" };
+	QStringList labels = { "属性","测试项目","燃油类型", "弹药位置", "温度传感器数量", "冲击波超压传感器数量","风速","火焰温度达到550℃时间","结束时间","从达到550℃到弹药开始反应的平均温度" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -57,11 +57,11 @@ void FastCombustionPropertyWidget::initWidget()
 	}
 
 	// 设置列宽度
-	QTableWidgetItem *colimnItem = m_tableWidget->item(8, 1);
+	QTableWidgetItem *colimnItem = m_tableWidget->item(9, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " "," ", " ", " ", " "," "," ","min","min" };
+	QStringList unitLabels = { " ", " "," ", " ", " ", " "," "," ","min","min" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -81,7 +81,8 @@ void FastCombustionPropertyWidget::initWidget()
 	}
 
 	
-
+	QTableWidgetItem* titeItem = new QTableWidgetItem("快速烤燃试验");
+	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* keroseneValueItem = new QTableWidgetItem("航空煤油");
 	keroseneValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	keroseneValueItem->setFlags(keroseneValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
@@ -102,12 +103,13 @@ void FastCombustionPropertyWidget::initWidget()
 	flameTemperatureValueItem->setFlags(flameTemperatureValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
 
-	m_tableWidget->setItem(1, 2, keroseneValueItem);
-	m_tableWidget->setItem(2, 2, ammunitionLocationValueItem);
-	m_tableWidget->setItem(3, 2, temperatureNumValueItem);
-	m_tableWidget->setItem(4, 2, shockWaveValueItem);
-	m_tableWidget->setItem(5, 2, windSpeedValueItem);
-	m_tableWidget->setItem(6, 2, flameTemperatureValueItem);
+	m_tableWidget->setItem(1, 2, titeItem);
+	m_tableWidget->setItem(2, 2, keroseneValueItem);
+	m_tableWidget->setItem(3, 2, ammunitionLocationValueItem);
+	m_tableWidget->setItem(4, 2, temperatureNumValueItem);
+	m_tableWidget->setItem(5, 2, shockWaveValueItem);
+	m_tableWidget->setItem(6, 2, windSpeedValueItem);
+	m_tableWidget->setItem(7, 2, flameTemperatureValueItem);
 	
 
 	//文本左对齐
@@ -116,7 +118,14 @@ void FastCombustionPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}

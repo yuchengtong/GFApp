@@ -14,18 +14,19 @@ SlowCombustionPropertyWidget::SlowCombustionPropertyWidget(QWidget* parent)
 
 void SlowCombustionPropertyWidget::initWidget()
 {
+
 	QVBoxLayout* vlayout = new QVBoxLayout(this);
 	vlayout->setContentsMargins(0, 0, 0, 0);
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(9);
+	m_tableWidget->setRowCount(10);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
 	m_tableWidget->verticalHeader()->setVisible(false);
 
-	
+
 	// 设置第一列固定宽度（例如100像素）
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
@@ -43,7 +44,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","加热类型", "弹药位置", "温度传感器数量", "冲击波超压传感器数量","风速","试验件达到50 ℃热平衡时刻","烘箱升温速率","烘箱终止温度" };
+	QStringList labels = { "属性","测试项目","加热类型", "弹药位置", "温度传感器数量", "冲击波超压传感器数量","风速","试验件达到50 ℃热平衡时刻","烘箱升温速率","烘箱终止温度" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -58,12 +59,12 @@ void SlowCombustionPropertyWidget::initWidget()
 		m_tableWidget->setItem(row, 1, labelItem);
 	}
 	// 设置列宽度
-	QTableWidgetItem *colimnItem = m_tableWidget->item(4, 1);
+	QTableWidgetItem* colimnItem = m_tableWidget->item(7, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位
-	QStringList unitLabels = { " ", " ", " ", " ", " ", " ", "h", "℃/h", "℃" };
+	QStringList unitLabels = { " ", " ", " ", " ", " ", " ", " ", "h", "℃/h", "℃" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -75,7 +76,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	}
 
 	// 将第0行0列的单元格文本字体加粗
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
@@ -84,7 +85,8 @@ void SlowCombustionPropertyWidget::initWidget()
 
 
 
-
+	QTableWidgetItem* titeItem = new QTableWidgetItem("慢速烤燃试验");
+	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* heatingTypeValueItem = new QTableWidgetItem("烘箱加热");
 	heatingTypeValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	heatingTypeValueItem->setFlags(heatingTypeValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
@@ -106,13 +108,13 @@ void SlowCombustionPropertyWidget::initWidget()
 
 
 
-
-	m_tableWidget->setItem(1, 2, heatingTypeValueItem);
-	m_tableWidget->setItem(2, 2, ammunitionLocationValueItem);
-	m_tableWidget->setItem(3, 2, temperatureNumValueItem);
-	m_tableWidget->setItem(4, 2, shockWaveValueItem);
-	m_tableWidget->setItem(5, 2, windSpeedValueItem);
-	m_tableWidget->setItem(6, 2, balanceMomentValueItem);
+	m_tableWidget->setItem(1, 2, titeItem);
+	m_tableWidget->setItem(2, 2, heatingTypeValueItem);
+	m_tableWidget->setItem(3, 2, ammunitionLocationValueItem);
+	m_tableWidget->setItem(4, 2, temperatureNumValueItem);
+	m_tableWidget->setItem(5, 2, shockWaveValueItem);
+	m_tableWidget->setItem(6, 2, windSpeedValueItem);
+	m_tableWidget->setItem(7, 2, balanceMomentValueItem);
 
 	//文本左对齐
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
@@ -120,7 +122,14 @@ void SlowCombustionPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}
@@ -129,15 +138,17 @@ void SlowCombustionPropertyWidget::initWidget()
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
 		// 遍历行，设置行高
 		m_tableWidget->setRowHeight(row, 10);
-		QTableWidgetItem *item = m_tableWidget->item(row, 2);
+		QTableWidgetItem* item = m_tableWidget->item(row, 2);
 		if (item && !(item->flags() & Qt::ItemIsEditable))
 		{
 			item->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 		if (row != 0)
 		{
-			QTableWidgetItem *unitItem = m_tableWidget->item(row, 3);
+			QTableWidgetItem* unitItem = m_tableWidget->item(row, 3);
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
-	}	
+	}
+
+
 }

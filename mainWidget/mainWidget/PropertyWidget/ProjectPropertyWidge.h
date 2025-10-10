@@ -8,6 +8,8 @@ class ProjectPropertyWidge : public BasePropertyWidget
 public:
 	explicit ProjectPropertyWidge(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

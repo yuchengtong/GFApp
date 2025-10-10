@@ -150,7 +150,13 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_judgmentPropertyWidget = new JudgmentPropertyWidget();
 	m_insulatingheatPropertyWidget = new InsulatingheatPropertyWidget();
 	m_outheatPropertyWidget = new OutheatPropertyWidget();
-	
+	m_strainResultWidget = new StrainResultWidget();
+	m_shootPropertyWidget = new ShootPropertyWidget();
+	m_jetImpactPropertyWidget = new JetImpactPropertyWidget();
+	m_fragmentationImpactPropertyWidget = new FragmentationImpactPropertyWidget();
+	m_explosiveBlastPropertyWidget = new ExplosiveBlastPropertyWidget();
+	m_sacrificeExplosionPropertyWidget = new SacrificeExplosionPropertyWidget();
+	m_databasePropertyWidget = new DatabasePropertyWidget();
 
 	// 将所有的 PropertyWidget 添加到 QStackedWidget 中
 	m_PropertyStackWidget->addWidget(m_geomPropertyWidget);
@@ -171,6 +177,14 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_PropertyStackWidget->addWidget(m_judgmentPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_insulatingheatPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_outheatPropertyWidget);
+	m_PropertyStackWidget->addWidget(m_strainResultWidget);
+	m_PropertyStackWidget->addWidget(m_shootPropertyWidget);
+	m_PropertyStackWidget->addWidget(m_jetImpactPropertyWidget);
+	m_PropertyStackWidget->addWidget(m_fragmentationImpactPropertyWidget);
+	m_PropertyStackWidget->addWidget(m_explosiveBlastPropertyWidget);
+	m_PropertyStackWidget->addWidget(m_sacrificeExplosionPropertyWidget);
+	m_PropertyStackWidget->addWidget(m_databasePropertyWidget);
+
 
 	m_OccView = new OccView(this);
 	m_LogWidget = new GFLogWidget();
@@ -244,6 +258,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "Material") {
 		m_PropertyStackWidget->setCurrentWidget(m_materialPropertyWidget);
+	}
+	else if (itemData == "Database") {
+		m_PropertyStackWidget->setCurrentWidget(m_databasePropertyWidget);
 	}
 	else if (itemData == "Mesh") {
 		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
@@ -474,6 +491,10 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			context->Display(aColorScale, Standard_True);
 		}
 	}
+	else if (itemData == "StrainResult") {
+		m_PropertyStackWidget->setCurrentWidget(m_strainResultWidget);
+
+	}
 	else if (itemData == "TemperatureResult") {
 		m_PropertyStackWidget->setCurrentWidget(m_temperatureResultWidget);
 
@@ -507,10 +528,25 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
 	}
 	else if (itemData == "Insulatingheat") {
-	m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
+		m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
 	}
 	else if (itemData == "Outheat") {
-	m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
+		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
+	}
+	else if (itemData == "ShootAnalysis") {
+		m_PropertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
+	}
+	else if (itemData == "JetImpactAnalysis") {
+		m_PropertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
+	}
+	else if (itemData == "FragmentationImpactAnalysis") {
+		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
+	}
+	else if (itemData == "ExplosiveBlastAnalysis") {
+		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);
+	}
+	else if (itemData == "SacrificeExplosionAnalysis") {
+		m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
 	}
 	
 }

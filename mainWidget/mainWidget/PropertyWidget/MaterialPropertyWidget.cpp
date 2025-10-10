@@ -21,7 +21,7 @@ void MaterialPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 	// 设置行列数，这里固定 3 行 2 列（对应示例里的 3 条属性），也可动态调整
-	m_tableWidget->setRowCount(7);
+	m_tableWidget->setRowCount(5);
 	m_tableWidget->setColumnCount(3);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -68,7 +68,7 @@ void MaterialPropertyWidget::initWidget()
 	}
 
 	
-	QStringList labels = { "数据库", "壳体材料", "推进剂材料", "外防热材料", "防隔热材料", "评判标准数据库","计算模型数据库"};
+	QStringList labels = { "数据库", "壳体材料", "推进剂材料", "外防热材料", "防隔热材料" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -118,7 +118,14 @@ void MaterialPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}

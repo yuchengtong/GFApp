@@ -101,16 +101,23 @@ void InsulatingheatPropertyWidget::initWidget()
 	}
 
 	// 导入按钮
-	QWidget *importWidget = new QWidget();
-	QPushButton *importButton = new QPushButton("导入");
+	QWidget* importWidget = new QWidget();
+	QPushButton* importButton = new QPushButton("导入");
+	importButton->setFixedSize(100, 50);
 	importButton->setMinimumHeight(30);
 	importButton->setStyleSheet("QPushButton {"
 		"background-color:  rgba(0, 0, 0, 0);"
+		"border: 2px solid #C1B1B1; "
+		"border-radius: 10px; "
+		"color: black; "
+		"font-weight: bold; "
+		"padding: 5px;"
+		"outline: none;"
 		"}"
 		"QPushButton:hover {"
-		"background-color: white;"
+		"background-color: rgba(230, 230, 230, 100);"
 		"}");
-	QVBoxLayout *importLayout = new QVBoxLayout(importWidget);
+	QVBoxLayout* importLayout = new QVBoxLayout(importWidget);
 	importLayout->addWidget(importButton);
 	importLayout->setAlignment(Qt::AlignCenter); // 按钮居中显示
 	importLayout->setMargin(0);
@@ -127,7 +134,14 @@ void InsulatingheatPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}

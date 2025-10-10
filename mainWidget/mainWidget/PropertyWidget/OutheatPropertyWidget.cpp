@@ -7,13 +7,14 @@
 #include <QDir>
 #include <QPushButton>
 #include <QDialog>
-#include <QDateTime>
-#include <QApplication>
-#include "xlsxdocument.h"
 
 #include "ModelDataManager.h"
-#include "GFTreeModelWidget.h"
-#include "GFImportModelWidget.h"
+#include "../GFTreeModelWidget.h"
+#include "../GFImportModelWidget.h"
+#include "xlsxdocument.h"
+
+#include <QDateTime>
+#include <QApplication>
 
 OutheatPropertyWidget::OutheatPropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
@@ -23,6 +24,7 @@ OutheatPropertyWidget::OutheatPropertyWidget(QWidget* parent)
 
 void OutheatPropertyWidget::initWidget()
 {
+
 	QVBoxLayout* vlayout = new QVBoxLayout(this);
 	vlayout->setContentsMargins(0, 0, 0, 0);
 
@@ -76,7 +78,7 @@ void OutheatPropertyWidget::initWidget()
 	}
 
 	// 设置列宽度
-	QTableWidgetItem *colimnItem = m_tableWidget->item(3, 1);
+	QTableWidgetItem* colimnItem = m_tableWidget->item(3, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
@@ -93,7 +95,7 @@ void OutheatPropertyWidget::initWidget()
 	}
 
 	// 将第0行0列的单元格文本字体加粗
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
@@ -101,16 +103,23 @@ void OutheatPropertyWidget::initWidget()
 	}
 
 	// 导入按钮
-	QWidget *importWidget = new QWidget();
-	QPushButton *importButton = new QPushButton("导入");
+	QWidget* importWidget = new QWidget();
+	QPushButton* importButton = new QPushButton("导入");
+	importButton->setFixedSize(100, 50);
 	importButton->setMinimumHeight(30);
 	importButton->setStyleSheet("QPushButton {"
 		"background-color:  rgba(0, 0, 0, 0);"
+		"border: 2px solid #C1B1B1; "
+		"border-radius: 10px; "
+		"color: black; "
+		"font-weight: bold; "
+		"padding: 5px;"
+		"outline: none;"
 		"}"
 		"QPushButton:hover {"
-		"background-color: white;"
+		"background-color: rgba(230, 230, 230, 100);"
 		"}");
-	QVBoxLayout *importLayout = new QVBoxLayout(importWidget);
+	QVBoxLayout* importLayout = new QVBoxLayout(importWidget);
 	importLayout->addWidget(importButton);
 	importLayout->setAlignment(Qt::AlignCenter); // 按钮居中显示
 	importLayout->setMargin(0);
@@ -127,7 +136,14 @@ void OutheatPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}
@@ -136,28 +152,29 @@ void OutheatPropertyWidget::initWidget()
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
 		// 遍历行，设置行高
 		m_tableWidget->setRowHeight(row, 10);
-		QTableWidgetItem *item = m_tableWidget->item(row, 2);
+		QTableWidgetItem* item = m_tableWidget->item(row, 2);
 		if (item && !(item->flags() & Qt::ItemIsEditable))
 		{
 			item->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 		if (row != 0)
 		{
-			QTableWidgetItem *unitItem = m_tableWidget->item(row, 3);
+			QTableWidgetItem* unitItem = m_tableWidget->item(row, 3);
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
 
 }
 
-void OutheatPropertyWidget::showTableDialog() 
-{
-	QDialog *dialog = new QDialog();
+void OutheatPropertyWidget::showTableDialog() {
+
+
+	QDialog* dialog = new QDialog();
 	dialog->setWindowTitle("外防热材料");
 	dialog->resize(1000, 500);
-	QVBoxLayout *layout = new QVBoxLayout(this);
+	QVBoxLayout* layout = new QVBoxLayout(this);
 
-	QTableWidget *diaTableWidget = new QTableWidget();
+	QTableWidget* diaTableWidget = new QTableWidget();
 	// 隐藏行号
 	diaTableWidget->verticalHeader()->setVisible(false);
 	// 隐藏列号
@@ -177,7 +194,7 @@ void OutheatPropertyWidget::showTableDialog()
 
 		for (int row = 1; row <= rowcount; ++row) {
 			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
+				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
 				diaTableWidget->setItem(row - 1, col - 1, item);
 			}
@@ -202,7 +219,7 @@ void OutheatPropertyWidget::showTableDialog()
 		int xlsxrow = m_rowCount;
 		for (int row = 2; row <= rowcount; ++row) {
 			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
+				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 				diaTableWidget->setItem(xlsxrow, col - 1, item);
 			}
 			xlsxrow++;
@@ -278,7 +295,7 @@ void OutheatPropertyWidget::showTableDialog()
 		}
 		dialog->close();
 
-	});
+		});
 	//双击单元格选中一行
 	 //设置选中整行
 	diaTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);

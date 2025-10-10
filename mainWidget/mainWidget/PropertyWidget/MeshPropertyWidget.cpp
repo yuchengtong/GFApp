@@ -22,12 +22,13 @@ void MeshPropertyWidget::UpdataPropertyInfo()
 		QTableWidgetItem* node_item = m_tableWidget->item(1, 2);
 		QTableWidgetItem* elem_item = m_tableWidget->item(2, 2);
 
-		if (node_item&&elem_item)
+		if (node_item && elem_item)
 		{
 			node_item->setText(QString::number(nodeCount));
 			elem_item->setText(QString::number(elemCount));
 		}
-	}	
+	}
+
 }
 
 void MeshPropertyWidget::initWidget()
@@ -36,9 +37,9 @@ void MeshPropertyWidget::initWidget()
 	QVBoxLayout* vlayout = new QVBoxLayout(this);
 	vlayout->setContentsMargins(0, 0, 0, 0);
 
-	// 初始化表格控件（6行3列）
+	// 初始化表格控件（3行3列）
 	m_tableWidget = new QTableWidget(this);
-	m_tableWidget->setRowCount(6);
+	m_tableWidget->setRowCount(3);
 	m_tableWidget->setColumnCount(3);
 	// 隐藏表头
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -78,6 +79,11 @@ void MeshPropertyWidget::initWidget()
 		m_tableWidget->setItem(row, 1, labelItem);
 	}
 
+	// 设置列宽度
+	QTableWidgetItem* colimnItem = m_tableWidget->item(1, 1);
+	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
+	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
+
 	// 第三列（内容列，初始为空）
 	QStringList emptyLabels = { " ","", "" };
 	for (int row = 0; row < emptyLabels.size(); ++row) {
@@ -90,7 +96,7 @@ void MeshPropertyWidget::initWidget()
 	}
 
 	// 设置标题行文字加粗
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
@@ -103,7 +109,14 @@ void MeshPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}

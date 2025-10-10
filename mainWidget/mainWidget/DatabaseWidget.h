@@ -9,7 +9,7 @@ class DatabaseWidget : public QWidget
 	Q_OBJECT
 
 public:
-	DatabaseWidget(QWidget *parent = nullptr);
+	DatabaseWidget(QWidget* parent = nullptr);
 	~DatabaseWidget();
 
 	QTableWidget* getTableWid();
@@ -29,10 +29,10 @@ private:
 	// 窗口原始尺寸
 	QSize windowOriginalSize;
 	/** 查找窗口内所有的布局和控件 **/
-	void findAllLayoutAndWidget(QObject *object);
+	void findAllLayoutAndWidget(QObject* object);
 
 	// TreeWidge点击事件
-	void onTreeItemClicked(QTreeWidgetItem *item);
+	void onTreeItemClicked(QTreeWidgetItem* item);
 
 
 protected:
@@ -45,14 +45,15 @@ public slots:
 
 	void exportData();
 
-	void showTooltip(QTableWidgetItem *item);
+	void showTooltip(QTableWidgetItem* item);
 
-	
+
 
 private:
 	int m_rowCount = 0;
 	int m_columnCount = 0;
+	int m_publicRowCount = 0;
 	QString m_privateDirPath = "";
 
-	QMenu *contextMenu; // 右键菜单对象
+	QMenu* contextMenu; // 右键菜单对象
 };

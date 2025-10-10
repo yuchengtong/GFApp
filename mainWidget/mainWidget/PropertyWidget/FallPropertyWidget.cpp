@@ -19,7 +19,7 @@ void FallPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 	// 设置行列数，这里固定 3 行 2 列（对应示例里的 3 条属性），也可动态调整
-	m_tableWidget->setRowCount(7);
+	m_tableWidget->setRowCount(8);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -43,7 +43,7 @@ void FallPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","跌落高度", "跌落姿态", "跌落钢板硬度", "温度传感器数量","冲击波超压传感器数量","风速" };
+	QStringList labels = { "属性","测试项目","跌落高度", "跌落姿态", "跌落钢板硬度", "温度传感器数量","冲击波超压传感器数量","风速" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -58,11 +58,11 @@ void FallPropertyWidget::initWidget()
 	}
 
 	// 设置列宽度
-	QTableWidgetItem *colimnItem = m_tableWidget->item(5, 1);
+	QTableWidgetItem* colimnItem = m_tableWidget->item(6, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " ","m", "°", " ", "个","个","m/s" };
+	QStringList unitLabels = { " "," ","m", "°", " ", "个","个","m/s" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -70,18 +70,19 @@ void FallPropertyWidget::initWidget()
 			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 			m_tableWidget->setItem(row, 3, labelItem);
 		}
-		
+
 	}
 
 	// 将第0行0列的单元格文本字体加粗
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
 		headerItem->setFont(font);
 	}
 
-
+	QTableWidgetItem* titeItem = new QTableWidgetItem("跌落试验");
+	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* heightValueItem = new QTableWidgetItem("0");
 	QTableWidgetItem* hardnessValueItem = new QTableWidgetItem("刚体");
 	hardnessValueItem->setFlags(hardnessValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
@@ -92,16 +93,17 @@ void FallPropertyWidget::initWidget()
 	QTableWidgetItem* airVelocityValueItem = new QTableWidgetItem("0");
 	airVelocityValueItem->setFlags(airVelocityValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
-	m_tableWidget->setItem(1, 2, heightValueItem);
+	m_tableWidget->setItem(1, 2, titeItem);
+	m_tableWidget->setItem(2, 2, heightValueItem);
 
 	QComboBox* postureComboBox = new QComboBox();
 	postureComboBox->addItems({ "0", "45", "90" });
-	m_tableWidget->setCellWidget(2, 2, postureComboBox);
+	m_tableWidget->setCellWidget(3, 2, postureComboBox);
 
-	m_tableWidget->setItem(3, 2, hardnessValueItem);
-	m_tableWidget->setItem(4, 2, temperatureSensorValueItem);
-	m_tableWidget->setItem(5, 2, overpressureSensorValueItem);
-	m_tableWidget->setItem(6, 2, airVelocityValueItem);
+	m_tableWidget->setItem(4, 2, hardnessValueItem);
+	m_tableWidget->setItem(5, 2, temperatureSensorValueItem);
+	m_tableWidget->setItem(6, 2, overpressureSensorValueItem);
+	m_tableWidget->setItem(7, 2, airVelocityValueItem);
 
 	//文本左对齐
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
@@ -109,7 +111,14 @@ void FallPropertyWidget::initWidget()
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
 			if (item)
 			{
-				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (col == 0 && row != 0)
+				{
+					item->setTextAlignment(Qt::AlignCenter);
+				}
+				else
+				{
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				}
 			}
 		}
 	}
@@ -118,17 +127,17 @@ void FallPropertyWidget::initWidget()
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
 		// 遍历行，设置行高
 		m_tableWidget->setRowHeight(row, 10);
-		QTableWidgetItem *item = m_tableWidget->item(row, 2);
+		QTableWidgetItem* item = m_tableWidget->item(row, 2);
 		if (item && !(item->flags() & Qt::ItemIsEditable))
 		{
 			item->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 		if (row != 0)
 		{
-			QTableWidgetItem *unitItem = m_tableWidget->item(row, 3);
+			QTableWidgetItem* unitItem = m_tableWidget->item(row, 3);
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
-		
+
 	}
 
 
@@ -141,6 +150,6 @@ void FallPropertyWidget::initWidget()
 			info.high = numericValue;
 			ModelDataManager::GetInstance()->SetFallSettingInfo(info);
 		}
-	});
+		});
 
 }

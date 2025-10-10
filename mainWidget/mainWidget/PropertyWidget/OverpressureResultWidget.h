@@ -8,6 +8,8 @@ class OverpressureResultWidget : public BasePropertyWidget
 public:
 	explicit OverpressureResultWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 
