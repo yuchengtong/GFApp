@@ -111,6 +111,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AuxiliaryAnalysisWidget.cpp" />
+    <ClCompile Include="CustomPolarChart.cpp" />
     <ClCompile Include="DatabaseWidget.cpp" />
     <ClCompile Include="DataStructure\ModelDataManager.cpp" />
     <ClCompile Include="DataStructure\TriangleStructure.cpp" />
@@ -249,6 +250,7 @@
     <QtMoc Include="LoginDialog.h" />
     <QtMoc Include="DataStructure\ModelDataManager.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
+    <QtMoc Include="CustomPolarChart.h" />
     <ClInclude Include="DataStructure\TriangleStructure.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

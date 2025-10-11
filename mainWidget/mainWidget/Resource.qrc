@@ -41,5 +41,6 @@
         <file>src/ck_unchecked.svg</file>
         <file>src/treeclose.svg</file>
         <file>src/treeopen.svg</file>
+        <file>src/chart_view.png</file>
     </qresource>
 </RCC>

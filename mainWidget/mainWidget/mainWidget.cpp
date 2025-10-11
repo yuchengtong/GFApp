@@ -72,8 +72,8 @@ mainWidget::mainWidget(QWidget *parent)
 	m_AnalyEvalWidAct = new QAction("安全性分析与评估", ui->menuBar);
 	m_HelpAct = new QAction("帮助", ui->menuBar);
 
-	ui->menuBar->addAction(m_ImportModelWidAct);
 	ui->menuBar->addAction(m_DataBaseWidAct);
+	ui->menuBar->addAction(m_ImportModelWidAct);
 	//ui->menuBar->addAction(m_ParamAnalyWidAct);
 	ui->menuBar->addAction(m_IntelligentAnalyWidAct);
 	ui->menuBar->addAction(m_AuxiliaryAnalyWidAct);
@@ -371,7 +371,7 @@ mainWidget::mainWidget(QWidget *parent)
 	QObject::connect(m_AuxiliaryAnalyWidAct, &QAction::triggered, [=]() {
 		m_TabWidget->setCurrentIndex(3);
 		// 显示工具栏
-		ui->mainToolBar->setVisible(true);
+		ui->mainToolBar->setVisible(false);
 	});
 
 	QObject::connect(m_AnalyEvalWidAct, &QAction::triggered, [=]() {

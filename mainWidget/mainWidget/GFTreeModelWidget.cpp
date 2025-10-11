@@ -458,47 +458,6 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	paramAnalyNode->addChild(paramAnalyResult);
 
-	// 数据智能分析
-	QTreeWidgetItem* intelligentAnalyNode = new QTreeWidgetItem(rootItem);
-	intelligentAnalyNode->setText(0, "数据智能分析");
-	intelligentAnalyNode->setData(0, Qt::UserRole, "Results");
-	intelligentAnalyNode->setIcon(0, error_icon);
-
-	QTreeWidgetItem* intelligentAnalyResult = new QTreeWidgetItem();
-	intelligentAnalyResult->setText(0, "分析报告");
-	intelligentAnalyResult->setData(0, Qt::UserRole, "intelligentAnalyResult");
-	intelligentAnalyResult->setIcon(0, error_icon);
-
-	intelligentAnalyNode->addChild(intelligentAnalyResult);
-
-	// 安全性指标预计、权衡和辅助分析
-	QTreeWidgetItem* auxiliaryAnalyNode = new QTreeWidgetItem(rootItem);
-	auxiliaryAnalyNode->setText(0, "安全性指标预计、权衡和辅助分析");
-	auxiliaryAnalyNode->setData(0, Qt::UserRole, "Results");
-	auxiliaryAnalyNode->setIcon(0, error_icon);
-
-	QTreeWidgetItem* auxiliaryAnalyResult = new QTreeWidgetItem();
-	auxiliaryAnalyResult->setText(0, "分析报告");
-	auxiliaryAnalyResult->setData(0, Qt::UserRole, "auxiliaryAnalyResult");
-	auxiliaryAnalyResult->setIcon(0, error_icon);
-
-	auxiliaryAnalyNode->addChild(auxiliaryAnalyResult);
-
-	// 安全性分析与评估
-	QTreeWidgetItem* analyEvalNode = new QTreeWidgetItem(rootItem);
-	analyEvalNode->setText(0, "安全性分析与评估");
-	analyEvalNode->setData(0, Qt::UserRole, "Results");
-	analyEvalNode->setIcon(0, error_icon);
-
-	QTreeWidgetItem* analyEvalResult = new QTreeWidgetItem();
-	analyEvalResult->setText(0, "分析报告");
-	analyEvalResult->setData(0, Qt::UserRole, "analyEvalResult");
-	analyEvalResult->setIcon(0, error_icon);
-
-	analyEvalNode->addChild(analyEvalResult);
-
-	
-
 	QVBoxLayout*layout = new QVBoxLayout();
 	layout->addWidget(treeWidget);
 	layout->setContentsMargins(0, 0, 0, 0);

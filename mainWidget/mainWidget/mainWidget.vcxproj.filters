@@ -172,6 +172,9 @@
     <ClCompile Include="WordExporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CustomPolarChart.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -298,6 +301,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="WordExporter.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="CustomPolarChart.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
