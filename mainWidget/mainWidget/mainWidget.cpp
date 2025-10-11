@@ -38,6 +38,8 @@
 #include "GFParamAnalyWidget.h"
 #include "OccView.h"
 #include "GFTreeModelWidget.h"
+#include "IntelligentAnalyWidget.h"
+
 
 
 mainWidget::mainWidget(QWidget *parent)
@@ -298,7 +300,7 @@ mainWidget::mainWidget(QWidget *parent)
 	{
 	}*/
 
-	ParamAnalyWidget*IntelligenAnalysisWid = new ParamAnalyWidget(m_TabWidget);
+	IntelligentAnalyWidget*IntelligenAnalysisWid = new IntelligentAnalyWidget(m_TabWidget);
 	{
 	}
 	AuxiliaryAnalysisWidget*auxiliaryAnalysisWid = new AuxiliaryAnalysisWidget(m_TabWidget);
@@ -362,10 +364,10 @@ mainWidget::mainWidget(QWidget *parent)
 	QObject::connect(m_IntelligentAnalyWidAct, &QAction::triggered, [=]() {
 		m_TabWidget->setCurrentIndex(2);
 		// 显示工具栏
-		ui->mainToolBar->setVisible(true);
-		auto occView3 = IntelligenAnalysisWid->GetOccView();
+		ui->mainToolBar->setVisible(false);
+		/*auto occView3 = IntelligenAnalysisWid->GetOccView();
 		auto myview = occView3->getView();
-		myview->MustBeResized();
+		myview->MustBeResized();*/
 	});
 
 	QObject::connect(m_AuxiliaryAnalyWidAct, &QAction::triggered, [=]() {
@@ -378,9 +380,9 @@ mainWidget::mainWidget(QWidget *parent)
 		m_TabWidget->setCurrentIndex(4);
 		// 显示工具栏
 		ui->mainToolBar->setVisible(true);
-		auto occView5 = analysisEvaluationWid->GetOccView();
+		/*auto occView5 = analysisEvaluationWid->GetOccView();
 		auto myview = occView5->getView();
-		myview->MustBeResized();
+		myview->MustBeResized();*/
 	});
 
 

@@ -1,20 +1,28 @@
 #pragma once
 
 #include <QWidget>
-#include "ui_ParamAnalyWidget.h"
-#include "OccView.h"
+#include <QTableWidget>
+#include <QStackedWidget>
+
+#include "ParamAnalyTreeWidget.h"
+
 
 class ParamAnalyWidget : public QWidget
 {
 	Q_OBJECT
 
 public:
-	ParamAnalyWidget(QWidget *parent = nullptr);
+	ParamAnalyWidget(QWidget* parent = nullptr);
 	~ParamAnalyWidget();
 
-	OccView* GetOccView() { return ui.widget; }
+private slots:
+	void onTreeItemClicked(const QString& itemData);
 
 private:
-	Ui::ParamAnalyWidgetClass ui;
+
+	ParamAnalyTreeWidget* m_treeModelWidget = nullptr;
+	QTableWidget* m_tableWidget = nullptr;
+
+	
 
 };

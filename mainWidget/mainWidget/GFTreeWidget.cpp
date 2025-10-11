@@ -18,7 +18,7 @@ GFTreeWidget::GFTreeWidget(QWidget* parent)
 			while (cIndex = index.child(r++, 0), cIndex.isValid())
 			{
 				QString childItemText = cIndex.data(Qt::DisplayRole).toString();
-				if (childItemText != "应力分析" && childItemText != "温度分析" && childItemText != "超压分析")
+				if (childItemText != "应力分析" && childItemText != "应变分析" && childItemText != "温度分析" && childItemText != "超压分析")
 				{
 					model->setData(cIndex, checked ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);				
 				}

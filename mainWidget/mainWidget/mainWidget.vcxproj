@@ -123,8 +123,11 @@
     <ClCompile Include="GFTreeParamAnalyWidget.cpp" />
     <ClCompile Include="GFTreeWidget.cpp" />
     <ClCompile Include="GFTreeWidgetItemDelegate.cpp" />
+    <ClCompile Include="IntelligentAnalyTreeWidget.cpp" />
+    <ClCompile Include="IntelligentAnalyWidget.cpp" />
     <ClCompile Include="LoginDialog.cpp" />
     <ClCompile Include="occView.cpp" />
+    <ClCompile Include="ParamAnalyTreeWidget.cpp" />
     <ClCompile Include="ParamAnalyWidget.cpp" />
     <ClCompile Include="ProgressDialog.cpp" />
     <ClCompile Include="PropertyWidget\BasePropertyWidget.cpp" />
@@ -136,6 +139,15 @@
     <ClCompile Include="PropertyWidget\FragmentationImpactPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\GeomPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\InsulatingheatPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentExplosiveBlastPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentFallPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentFastCombustionPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentFragmentationImpactPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentJetImpactPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentSacrificeExplosionPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentShootPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\IntelligentSlowCombustionPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\JetImpactPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\JudgmentPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\MaterialPropertyWidget.cpp" />
@@ -231,6 +243,18 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="PropertyWidget\IntelligentShootPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentExplosiveBlastPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentFastCombustionPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentFragmentationImpactPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentJetImpactPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentSacrificeExplosionPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentSlowCombustionPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentFallPropertyWidget.h" />
+    <QtMoc Include="PropertyWidget\IntelligentPropertyWidget.h" />
+    <QtMoc Include="IntelligentAnalyTreeWidget.h" />
+    <QtMoc Include="IntelligentAnalyWidget.h" />
+    <QtMoc Include="ParamAnalyTreeWidget.h" />
     <QtMoc Include="WordExporter.h" />
     <QtMoc Include="PropertyWidget\StrainResultWidget.h" />
     <QtMoc Include="PropertyWidget\ShootPropertyWidget.h" />

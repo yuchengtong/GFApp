@@ -1669,11 +1669,12 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 
 
 			QMap<QString, QString> imagePaths;
-			imagePaths.insert("测试模型", "D:/VSProject/gfapp_new/gfapp/mainWidget/mainWidget/src/template/测试模型.png");
-			imagePaths.insert("应力云图", "D:/VSProject/gfapp_new/gfapp/mainWidget/mainWidget/src/template/跌落试验/应力云图.png");
+			QString a = QDir("src/template/测试模型.png").absolutePath();
+			imagePaths.insert("测试模型", QDir("src/template/测试模型.png").absolutePath());
+			imagePaths.insert("应力云图", QDir("src/template/跌落试验/应力云图.png").absolutePath());
 			
 
-			wordExporter->exportToWord("D:/VSProject/gfapp_new/gfapp/mainWidget/mainWidget/src/template/跌落仿真计算数据表.docx", directory+ "/跌落仿真计算数据表.docx", data, imagePaths);
+			wordExporter->exportToWord(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory+ "/跌落仿真计算数据表.docx", data, imagePaths);
 			QMessageBox::information(this, "提示", QString("跌落试验结果导出成功"));
 			{
 				QDateTime currentTime = QDateTime::currentDateTime();
