@@ -164,6 +164,34 @@ void ParamAnalyTreeWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 
 void ParamAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 {
+	QTreeWidgetItem* item = treeWidget->itemAt(event->pos());
+	if (!item) {
+		return;
+	}
+	QString text = item->text(0);
+	if (text == "发动机AHP安全性分析与评估")
+	{
+		contextMenu = new QMenu(this);
+		QAction* calAction = new QAction("计算", this);
 
+		int childCount = item->childCount();
+		QList<QTreeWidgetItem*> checkedChildItems;
+		for (int i = 0; i < childCount; ++i) {
+			QTreeWidgetItem* childItem = item->child(i);
+			if (childItem->checkState(0) == Qt::Checked) {
+				checkedChildItems.append(childItem);
+			}
+		}
+		connect(calAction, &QAction::triggered, this, [item, this]() {
+			QWidget* parent = parentWidget();
+			while (parent)
+			{
+				QMessageBox::information(this, "提示", QString("开始计算"));
+				break;
+			}
+			});
+		contextMenu->addAction(calAction); // 将动作添加到菜单中
+		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
+	}
 }
 
