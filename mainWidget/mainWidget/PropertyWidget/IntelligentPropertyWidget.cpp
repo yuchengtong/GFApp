@@ -19,7 +19,7 @@ void IntelligentPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 	// 设置行列数，这里固定 3 行 2 列（对应示例里的 3 条属性），也可动态调整
-	m_tableWidget->setRowCount(4);
+	m_tableWidget->setRowCount(5);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -43,7 +43,7 @@ void IntelligentPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","智能分析方法","试验设计方法", "响应面方法" };
+	QStringList labels = { "属性","智能分析方法","试验设计方法", "单因素响应", "多因素响应"  };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -62,24 +62,24 @@ void IntelligentPropertyWidget::initWidget()
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList values = { " "," "," ", " " };
+	QStringList values = { " ","试验设计法","中心法", "曲线", "响应面" };
 	for (int row = 0; row < values.size(); ++row) {
 		if (row != 0)
 		{
 			QTableWidgetItem* labelItem = new QTableWidgetItem(values[row]);
 			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			m_tableWidget->setItem(row, 3, labelItem);
+			m_tableWidget->setItem(row, 2, labelItem);
 		}
 
 	}
 
-	QStringList unitLabels = { " ","DOE","CCD", "标准响应面"};
+	QStringList unitLabels = { " ","DOE","CCD", "2D", "3D"};
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
 			QTableWidgetItem* labelItem = new QTableWidgetItem(unitLabels[row]);
 			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			m_tableWidget->setItem(row, 2, labelItem);
+			m_tableWidget->setItem(row, 3, labelItem);
 		}
 	}
 

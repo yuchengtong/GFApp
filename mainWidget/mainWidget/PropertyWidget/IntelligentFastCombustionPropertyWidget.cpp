@@ -43,7 +43,7 @@ void IntelligentFastCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","发动机壳体厚度最小值", "发动机壳体厚度最大值", "发动机壳体厚度设计水平", "温度最小值","温度最大值","温度设计水平" };
+	QStringList labels = { "属性","智能分析对象","发动机壳体厚度最小值", "发动机壳体厚度最大值", "发动机壳体厚度设计水平", "快烤平均温度最小值","快烤平均温度最大值","快烤平均温度设计水平" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -62,13 +62,24 @@ void IntelligentFastCombustionPropertyWidget::initWidget()
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " "," ","mm", "mm", " ", "m","m"," " };
+	QStringList unitLabels = { " ","单位","mm", "mm", "等级", "℃","℃","等级" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
 			QTableWidgetItem* labelItem = new QTableWidgetItem(unitLabels[row]);
 			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 			m_tableWidget->setItem(row, 3, labelItem);
+		}
+
+	}
+
+	QStringList valueLabels = { " ","快速烤燃试验","1", "3", "3", "600","800","3" };
+	for (int row = 0; row < valueLabels.size(); ++row) {
+		if (row != 0)
+		{
+			QTableWidgetItem* labelItem = new QTableWidgetItem(valueLabels[row]);
+			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
+			m_tableWidget->setItem(row, 2, labelItem);
 		}
 
 	}
@@ -80,17 +91,6 @@ void IntelligentFastCombustionPropertyWidget::initWidget()
 		font.setBold(true);
 		headerItem->setFont(font);
 	}
-
-	QTableWidgetItem* titleItem = new QTableWidgetItem("跌落试验");
-	titleItem->setFlags(titleItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* thicknessDesignItem = new QTableWidgetItem("3");
-	thicknessDesignItem->setFlags(thicknessDesignItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* hignDesignItem = new QTableWidgetItem("3");
-	hignDesignItem->setFlags(hignDesignItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-
-	m_tableWidget->setItem(1, 2, titleItem);
-	m_tableWidget->setItem(4, 2, thicknessDesignItem);
-	m_tableWidget->setItem(7, 2, hignDesignItem);
 
 	//文本左对齐
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
