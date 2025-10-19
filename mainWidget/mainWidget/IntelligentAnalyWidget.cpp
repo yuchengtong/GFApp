@@ -301,11 +301,17 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	graphicWid = new QWidget();
 	graphicLayout = new QHBoxLayout();
-	QLabel* label = new QLabel("设计水平：");
-	m_comboBox = new QComboBox();
-	m_comboBox->addItems({ "1", "2", "3" });
+	QLabel* x_label = new QLabel("X轴：");
+	x_comboBox = new QComboBox();
+	x_comboBox->addItems({ "壳体厚度", "撞击速度" });
+	QLabel* y_label = new QLabel("Y轴：");
+	y_comboBox = new QComboBox();
+	y_comboBox->addItems({ "壳体最大应力 ", "进剂最大应力", "壳体最高温度", "推进剂最高温度"});
 	// 连接信号槽
-	connect(m_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+	connect(x_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
+
+	connect(y_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
 
 
@@ -328,8 +334,13 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	QVBoxLayout* m_leftLayout = new QVBoxLayout();
 
 	QHBoxLayout* labelLayou = new QHBoxLayout();
-	labelLayou->addWidget(label);
-	labelLayou->addWidget(m_comboBox);
+	labelLayou->addWidget(x_label);
+	labelLayou->addWidget(x_comboBox);
+	labelLayou->addWidget(y_label);
+	labelLayou->addWidget(y_comboBox);
+	labelLayou->setSpacing(0);
+	labelLayou->setContentsMargins(0,0,0,0);
+	labelLayou->addStretch(200);
 
 	m_leftLayout->addLayout(labelLayou);
 	m_leftLayout->addWidget(chartView);
@@ -401,47 +412,56 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	if (itemData == "IntelligentAnaly") {
 		m_propertyStackWidget->setCurrentWidget(m_intelligentPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fallTableWidget);
+		x_comboBox->setItemText(1, "跌落高度");
 	}
 	else if (itemData == "FallIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fallPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fallTableWidget);
+		x_comboBox->setItemText(1, "跌落高度");
 	}
 	
 	else if (itemData == "FastCombustionIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fastCombustionTableWidget);
+		x_comboBox->setItemText(1, "快烤平均温度");
 	}
 	else if (itemData == "SlowCombustionIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_slowCombustionTableWidget);
+		x_comboBox->setItemText(1, "慢烤平均温度");
 	}
 	else if (itemData == "ShootIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_shootTableWidget);
+		x_comboBox->setItemText(1, "撞击速度温度");
 	}
 	else if (itemData == "JetImpactIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_jetImpactTableWidget);
+		x_comboBox->setItemText(1, "撞击速度温度");
 	}
 	else if (itemData == "FragmentationImpactIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fragmentationImpactTableWidget);
+		x_comboBox->setItemText(1, "聚能装药口径");
 	}
 	else if (itemData == "ExplosiveBlastIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_explosiveBlastTableWidget);
+		x_comboBox->setItemText(1, "TNT当量");
 	}
 	else if (itemData == "SacrificeExplosionIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_sacrificeExplosionTableWidget);
+		x_comboBox->setItemText(1, "殉爆距离");
 	}
 }
 
@@ -481,11 +501,11 @@ void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
 	if (index >= 0 ) {
 		if (index == 0)
 		{
-			updateChartData(data1, "一", "二");
+			updateChartData(data1, x_comboBox->currentText(), y_comboBox->currentText());
 		}
 		else
 		{
-			updateChartData(data2, "三", "四");
+			updateChartData(data2, x_comboBox->currentText(), y_comboBox->currentText());
 		}
 	}
 }

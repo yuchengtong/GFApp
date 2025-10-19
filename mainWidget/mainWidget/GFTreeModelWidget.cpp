@@ -1259,6 +1259,47 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					fallAnalysisResultInfo.minValue = min_value;
 					ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
 
+					// 应力分析结果
+					StressResult fallStressResult;
+					fallStressResult.metalsMaxStress = shellMaxValue;
+					fallStressResult.metalsMinStress = shellMinValue;
+					fallStressResult.metalsAvgStress = shellAvgValue;
+					fallStressResult.metalsStandardStress = shellStandardValue;
+					fallStressResult.propellantsMaxStress = maxValue;
+					fallStressResult.propellantsMinStress = minValue;
+					fallStressResult.propellantsAvgStress = avgValue;
+					fallStressResult.propellantsStandardStress = standardValue;
+					fallStressResult.outheatMaxStress = shellMaxValue;
+					fallStressResult.outheatMinStress = shellMinValue;
+					fallStressResult.outheatAvgStress = shellAvgValue;
+					fallStressResult.outheatStandardStress = shellStandardValue;
+					fallStressResult.insulatingheatMaxStress = maxValue;
+					fallStressResult.insulatingheatMinStress = minValue;
+					fallStressResult.insulatingheatAvgStress = avgValue;
+					fallStressResult.insulatingheatStandardStress = standardValue;
+					ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
+
+					// 应变分析结果
+					StrainResult fallStrainResult;
+					fallStrainResult.metalsMaxStrain = fallStressResult.metalsMaxStress *steelInfo.modulus;
+					fallStrainResult.metalsMinStrain = fallStressResult.metalsMinStress * steelInfo.modulus;
+					fallStrainResult.metalsAvgStrain = fallStressResult.metalsAvgStress * steelInfo.modulus;
+					fallStrainResult.metalsStandardStrain = fallStressResult.metalsStandardStress * steelInfo.modulus;
+					fallStrainResult.propellantsMaxStrain = fallStressResult.propellantsMaxStress * steelInfo.modulus;
+					fallStrainResult.propellantsMinStrain = fallStressResult.propellantsMaxStress * steelInfo.modulus;
+					fallStrainResult.mpropellantsAvgStrain = fallStressResult.propellantsAvgStress * steelInfo.modulus;
+					fallStrainResult.propellantsStandardStrain = fallStressResult.propellantsStandardStress * steelInfo.modulus;
+					fallStrainResult.outheatMaxStrain = fallStressResult.outheatMaxStress * steelInfo.modulus;
+					fallStrainResult.outheatMinStrain = fallStressResult.outheatMinStress * steelInfo.modulus;
+					fallStrainResult.outheatAvgStrain = fallStressResult.outheatAvgStress * steelInfo.modulus;
+					fallStrainResult.outheatStandardStrain = fallStressResult.outheatStandardStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatMaxStrain = fallStressResult.insulatingheatMaxStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatMinStrain = fallStressResult.insulatingheatMinStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatAvgStrain = fallStressResult.insulatingheatAvgStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatStandardStrain = fallStressResult.insulatingheatStandardStress * steelInfo.modulus;
+					ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
+					
+
 					{
 						QDateTime currentTime = QDateTime::currentDateTime();
 						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");

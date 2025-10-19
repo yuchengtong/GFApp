@@ -6,6 +6,7 @@
 #include <QObject>
 #include <string>
 #include <QString>
+#include<QRandomGenerator>
 
 #include "TriangleStructure.h"
 
@@ -162,7 +163,101 @@ struct FallSettingInfo {
 	double high = 0;
 };
 
+// 应力分析结果
+struct StressResult {
+	double metalsMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体最大应力
+	double metalsMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体最小应力
+	double metalsAvgStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体平均应力
+	double metalsStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体应力标准差
 
+	double propellantsMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //推进剂最大应力
+	double propellantsMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //推进剂最小应力
+	double propellantsAvgStress = 0; //推进剂平均应力
+	double propellantsStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //推进剂应力标准差
+
+	double outheatMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热最大应力
+	double outheatMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热最小应力
+	double outheatAvgStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热平均应力
+	double outheatStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热应力标准差
+
+	double insulatingheatMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热最大应力
+	double insulatingheatMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热最小应力
+	double insulatingheatAvgStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热平均应力
+	double insulatingheatStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热应力标准差
+		
+};
+
+// 应变分析结果
+struct StrainResult {
+	double metalsMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体最大应变
+	double metalsMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体最小应变
+	double metalsAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体平均应变
+	double metalsStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体应变标准差
+
+	double propellantsMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂最大应变
+	double propellantsMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂最小应变
+	double mpropellantsAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂平均应变
+	double propellantsStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂应变标准差
+
+	double outheatMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热最大应变
+	double outheatMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热最小应变
+	double outheatAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热平均应变
+	double outheatStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热应变标准差
+
+	double insulatingheatMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热最大应变
+	double insulatingheatMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热最小应变
+	double insulatingheatAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热平均应变
+	double insulatingheatStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热应变标准差
+
+};
+
+// 温度分析结果
+struct TemperatureResult {
+	double metalsMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体最高温度
+	double metalsMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体最低温度
+	double metalsAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体平均温度
+	double metalsStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体温度标准差
+
+	double propellantsMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂最高温度
+	double propellantsMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂最低温度
+	double mpropellantsAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂平均温度
+	double propellantsStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂温度标准差
+
+	double outheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热最高温度
+	double outheatMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热最低温度
+	double outheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热平均温度
+	double outheatStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热温度标准差
+
+	double insulatingheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热最高温度
+	double insulatingheatMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热最低温度
+	double insulatingheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热平均温度
+	double insulatingheatStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热温度标准差
+
+};
+
+// 超压分析结果
+struct OverpressureResult {
+	double metalsMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体最大超压
+	double metalsMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体最小超压
+	double metalsAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体平均超压
+	double metalsStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体超压标准差
+
+	double propellantsMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂最大超压
+	double propellantsMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂最小超压
+	double mpropellantsAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂平均超压
+	double propellantsStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂超压标准差
+
+	double outheatMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热最大超压
+	double outheatMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热最小超压
+	double outheatAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热平均超压
+	double outheatStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热超压标准差
+
+	double insulatingheatMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热最大超压
+	double insulatingheatMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热最小超压
+	double insulatingheatAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热平均超压
+	double insulatingheatStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热超压标准差
+
+};
 
 // 单例模式的模型数据管理类
 class ModelDataManager : public QObject 
@@ -215,6 +310,92 @@ public:
 
 	void Reset();
 
+	// 跌落计算结果
+	void SetFallStressResult(const StressResult& result);
+	const StressResult& GetFallStressResult() const;
+
+	void SetFallStrainResult(const StrainResult& result);
+	const StrainResult& GetFallStrainResult() const;
+
+	void SetFallTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetFallTemperatureResult() const;
+
+	void SetFallOverpressureResult(const OverpressureResult& result);
+	const OverpressureResult& GetFallOverpressureResult() const;
+
+	// 快烤计算结果
+	void SetFastCombustionTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetFastCombustionTemperatureResult() const;
+
+	// 慢烤计算结果
+	void SetSlowCombustionTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetSlowCombustionTemperatureResult() const;
+
+	// 枪击计算结果
+	void SetShootStressResult(const StressResult& result);
+	const StressResult& GetShootStressResult() const;
+
+	void SetShootStrainResult(const StrainResult& result);
+	const StrainResult& GetShootStrainResult() const;
+
+	void SetShootTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetShootTemperatureResult() const;
+
+	void SetShootOverpressureResult(const OverpressureResult& result);
+	const OverpressureResult& GetShootOverpressureResult() const;
+
+	// 射流冲击计算结果
+	void SetJetImpactStressResult(const StressResult& result);
+	const StressResult& GetJetImpactStressResult() const;
+
+	void SetJetImpactStrainResult(const StrainResult& result);
+	const StrainResult& GetJetImpactStrainResult() const;
+
+	void SetJetImpactTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetJetImpactTemperatureResult() const;
+
+	void SetJetImpactOverpressureResult(const OverpressureResult& result);
+	const OverpressureResult& GetJetImpactOverpressureResult() const;
+
+	// 破片撞击计算结果
+	void SetFragmentationImpactStressResult(const StressResult& result);
+	const StressResult& GetFragmentationImpactStressResult() const;
+
+	void SetFragmentationImpactStrainResult(const StrainResult& result);
+	const StrainResult& GetFragmentationImpactStrainResult() const;
+
+	void SetFragmentationImpactTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetFragmentationImpactTemperatureResult() const;
+
+	void SetFragmentationImpactOverpressureResult(const OverpressureResult& result);
+	const OverpressureResult& GetFragmentationImpactOverpressureResult() const;
+
+	// 爆炸冲击波计算结果
+	void SetExplosiveBlastStressResult(const StressResult& result);
+	const StressResult& GetExplosiveBlastStressResult() const;
+
+	void SetExplosiveBlastStrainResult(const StrainResult& result);
+	const StrainResult& GetExplosiveBlastStrainResult() const;
+
+	void SetExplosiveBlastTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetExplosiveBlastTemperatureResult() const;
+
+	void SetExplosiveBlastOverpressureResult(const OverpressureResult& result);
+	const OverpressureResult& GetExplosiveBlastOverpressureResult() const;
+
+	// 殉爆计算结果
+	void SetSacrificeExplosionStressResult(const StressResult& result);
+	const StressResult& GetSacrificeExplosionStressResult() const;
+
+	void SetSacrificeExplosionStrainResult(const StrainResult& result);
+	const StrainResult& GetSacrificeExplosionStrainResult() const;
+
+	void SetSacrificeExplosionTemperatureResult(const TemperatureResult& result);
+	const TemperatureResult& GetSacrificeExplosionTemperatureResult() const;
+
+	void SetSacrificeExplosionOverpressureResult(const OverpressureResult& result);
+	const OverpressureResult& GetSacrificeExplosionOverpressureResult() const;
+
 private:
 	static ModelDataManager* m_Instance; 
 	ModelGeometryInfo m_ModelGeometryInfo; 
@@ -232,4 +413,47 @@ private:
 	UserInfo m_UserInfo;
 
 	FallSettingInfo m_FallSettingInfo;
+
+	// 跌落计算结果
+	StressResult m_FallStressResult;
+	StrainResult m_FallStrainResult;
+	TemperatureResult m_FallTemperatureResult;
+	OverpressureResult m_FallOverpressureResult;
+
+	// 快烤计算结果
+	TemperatureResult m_FastCombustionTemperatureResult;
+
+	// 慢烤计算结果
+	TemperatureResult m_SlowCombustionTemperatureResult;
+
+	// 枪击计算结果
+	StressResult m_ShootStressResult;
+	StrainResult m_ShootStrainResult;
+	TemperatureResult m_ShootTemperatureResult;
+	OverpressureResult m_ShootOverpressureResult;
+
+	// 射流冲击计算结果
+	StressResult m_JetImpactStressResult;
+	StrainResult m_JetImpactStrainResult;
+	TemperatureResult m_JetImpactTemperatureResult;
+	OverpressureResult m_JetImpactOverpressureResult;
+
+	// 破片撞击计算结果
+	StressResult m_FragmentationImpactStressResult;
+	StrainResult m_FragmentationImpactStrainResult;
+	TemperatureResult m_FragmentationImpactTemperatureResult;
+	OverpressureResult m_FragmentationImpactOverpressureResult;
+
+	// 爆炸冲击波计算结果
+	StressResult m_ExplosiveBlastStressResult;
+	StrainResult m_ExplosiveBlastStrainResult;
+	TemperatureResult m_ExplosiveBlastTemperatureResult;
+	OverpressureResult m_ExplosiveBlastOverpressureResult;
+
+	// 殉爆计算结果
+	StressResult m_SacrificeExplosionStressResult;
+	StrainResult m_SacrificeExplosionStrainResult;
+	TemperatureResult m_SacrificeExplosionTemperatureResult;
+	OverpressureResult m_SacrificeExplosionOverpressureResult;
+
 };

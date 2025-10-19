@@ -29,6 +29,9 @@ public:
 	IntelligentAnalyWidget(QWidget* parent = nullptr);
 	~IntelligentAnalyWidget();
 
+	QComboBox* getXCmboBox() { return x_comboBox; }
+	QComboBox* getYCmboBox() { return y_comboBox; }
+
 private slots:
 	void onTreeItemClicked(const QString& itemData);
 
@@ -67,7 +70,8 @@ private:
 	QWidget* graphicWid = nullptr;
 
 	QChart* chart = nullptr;
-	QComboBox* m_comboBox;
+	QComboBox* x_comboBox;
+	QComboBox* y_comboBox;
 	QChartView* chartView;
 	QChartView* chartView2;
 
