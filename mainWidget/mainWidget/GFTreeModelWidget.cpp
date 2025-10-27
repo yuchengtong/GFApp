@@ -14,7 +14,6 @@
 #include <QValidator>
 #include <QThread>
 
-
 #include <AIS_Shape.hxx>
 #include <AIS_ColorScale.hxx>
 #include <STEPControl_Reader.hxx>
@@ -88,6 +87,15 @@
 #include <Geom_Plane.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+
+#include <gmsh.h>
+using namespace gmsh;
+#include <GProp_GProps.hxx>
+#include <BRepGProp.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
+#include <ShapeAnalysis.hxx>
+#include <GeomAPI_ProjectPointOnCurve.hxx>
+
 // 仅处理 double 类型的 clamp 函数
 double my_clamp(double value, double low, double high) {
 	if (value < low) return low;
@@ -693,363 +701,379 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			}
 		}
 
-		//connect(exportAction, &QAction::triggered, [this, text]() {
-		//	QWidget* parent = parentWidget();
-		//	while (parent)
-		//	{
-		//		GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
-		//		if (gfParent)
-		//		{						
-		//			auto occView = gfParent->GetOccView();
-		//			Handle(AIS_InteractiveContext) context = occView->getContext();
-		//			auto view = occView->getView();
-		//			context->RemoveAll(true);
-
-		//			auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-		//			TopoDS_Shape model_shape=modelInfo.shape;
-
-		//			auto projectToXOY_Manual = [](const TopoDS_Shape& edges3D) -> TopoDS_Shape {
-		//				TopoDS_Compound comp;
-		//				BRep_Builder builder;
-		//				builder.MakeCompound(comp);
-
-		//				for (TopExp_Explorer explorer(edges3D, TopAbs_EDGE); explorer.More(); explorer.Next()) {
-		//					TopoDS_Edge edge = TopoDS::Edge(explorer.Current());
-
-		//					BRepAdaptor_Curve curve(edge);
-		//					Standard_Real startParam, endParam;
-		//					BRep_Tool::Range(edge, startParam, endParam);
-		//					gp_Pnt startPoint = curve.Value(startParam);
-		//					gp_Pnt endPoint = curve.Value(endParam);
-		//						
-		//					gp_Pnt2d p2D_Start(startPoint.X(), startPoint.Y());
-		//					gp_Pnt2d p2D_End(endPoint.X(), endPoint.Y());
-		//					BRepBuilderAPI_MakeEdge2d makeEdge2d(p2D_Start, p2D_End);
-		//					if (makeEdge2d.IsDone()) {
-		//						builder.Add(comp, makeEdge2d.Edge());
-		//					}
-		//				}
-		//				return comp;
-		//			};
-		//	
-		//			gp_Ax2 viewAxes(
-		//				gp_Pnt(0, 0, 0),    // 原点（投影坐标系原点）
-		//				gp_Dir(0, 0, -1),   // 视图方向（Z轴负方向，看向XOY平面）
-		//				gp_Dir(1, 0, 0)     // X轴方向（投影平面X轴，必须与视图方向垂直）
-		//			);
-
-		//			HLRAlgo_Projector projector(viewAxes);
-
-		//			Handle(HLRBRep_Algo) hlrAlgo = new HLRBRep_Algo();
-		//			hlrAlgo->Projector(projector); // 设置投影器
-		//			hlrAlgo->Add(model_shape);     // 添加模型
-		//			hlrAlgo->Update();             // 执行计算
-
-		//			HLRBRep_HLRToShape hlrToShape(hlrAlgo);
-		//			TopoDS_Shape visibleEdges3D = hlrToShape.VCompound();
-
-		//			// 检查可见边缘是否有效（替代Update的返回值判断）
-		//			if (visibleEdges3D.IsNull()) {
-		//				std::cerr << "HLR计算失败：未提取到可见边缘！" << std::endl;
-		//				return 1;
-		//			}
-
-		//			// 6. 后续投影与坐标提取（不变）
-		//			TopoDS_Shape visibleEdges2D = projectToXOY_Manual(visibleEdges3D);
-
-		//			Handle(AIS_Shape) aisContour = new AIS_Shape(visibleEdges2D);
-		//			aisContour->SetColor(Quantity_Color(Quantity_NOC_BLUE));
-		//			context->Display(aisContour, Standard_True);
-
-		//			view->FitAll();
-
-
-
-
-
-
-
-
-		//			// 计算模型的中心点
-		//			auto CalculateModelCenter = [](const TopoDS_Shape& model) -> gp_Pnt {
-		//				GProp_GProps props;
-		//				BRepGProp::VolumeProperties(model, props);
-		//				return props.CentreOfMass();
-		//			};
-
-		//			// 通过检查首尾点是否重合来判断线框是否封闭
-		//			auto IsWireClosedByEndPoints = [](const TopoDS_Wire& wire) -> bool {
-		//				if (wire.IsNull()) return false;
-
-		//				// 获取所有边
-		//				std::vector<TopoDS_Edge> edges;
-		//				for (TopExp_Explorer edgeExp(wire, TopAbs_EDGE); edgeExp.More(); edgeExp.Next()) {
-		//					edges.push_back(TopoDS::Edge(edgeExp.Current()));
-		//				}
-
-		//				if (edges.empty()) return false;
-
-		//				// 获取第一个边的起点
-		//				TopoDS_Edge firstEdge = edges.front();
-		//				Standard_Real first, last;
-		//				Handle(Geom_Curve) firstCurve = BRep_Tool::Curve(firstEdge, first, last);
-		//				if (firstCurve.IsNull()) return false;
-
-		//				gp_Pnt startPoint = firstCurve->Value(first);
-
-		//				// 获取最后一个边的终点
-		//				TopoDS_Edge lastEdge = edges.back();
-		//				Handle(Geom_Curve) lastCurve = BRep_Tool::Curve(lastEdge, first, last);
-		//				if (lastCurve.IsNull()) return false;
-
-		//				gp_Pnt endPoint = lastCurve->Value(last);
-
-		//				// 检查首尾点距离
-		//				return startPoint.Distance(endPoint) < 1e-6;
-		//			};
-
-		//			// 健壮的封闭性检查函数
-		//			auto IsWireClosed = [&](const TopoDS_Wire& wire) -> bool {
-		//				if (wire.IsNull()) return false;
-
-		//				// 方法1: 尝试创建面来判断是否封闭
-		//				try {
-		//					BRepBuilderAPI_MakeFace faceMaker(wire, Standard_True);
-		//					if (faceMaker.IsDone()) {
-		//						return true;
-		//					}
-		//				}
-		//				catch (Standard_Failure&) {
-		//					// 方法1失败，继续尝试其他方法
-		//				}
-
-		//				// 方法2: 检查首尾点是否重合
-		//				return IsWireClosedByEndPoints(wire);
-		//			};
-
-		//			// 修正的连接边到线框的函数，返回线框序列
-		//			auto ConnectEdgesToWires_Corrected = [&](const TopoDS_Shape& edgesShape)->Handle(TopTools_HSequenceOfShape) {
-		//				Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
-
-		//				// 收集所有边到序列
-		//				Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
-		//				for (TopExp_Explorer exp(edgesShape, TopAbs_EDGE); exp.More(); exp.Next()) {
-		//					edges->Append(exp.Current());
-		//				}
-
-		//				if (edges->IsEmpty()) {
-		//					return wires;
-		//				}
-
-		//				// 使用静态方法连接边到线框，使用容差1e-6，不共享顶点（通过距离连接）
-		//				ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-6, Standard_False, wires);
-
-		//				return wires;
-		//			};
-
-		//			// 使用BRepAlgoAPI_Section的轮廓提取lambda函数
-		//			auto GetOuterContour_Lambda = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
-
-		//					// 计算模型的中心点
-		//					gp_Pnt modelCenter = CalculateModelCenter(model);
-
-		//					// 创建XOY平面，Z坐标位于模型中心
-		//					gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
-
-		//					// 创建平面面，大小足够覆盖整个模型
-		//					Bnd_Box bbox;
-		//					BRepBndLib::Add(model, bbox);
-
-		//					Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-		//					bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-
-		//					// 计算平面的边界，比模型稍大
-		//					Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
-		//					Standard_Real xSize = (xMax - xMin) + 2 * margin;
-		//					Standard_Real ySize = (yMax - yMin) + 2 * margin;
-
-		//					TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
-		//						xoyPlaneAtCenter,
-		//						-xSize / 2, xSize / 2,
-		//						-ySize / 2, ySize / 2
-		//					);
-
-		//					// 使用BRepAlgoAPI_Section计算截面
-		//					BRepAlgoAPI_Section section(planeFace, model, Standard_False);
-		//					section.Build();
-
-		//					auto sectionShape = section.Shape();
-		//					return sectionShape;
-		//					
-		//					//// 如果截面为空，返回空线框
-		//					//if (sectionShape.IsNull()) {
-		//					//	return TopoDS_Wire();
-		//					//}
-
-		//					//// 连接边形成线框
-		//					//Handle(TopTools_HSequenceOfShape) wires = ConnectEdgesToWires_Corrected(sectionShape);
-
-		//					//if (wires->IsEmpty()) {
-		//					//	std::cout << "未能形成线框" << std::endl;
-		//					//	return TopoDS_Wire();
-		//					//}
-
-		//					//// 分派线框到闭合和开放化合物
-		//					//TopoDS_Compound closedWires, openWires;
-		//					//BRep_Builder builder;
-		//					//builder.MakeCompound(closedWires);
-		//					//builder.MakeCompound(openWires);
-		//					//ShapeAnalysis_FreeBounds::DispatchWires(wires, closedWires, openWires);
-
-		//					//// 找到最大的闭合线框（最外轮廓）
-		//					//TopoDS_Wire outerWire;
-		//					//Standard_Real maxArea = -1.0;
-
-		//					//for (TopExp_Explorer exp(closedWires, TopAbs_WIRE); exp.More(); exp.Next()) {
-		//					//	TopoDS_Wire wire = TopoDS::Wire(exp.Current());
-
-		//					//	if (wire.IsNull()) {
-		//					//		continue;
-		//					//	}
-
-		//					//	// 检查线框是否封闭 - 如果不是封闭的，直接跳过（按理说DispatchWires已经分出了闭合线框，但我们可以再检查一次）
-		//					//	if (!IsWireClosed(wire)) {
-		//					//		std::cout << "跳过非封闭轮廓线" << std::endl;
-		//					//		continue;
-		//					//	}
-
-		//					//	// 方法1: 尝试创建面并计算几何面积
-		//					//	BRepBuilderAPI_MakeFace tempFace(wire, Standard_True);
-		//					//	if (tempFace.IsDone()) {
-		//					//		try {
-		//					//			GProp_GProps props;
-		//					//			BRepGProp::SurfaceProperties(tempFace.Face(), props);
-		//					//			Standard_Real area = props.Mass();
-
-		//					//			if (area > maxArea) {
-		//					//				maxArea = area;
-		//					//				outerWire = wire;
-		//					//			}
-		//					//			continue;
-		//					//		}
-		//					//		catch (Standard_Failure&) {
-		//					//			// 面积计算失败，回退到方法2
-		//					//		}
-		//					//	}
-
-		//					//	// 方法2: 使用边界框面积作为近似
-		//					//	Bnd_Box wireBbox;
-		//					//	BRepBndLib::Add(wire, wireBbox);
-
-		//					//	if (!wireBbox.IsVoid()) {
-		//					//		Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-		//					//		wireBbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-
-		//					//		Standard_Real bboxArea = (xMax - xMin) * (yMax - yMin);
-
-		//					//		if (bboxArea > maxArea) {
-		//					//			maxArea = bboxArea;
-		//					//			outerWire = wire;
-		//					//		}
-		//					//	}
-		//					//}
-
-		//					//return outerWire;
-		//					
-
-		//			};
-
-		//			// 提取最外轮廓（自动使用模型中心的XOY平面）
-		//			//auto outerContour = GetOuterContour_Lambda(model_shape);
-
-		//			//Handle(AIS_Shape) aisMerged = new AIS_Shape(outerContour);
-		//			//aisMerged->SetColor(Quantity_Color(Quantity_NOC_RED));  // 统一用黑色
-		//			//aisMerged->SetWidth(2.0);                                 // 统一线宽
-		//			//context->Display(aisMerged, Standard_True);               // 显示复合形状
-
-		//			// Lambda表达式：用TopoDS_Face（平面）与模型求交，获取所有相交面
-		//			auto getIntersectionFacesWithCenterXOY = [&](const TopoDS_Shape& model) -> TopoDS_Shape {
-
-		//				// 计算模型的中心点
-		//				gp_Pnt modelCenter = CalculateModelCenter(model);
-
-		//				// 创建XOY平面，Z坐标位于模型中心
-		//				gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
-
-		//				// 创建平面面，大小足够覆盖整个模型
-		//				Bnd_Box bbox;
-		//				BRepBndLib::Add(model, bbox);
-
-		//				Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
-		//				bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
-
-		//				// 计算平面的边界，比模型稍大
-		//				Standard_Real margin = std::max((xMax - xMin), (yMax - yMin)) * 0.1;
-		//				Standard_Real xSize = (xMax - xMin) + 2 * margin;
-		//				Standard_Real ySize = (yMax - yMin) + 2 * margin;
-
-		//				TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
-		//					xoyPlaneAtCenter,
-		//					-xSize / 2, xSize / 2,
-		//					-ySize / 2, ySize / 2
-		//				);
-
-		//				// 步骤3：用BRepAlgoAPI_Common求模型与拓扑面的交集
-		//				BRepAlgoAPI_Common common(model, planeFace);
-		//				common.Build();
-		//				if (!common.IsDone()) {
-		//					std::cerr << "模型与平面求交失败！" << std::endl;
-		//					return TopoDS_Shape();
-		//				}
-		//				TopoDS_Shape intersection = common.Shape(); // 交集结果
-
-		//				// 步骤4：从交集中提取所有位于原XOY平面上的面
-		//				TopoDS_Compound resultCompound;
-		//				BRep_Builder builder;
-		//				builder.MakeCompound(resultCompound);
-		//				Standard_Real tolerance = 0; // 共面判断容差
-
-		//				// 遍历交集结果中的所有面（过滤非面形状）
-		//				for (TopExp_Explorer faceExp(intersection, TopAbs_FACE); faceExp.More(); faceExp.Next()) {
-		//					TopoDS_Face face = TopoDS::Face(faceExp.Current());
-		//					Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
-		//					Handle(Geom_Plane) facePlane = Handle(Geom_Plane)::DownCast(surface);
-		//					if (facePlane.IsNull()) continue; // 非平面，跳过
-
-		//					// 检查是否与原XOY平面共面
-		//					const gp_Pln& pln = facePlane->Pln();
-		//					if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance)) {
-		//						builder.Add(resultCompound, face); // 添加到结果
-		//					}
-		//				}
-
-
-		//				return intersection;
-		//			};
-
-		//			TopoDS_Shape intersectionFaces = getIntersectionFacesWithCenterXOY(model_shape);
-
-
-		//				Handle(AIS_Shape) aisFaces = new AIS_Shape(intersectionFaces);
-		//				aisFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 洋红色标识相交面
-		//				context->Display(aisFaces, Standard_True); // 显示
-
-		//			
-		//			// 调整视图以适配所有内容
-		//			view->FitAll();
-
-
-
-
-		//			break;
-		//		}
-		//		else
-		//		{
-		//			parent = parent->parentWidget();
-		//		}
-		//	}
-		//	});
-
+				
+		connect(exportAction, &QAction::triggered, [this, text]() {
+			QWidget* parent = parentWidget();
+			while (parent)
+			{
+				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+				if (gfParent)
+				{						
+					auto occView = gfParent->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					auto view = occView->getView();
+					context->RemoveAll(true);
+
+					auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+					TopoDS_Shape model_shape=modelInfo.shape;
+
+					
+
+
+					// ---------------------- 1. 基础函数：获取两个相交面 ----------------------
+// 计算模型中心点
+					auto CalculateModelCenter = [](const TopoDS_Shape& model) -> gp_Pnt {
+						GProp_GProps props;
+						BRepGProp::VolumeProperties(model, props);
+						return props.CentreOfMass();
+					};
+
+					// 获取交集中面积最大的两个面
+					auto getIntersectionFacesWithCenterXOY = [CalculateModelCenter](const TopoDS_Shape& model) -> std::pair<TopoDS_Face, TopoDS_Face> {
+						TopoDS_Face maxFace1, maxFace2;
+						gp_Pnt modelCenter = CalculateModelCenter(model);
+						gp_Pln xoyPlaneAtCenter(gp_Pnt(modelCenter.X(), modelCenter.Y(), modelCenter.Z()), gp_Dir(0, 0, 1));
+
+						Bnd_Box bbox;
+						BRepBndLib::Add(model, bbox);
+						Standard_Real xMin, yMin, zMin, xMax, yMax, zMax;
+						bbox.Get(xMin, yMin, zMin, xMax, yMax, zMax);
+
+						Standard_Real margin = std::max(xMax - xMin, yMax - yMin) * 0.1;
+						TopoDS_Face planeFace = BRepBuilderAPI_MakeFace(
+							xoyPlaneAtCenter, xMin - margin, xMax + margin, yMin - margin, yMax + margin
+						);
+
+						BRepAlgoAPI_Common common(model, planeFace);
+						common.Build();
+						if (!common.IsDone()) {
+							std::cerr << "模型与平面求交失败！" << std::endl;
+							return { maxFace1, maxFace2 };
+						}
+						TopoDS_Shape intersection = common.Shape();
+
+						std::vector<std::pair<double, TopoDS_Face>> candidateFaces;
+						Standard_Real tolerance = 1e-6;
+						for (TopExp_Explorer faceExp(intersection, TopAbs_FACE); faceExp.More(); faceExp.Next()) {
+							TopoDS_Face face = TopoDS::Face(faceExp.Current());
+							Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
+							Handle(Geom_Plane) facePlane = Handle(Geom_Plane)::DownCast(surface);
+							if (facePlane.IsNull()) continue;
+
+							const gp_Pln& pln = facePlane->Pln();
+							if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance)) {
+								GProp_GProps props;
+								BRepGProp::SurfaceProperties(face, props);
+								double area = props.Mass();
+								if (area > 1e-9) candidateFaces.emplace_back(area, face);
+							}
+						}
+
+						std::sort(candidateFaces.begin(), candidateFaces.end(),
+							[](const auto& a, const auto& b) { return a.first > b.first; });
+
+						if (candidateFaces.size() >= 1) maxFace1 = candidateFaces[0].second;
+						if (candidateFaces.size() >= 2) maxFace2 = candidateFaces[1].second;
+
+						return { maxFace1, maxFace2 };
+					};
+
+
+					// ---------------------- 2. 轮廓处理：分割并筛选上下轮廓 ----------------------
+					// 计算面的重心Y值（区分A/B）
+					auto calculateFaceCentroidY = [](const TopoDS_Face& face) -> double {
+						if (face.IsNull()) return -1e20;
+						GProp_GProps props;
+						BRepGProp::SurfaceProperties(face, props);
+						return props.CentreOfMass().Y();
+					};
+
+					// 提取Wire的边和顶点
+					struct WireData {
+						std::vector<TopoDS_Edge> edges;
+						std::vector<gp_Pnt> vertices;
+					};
+					auto extractWireData = [](const TopoDS_Wire& wire) -> WireData {
+						WireData data;
+						TopExp_Explorer edgeExp(wire, TopAbs_EDGE);
+						for (; edgeExp.More(); edgeExp.Next()) {
+							TopoDS_Edge edge = TopoDS::Edge(edgeExp.Current());
+							data.edges.push_back(edge);
+							TopExp_Explorer vertExp(edge, TopAbs_VERTEX);
+							while (vertExp.More()) {
+								data.vertices.push_back(BRep_Tool::Pnt(TopoDS::Vertex(vertExp.Current())));
+								vertExp.Next();
+							}
+						}
+						data.vertices.erase(std::unique(data.vertices.begin(), data.vertices.end(),
+							[](const gp_Pnt& a, const gp_Pnt& b) { return a.IsEqual(b, 1e-6); }), data.vertices.end());
+						return data;
+					};
+
+					// 找到Wire的X极值点
+					auto findWireXExtremes = [](const WireData& data) -> std::pair<gp_Pnt, gp_Pnt> {
+						if (data.vertices.empty()) return { gp_Pnt(), gp_Pnt() };
+						gp_Pnt x_min = data.vertices[0], x_max = data.vertices[0];
+						for (const auto& p : data.vertices) {
+							if (p.X() < x_min.X() - 1e-6) x_min = p;
+							if (p.X() > x_max.X() + 1e-6) x_max = p;
+						}
+						return { x_min, x_max };
+					};
+
+					// 计算边链的平均Y值（用于区分上下轮廓）
+					auto calculateChainMeanY = [](const std::vector<TopoDS_Edge>& chain) -> double {
+						if (chain.empty()) return 0.0;
+						double sumY = 0.0;
+						int count = 0;
+						for (const auto& edge : chain) {
+							TopExp_Explorer vertExp(edge, TopAbs_VERTEX);
+							while (vertExp.More()) {
+								sumY += BRep_Tool::Pnt(TopoDS::Vertex(vertExp.Current())).Y();
+								count++;
+								vertExp.Next();
+							}
+						}
+						return count > 0 ? sumY / count : 0.0;
+					};
+
+					// 通过X极值分割Wire，并返回（下轮廓，上轮廓）
+					auto splitWireIntoLowerUpper = [&](const TopoDS_Wire& wire) -> std::pair<std::vector<TopoDS_Edge>, std::vector<TopoDS_Edge>> {
+						WireData data = extractWireData(wire);
+						if (data.edges.empty()) return { {}, {} };
+
+						auto [x_min, x_max] = findWireXExtremes(data);
+						if (x_min.IsEqual(x_max, 1e-6)) return { {}, {} };
+
+						// 定位极值点并分割边（参考点切割逻辑）
+						struct ExtremeInfo { gp_Pnt pnt; int edgeIdx = -1; Standard_Real param; TopoDS_Edge split1, split2; };
+						auto getExtremeInfo = [&](const gp_Pnt& p) -> ExtremeInfo {
+							ExtremeInfo info; info.pnt = p;
+							for (const auto& vert : data.vertices)
+								if (vert.IsEqual(p, 1e-6)) return info;
+							for (size_t i = 0; i < data.edges.size(); ++i) {
+								const auto& edge = data.edges[i];
+								Standard_Real s, e;
+								Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, s, e);
+								if (curve.IsNull()) continue;
+								GeomAPI_ProjectPointOnCurve proj(p, curve);
+								if (proj.NbPoints() == 0) continue;
+								Standard_Real param = proj.LowerDistanceParameter();
+								if (param < s - 1e-6 || param > e + 1e-6) continue;
+								info.edgeIdx = i;
+								info.split1 = BRepBuilderAPI_MakeEdge(curve, s, param);
+								info.split2 = BRepBuilderAPI_MakeEdge(curve, param, e);
+								return info;
+							}
+							return info;
+						};
+
+						ExtremeInfo minInfo = getExtremeInfo(x_min);
+						ExtremeInfo maxInfo = getExtremeInfo(x_max);
+
+						// 调整边列表
+						std::vector<TopoDS_Edge> adjustedEdges = data.edges;
+						if (minInfo.edgeIdx != -1) {
+							adjustedEdges.erase(adjustedEdges.begin() + minInfo.edgeIdx);
+							adjustedEdges.insert(adjustedEdges.begin() + minInfo.edgeIdx, { minInfo.split1, minInfo.split2 });
+						}
+						if (maxInfo.edgeIdx != -1) {
+							int offset = (minInfo.edgeIdx != -1 && maxInfo.edgeIdx > minInfo.edgeIdx) ? 1 : 0;
+							adjustedEdges.erase(adjustedEdges.begin() + maxInfo.edgeIdx + offset);
+							adjustedEdges.insert(adjustedEdges.begin() + maxInfo.edgeIdx + offset, { maxInfo.split1, maxInfo.split2 });
+						}
+
+						// 重新提取顶点并找极值点索引（顶点数量 = 边数量，因闭合Wire）
+						WireData adjData = { adjustedEdges, {} };
+						for (const auto& edge : adjustedEdges) {
+							TopExp_Explorer vertExp(edge, TopAbs_VERTEX);
+							while (vertExp.More()) {
+								adjData.vertices.push_back(BRep_Tool::Pnt(TopoDS::Vertex(vertExp.Current())));
+								vertExp.Next();
+							}
+						}
+						adjData.vertices.erase(std::unique(adjData.vertices.begin(), adjData.vertices.end(),
+							[](const gp_Pnt& a, const gp_Pnt& b) { return a.IsEqual(b, 1e-6); }), adjData.vertices.end());
+
+						int minIdx = -1, maxIdx = -1;
+						int n = adjustedEdges.size();
+						for (int i = 0; i < n; ++i) { // 顶点数量 = 边数量n
+							if (adjData.vertices[i].IsEqual(x_min, 1e-6)) minIdx = i;
+							if (adjData.vertices[i].IsEqual(x_max, 1e-6)) maxIdx = i;
+						}
+						if (minIdx == -1 || maxIdx == -1) {
+							std::cerr << "未找到极值点对应的顶点索引！" << std::endl;
+							return { {}, {} };
+						}
+
+						// ---------------------- 修正后的链分割逻辑 ----------------------
+						std::vector<TopoDS_Edge> chain1, chain2;
+
+						// 链1：从顶点minIdx到顶点maxIdx
+						int steps1 = (maxIdx >= minIdx) ? (maxIdx - minIdx) : (n - minIdx + maxIdx);
+						for (int i = 0; i <= steps1; ++i) {
+							int edgeIdx = (minIdx + i) % n;
+							chain1.push_back(adjustedEdges[edgeIdx]);
+						}
+
+						// 链2：从顶点maxIdx回到顶点minIdx
+						int steps2 = (minIdx >= maxIdx) ? (minIdx - maxIdx) : (n - maxIdx + minIdx);
+						for (int i = 0; i <= steps2; ++i) {
+							int edgeIdx = (maxIdx + i) % n;
+							chain2.push_back(adjustedEdges[edgeIdx]);
+						}
+						// --------------------------------------------------------------
+
+						// 区分上下轮廓（Y值小的为下轮廓，大的为上轮廓）
+						double meanY1 = calculateChainMeanY(chain1);
+						double meanY2 = calculateChainMeanY(chain2);
+						std::vector<TopoDS_Edge> lowerChain = (meanY1 < meanY2) ? chain1 : chain2;
+						std::vector<TopoDS_Edge> upperChain = (meanY1 < meanY2) ? chain2 : chain1;
+
+						return { lowerChain, upperChain };
+					};
+
+					// 提取面的外轮廓
+					auto getFaceOuterWire = [](const TopoDS_Face& face) -> TopoDS_Wire {
+						TopExp_Explorer wireExp(face, TopAbs_WIRE);
+						return wireExp.More() ? TopoDS::Wire(wireExp.Current()) : TopoDS_Wire();
+					};
+
+
+					// ---------------------- 3. 核心：用A的下轮廓和B的上轮廓创建连接面 ----------------------
+					auto createConnectionFace = [](
+						const std::vector<TopoDS_Edge>& A_lower,  // A的下轮廓
+						const std::vector<TopoDS_Edge>& B_upper,  // B的上轮廓
+						const gp_Pnt& A_xmin, const gp_Pnt& A_xmax,  // A的X极值点（用于闭合）
+						const gp_Pnt& B_xmin, const gp_Pnt& B_xmax   // B的X极值点（用于闭合）
+						) -> TopoDS_Face {
+							if (A_lower.empty() || B_upper.empty()) {
+								std::cerr << "A下轮廓或B上轮廓为空，无法创建连接面！" << std::endl;
+								return TopoDS_Face();
+							}
+
+							// 步骤1：构建闭合Wire（A下轮廓 → 连接A_xmax到B_xmax → B上轮廓反向 → 连接B_xmin到A_xmin）
+							BRepBuilderAPI_MakeWire wireBuilder;
+
+							// 添加A的下轮廓（从A_xmin到A_xmax）
+							for (const auto& edge : A_lower) {
+								wireBuilder.Add(edge);
+							}
+
+							// 连接A_xmax到B_xmax（桥梁边）
+							if (!A_xmax.IsEqual(B_xmax, 1e-6)) {
+								wireBuilder.Add(BRepBuilderAPI_MakeEdge(A_xmax, B_xmax));
+							}
+
+							// 添加B的上轮廓（反向，从B_xmax到B_xmin）
+							for (auto it = B_upper.rbegin(); it != B_upper.rend(); ++it) {
+								wireBuilder.Add(*it);
+							}
+
+							// 连接B_xmin到A_xmin（闭合轮廓）
+							if (!B_xmin.IsEqual(A_xmin, 1e-6)) {
+								wireBuilder.Add(BRepBuilderAPI_MakeEdge(B_xmin, A_xmin));
+							}
+
+							// 步骤2：检查Wire是否闭合，不闭合则补全
+							TopoDS_Wire closedWire = wireBuilder.Wire();
+							std::vector<gp_Pnt> wireVerts;
+							TopExp_Explorer edgeExp(closedWire, TopAbs_EDGE);
+							while (edgeExp.More()) {
+								TopoDS_Edge edge = TopoDS::Edge(edgeExp.Current());
+								TopExp_Explorer vertExp(edge, TopAbs_VERTEX);
+								while (vertExp.More()) {
+									wireVerts.push_back(BRep_Tool::Pnt(TopoDS::Vertex(vertExp.Current())));
+									vertExp.Next();
+								}
+								edgeExp.Next();
+							}
+							if (wireVerts.size() >= 2 && !wireVerts.front().IsEqual(wireVerts.back(), 1e-6)) {
+								wireBuilder.Add(BRepBuilderAPI_MakeEdge(wireVerts.back(), wireVerts.front()));
+								closedWire = wireBuilder.Wire();
+							}
+
+							// 步骤3：用闭合Wire创建面
+							BRepBuilderAPI_MakeFace faceBuilder(closedWire);
+							if (!faceBuilder.IsDone()) {
+								std::cerr << "闭合轮廓无法创建面！" << std::endl;
+								return TopoDS_Face();
+							}
+							return faceBuilder.Face();
+					};
+
+
+
+
+
+					auto [face1, face2] = getIntersectionFacesWithCenterXOY(model_shape);
+					if (face1.IsNull() || face2.IsNull()) {
+						std::cerr << "未找到两个有效面！" << std::endl;
+						return -1;
+					}
+
+					// 步骤2：区分面A（上，Y重心大）和面B（下，Y重心小）
+					TopoDS_Face faceA = calculateFaceCentroidY(face1) > calculateFaceCentroidY(face2) ? face1 : face2;
+					TopoDS_Face faceB = (faceA.IsEqual(face1)) ? face2 : face1;
+					std::cout << "面A（上）和面B（下）区分完成" << std::endl;
+
+					// 步骤3：提取A和B的外轮廓，并分割为（下轮廓，上轮廓）
+					TopoDS_Wire wireA = getFaceOuterWire(faceA);
+					TopoDS_Wire wireB = getFaceOuterWire(faceB);
+					if (wireA.IsNull() || wireB.IsNull()) {
+						std::cerr << "轮廓提取失败！" << std::endl;
+						return -1;
+					}
+
+					auto [A_lower, A_upper] = splitWireIntoLowerUpper(wireA); // A的下轮廓、上轮廓
+					auto [B_lower, B_upper] = splitWireIntoLowerUpper(wireB); // B的下轮廓、上轮廓
+					std::cout << "A下轮廓边数：" << A_lower.size() << "，B上轮廓边数：" << B_upper.size() << std::endl;
+
+					// 步骤4：获取A和B的X极值点（用于闭合连接面）
+					WireData dataA = extractWireData(wireA);
+					WireData dataB = extractWireData(wireB);
+					auto [A_xmin, A_xmax] = findWireXExtremes(dataA);
+					auto [B_xmin, B_xmax] = findWireXExtremes(dataB);
+
+					// 步骤5：用A的下轮廓和B的上轮廓创建连接面
+					TopoDS_Face targetFace = createConnectionFace(A_lower, B_upper, A_xmin, A_xmax, B_xmin, B_xmax);
+
+					// 步骤6：按指定格式显示所有面（A、B、连接面）
+					TopoDS_Compound allFacesCompound;
+					BRep_Builder builder;
+					builder.MakeCompound(allFacesCompound);
+
+					// 添加有效面到复合形状
+					if (!faceA.IsNull()) builder.Add(allFacesCompound, faceA);
+					if (!faceB.IsNull()) builder.Add(allFacesCompound, faceB);
+					if (!targetFace.IsNull()) builder.Add(allFacesCompound, targetFace);
+
+
+
+					// 显示复合形状（洋红色）
+					Handle(AIS_Shape) aisAllFaces = new AIS_Shape(allFacesCompound);
+					aisAllFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 统一用洋红色
+
+					context->Display(aisAllFaces, Standard_True); // 显示
+
+					// 调整视图适配所有内容
+					view->FitAll();
+
+
+
+
+
+
+
+					break;
+				}
+				else
+				{
+					parent = parent->parentWidget();
+				}
+			}
+			});
+		
 		connect(calAction, &QAction::triggered, this, [item, this]() {
 			QWidget* parent = parentWidget();
 			while (parent)
