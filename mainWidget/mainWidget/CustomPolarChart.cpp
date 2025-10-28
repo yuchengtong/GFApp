@@ -138,29 +138,14 @@ void CustomPolarChart::setActiveDataset(int idx)
 	for (int i = 0; i < m_lineSeries.size(); ++i) {
 		QColor c = m_colors[i % m_colors.size()];
 		if (i == idx) {
-			/*applySeriesStyle(m_lineSeries[i], c, 1.0);
-			QColor fill = c; fill.setAlpha(110);
-			m_areaSeries[i]->setVisible(true);
-			m_areaSeries[i]->setBrush(QBrush(fill, Qt::SolidPattern));*/
-			// 高亮线条
 			applySeriesStyle(m_lineSeries[i], c, 1.0);
-
-			// 阴影渐变
-			QRadialGradient gradient(QPointF(0, 0), 1.0); // 中心为0,0，半径为1
-			QColor startColor = c; startColor.setAlpha(150); // 内层颜色
-			QColor endColor = c; endColor.setAlpha(0);       // 外层透明
-			gradient.setColorAt(0.0, startColor);
-			gradient.setColorAt(1.0, endColor);
-			gradient.setCoordinateMode(QGradient::ObjectBoundingMode); // 相对坐标
-
-			m_areaSeries[i]->setBrush(QBrush(gradient));
-			m_areaSeries[i]->setVisible(true);
+			QColor fill = c; fill.setAlpha(110);
+			m_areaSeries[i]->setBrush(QBrush(fill, Qt::SolidPattern));
 		}
 		else {
-			// 其他线条半透明
-			applySeriesStyle(m_lineSeries[i], c, 0.0);
-			// 隐藏阴影
-			m_areaSeries[i]->setVisible(false);
+			applySeriesStyle(m_lineSeries[i], c, 0.1);
+			QColor fill = c; fill.setAlpha(20);
+			m_areaSeries[i]->setBrush(QBrush(fill, Qt::SolidPattern));
 		}
 	}
 	// 图例全部显示，不隐藏任何 marker

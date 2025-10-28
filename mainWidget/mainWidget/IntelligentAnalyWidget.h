@@ -29,13 +29,32 @@ public:
 	IntelligentAnalyWidget(QWidget* parent = nullptr);
 	~IntelligentAnalyWidget();
 
-	QComboBox* getXCmboBox() { return x_comboBox; }
-	QComboBox* getYCmboBox() { return y_comboBox; }
+	QComboBox* getXComboBox() { return x_comboBox; }
+	QComboBox* getYComboBox() { return y_comboBox; }
+	QComboBox* getXValueComboBox() { return x_valueComboBox; }
+	QLabel* getXValuelable() { return x_valueLable; }
+
+
+	QTableWidget* getFallTableWidget() { return m_fallTableWidget; }
+	QTableWidget* getFastCombustionTableWidget() { return m_fastCombustionTableWidget; }
+	QTableWidget* getSlowCombustionTableWidget() { return m_slowCombustionTableWidget; }
+	QTableWidget* getShootTableWidget() { return m_shootTableWidget; }
+	QTableWidget* getJetImpactTableWidget() { return m_jetImpactTableWidget; }
+	QTableWidget* getFragmentationImpactTableWidget() { return m_fragmentationImpactTableWidget; }
+	QTableWidget* getExplosiveBlastTableWidget() { return m_explosiveBlastTableWidget; }
+	QTableWidget* getSacrificeExplosionTableWidget() { return m_sacrificeExplosionTableWidget; }
+
+	QStackedWidget* getStackedWidget() { return  m_tableStackWidget; } 
+
+	QChartView* getChartView() { return chartView; }
+
 
 private slots:
 	void onTreeItemClicked(const QString& itemData);
 
 	void onComboBoxIndexChanged(int index);
+
+	void dataChange(int index);
 
 private:
 
@@ -72,13 +91,18 @@ private:
 	QChart* chart = nullptr;
 	QComboBox* x_comboBox;
 	QComboBox* y_comboBox;
+	QLabel* x_valueLable;
+	QComboBox* x_valueComboBox;
 	QChartView* chartView;
 	QChartView* chartView2;
 
 	QHBoxLayout* graphicLayout;
 	QVBoxLayout* m_leftLayout;
 
+	QMap<QString, QStringList> m_dataMap;
 
 	// 更新图表数据
 	void updateChartData(QVector<QPointF> data, QString xAxisTitle, QString yAxisTitle);
+
+	qreal calculateMaxValue(const QVector<QPointF>& series, bool isX);
 };

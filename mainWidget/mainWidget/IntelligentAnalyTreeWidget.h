@@ -4,6 +4,8 @@
 #include <QAction>
 #include <QContextMenuEvent>
 #include <QMessageBox>
+#include <QtCharts>
+#include <QChartView>
 
 #include "GFTreeWidget.h"
 
@@ -27,7 +29,10 @@ signals:
 private slots:
 	void onTreeItemClicked(QTreeWidgetItem* item, int column);
 
+	// 更新图表数据
+	void updateChartData(QChartView* chartView, QVector<QPointF> data, QString xAxisTitle, QString yAxisTitle);
 
+	qreal calculateMaxValue(const QVector<QPointF>& series, bool isX);
 
 
 private:

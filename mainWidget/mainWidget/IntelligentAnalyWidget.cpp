@@ -61,7 +61,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 		{ "5", "2", "20", " ", " ", " ", " " },
 		{ "6", "3", "20", " ", " ", " ", " " },
 		{ "7", "1", "30", " ", " ", " ", " " },
-		{ "8", "2", "40", " ", " ", " ", " " },
+		{ "8", "2", "30", " ", " ", " ", " " },
 		{ "9", "3", "30", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_fallData.size(); ++i) {
@@ -296,23 +296,44 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_tableStackWidget->addWidget(m_fragmentationImpactTableWidget);
 	m_tableStackWidget->addWidget(m_explosiveBlastTableWidget);
 	m_tableStackWidget->addWidget(m_sacrificeExplosionTableWidget);
+	m_tableWidget = m_fallTableWidget;
 
-
+	m_dataMap["壳体厚度"] = QStringList() << "1" << "2" << "3";
+	m_dataMap["跌落高度"] = QStringList() << "10" << "20" << "30";
+	m_dataMap["快烤平均温度"] = QStringList() << "600" << "700" << "800";
+	m_dataMap["慢烤平均温度"] = QStringList() << "315" << "330" << "345";
+	m_dataMap["子弹撞击速度"] = QStringList() << "620" << "720" << "820";
+	m_dataMap["破片撞击速度"] = QStringList() << "1630" << "1730" << "1830";
+	m_dataMap["聚能装药口径"] = QStringList() << "30" << "40" << "50";
+	m_dataMap["TNT当量"] = QStringList() << "3" << "4" << "5";
+	m_dataMap["殉爆距离"] = QStringList() << "80" << "90" << "100";
 
 	graphicWid = new QWidget();
 	graphicLayout = new QHBoxLayout();
 	QLabel* x_label = new QLabel("X轴：");
 	x_comboBox = new QComboBox();
-	x_comboBox->addItems({ "壳体厚度", "撞击速度" });
+	x_comboBox->addItems({ "壳体厚度", "跌落高度" });
+	x_comboBox->setFixedWidth(180);
 	QLabel* y_label = new QLabel("Y轴：");
 	y_comboBox = new QComboBox();
 	y_comboBox->addItems({ "壳体最大应力 ", "进剂最大应力", "壳体最高温度", "推进剂最高温度"});
+	x_valueLable = new QLabel("跌落高度：");
+	x_valueComboBox = new QComboBox();
+	x_valueComboBox->addItems({ "10", "20", "30"});
+	x_valueComboBox->setFixedWidth(80);
 	// 连接信号槽
 	connect(x_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
 
 	connect(y_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
+
+	connect(x_valueComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, &IntelligentAnalyWidget::dataChange);
+
+	
+
+	
 
 
 	chart = new QChart();
@@ -338,7 +359,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	labelLayou->addWidget(x_comboBox);
 	labelLayou->addWidget(y_label);
 	labelLayou->addWidget(y_comboBox);
-	labelLayou->setSpacing(0);
+	labelLayou->addWidget(x_valueLable);
+	labelLayou->addWidget(x_valueComboBox);
 	labelLayou->setContentsMargins(0,0,0,0);
 	labelLayou->addStretch(200);
 
@@ -412,12 +434,14 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	if (itemData == "IntelligentAnaly") {
 		m_propertyStackWidget->setCurrentWidget(m_intelligentPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fallTableWidget);
+		m_tableWidget = m_fallTableWidget;
 		x_comboBox->setItemText(1, "跌落高度");
 	}
 	else if (itemData == "FallIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fallPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fallTableWidget);
+		m_tableWidget = m_fallTableWidget;
 		x_comboBox->setItemText(1, "跌落高度");
 	}
 	
@@ -425,44 +449,149 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fastCombustionTableWidget);
+		m_tableWidget = m_fastCombustionTableWidget;
 		x_comboBox->setItemText(1, "快烤平均温度");
 	}
 	else if (itemData == "SlowCombustionIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_slowCombustionTableWidget);
+		m_tableWidget = m_slowCombustionTableWidget;
 		x_comboBox->setItemText(1, "慢烤平均温度");
 	}
 	else if (itemData == "ShootIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_shootTableWidget);
-		x_comboBox->setItemText(1, "撞击速度温度");
+		m_tableWidget = m_shootTableWidget;
+		x_comboBox->setItemText(1, "子弹撞击速度");
 	}
 	else if (itemData == "JetImpactIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_jetImpactTableWidget);
-		x_comboBox->setItemText(1, "撞击速度温度");
+		m_tableWidget = m_jetImpactTableWidget;
+		x_comboBox->setItemText(1, "破片撞击速度");
 	}
 	else if (itemData == "FragmentationImpactIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fragmentationImpactTableWidget);
+		m_tableWidget = m_fragmentationImpactTableWidget;
 		x_comboBox->setItemText(1, "聚能装药口径");
 	}
 	else if (itemData == "ExplosiveBlastIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_explosiveBlastTableWidget);
+		m_tableWidget = m_explosiveBlastTableWidget;
 		x_comboBox->setItemText(1, "TNT当量");
 	}
 	else if (itemData == "SacrificeExplosionIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_sacrificeExplosionTableWidget);
+		m_tableWidget = m_sacrificeExplosionTableWidget;
 		x_comboBox->setItemText(1, "殉爆距离");
 	}
+
+	onComboBoxIndexChanged(0);
+}
+
+void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
+{
+	// 修改第三个下拉框的值
+	int x_index = x_comboBox->currentIndex();
+	int other = 0;
+	if (x_index == 0)
+	{
+		other = 1;
+	}
+	else
+	{
+		other = 0;
+	}
+	QString text = x_comboBox->itemText(other);
+	x_comboBox->currentIndex();
+	x_valueComboBox->clear();
+	QStringList childItems = m_dataMap.value(text);
+	x_valueComboBox->addItems(childItems);
+	x_valueLable->setText(text + ":");
+	
+
+	dataChange(0);
+	
+}
+
+void IntelligentAnalyWidget::dataChange(int index)
+{
+	QList<int> rowList;
+	int x_col = 3;
+	int y_col = 1;
+
+	int x_index = x_comboBox->currentIndex();
+	QString x_valueindex = x_valueComboBox->currentIndex();
+	int y_index = y_comboBox->currentIndex();
+	if (x_index == 0)
+	{
+		if (x_valueindex == 0)
+		{
+			rowList = { 1,2,3 };
+		}
+		else if (x_valueindex == 1)
+		{
+			rowList = { 4,5,6 };
+		}
+		else
+		{
+			rowList = { 7,8,9 };
+		}
+		x_col = 1;
+	}
+	else
+	{
+		if (x_valueindex == 0)
+		{
+			rowList = { 1,4,7 };
+		}
+		else if (x_valueindex == 1)
+		{
+			rowList = { 2,5,8 };
+		}
+		else
+		{
+			rowList = { 3,6,9 };
+		}
+		x_col = 2;
+	}
+
+
+	if (y_index == 0)
+	{
+		y_col = 3;
+	}
+	else if (y_index == 1)
+	{
+		y_col = 4;
+	}
+	else if (y_index == 2)
+	{
+		y_col = 5;
+	}
+	else if (y_index == 3)
+	{
+		y_col = 6;
+	}
+
+	QVector<QPointF> data;
+	foreach(int row, rowList) {
+		if (m_tableWidget->item(row, x_col) && m_tableWidget->item(row, y_col))
+		{
+			data.append(QPointF(m_tableWidget->item(row, x_col)->text().toDouble(), m_tableWidget->item(row, y_col)->text().toDouble()));
+		}
+	}
+	updateChartData(data, x_comboBox->currentText(), y_comboBox->currentText());
+
 }
 
 
@@ -484,28 +613,49 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data, QString xAxi
 
 	// 添加系列到图表并关联坐标轴
 	chart->addSeries(series);
-	
-	chart->createDefaultAxes();
+
+	// 创建坐标轴（X轴和Y轴）
+	QValueAxis* axisX = new QValueAxis();
+	QValueAxis* axisY = new QValueAxis();
+
 	// 设置坐标轴名称
-	chart->axisX()->setTitleText(xAxisTitle);
-	chart->axisY()->setTitleText(yAxisTitle);
+	axisX->setTitleText(xAxisTitle);
+	axisY->setTitleText(yAxisTitle);
+
+	qreal maxX = calculateMaxValue(data, true);
+	qreal maxY = calculateMaxValue(data, false);
+
+	// 设置X轴范围（最小值固定为0，最大值为计算值）
+	axisX->setRange(0, maxX);
+	// 设置Y轴范围（最小值固定为0，最大值为计算值）
+	axisY->setRange(0, maxY);
+
+	// 添加坐标轴到图表
+	chart->addAxis(axisX, Qt::AlignBottom);
+	chart->addAxis(axisY, Qt::AlignLeft);
+
+	// 将数据系列关联到坐标轴
+	series->attachAxis(axisX);
+	series->attachAxis(axisY);
 
 	chartView->update();
 
 }
 
-void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
+
+// 计算数据最大值（确保不小于0）
+qreal IntelligentAnalyWidget::calculateMaxValue(const QVector<QPointF>& series, bool isX)
 {
-	QVector<QPointF> data1 = { QPointF(1, 2), QPointF(2, 4), QPointF(3, 6) };
-	QVector<QPointF> data2 = { QPointF(1, 30), QPointF(2, 50), QPointF(3, 70) };
-	if (index >= 0 ) {
-		if (index == 0)
-		{
-			updateChartData(data1, x_comboBox->currentText(), y_comboBox->currentText());
-		}
-		else
-		{
-			updateChartData(data2, x_comboBox->currentText(), y_comboBox->currentText());
+	if (series.isEmpty()) return 0;
+
+	qreal maxVal = isX ? series.first().x() : series.first().y();
+	for (const QPointF& point : series) {
+		qreal val = isX ? point.x() : point.y();
+		if (val > maxVal) {
+			maxVal = val;
 		}
 	}
+
+	// 确保最大值不小于0
+	return qMax(maxVal, 0.0);
 }
