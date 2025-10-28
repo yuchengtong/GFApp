@@ -50,6 +50,7 @@
 #include "ModelDataManager.h"
 #include "ProgressDialog.h"
 #include "GeometryImportWorker.h"
+#include "WordExporterWorker.h"
 #include <HLRBRep_Algo.hxx>
 #include <BRepProj_Projection.hxx>
 #include <TopExp_Explorer.hxx>
@@ -1687,21 +1688,60 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			imagePaths.insert("应力云图", QDir("src/template/跌落试验/应力云图.png").absolutePath());
 			
 
-			wordExporter->exportToWord(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory+ "/跌落仿真计算数据表.docx", data, imagePaths);
-			QMessageBox::information(this, "提示", QString("跌落试验结果导出成功"));
-			{
-				QDateTime currentTime = QDateTime::currentDateTime();
-				QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-				auto logWidget = gfParent->GetLogWidget();
-				auto textEdit = logWidget->GetTextEdit();
-				QString text = timeStr + "[信息]>成功导出跌落试验报告";
-				text = text + "\n" + timeStr + "[信息]>跌落试验报告：" + directory + "/跌落仿真计算数据表.docx";
-				textEdit->appendPlainText(text);
-				logWidget->update();
+			// 创建进度对话框
+			ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", gfParent);
+			progressDialog->show();
 
-				// 关键：强制刷新UI，确保日志立即显示
-				QApplication::processEvents();
-			}
+			// 创建工作线程和工作对象
+			WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory + "/跌落仿真计算数据表.docx", data, imagePaths);
+			QThread* wordExporterThread = new QThread();
+			wordExporterWorker->moveToThread(wordExporterThread);
+
+			// 连接信号槽
+			connect(wordExporterThread, &QThread::started, wordExporterWorker, &WordExporterWorker::DoWork);
+			connect(wordExporterWorker, &WordExporterWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
+			connect(wordExporterWorker, &WordExporterWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
+			connect(progressDialog, &ProgressDialog::Canceled, wordExporterWorker, &WordExporterWorker::RequestInterruption);
+
+			// 处理导入结果
+			connect(wordExporterWorker, &WordExporterWorker::WorkFinished, this,
+				[=](bool success, const QString& msg) {
+					
+
+					if (success )
+					{
+						// 更新日志
+						QMessageBox::information(this, "提示", QString("导出成功"));
+						{
+							QDateTime currentTime = QDateTime::currentDateTime();
+							QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+							auto logWidget = gfParent->GetLogWidget();
+							auto textEdit = logWidget->GetTextEdit();
+							QString text = timeStr + "[信息]>成功导出试验报告";
+							text = text + "\n" + timeStr + "[信息]>试验报告：" + directory + "/跌落仿真计算数据表.docx";
+							textEdit->appendPlainText(text);
+							logWidget->update();
+
+							// 关键：强制刷新UI，确保日志立即显示
+							QApplication::processEvents();
+						}
+
+					}
+					else if (!success)
+					{
+						QMessageBox::warning(this, "导出失败", msg);
+					}
+					// 清理资源
+					progressDialog->close();
+					wordExporterThread->quit();
+					wordExporterThread->wait();
+					wordExporterWorker->deleteLater();
+					wordExporterThread->deleteLater();
+					progressDialog->deleteLater();
+				});
+
+			// 启动线程
+			wordExporterThread->start();
 			break;
 		}
 		else

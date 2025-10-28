@@ -166,6 +166,7 @@
     <ClCompile Include="PropertyWidget\StressResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\TemperatureResultWidget.cpp" />
     <ClCompile Include="WordExporter.cpp" />
+    <ClCompile Include="WordExporterWorker.cpp" />
     <QtRcc Include="mainWidget.qrc" />
     <QtRcc Include="Resource.qrc" />
     <QtUic Include="AuxiliaryAnalysisWidget.ui" />
@@ -243,6 +244,7 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="WordExporterWorker.h" />
     <QtMoc Include="PropertyWidget\IntelligentShootPropertyWidget.h" />
     <QtMoc Include="PropertyWidget\IntelligentExplosiveBlastPropertyWidget.h" />
     <QtMoc Include="PropertyWidget\IntelligentFastCombustionPropertyWidget.h" />

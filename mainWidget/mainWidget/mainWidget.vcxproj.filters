@@ -211,6 +211,9 @@
     <ClCompile Include="PropertyWidget\IntelligentShootPropertyWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WordExporterWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -376,6 +379,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="PropertyWidget\IntelligentShootPropertyWidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="WordExporterWorker.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
