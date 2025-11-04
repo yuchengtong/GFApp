@@ -214,6 +214,9 @@
     <ClCompile Include="WordExporterWorker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -401,6 +404,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Algrithm\colour_change_algrithm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

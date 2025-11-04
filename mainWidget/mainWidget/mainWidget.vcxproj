@@ -110,6 +110,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp" />
     <ClCompile Include="AuxiliaryAnalysisWidget.cpp" />
     <ClCompile Include="CustomPolarChart.cpp" />
     <ClCompile Include="DatabaseWidget.cpp" />
@@ -275,6 +276,7 @@
     <QtMoc Include="PropertyWidget\CalculationPropertyWidget.h" />
     <QtMoc Include="LoginDialog.h" />
     <QtMoc Include="DataStructure\ModelDataManager.h" />
+    <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
     <QtMoc Include="CustomPolarChart.h" />
     <ClInclude Include="DataStructure\TriangleStructure.h" />
