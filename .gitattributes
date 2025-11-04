@@ -1,1 +1,2 @@
 mainWidget/mainWidget/3rdParty/Gmesh/bin/gmsh.pdb filter=lfs diff=lfs merge=lfs -text
+mainWidget/mainWidget/3rdParty/Gmesh/bin/gmshd.lib filter=lfs diff=lfs merge=lfs -text
