@@ -723,61 +723,25 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					APICreateMidSurfaceHelper::FindMinMaxXPoints(faceB, minXB, maxXB, APICreateMidSurfaceHelper::FacePosition::Face_Lower);
 
 					
-					std::vector<TopoDS_Edge> forwardEdges;
+					std::vector<TopoDS_Edge> forwardEdges, backwardEdges;
 					TopoDS_Wire outerWire = APICreateMidSurfaceHelper::GetOuterWire(faceA);
-					APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(outerWire, minXA,maxXA,  forwardEdges);
-					std::vector<TopoDS_Edge> backwardEdges, backwardEdges2;
-					APICreateMidSurfaceHelper::CollectEdgesFromEndToStart(outerWire, maxXA, minXA, backwardEdges);
-					APICreateMidSurfaceHelper::CollectEdgesFromEndToStart(outerWire, minXA, maxXA, backwardEdges2);
-
-					TopExp_Explorer edgeExplorer(outerWire, TopAbs_EDGE);
-					for (; edgeExplorer.More(); edgeExplorer.Next()) {
-						TopoDS_Edge edge = TopoDS::Edge(edgeExplorer.Current());
-
-					};
-
-
-
-					//auto face=APICreateMidSurfaceHelper::CreateNewFace(faceA, faceB);
-
-					//auto wir= APICreateMidSurfaceHelper::CreateNewframe(faceA, faceB);
-
+					APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(outerWire, minXA, maxXA, forwardEdges, backwardEdges);
+				
 					TopoDS_Compound allFacesCompound;
 					BRep_Builder builder;
 					builder.MakeCompound(allFacesCompound);
+
+					for (auto a : forwardEdges)
+					{
+						builder.Add(allFacesCompound, a);
+					}
 
 					for (auto e : backwardEdges)
 					{
 						builder.Add(allFacesCompound, e);
 					}
-					// 添加有效面到复合形状
-					//if (!faceA.IsNull()) builder.Add(allFacesCompound, faceA);
-					//if (!faceB.IsNull()) builder.Add(allFacesCompound, faceB);
-					//if (!face.IsNull()) builder.Add(allFacesCompound, face);
 
-					//auto vertices =APICreateMidSurfaceHelper::GetContourVertices(faceA);
-
-					//auto filename = "D:\\desktop\\1.txt";
-					//std::ofstream outFile(filename);
-					//if (!outFile.is_open()) {
-					//	std::cerr << "无法打开文件: " << filename << std::endl;
-					//	return;
-					//}
-
-					//// 设置精度
-					//outFile.precision(10);
-					//outFile << std::fixed;
-
-					//// 写入顶点坐标（x和y）
-					//for (const auto& vertex : vertices) {
-					//	outFile << vertex.X() << " " << vertex.Y() << std::endl;
-					//}
-
-					//outFile.close();
-					//std::cout << "轮廓顶点坐标已导出到: " << filename << std::endl;
-					//std::cout << "共导出 " << vertices.size() << " 个顶点" << std::endl;
-
-
+		
 					//TopoDS_Wire outerWire = APICreateMidSurfaceHelper::GetOuterWire(allFacesCompound);
 					// 显示复合形状（洋红色）
 					Handle(AIS_Shape) aisAllFaces = new AIS_Shape(allFacesCompound);
@@ -787,12 +751,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 					// 调整视图适配所有内容
 					view->FitAll();
-
-
-
-
-
-
 
 					break;
 				}
