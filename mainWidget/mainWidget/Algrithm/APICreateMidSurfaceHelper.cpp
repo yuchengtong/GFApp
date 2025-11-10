@@ -26,9 +26,6 @@
 #include <TopoDS.hxx>
 
 
-
-
-
 std::pair<TopoDS_Face, TopoDS_Face> APICreateMidSurfaceHelper::GetIntersectionFacesWithCenterXOY(const TopoDS_Shape& model)
 {
 	TopoDS_Face upFace, downFace2;
@@ -53,7 +50,7 @@ std::pair<TopoDS_Face, TopoDS_Face> APICreateMidSurfaceHelper::GetIntersectionFa
 
 	BRepAlgoAPI_Common common(model, planeFace);
 	common.Build();
-	if (!common.IsDone()) 
+	if (!common.IsDone())
 	{
 		return { upFace, downFace2 };
 	}
@@ -73,19 +70,18 @@ std::pair<TopoDS_Face, TopoDS_Face> APICreateMidSurfaceHelper::GetIntersectionFa
 		}
 
 		const gp_Pln& pln = facePlane->Pln();
-		if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance)) 
+		if (pln.Position().IsCoplanar(xoyPlaneAtCenter.Position(), tolerance, tolerance))
 		{
 			GProp_GProps props;
 			BRepGProp::SurfaceProperties(face, props);
 			double area = props.Mass();
-			if (area > 1e-9) 
+			if (area > 1e-9)
 				candidateFaces.emplace_back(area, face);
 		}
 	}
 
 	std::sort(candidateFaces.begin(), candidateFaces.end(),
 		[](const auto& a, const auto& b) { return a.first > b.first; });
-
 
 	auto calculateFaceCentroidY = [](const TopoDS_Face& face) -> double {
 		if (face.IsNull())
@@ -98,299 +94,262 @@ std::pair<TopoDS_Face, TopoDS_Face> APICreateMidSurfaceHelper::GetIntersectionFa
 		return props.CentreOfMass().Y();
 	};
 
-
 	upFace = calculateFaceCentroidY(candidateFaces[0].second) > calculateFaceCentroidY(candidateFaces[1].second) ? candidateFaces[0].second : candidateFaces[1].second;
 	downFace2 = (upFace.IsEqual(candidateFaces[0].second)) ? candidateFaces[1].second : candidateFaces[0].second;
 	return { upFace, downFace2 };
 }
 
-void APICreateMidSurfaceHelper::FindMinMaxXPoints(const TopoDS_Shape& shape, gp_Pnt& minXPoint, gp_Pnt& maxXPoint)
+void APICreateMidSurfaceHelper::FindMinMaxXPoints(
+	const TopoDS_Shape& shape,
+	gp_Pnt& minXPoint,
+	gp_Pnt& maxXPoint,
+	FacePosition facePos
+)
 {
 	double minX = DBL_MAX;
 	double maxX = -DBL_MAX;
 	minXPoint = gp_Pnt();
 	maxXPoint = gp_Pnt();
 
-	// 如果是面，获取其外轮廓wire
 	TopoDS_Shape shapeToExplore = shape;
-	if (shape.ShapeType() == TopAbs_FACE) {
+	if (shape.ShapeType() == TopAbs_FACE)
+	{
 		TopExp_Explorer wireExplorer(shape, TopAbs_WIRE);
-		if (wireExplorer.More()) {
+		if (wireExplorer.More())
+		{
 			shapeToExplore = wireExplorer.Current();
 		}
 	}
 
-	// 遍历所有边
+
 	TopExp_Explorer edgeExplorer(shapeToExplore, TopAbs_EDGE);
-	for (; edgeExplorer.More(); edgeExplorer.Next()) {
+	for (; edgeExplorer.More(); edgeExplorer.Next())
+	{
 		TopoDS_Edge edge = TopoDS::Edge(edgeExplorer.Current());
-		BRepAdaptor_Curve curve(edge);
+		TopoDS_Vertex startVtx, endVtx;
 
-		double first = curve.FirstParameter();
-		double last = curve.LastParameter();
-
-		// 检查起点
-		gp_Pnt startPoint = curve.Value(first);
-		if (startPoint.X() < minX) {
-			minX = startPoint.X();
-			minXPoint = startPoint;
-		}
-		if (startPoint.X() > maxX) {
-			maxX = startPoint.X();
-			maxXPoint = startPoint;
+		TopExp::Vertices(edge, startVtx, endVtx);
+		if (startVtx.IsNull() || endVtx.IsNull())
+		{
+			continue;
 		}
 
-		// 检查终点
-		gp_Pnt endPoint = curve.Value(last);
-		if (endPoint.X() < minX) {
-			minX = endPoint.X();
-			minXPoint = endPoint;
-		}
-		if (endPoint.X() > maxX) {
-			maxX = endPoint.X();
-			maxXPoint = endPoint;
-		}
+		gp_Pnt startPnt = BRep_Tool::Pnt(startVtx);
+		gp_Pnt endPnt = BRep_Tool::Pnt(endVtx);
+
+		auto ProcessVertex = [](
+			const gp_Pnt& vertex,
+			double& minX,
+			double& maxX,
+			gp_Pnt& minXPoint,
+			gp_Pnt& maxXPoint,
+			FacePosition facePos
+			)
+		{
+			double x = vertex.X();
+			double y = vertex.Y();
+			const double eps = Precision::Confusion();
+
+
+			if (x < minX - eps)
+			{
+				minX = x;
+				minXPoint = vertex;
+			}
+			else if (x <= minX + eps)
+			{
+				if (facePos == Face_Upper)
+				{
+					if (y < minXPoint.Y() - eps)
+					{
+						minXPoint = vertex;
+					}
+				}
+				else
+				{
+					if (y > minXPoint.Y() + eps)
+					{
+						minXPoint = vertex;
+					}
+				}
+			}
+
+			if (x > maxX + eps)
+			{
+				maxX = x;
+				maxXPoint = vertex;
+			}
+			else if (x >= maxX - eps) {
+				if (facePos == Face_Upper)
+				{
+					if (y < maxXPoint.Y() - eps)
+					{
+						maxXPoint = vertex;
+					}
+				}
+				else
+				{
+					if (y > maxXPoint.Y() + eps)
+					{
+						maxXPoint = vertex;
+					}
+				}
+			}
+		};
+
+		ProcessVertex(startPnt, minX, maxX, minXPoint, maxXPoint, facePos);
+		ProcessVertex(endPnt, minX, maxX, minXPoint, maxXPoint, facePos);
 	}
 }
 
-TopoDS_Wire APICreateMidSurfaceHelper::CreateWireFromPointToPoint(const TopoDS_Wire& originalWire,
-	const gp_Pnt& startPoint, const gp_Pnt& endPoint)
-{
-	std::vector<TopoDS_Edge> edges;
 
-	auto IsSamePoint = [](const gp_Pnt& p1, const gp_Pnt& p2, double tolerance = 1e-6)
-	{
-		return p1.Distance(p2) < tolerance;
-	};
-
-	TopExp_Explorer edgeExplorer(originalWire, TopAbs_EDGE);
-	for (; edgeExplorer.More(); edgeExplorer.Next()) 
-	{
-		edges.push_back(TopoDS::Edge(edgeExplorer.Current()));
-	}
-
-	// 找到起点所在的边
-	int startIndex = -1;
-	for (size_t i = 0; i < edges.size(); i++) {
-		TopoDS_Edge edge = edges[i];
-		BRepAdaptor_Curve curve(edge);
-
-		double first = curve.FirstParameter();
-		double last = curve.LastParameter();
-
-		gp_Pnt edgeStart = curve.Value(first);
-		gp_Pnt edgeEnd = curve.Value(last);
-
-		if (IsSamePoint(edgeStart, startPoint) || IsSamePoint(edgeEnd, startPoint)) {
-			startIndex = i;
-			break;
-		}
-	}
-
-	if (startIndex == -1) {
-		return TopoDS_Wire();
-	}
-
-	BRepBuilderAPI_MakeWire wireBuilder;
-	bool foundEnd = false;
-	int currentIndex = startIndex;
-	int count = 0;
-
-	while (!foundEnd && count < edges.size())
-	{
-		TopoDS_Edge currentEdge = edges[currentIndex];
-		wireBuilder.Add(currentEdge);
-
-		// 检查当前边的终点是否是目标终点
-		BRepAdaptor_Curve curve(currentEdge);
-		gp_Pnt edgeEnd = curve.Value(curve.LastParameter());
-
-		if (IsSamePoint(edgeEnd, endPoint)) {
-			foundEnd = true;
-		}
-		else {
-			// 移动到下一条边
-			currentIndex = (currentIndex + 1) % edges.size();
-			count++;
-		}
-	}
-
-	if (wireBuilder.IsDone() && foundEnd) {
-		return wireBuilder.Wire();
-	}
-
-	return TopoDS_Wire();
-}
-
-
-bool APICreateMidSurfaceHelper::SplitWireByMinMaxX(const TopoDS_Wire& originalWire, TopoDS_Wire& wire1, TopoDS_Wire& wire2)
-{
-	gp_Pnt minXPoint, maxXPoint;
-
-	//std::pair<gp_Pnt, gp_Pnt> points= FindMinMaxXPoints(originalWire);
-	//minXPoint = points.first;
-	//maxXPoint = points.second;
-
-	//wire1 = CreateWireFromPointToPoint(originalWire, minXPoint, maxXPoint);
-	//wire2 = CreateWireFromPointToPoint(originalWire, maxXPoint, minXPoint);
-
-	return !wire1.IsNull() && !wire2.IsNull();
-}
-
-
-// 检查两个点是否相同（在容差范围内）
-bool APICreateMidSurfaceHelper::IsSamePoint(const gp_Pnt& p1, const gp_Pnt& p2, double tolerance = 1e-6)
-{
-	return p1.Distance(p2) < tolerance;
-}
-
-// 获取面的外轮廓wire
 TopoDS_Wire APICreateMidSurfaceHelper::GetOuterWire(const TopoDS_Face& face)
 {
 	TopExp_Explorer wireExplorer(face, TopAbs_WIRE);
-	if (wireExplorer.More()) {
+	if (wireExplorer.More())
+	{
 		return TopoDS::Wire(wireExplorer.Current());
 	}
 	return TopoDS_Wire();
 }
 
-// 获取面的轮廓线（从startPoint到endPoint）
-TopoDS_Wire APICreateMidSurfaceHelper::GetContour(const TopoDS_Face& face, const gp_Pnt& startPoint, const gp_Pnt& endPoint)
+void APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(
+	const TopoDS_Wire& wire,
+	const gp_Pnt& startPnt,
+	const gp_Pnt& endPnt,
+	std::vector<TopoDS_Edge>& forwardEdges,  // 起点到终点的边
+	std::vector<TopoDS_Edge>& backwardEdges  // 终点回到起点的边（构成完整循环）
+)
 {
-	TopoDS_Wire outerWire = GetOuterWire(face);
-	if (outerWire.IsNull()) {
-		return TopoDS_Wire();
+	forwardEdges.clear();
+	backwardEdges.clear();
+
+	std::vector<TopoDS_Edge> allEdges;
+	TopExp_Explorer edgeExplorer(wire, TopAbs_EDGE);
+	for (; edgeExplorer.More(); edgeExplorer.Next())
+	{
+		allEdges.push_back(TopoDS::Edge(edgeExplorer.Current()));
 	}
 
-	std::vector<TopoDS_Edge> edges;
-
-	// 收集所有边
-	TopExp_Explorer edgeExplorer(outerWire, TopAbs_EDGE);
-	for (; edgeExplorer.More(); edgeExplorer.Next()) {
-		edges.push_back(TopoDS::Edge(edgeExplorer.Current()));
+	if (allEdges.empty()) {
+		return;
 	}
 
-	// 找到起点所在的边
-	int startIndex = -1;
-	for (size_t i = 0; i < edges.size(); i++) {
-		TopoDS_Edge edge = edges[i];
-		BRepAdaptor_Curve curve(edge);
+	size_t startIndex = allEdges.size();
+	size_t endIndex = allEdges.size();
+	bool isCollecting = false;
 
-		double first = curve.FirstParameter();
-		double last = curve.LastParameter();
+	for (size_t i = 0; i < allEdges.size(); ++i) {
+		const TopoDS_Edge& edge = allEdges[i];
+		TopoDS_Vertex vtx1, vtx2;
+		TopExp::Vertices(edge, vtx1, vtx2);
+		gp_Pnt p1 = BRep_Tool::Pnt(vtx1);
+		gp_Pnt p2 = BRep_Tool::Pnt(vtx2);
 
-		gp_Pnt edgeStart = curve.Value(first);
-		gp_Pnt edgeEnd = curve.Value(last);
+		if (!isCollecting)
+		{
+			if (p1.IsEqual(startPnt, Precision::Confusion()))
+			{
+				isCollecting = true;
+				startIndex = i;
+				forwardEdges.push_back(edge);
+			}
+			else if (p2.IsEqual(startPnt, Precision::Confusion()))
+			{
+				isCollecting = true;
+				startIndex = i + 1;
+			}
+		}
+		else
+		{
+			forwardEdges.push_back(edge);
 
-		if (IsSamePoint(edgeStart, startPoint) || IsSamePoint(edgeEnd, startPoint)) {
-			startIndex = i;
-			break;
+			if (p2.IsEqual(endPnt, Precision::Confusion()))
+			{
+				endIndex = i;
+				break;
+			}
 		}
 	}
 
-	if (startIndex == -1) {
-		return TopoDS_Wire();
-	}
-
-	// 沿着wire收集边，直到遇到终点
-	BRepBuilderAPI_MakeWire wireBuilder;
-	bool foundEnd = false;
-	int currentIndex = startIndex;
-	int count = 0;
-
-	while (!foundEnd && count < edges.size()) {
-		TopoDS_Edge currentEdge = edges[currentIndex];
-		wireBuilder.Add(currentEdge);
-
-		// 检查当前边的终点是否是目标终点
-		BRepAdaptor_Curve curve(currentEdge);
-		gp_Pnt edgeEnd = curve.Value(curve.LastParameter());
-
-		if (IsSamePoint(edgeEnd, endPoint)) {
-			foundEnd = true;
+	if (startIndex != allEdges.size() && endIndex != allEdges.size())
+	{
+		for (size_t i = endIndex + 1; i < allEdges.size(); ++i)
+		{
+			backwardEdges.push_back(allEdges[i]);
 		}
-		else {
-			// 移动到下一条边
-			currentIndex = (currentIndex + 1) % edges.size();
-			count++;
+		for (size_t i = 0; i < startIndex; ++i)
+		{
+			backwardEdges.push_back(allEdges[i]);
 		}
 	}
-
-	if (wireBuilder.IsDone() && foundEnd) {
-		return wireBuilder.Wire();
-	}
-
-	return TopoDS_Wire();
 }
 
 
 
-// 主函数：创建新面
-TopoDS_Face APICreateMidSurfaceHelper::CreateNewFace(const TopoDS_Face& faceA, const TopoDS_Face& faceB)
+
+TopoDS_Face APICreateMidSurfaceHelper::CreateConnectingFace(
+	const std::vector<TopoDS_Edge>& backwardEdges,  // 来自 faceA, 路径是 maxXA -> ... -> minXA
+	const std::vector<TopoDS_Edge>& forwardEdgesB,  // 来自 faceB, 路径是 minXB -> ... -> maxXB
+	const gp_Pnt& minXA,
+	const gp_Pnt& maxXA,
+	const gp_Pnt& minXB,
+	const gp_Pnt& maxXB)
 {
-	// 找到面A和面B的X最小和最大点
-	gp_Pnt minXA, maxXA, minXB, maxXB;
+	// --- 步骤 1: 检查输入边链是否为空 ---
+	if (backwardEdges.empty() || forwardEdgesB.empty())
+	{
+		return TopoDS_Face(); // 边链为空，无法创建面
+	}
 
+	// --- 步骤 2: 创建连接边 ---
+	// 边1: 连接 minXA (backwardEdges 的终点) 和 minXB (forwardEdgesB 的起点)
+	BRepBuilderAPI_MakeEdge edgeMaker1(minXA, minXB);
+	if (!edgeMaker1.IsDone()) return TopoDS_Face();
+	TopoDS_Edge connectingEdge1 = edgeMaker1.Edge();
 
-	FindMinMaxXPoints(faceA, minXA, maxXA);
-	FindMinMaxXPoints(faceB, minXB, maxXB);
+	// 边2: 连接 maxXB (forwardEdgesB 的终点) 和 maxXA (backwardEdges 的起点)
+	BRepBuilderAPI_MakeEdge edgeMaker2(maxXB, maxXA);
+	if (!edgeMaker2.IsDone()) return TopoDS_Face();
+	TopoDS_Edge connectingEdge2 = edgeMaker2.Edge();
 
-	// 获取面A的下轮廓线（从minXA到maxXA）
-	TopoDS_Wire bottomContourA = GetContour(faceA, minXA, maxXA);
+	// --- 步骤 3: 组合成一个封闭的 Wire ---
+	BRepBuilderAPI_MakeWire wireMaker;
 
-	// 获取面B的上轮廓线（从maxXB到minXB）
-	TopoDS_Wire topContourB = GetContour(faceB, maxXB, minXB);
+	// 1. 添加 backwardEdges (顺序：maxXA -> ... -> minXA)
+	for (const auto& edge : backwardEdges)
+	{
+		wireMaker.Add(edge);
+	}
 
-	// 创建连接边
-	TopoDS_Edge edge1 = BRepBuilderAPI_MakeEdge(maxXA, maxXB); // 连接A的maxX到B的maxX
-	TopoDS_Edge edge2 = BRepBuilderAPI_MakeEdge(minXB, minXA); // 连接B的minX到A的minX
+	// 2. 添加第一条连接边 (顺序：minXA -> minXB)
+	wireMaker.Add(connectingEdge1);
 
-	// 构建封闭的wire
-	BRepBuilderAPI_MakeWire newWireBuilder;
-	newWireBuilder.Add(bottomContourA);
-	newWireBuilder.Add(edge1);
-	newWireBuilder.Add(topContourB);
-	newWireBuilder.Add(edge2);
+	// 3. 添加 forwardEdgesB (顺序：minXB -> ... -> maxXB)
+	for (const auto& edge : forwardEdgesB)
+	{
+		wireMaker.Add(edge);
+	}
 
-	if (!newWireBuilder.IsDone()) {
+	// 4. 添加第二条连接边 (顺序：maxXB -> maxXA)
+	wireMaker.Add(connectingEdge2);
+
+	if (!wireMaker.IsDone())
+	{
+		return TopoDS_Face(); // 创建 Wire 失败
+	}
+	TopoDS_Wire closedWire = wireMaker.Wire();
+
+	// --- 步骤 4: 使用封闭的 Wire 创建 Face ---
+	BRepBuilderAPI_MakeFace faceMaker(closedWire);
+
+	if (faceMaker.IsDone())
+	{
+		return faceMaker.Face();
+	}
+	else
+	{
+		// 创建失败，可能是因为 Wire 不平面或不自交
 		return TopoDS_Face();
 	}
-
-	// 创建面
-	BRepBuilderAPI_MakeFace newFaceBuilder(newWireBuilder.Wire(), true); // true表示平面
-	if (!newFaceBuilder.IsDone()) {
-		return TopoDS_Face();
-	}
-
-	return newFaceBuilder.Face();
 }
-
-TopoDS_Wire APICreateMidSurfaceHelper::CreateNewframe(const TopoDS_Face& faceA, const TopoDS_Face& faceB)
-{
-	// 找到面A和面B的X最小和最大点
-	gp_Pnt minXA, maxXA, minXB, maxXB;
-
-
-	FindMinMaxXPoints(faceA, minXA, maxXA);
-	FindMinMaxXPoints(faceB, minXB, maxXB);
-
-	// 获取面A的下轮廓线（从minXA到maxXA）
-	TopoDS_Wire bottomContourA = GetContour(faceA, minXA, maxXA);
-
-	// 获取面B的上轮廓线（从maxXB到minXB）
-	TopoDS_Wire topContourB = GetContour(faceB, maxXB, minXB);
-
-	// 创建连接边
-	TopoDS_Edge edge1 = BRepBuilderAPI_MakeEdge(maxXA, maxXB); // 连接A的maxX到B的maxX
-	TopoDS_Edge edge2 = BRepBuilderAPI_MakeEdge(minXB, minXA); // 连接B的minX到A的minX
-
-	// 构建封闭的wire
-	BRepBuilderAPI_MakeWire newWireBuilder;
-	newWireBuilder.Add(bottomContourA);
-	newWireBuilder.Add(topContourB);
-
-	return newWireBuilder.Wire();
-}
-
-
-
