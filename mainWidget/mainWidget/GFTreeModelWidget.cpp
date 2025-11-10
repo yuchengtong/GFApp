@@ -482,6 +482,27 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 {
 	QString itemData = item->data(0, Qt::UserRole).toString();
 	emit itemClicked(itemData);
+
+	if (itemData == "StressResult" || itemData == "StrainResult" || itemData == "TemperatureResult" || itemData == "OverpressureResult" )
+	{
+
+		QWidget* parent = parentWidget();
+		while (parent) {
+			GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+			if (gfParent)
+			{
+				// 测试截图
+				QString m_privateDirPath = "src/template/跌落试验/应力云图.png";
+				QDir privateDir(m_privateDirPath);
+				wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
+				break;
+			}
+			else
+			{
+				parent = parent->parentWidget();
+			}
+		}
+	}
 }
 
 void GFTreeModelWidget::updataIcon()
@@ -1119,11 +1140,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								auto geomProWid = gfParent->findChild<GeomPropertyWidget*>();
 								geomProWid->UpdataPropertyInfo();
 
-								// 测试截图
-								QString m_privateDirPath = "src/template/测试模型.png";
-								QDir privateDir(m_privateDirPath);
-								wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
-
 							}
 							else if (!success)
 							{
@@ -1137,6 +1153,11 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							worker->deleteLater();
 							workerThread->deleteLater();
 							progressDialog->deleteLater();
+
+							// 测试截图
+							QString m_privateDirPath = "src/template/测试模型.png";
+							QDir privateDir(m_privateDirPath);
+							wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
 						});
 
 					// 启动线程
@@ -1271,10 +1292,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 		GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 		if (gfParent)
 		{
-			// 测试截图
-			QString m_privateDirPath = "src/template/跌落试验/应力云图.png";
-			QDir privateDir(m_privateDirPath);
-			wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
+			
 
 			{
 				QDateTime currentTime = QDateTime::currentDateTime();
