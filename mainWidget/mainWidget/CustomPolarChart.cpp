@@ -1,4 +1,4 @@
-#pragma execution_character_set("utf-8")
+ï»¿#pragma execution_character_set("utf-8")
 #include "CustomPolarChart.h"
 #include <QtCharts/QLegend>
 #include <QtCharts/QLegendMarker>
@@ -32,11 +32,11 @@ void CustomPolarChart::setupChart()
 	m_angleAxis->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
 	m_angleAxis->setRange(0, 360);
 	m_angleAxis->setLabelsColor(Qt::white);
-
+	
 
 	m_radialAxis = new QValueAxis(this);
 	m_radialAxis->setRange(0, 100);
-	m_radialAxis->setTickCount(5);  // ÉèÖÃ¿Ì¶ÈÊıÁ¿£¨°üÀ¨0µã£©
+	m_radialAxis->setTickCount(5);  // è®¾ç½®åˆ»åº¦æ•°é‡ï¼ˆåŒ…æ‹¬0ç‚¹ï¼‰
 	m_radialAxis->setGridLineVisible(false);
 	m_radialAxis->setLineVisible(false);
 	m_radialAxis->setLabelsVisible(false);
@@ -46,11 +46,11 @@ void CustomPolarChart::setupChart()
 	this->addAxis(m_radialAxis, QPolarChart::PolarOrientationRadial);
 
 	this->legend()->setVisible(true);
-	this->legend()->setAlignment(Qt::AlignRight);
+	this->legend()->setAlignment(Qt::AlignBottom);
 	this->legend()->setLabelColor(Qt::white);
 	this->setBackgroundVisible(false);
 
-	this->setTitle("µøÂäÊÔÑé");
+	this->setTitle("è·Œè½è¯•éªŒ");
 	this->setTitleBrush(Qt::white);
 }
 
@@ -84,7 +84,7 @@ void CustomPolarChart::buildSeries()
 		this->addSeries(area);
 		this->addSeries(ls);
 
-		// Òş²ØÏßÌõÍ¼Àı
+		// éšè—çº¿æ¡å›¾ä¾‹
 		for (QLegendMarker* marker : this->legend()->markers(ls))
 			marker->setVisible(false);
 
@@ -148,7 +148,7 @@ void CustomPolarChart::setActiveDataset(int idx)
 			m_areaSeries[i]->setBrush(QBrush(fill, Qt::SolidPattern));
 		}
 	}
-	// Í¼ÀıÈ«²¿ÏÔÊ¾£¬²»Òş²ØÈÎºÎ marker
+	// å›¾ä¾‹å…¨éƒ¨æ˜¾ç¤ºï¼Œä¸éšè—ä»»ä½• marker
 	for (int i = 0; i < m_areaSeries.size(); ++i) {
 		for (QLegendMarker* marker : this->legend()->markers(m_areaSeries[i])) {
 			marker->setVisible(true);
@@ -166,31 +166,31 @@ void CustomPolarChart::setActiveDatasetVisible(int idx)
 	for (int i = 0; i < m_lineSeries.size(); ++i) {
 		QColor c = m_colors[i % m_colors.size()];
 		if (i == idx) {
-			// ¸ßÁÁÏßÌõ
+			// é«˜äº®çº¿æ¡
 			applySeriesStyle(m_lineSeries[i], c, 1.0);
 
-			// ÒõÓ°½¥±ä
-			QRadialGradient gradient(QPointF(0, 0), 1.0); // ÖĞĞÄÎª0,0£¬°ë¾¶Îª1
-			QColor startColor = c; startColor.setAlpha(150); // ÄÚ²ãÑÕÉ«
-			QColor endColor = c; endColor.setAlpha(0);       // Íâ²ãÍ¸Ã÷
+			// é˜´å½±æ¸å˜
+			QRadialGradient gradient(QPointF(0, 0), 1.0); // ä¸­å¿ƒä¸º0,0ï¼ŒåŠå¾„ä¸º1
+			QColor startColor = c; startColor.setAlpha(150); // å†…å±‚é¢œè‰²
+			QColor endColor = c; endColor.setAlpha(0);       // å¤–å±‚é€æ˜
 			gradient.setColorAt(0.0, startColor);
 			gradient.setColorAt(1.0, endColor);
-			gradient.setCoordinateMode(QGradient::ObjectBoundingMode); // Ïà¶Ô×ø±ê
+			gradient.setCoordinateMode(QGradient::ObjectBoundingMode); // ç›¸å¯¹åæ ‡
 
 			m_areaSeries[i]->setBrush(QBrush(gradient));
 			m_areaSeries[i]->setVisible(true);
 		}
 		else {
-			// ÆäËûÏßÌõ°ëÍ¸Ã÷
+			// å…¶ä»–çº¿æ¡åŠé€æ˜
 			applySeriesStyle(m_lineSeries[i], c, 0.0);
-			// Òş²ØÒõÓ°
+			// éšè—é˜´å½±
 			m_areaSeries[i]->setVisible(false);
 		}
 	}
-	// Ö»ÏÔÊ¾µ±Ç°¼¤»îÊı¾İ¼¯£¨ÎÂ¶È£©µÄÍ¼Àı£¬Òş²ØÆäËûÍ¼Àı
+	// åªæ˜¾ç¤ºå½“å‰æ¿€æ´»æ•°æ®é›†ï¼ˆæ¸©åº¦ï¼‰çš„å›¾ä¾‹ï¼Œéšè—å…¶ä»–å›¾ä¾‹
 	for (int i = 0; i < m_areaSeries.size(); ++i) {
 		for (QLegendMarker* marker : this->legend()->markers(m_areaSeries[i])) {
-			marker->setVisible(i == m_activeIndex);  // ½ö¼¤»îµÄÊı¾İ¼¯Í¼Àı¿É¼û
+			marker->setVisible(i == m_activeIndex);  // ä»…æ¿€æ´»çš„æ•°æ®é›†å›¾ä¾‹å¯è§
 			marker->setProperty("datasetIndex", i);
 		}
 	}
@@ -269,19 +269,19 @@ void CustomPolarChart::renameLegend(int index, const QString& newName)
 	if (index < 0 || index >= m_areaSeries.size())
 		return;
 
-	// ·½·¨1£ºÖ±½ÓĞŞ¸ÄÏµÁĞÃû³Æ£¨ÍÆ¼ö£©
+	// æ–¹æ³•1ï¼šç›´æ¥ä¿®æ”¹ç³»åˆ—åç§°ï¼ˆæ¨èï¼‰
 	m_lineSeries[index]->setName(newName);
 	m_areaSeries[index]->setName(newName);
 
-	// ·½·¨2£ºÍ¨¹ıÍ¼Àı±ê¼Ç²éÕÒ²¢ĞŞ¸Ä£¨ÊÊÓÃÓÚ¶¯Ì¬²éÕÒ³¡¾°£©
+	// æ–¹æ³•2ï¼šé€šè¿‡å›¾ä¾‹æ ‡è®°æŸ¥æ‰¾å¹¶ä¿®æ”¹ï¼ˆé€‚ç”¨äºåŠ¨æ€æŸ¥æ‰¾åœºæ™¯ï¼‰
 	QLegend* legend = this->legend();
 	if (!legend) return;
 
-	// ±éÀúËùÓĞÍ¼Àı±ê¼Ç
+	// éå†æ‰€æœ‰å›¾ä¾‹æ ‡è®°
 	for (QLegendMarker* marker : legend->markers()) {
-		// ÕÒµ½¶ÔÓ¦Êı¾İ¼¯µÄ±ê¼Ç
+		// æ‰¾åˆ°å¯¹åº”æ•°æ®é›†çš„æ ‡è®°
 		if (marker->property("datasetIndex").toInt() == index) {
-			// ĞŞ¸Ä¹ØÁªÏµÁĞµÄÃû³Æ£¨»á×Ô¶¯¸üĞÂÍ¼ÀıÏÔÊ¾£©
+			// ä¿®æ”¹å…³è”ç³»åˆ—çš„åç§°ï¼ˆä¼šè‡ªåŠ¨æ›´æ–°å›¾ä¾‹æ˜¾ç¤ºï¼‰
 			marker->series()->setName(newName);
 			break;
 		}

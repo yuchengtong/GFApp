@@ -317,10 +317,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	QLabel* y_label = new QLabel("Y轴：");
 	y_comboBox = new QComboBox();
 	y_comboBox->addItems({ "壳体最大应力 ", "进剂最大应力", "壳体最高温度", "推进剂最高温度"});
-	x_valueLable = new QLabel("跌落高度：");
-	x_valueComboBox = new QComboBox();
-	x_valueComboBox->addItems({ "10", "20", "30"});
-	x_valueComboBox->setFixedWidth(80);
+	
 	// 连接信号槽
 	connect(x_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
@@ -328,27 +325,47 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	connect(y_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
 
-	connect(x_valueComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this, &IntelligentAnalyWidget::dataChange);
-
 	
 
-	
+	m_chart = new QChart();
+	m_chart->setTitle("正交试验");
+	m_chart->setMargins(QMargins(15, 15, 15, 80));
+	createChartDataGroup(m_lineSeries1, m_scatter1, "数据组1", Qt::red);
+	createChartDataGroup(m_lineSeries2, m_scatter2, "数据组2", Qt::blue);
+	createChartDataGroup(m_lineSeries3, m_scatter3, "数据组3", Qt::green);
 
+	m_chart->addSeries(m_lineSeries1);
+	m_chart->addSeries(m_scatter1);
+	m_chart->addSeries(m_lineSeries2);
+	m_chart->addSeries(m_scatter2);
+	m_chart->addSeries(m_lineSeries3);
+	m_chart->addSeries(m_scatter3);
 
-	chart = new QChart();
-	chart->setTitle("正交试验");
-	chart->legend()->hide();  // 隐藏图例
+	m_chart->legend()->hide();
+	//m_chart->legend()->setAlignment(Qt::AlignBottom);
 
-	// 创建坐标轴
-	QValueAxis* axisX = new QValueAxis();
-	QValueAxis* axisY = new QValueAxis();
-	chart->addAxis(axisX, Qt::AlignBottom);
-	chart->addAxis(axisY, Qt::AlignLeft);
+	// 4. 创建X轴和Y轴（初始范围适配空数据）
+	m_axisX = new QValueAxis();
+	m_axisY = new QValueAxis();
+	m_axisX->setTitleText("壳体厚度");
+	m_axisY->setTitleText("壳体最大应力");
+	m_axisX->setRange(0, 5);
+	m_axisY->setRange(0, 10);
+	m_axisX->setTickCount(4);
+	m_axisY->setTickCount(4);
 
-	chartView = new QChartView(chart);
-	chartView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
-	chartView->setMinimumHeight(400);
+	// 5. 所有系列绑定到同一组轴（确保曲线和点对齐）
+	QList<QAbstractSeries*> allSeries = {
+		m_lineSeries1, m_scatter1, m_lineSeries2, m_scatter2, m_lineSeries3, m_scatter3
+	};
+	for (QAbstractSeries* series : allSeries) {
+		m_chart->setAxisX(m_axisX, series);
+		m_chart->setAxisY(m_axisY, series);
+	}
+
+	m_chartView = new QChartView(m_chart);
+	m_chartView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
+	m_chartView->setMinimumHeight(400);
 
 
 	// 构建布局
@@ -359,13 +376,14 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	labelLayou->addWidget(x_comboBox);
 	labelLayou->addWidget(y_label);
 	labelLayou->addWidget(y_comboBox);
-	labelLayou->addWidget(x_valueLable);
-	labelLayou->addWidget(x_valueComboBox);
 	labelLayou->setContentsMargins(0,0,0,0);
 	labelLayou->addStretch(200);
 
 	m_leftLayout->addLayout(labelLayou);
-	m_leftLayout->addWidget(chartView);
+	m_leftLayout->addWidget(m_chartView);
+
+
+
 
 
 	QChart* chart1 = new QChart();
@@ -500,68 +518,33 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 
 void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
 {
-	// 修改第三个下拉框的值
-	int x_index = x_comboBox->currentIndex();
-	int other = 0;
-	if (x_index == 0)
-	{
-		other = 1;
-	}
-	else
-	{
-		other = 0;
-	}
-	QString text = x_comboBox->itemText(other);
 	x_comboBox->currentIndex();
-	x_valueComboBox->clear();
-	QStringList childItems = m_dataMap.value(text);
-	x_valueComboBox->addItems(childItems);
-	x_valueLable->setText(text + ":");
-	
-
 	dataChange(0);
 	
 }
 
 void IntelligentAnalyWidget::dataChange(int index)
 {
-	QList<int> rowList;
+	QList<int> rowList1;
+	QList<int> rowList2;
+	QList<int> rowList3;
 	int x_col = 3;
 	int y_col = 1;
 
 	int x_index = x_comboBox->currentIndex();
-	QString x_valueindex = x_valueComboBox->currentIndex();
 	int y_index = y_comboBox->currentIndex();
 	if (x_index == 0)
 	{
-		if (x_valueindex == 0)
-		{
-			rowList = { 1,2,3 };
-		}
-		else if (x_valueindex == 1)
-		{
-			rowList = { 4,5,6 };
-		}
-		else
-		{
-			rowList = { 7,8,9 };
-		}
+		rowList1 = { 1,2,3 };
+		rowList2 = { 4,5,6 };
+		rowList3 = { 7,8,9 };
 		x_col = 1;
 	}
 	else
 	{
-		if (x_valueindex == 0)
-		{
-			rowList = { 1,4,7 };
-		}
-		else if (x_valueindex == 1)
-		{
-			rowList = { 2,5,8 };
-		}
-		else
-		{
-			rowList = { 3,6,9 };
-		}
+		rowList1 = { 1,4,7 };
+		rowList2 = { 2,5,8 };
+		rowList3 = { 3,6,9 };
 		x_col = 2;
 	}
 
@@ -583,62 +566,82 @@ void IntelligentAnalyWidget::dataChange(int index)
 		y_col = 6;
 	}
 
-	QVector<QPointF> data;
-	foreach(int row, rowList) {
+	QVector<QPointF> data1;
+	foreach(int row, rowList1) {
 		if (m_tableWidget->item(row, x_col) && m_tableWidget->item(row, y_col))
 		{
-			data.append(QPointF(m_tableWidget->item(row, x_col)->text().toDouble(), m_tableWidget->item(row, y_col)->text().toDouble()));
+			data1.append(QPointF(m_tableWidget->item(row, x_col)->text().toDouble(), m_tableWidget->item(row, y_col)->text().toDouble()));
 		}
 	}
-	updateChartData(data, x_comboBox->currentText(), y_comboBox->currentText());
+	QVector<QPointF> data2;
+	foreach(int row, rowList2) {
+		if (m_tableWidget->item(row, x_col) && m_tableWidget->item(row, y_col))
+		{
+			data2.append(QPointF(m_tableWidget->item(row, x_col)->text().toDouble(), m_tableWidget->item(row, y_col)->text().toDouble()));
+		}
+	}
+	QVector<QPointF> data3;
+	foreach(int row, rowList3) {
+		if (m_tableWidget->item(row, x_col) && m_tableWidget->item(row, y_col))
+		{
+			data3.append(QPointF(m_tableWidget->item(row, x_col)->text().toDouble(), m_tableWidget->item(row, y_col)->text().toDouble()));
+		}
+	}
+	updateChartData(data1, data2, data3, x_comboBox->currentText(), y_comboBox->currentText());
 
 }
 
 
-void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data, QString xAxisTitle, QString yAxisTitle)
+void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle)
 {
-	if (!chartView || !chartView->chart()) return;
+	if (!m_chartView || !m_chart || !m_scatter1 || !m_scatter2 || !m_scatter3) return;
 
-	QChart* chart = chartView->chart();
+	// 同步更新：曲线和散点的坐标完全一致
+	m_lineSeries1->clear();
+	m_scatter1->clear();
+	for (QPointF value : data1) {
+		m_lineSeries1->append(value);
+		m_scatter1->append(value);
+	}
+	
 
-	// 清除原有系列和坐标轴
-	chart->removeAllSeries();
-	chart->removeAxis(chart->axisX());
-	chart->removeAxis(chart->axisY());
+	m_lineSeries2->clear();
+	m_scatter2->clear();
+	for (QPointF value : data2) {
+		m_lineSeries2->append(value);
+		m_scatter2->append(value);
+	}
 
-	// 创建并添加数据
-	QLineSeries* series = new QLineSeries();
-	*series << data[0] << data[1] << data[2];
-	series->setColor(Qt::blue);
+	m_lineSeries3->clear();
+	m_scatter3->clear();
+	for (QPointF value : data3) {
+		m_lineSeries3->append(value);
+		m_scatter3->append(value);
+	}
 
-	// 添加系列到图表并关联坐标轴
-	chart->addSeries(series);
-
-	// 创建坐标轴（X轴和Y轴）
-	QValueAxis* axisX = new QValueAxis();
-	QValueAxis* axisY = new QValueAxis();
-
-	// 设置坐标轴名称
-	axisX->setTitleText(xAxisTitle);
-	axisY->setTitleText(yAxisTitle);
-
+	// 自动调整轴范围（适配新数据）
+	m_chart->createDefaultAxes();
+	m_axisX = qobject_cast<QValueAxis*>(m_chart->axisX());
+	m_axisY = qobject_cast<QValueAxis*>(m_chart->axisY());
+	if (m_axisX) {
+		m_axisY->setTitleText(xAxisTitle);
+	}
+	if (m_axisY) {
+		m_axisY->setTitleText(yAxisTitle);
+	}
+	QVector<QPointF> data;
+	data.append(data1);
+	data.append(data2);
+	data.append(data3);
 	qreal maxX = calculateMaxValue(data, true);
 	qreal maxY = calculateMaxValue(data, false);
-
-	// 设置X轴范围（最小值固定为0，最大值为计算值）
-	axisX->setRange(0, maxX);
-	// 设置Y轴范围（最小值固定为0，最大值为计算值）
-	axisY->setRange(0, maxY);
-
-	// 添加坐标轴到图表
-	chart->addAxis(axisX, Qt::AlignBottom);
-	chart->addAxis(axisY, Qt::AlignLeft);
-
-	// 将数据系列关联到坐标轴
-	series->attachAxis(axisX);
-	series->attachAxis(axisY);
-
-	chartView->update();
+	qreal minX = calculateMinValue(data, true);
+	qreal minY = calculateMinValue(data, false);
+	m_axisX->setRange(minX * 0.9, maxX * 1.1);
+	m_axisY->setRange(minY * 0.9, maxY * 1.1);
+	m_axisX->setTickCount(4);
+	m_axisY->setTickCount(4);
+	m_chartView->update();
 
 }
 
@@ -658,4 +661,41 @@ qreal IntelligentAnalyWidget::calculateMaxValue(const QVector<QPointF>& series, 
 
 	// 确保最大值不小于0
 	return qMax(maxVal, 0.0);
+}
+
+// 计算数据最小值（确保不小于0）
+qreal IntelligentAnalyWidget::calculateMinValue(const QVector<QPointF>& series, bool isX)
+{
+	if (series.isEmpty()) return 0;
+
+	qreal minVal = isX ? series.first().x() : series.first().y();
+	for (const QPointF& point : series) {
+		qreal val = isX ? point.x() : point.y();
+		if (val < minVal) {
+			minVal = val;
+		}
+	}
+
+	// 确保最小值不小于0
+	return qMax(minVal, 0.0);
+}
+
+//创建一组数据（曲线 + 圆点），统一配置样式
+void IntelligentAnalyWidget::createChartDataGroup(QLineSeries * &lineSeries, QScatterSeries * &scatterSeries,
+	const QString & name, const QColor & color)
+{
+	// 1. 创建曲线系列（只负责线条）
+	lineSeries = new QLineSeries();
+	lineSeries->setName(name);  // 系列名称（与散点共享，图例只显示1次）
+	QPen linePen(color);
+	linePen.setWidth(2);        // 曲线宽度
+	lineSeries->setPen(linePen);
+
+	// 2. 创建散点系列（只负责圆点）
+	scatterSeries = new QScatterSeries();
+	scatterSeries->setName(name);  // 与曲线同名，图例合并显示
+	scatterSeries->setMarkerShape(QScatterSeries::MarkerShapeCircle);  // 圆点（原生支持）
+	scatterSeries->setMarkerSize(8);                                  // 圆点大小（8px）
+	scatterSeries->setBrush(QBrush(color));                            // 圆点填充色
+	scatterSeries->setPen(QPen(Qt::black, 1));                         // 圆点边框（黑色，1px）
 }

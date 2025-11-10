@@ -289,13 +289,15 @@ QString WordExporter::saveTemporaryScreenshot(QWidget* widget)
 
 bool WordExporter::captureWidgetToFile(QWidget* widget, const QString& imagePath)
 {
-	/*if (!widget) return false;
-	widget->show();
-	widget->update();
-	QApplication::processEvents();
-	QThread::msleep(100);
-	QPixmap pixmap = widget->grab();
-	if (pixmap.isNull()) return false;*/
+	//if (!widget) return false;
+	//widget->raise(); // 置于顶层
+	//widget->activateWindow(); // 激活窗口
+	//widget->show();
+	//widget->repaint(); // 立即重绘
+	//QApplication::processEvents(QEventLoop::AllEvents, 100);
+	//QPixmap pixmap = QPixmap::grabWidget(widget);
+	//if (pixmap.isNull()) return false;
+
 	QThread::msleep(300);
 	QScreen* screen = QGuiApplication::primaryScreen();
 	QPixmap pixmap = screen->grabWindow(0);

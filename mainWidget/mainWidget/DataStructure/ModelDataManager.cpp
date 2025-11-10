@@ -405,3 +405,12 @@ const OverpressureResult& ModelDataManager::GetSacrificeExplosionOverpressureRes
 {
 	return m_SacrificeExplosionOverpressureResult;
 }
+
+void ModelDataManager::SetPointResult(const PointResult& result)
+{
+	m_pointResult = result;
+}
+const PointResult& ModelDataManager::GetPointResult() const
+{
+	return m_pointResult;
+}

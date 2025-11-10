@@ -165,97 +165,111 @@ struct FallSettingInfo {
 
 // 应力分析结果
 struct StressResult {
-	double metalsMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体最大应力
-	double metalsMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体最小应力
-	double metalsAvgStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体平均应力
-	double metalsStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //发动机壳体应力标准差
+	double metalsMaxStress = QRandomGenerator::securelySeeded().bounded(200, 800); //发动机壳体最大应力
+	double metalsMinStress = QRandomGenerator::securelySeeded().bounded(200, 800); //发动机壳体最小应力
+	double metalsAvgStress = QRandomGenerator::securelySeeded().bounded(200, 800); //发动机壳体平均应力
+	double metalsStandardStress = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体应力标准差
 
-	double propellantsMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //推进剂最大应力
-	double propellantsMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //推进剂最小应力
-	double propellantsAvgStress = 0; //推进剂平均应力
-	double propellantsStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //推进剂应力标准差
+	double propellantsMaxStress = QRandomGenerator::securelySeeded().bounded(200, 800); //推进剂最大应力
+	double propellantsMinStress = QRandomGenerator::securelySeeded().bounded(200, 800); //推进剂最小应力
+	double propellantsAvgStress = QRandomGenerator::securelySeeded().bounded(200, 800);; //推进剂平均应力
+	double propellantsStandardStress = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂应力标准差
 
-	double outheatMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热最大应力
-	double outheatMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热最小应力
-	double outheatAvgStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热平均应力
-	double outheatStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //外防热应力标准差
+	double outheatMaxStress = QRandomGenerator::securelySeeded().bounded(200, 800); //外防热最大应力
+	double outheatMinStress = QRandomGenerator::securelySeeded().bounded(200, 800); //外防热最小应力
+	double outheatAvgStress = QRandomGenerator::securelySeeded().bounded(200, 800); //外防热平均应力
+	double outheatStandardStress = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //外防热应力标准差
 
-	double insulatingheatMaxStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热最大应力
-	double insulatingheatMinStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热最小应力
-	double insulatingheatAvgStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热平均应力
-	double insulatingheatStandardStress = QRandomGenerator::securelySeeded().bounded(800, 1501); //防隔热应力标准差
+	double insulatingheatMaxStress = QRandomGenerator::securelySeeded().bounded(200, 800); //防隔热最大应力
+	double insulatingheatMinStress = QRandomGenerator::securelySeeded().bounded(200, 800); //防隔热最小应力
+	double insulatingheatAvgStress = QRandomGenerator::securelySeeded().bounded(200, 800); //防隔热平均应力
+	double insulatingheatStandardStress = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热应力标准差
 		
 };
 
 // 应变分析结果
 struct StrainResult {
-	double metalsMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体最大应变
-	double metalsMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体最小应变
-	double metalsAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体平均应变
-	double metalsStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //发动机壳体应变标准差
+	double metalsMaxStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体最大应变
+	double metalsMinStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体最小应变
+	double metalsAvgStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体平均应变
+	double metalsStandardStrain = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体应变标准差
 
-	double propellantsMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂最大应变
-	double propellantsMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂最小应变
-	double mpropellantsAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂平均应变
-	double propellantsStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //推进剂应变标准差
+	double propellantsMaxStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂最大应变
+	double propellantsMinStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂最小应变
+	double mpropellantsAvgStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂平均应变
+	double propellantsStandardStrain = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂应变标准差
 
-	double outheatMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热最大应变
-	double outheatMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热最小应变
-	double outheatAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热平均应变
-	double outheatStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //外防热应变标准差
+	double outheatMaxStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //外防热最大应变
+	double outheatMinStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //外防热最小应变
+	double outheatAvgStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //外防热平均应变
+	double outheatStandardStrain = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //外防热应变标准差
 
-	double insulatingheatMaxStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热最大应变
-	double insulatingheatMinStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热最小应变
-	double insulatingheatAvgStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热平均应变
-	double insulatingheatStandardStrain = QRandomGenerator::securelySeeded().bounded(400, 501); //防隔热应变标准差
+	double insulatingheatMaxStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热最大应变
+	double insulatingheatMinStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热最小应变
+	double insulatingheatAvgStrain = 0.0001 + (0.001 - 0.0001) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热平均应变
+	double insulatingheatStandardStrain = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热应变标准差
 
 };
 
 // 温度分析结果
 struct TemperatureResult {
-	double metalsMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体最高温度
-	double metalsMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体最低温度
-	double metalsAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体平均温度
-	double metalsStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //发动机壳体温度标准差
+	double metalsMaxTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //发动机壳体最高温度
+	double metalsMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //发动机壳体最低温度
+	double metalsAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //发动机壳体平均温度
+	double metalsStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体温度标准差
 
-	double propellantsMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂最高温度
-	double propellantsMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂最低温度
-	double mpropellantsAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂平均温度
-	double propellantsStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //推进剂温度标准差
+	double propellantsMaxTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //推进剂最高温度
+	double propellantsMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //推进剂最低温度
+	double mpropellantsAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //推进剂平均温度
+	double propellantsStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂温度标准差
 
-	double outheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热最高温度
-	double outheatMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热最低温度
-	double outheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热平均温度
-	double outheatStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //外防热温度标准差
+	double outheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //外防热最高温度
+	double outheatMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //外防热最低温度
+	double outheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //外防热平均温度
+	double outheatStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //外防热温度标准差
 
-	double insulatingheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热最高温度
-	double insulatingheatMinTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热最低温度
-	double insulatingheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热平均温度
-	double insulatingheatStandardTemperature = QRandomGenerator::securelySeeded().bounded(200, 301); //防隔热温度标准差
+	double insulatingheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //防隔热最高温度
+	double insulatingheatMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //防隔热最低温度
+	double insulatingheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //防隔热平均温度
+	double insulatingheatStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热温度标准差
 
 };
 
 // 超压分析结果
 struct OverpressureResult {
-	double metalsMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体最大超压
-	double metalsMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体最小超压
-	double metalsAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体平均超压
-	double metalsStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //发动机壳体超压标准差
+	double metalsMaxOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //发动机壳体最大超压
+	double metalsMinOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //发动机壳体最小超压
+	double metalsAvgOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //发动机壳体平均超压
+	double metalsStandardOverpressure = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体超压标准差
 
-	double propellantsMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂最大超压
-	double propellantsMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂最小超压
-	double mpropellantsAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂平均超压
-	double propellantsStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //推进剂超压标准差
+	double propellantsMaxOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //推进剂最大超压
+	double propellantsMinOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //推进剂最小超压
+	double mpropellantsAvgOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //推进剂平均超压
+	double propellantsStandardOverpressure = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂超压标准差
 
-	double outheatMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热最大超压
-	double outheatMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热最小超压
-	double outheatAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热平均超压
-	double outheatStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //外防热超压标准差
+	double outheatMaxOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //外防热最大超压
+	double outheatMinOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //外防热最小超压
+	double outheatAvgOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //外防热平均超压
+	double outheatStandardOverpressure = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //外防热超压标准差
 
-	double insulatingheatMaxOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热最大超压
-	double insulatingheatMinOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热最小超压
-	double insulatingheatAvgOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热平均超压
-	double insulatingheatStandardOverpressure = QRandomGenerator::securelySeeded().bounded(150, 251); //防隔热超压标准差
+	double insulatingheatMaxOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //防隔热最大超压
+	double insulatingheatMinOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //防隔热最小超压
+	double insulatingheatAvgOverpressure = QRandomGenerator::securelySeeded().bounded(200, 801); //防隔热平均超压
+	double insulatingheatStandardOverpressure = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热超压标准差
+
+};
+
+
+// 评分结果
+struct PointResult {
+	double fallPoint = 0.0; // 跌落评分
+	double fastCombustionPoint = 0.0; // 快烤评分
+	double slowCombustionPoint = 0.0; // 慢烤评分
+	double shootPoint = 0.0; // 枪击评分
+	double jetImpactPoint = 0.0; // 射流冲击评分
+	double fragmentationImpactPoint = 0.0; // 破片撞击评分
+	double explosiveBlastPoint = 0.0; // 爆炸冲击波评分
+	double sacrificeExplosionPoint = 0.0; // 殉爆评分
 
 };
 
@@ -396,6 +410,9 @@ public:
 	void SetSacrificeExplosionOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetSacrificeExplosionOverpressureResult() const;
 
+	void SetPointResult(const PointResult& result);
+	const PointResult& GetPointResult() const;
+
 private:
 	static ModelDataManager* m_Instance; 
 	ModelGeometryInfo m_ModelGeometryInfo; 
@@ -456,4 +473,10 @@ private:
 	TemperatureResult m_SacrificeExplosionTemperatureResult;
 	OverpressureResult m_SacrificeExplosionOverpressureResult;
 
+	// 评分结果
+	PointResult m_pointResult;
+
 };
+
+
+

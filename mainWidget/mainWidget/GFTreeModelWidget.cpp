@@ -1119,6 +1119,11 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								auto geomProWid = gfParent->findChild<GeomPropertyWidget*>();
 								geomProWid->UpdataPropertyInfo();
 
+								// 测试截图
+								QString m_privateDirPath = "src/template/测试模型.png";
+								QDir privateDir(m_privateDirPath);
+								wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
+
 							}
 							else if (!success)
 							{
@@ -1159,10 +1164,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				if (gfParent)
 				{
 					{
-						// 测试截图
-						QString m_privateDirPath = "src/template/测试模型.png";
-						QDir privateDir(m_privateDirPath);
-						wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
+						
 
 
 						QDateTime currentTime = QDateTime::currentDateTime();
@@ -1449,7 +1451,6 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 					if (success )
 					{
 						// 更新日志
-						QMessageBox::information(this, "提示", QString("导出成功"));
 						{
 							QDateTime currentTime = QDateTime::currentDateTime();
 							QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");

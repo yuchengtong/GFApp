@@ -17,6 +17,7 @@
 #include <QGraphicsSimpleTextItem>
 
 #include "CustomPolarChart.h"
+#include "ModelDataManager.h"
 
 class AuxiliaryAnalysisWidget : public QWidget
 {
@@ -36,8 +37,13 @@ private:
 public slots:
 	//void handleLegendMarkerClicked();
 
+public:
+	void updateAllData();
+
 
 private:
+
+
 	// 跌落试验
 	CustomPolarChart*m_polarChart1;
 	// 快速烤燃试验
@@ -54,5 +60,8 @@ private:
 	CustomPolarChart*m_polarChart7;
 	// 殉爆试验
 	CustomPolarChart*m_polarChart8;
+	// 评分结果
+	CustomPolarChart* m_resultchart;
+
 
 };

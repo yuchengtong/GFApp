@@ -286,35 +286,170 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 					// 更新ChartView
 					auto chartView = paParent->getChartView();
+					auto chart = paParent->getChart();
+					auto lineSeries1 = paParent->getLineSeries1();
+					auto lineSeries2 = paParent->getLineSeries2();
+					auto lineSeries3 = paParent->getLineSeries3();
+					auto scatter1 = paParent->getScatter1();
+					auto scatter2 = paParent->getScatter2();
+					auto scatter3 = paParent->getScatter3();
 					auto x_comboBox = paParent->getXComboBox();
 					x_comboBox->setCurrentIndex(0);
 					x_comboBox->setItemText(1, "跌落高度");
-					auto x_valueComboBox = paParent->getXValueComboBox();
-					x_valueComboBox->clear();
-					x_valueComboBox->addItems({ "10", "20", "30" });
-					auto x_valueLable = paParent->getXValuelable();
-					x_valueLable->setText("跌落高度:");
-					QVector<QPointF> data;
+					
+					QVector<QPointF> data1;
 					if(fallTableWidget->item(1,3)) 
 					{
-						data.append(QPointF(1, fallTableWidget->item(1, 3)->text().toDouble()));
+						data1.append(QPointF(1, fallTableWidget->item(1, 3)->text().toDouble()));
 
 					}
 					if (fallTableWidget->item(2, 3))
 					{
-						data.append(QPointF(2, fallTableWidget->item(2, 3)->text().toDouble()));
+						data1.append(QPointF(2, fallTableWidget->item(2, 3)->text().toDouble()));
 
 					}
-					if (fallTableWidget->item(1, 3))
+					if (fallTableWidget->item(3, 3))
 					{
-						data.append(QPointF(3, fallTableWidget->item(3, 3)->text().toDouble()));
+						data1.append(QPointF(3, fallTableWidget->item(3, 3)->text().toDouble()));
+
+					}
+					QVector<QPointF> data2;
+					if (fallTableWidget->item(4, 3))
+					{
+						data2.append(QPointF(1, fallTableWidget->item(4, 3)->text().toDouble()));
+
+					}
+					if (fallTableWidget->item(5, 3))
+					{
+						data2.append(QPointF(2, fallTableWidget->item(5, 3)->text().toDouble()));
+
+					}
+					if (fallTableWidget->item(6, 3))
+					{
+						data2.append(QPointF(3, fallTableWidget->item(6, 3)->text().toDouble()));
+
+					}
+					QVector<QPointF> data3;
+					if (fallTableWidget->item(7, 3))
+					{
+						data3.append(QPointF(1, fallTableWidget->item(7, 3)->text().toDouble()));
+
+					}
+					if (fallTableWidget->item(8, 3))
+					{
+						data3.append(QPointF(2, fallTableWidget->item(8, 3)->text().toDouble()));
+
+					}
+					if (fallTableWidget->item(9, 3))
+					{
+						data3.append(QPointF(3, fallTableWidget->item(9, 3)->text().toDouble()));
 
 					}
 					
-					updateChartData(chartView, data, "壳体厚度", "壳体最大应力");
+					updateChartData(chartView, chart, lineSeries1, lineSeries2, lineSeries3, scatter1, scatter2, scatter3, data1, data2, data3, "壳体厚度", "壳体最大应力");
 
 					auto m_tableStackWidget = paParent->getStackedWidget();
 					m_tableStackWidget->setCurrentWidget(fallTableWidget);
+
+
+
+					// 快烤计算结果
+					TemperatureResult m_FastCombustionTemperatureResult = ins->GetFastCombustionTemperatureResult();
+					auto fastCombustionTableWidget = paParent->getFastCombustionTableWidget();
+					fastCombustionTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_FastCombustionTemperatureResult.metalsMaxTemperature)));
+					fastCombustionTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_FastCombustionTemperatureResult.propellantsMaxTemperature)));
+
+					for (int i = 2; i < 10; ++i) 
+					{
+						fastCombustionTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						fastCombustionTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
+					// 慢烤计算结果
+					TemperatureResult m_SlowCombustionTemperatureResult = ins->GetSlowCombustionTemperatureResult();
+					auto slowCombustionTableWidget = paParent->getSlowCombustionTableWidget();
+					slowCombustionTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_SlowCombustionTemperatureResult.metalsMaxTemperature)));
+					slowCombustionTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_SlowCombustionTemperatureResult.propellantsMaxTemperature)));
+					for (int i = 2; i < 10; ++i)
+					{
+						slowCombustionTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						slowCombustionTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
+					// 枪击计算结果
+					StressResult m_ShootStressResult = ins->GetShootStressResult();
+					TemperatureResult m_ShootTemperatureResult = ins->GetShootTemperatureResult();
+					auto shootTableWidget = paParent->getShootTableWidget();
+					shootTableWidget->setItem(1, 3, new QTableWidgetItem(QString::number(m_ShootStressResult.metalsMaxStress)));
+					shootTableWidget->setItem(1, 4, new QTableWidgetItem(QString::number(m_ShootStressResult.propellantsMaxStress)));
+					shootTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_ShootTemperatureResult.metalsMaxTemperature)));
+					shootTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_ShootTemperatureResult.propellantsMaxTemperature)));
+					for (int i = 2; i < 10; ++i)
+					{
+						shootTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						shootTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						shootTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						shootTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
+
+					// 射流冲击计算结果
+					StressResult m_JetImpactStressResult = ins->GetJetImpactStressResult();
+					TemperatureResult m_JetImpactTemperatureResult = ins->GetJetImpactTemperatureResult();
+					auto jetImpactTableWidget = paParent->getJetImpactTableWidget();
+					jetImpactTableWidget->setItem(1, 3, new QTableWidgetItem(QString::number(m_JetImpactStressResult.metalsMaxStress)));
+					jetImpactTableWidget->setItem(1, 4, new QTableWidgetItem(QString::number(m_JetImpactStressResult.propellantsMaxStress)));
+					jetImpactTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_JetImpactTemperatureResult.metalsMaxTemperature)));
+					jetImpactTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_JetImpactTemperatureResult.propellantsMaxTemperature)));
+					for (int i = 2; i < 10; ++i)
+					{
+						jetImpactTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						jetImpactTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						jetImpactTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						jetImpactTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
+					// 破片撞击计算结果
+					StressResult m_FragmentationImpactStressResult = ins->GetFragmentationImpactStressResult();
+					TemperatureResult m_FragmentationImpactTemperatureResult = ins->GetFragmentationImpactTemperatureResult();
+					auto fragmentationImpactTableWidget = paParent->getFragmentationImpactTableWidget();
+					fragmentationImpactTableWidget->setItem(1, 3, new QTableWidgetItem(QString::number(m_FragmentationImpactStressResult.metalsMaxStress)));
+					fragmentationImpactTableWidget->setItem(1, 4, new QTableWidgetItem(QString::number(m_FragmentationImpactStressResult.propellantsMaxStress)));
+					fragmentationImpactTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_FragmentationImpactTemperatureResult.metalsMaxTemperature)));
+					fragmentationImpactTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_FragmentationImpactTemperatureResult.propellantsMaxTemperature)));
+					for (int i = 2; i < 10; ++i)
+					{
+						fragmentationImpactTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						fragmentationImpactTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						fragmentationImpactTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						fragmentationImpactTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
+					// 爆炸冲击波计算结果
+					StressResult m_ExplosiveBlastStressResult = ins->GetExplosiveBlastStressResult();
+					TemperatureResult m_ExplosiveBlastTemperatureResult = ins->GetExplosiveBlastTemperatureResult();
+					auto explosiveBlastTableWidget = paParent->getExplosiveBlastTableWidget();
+					explosiveBlastTableWidget->setItem(1, 3, new QTableWidgetItem(QString::number(m_ExplosiveBlastStressResult.metalsMaxStress)));
+					explosiveBlastTableWidget->setItem(1, 4, new QTableWidgetItem(QString::number(m_ExplosiveBlastStressResult.propellantsMaxStress)));
+					explosiveBlastTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_ExplosiveBlastTemperatureResult.metalsMaxTemperature)));
+					explosiveBlastTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_ExplosiveBlastTemperatureResult.propellantsMaxTemperature)));
+					for (int i = 2; i < 10; ++i)
+					{
+						explosiveBlastTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						explosiveBlastTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						explosiveBlastTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						explosiveBlastTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
+					// 殉爆计算结果
+					StressResult m_SacrificeExplosionStressResult = ins->GetSacrificeExplosionStressResult();
+					TemperatureResult m_SacrificeExplosionTemperatureResult = ins->GetSacrificeExplosionTemperatureResult();
+					auto sacrificeExplosionTableWidget = paParent->getSacrificeExplosionTableWidget();
+					sacrificeExplosionTableWidget->setItem(1, 3, new QTableWidgetItem(QString::number(m_SacrificeExplosionStressResult.metalsMaxStress)));
+					sacrificeExplosionTableWidget->setItem(1, 4, new QTableWidgetItem(QString::number(m_SacrificeExplosionStressResult.propellantsMaxStress)));
+					sacrificeExplosionTableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_SacrificeExplosionTemperatureResult.metalsMaxTemperature)));
+					sacrificeExplosionTableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature)));
+					for (int i = 2; i < 10; ++i)
+					{
+						sacrificeExplosionTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						sacrificeExplosionTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(200, 800))));
+						sacrificeExplosionTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+						sacrificeExplosionTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+					}
 					
 					QMessageBox::information(this, "提示", QString("计算完成"));
 					break;
@@ -330,48 +465,57 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 	}
 }
 
-void IntelligentAnalyTreeWidget::updateChartData(QChartView* chartView, QVector<QPointF> data, QString xAxisTitle, QString yAxisTitle)
+void IntelligentAnalyTreeWidget::updateChartData(QChartView* chartView, QChart* chart, QLineSeries* lineSeries1, QLineSeries* lineSeries2, QLineSeries* lineSeries3, QScatterSeries* scatter1, QScatterSeries* scatter2, QScatterSeries* scatter3, QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle)
 {
 	if (!chartView || !chartView->chart()) return;
 
-	QChart* chart = chartView->chart();
+	if (!chartView || !chart || !scatter1 || !scatter2 || !scatter3) return;
 
-	// 清除原有系列和坐标轴
-	chart->removeAllSeries();
-	chart->removeAxis(chart->axisX());
-	chart->removeAxis(chart->axisY());
+	// 同步更新：曲线和散点的坐标完全一致
+	lineSeries1->clear();
+	scatter1->clear();
+	for (QPointF value : data1) {
+		lineSeries1->append(value);
+		scatter1->append(value);
+	}
 
-	// 创建并添加数据
-	QLineSeries* series = new QLineSeries();
-	*series << data[0] << data[1] << data[2];
-	series->setColor(Qt::blue);
 
-	// 添加系列到图表并关联坐标轴
-	chart->addSeries(series);
+	lineSeries2->clear();
+	scatter2->clear();
+	for (QPointF value : data2) {
+		lineSeries2->append(value);
+		scatter2->append(value);
+	}
 
-	// 创建坐标轴（X轴和Y轴）
-	QValueAxis* axisX = new QValueAxis();
-	QValueAxis* axisY = new QValueAxis();
+	lineSeries3->clear();
+	scatter3->clear();
+	for (QPointF value : data3) {
+		lineSeries3->append(value);
+		scatter3->append(value);
+	}
 
-	// 设置坐标轴名称
-	axisX->setTitleText(xAxisTitle);
-	axisY->setTitleText(yAxisTitle);
-
+	// 自动调整轴范围（适配新数据）
+	chart->createDefaultAxes();
+	auto m_axisX = qobject_cast<QValueAxis*>(chart->axisX());
+	auto m_axisY = qobject_cast<QValueAxis*>(chart->axisY());
+	if (m_axisX) {
+		m_axisY->setTitleText(xAxisTitle);
+	}
+	if (m_axisY) {
+		m_axisY->setTitleText(yAxisTitle);
+	}
+	QVector<QPointF> data;
+	data.append(data1);
+	data.append(data2);
+	data.append(data3);
 	qreal maxX = calculateMaxValue(data, true);
 	qreal maxY = calculateMaxValue(data, false);
-
-	// 设置X轴范围（最小值固定为0，最大值为计算值）
-	axisX->setRange(0, maxX);
-	// 设置Y轴范围（最小值固定为0，最大值为计算值）
-	axisY->setRange(0, maxY);
-
-	// 添加坐标轴到图表
-	chart->addAxis(axisX, Qt::AlignBottom);
-	chart->addAxis(axisY, Qt::AlignLeft);
-
-	// 将数据系列关联到坐标轴
-	series->attachAxis(axisX);
-	series->attachAxis(axisY);
+	qreal minX = calculateMinValue(data, true);
+	qreal minY = calculateMinValue(data, false);
+	m_axisX->setRange(minX*0.9, maxX*1.1);
+	m_axisY->setRange(minY*0.9, maxY*1.1);
+	m_axisX->setTickCount(4);
+	m_axisY->setTickCount(4);
 
 	chartView->update();
 
@@ -392,4 +536,21 @@ qreal IntelligentAnalyTreeWidget::calculateMaxValue(const QVector<QPointF>& seri
 
 	// 确保最大值不小于0
 	return qMax(maxVal, 0.0);
+}
+
+// 计算数据最小值（确保不小于0）
+qreal IntelligentAnalyTreeWidget::calculateMinValue(const QVector<QPointF>& series, bool isX)
+{
+	if (series.isEmpty()) return 0;
+
+	qreal minVal = isX ? series.first().x() : series.first().y();
+	for (const QPointF& point : series) {
+		qreal val = isX ? point.x() : point.y();
+		if (val < minVal) {
+			minVal = val;
+		}
+	}
+
+	// 确保最小值不小于0
+	return qMax(minVal, 0.0);
 }

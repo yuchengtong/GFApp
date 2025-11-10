@@ -128,6 +128,7 @@
     <ClCompile Include="IntelligentAnalyWidget.cpp" />
     <ClCompile Include="LoginDialog.cpp" />
     <ClCompile Include="occView.cpp" />
+    <ClCompile Include="ParamAnalyCalculateWorker.cpp" />
     <ClCompile Include="ParamAnalyTreeWidget.cpp" />
     <ClCompile Include="ParamAnalyWidget.cpp" />
     <ClCompile Include="ProgressDialog.cpp" />
@@ -245,6 +246,7 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="ParamAnalyCalculateWorker.h" />
     <QtMoc Include="WordExporterWorker.h" />
     <QtMoc Include="PropertyWidget\IntelligentShootPropertyWidget.h" />
     <QtMoc Include="PropertyWidget\IntelligentExplosiveBlastPropertyWidget.h" />
