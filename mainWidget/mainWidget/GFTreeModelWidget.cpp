@@ -726,23 +726,34 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					std::vector<TopoDS_Edge> forwardEdges, backwardEdges;
 					TopoDS_Wire outerWire = APICreateMidSurfaceHelper::GetOuterWire(faceA);
 					APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(outerWire, minXA, maxXA, forwardEdges, backwardEdges);
-				
+					std::vector<TopoDS_Edge> forwardEdgesB, backwardEdgesB;
+					TopoDS_Wire outerWireB = APICreateMidSurfaceHelper::GetOuterWire(faceB);
+					APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(outerWireB, minXB, maxXB, forwardEdgesB, backwardEdgesB);
+
+					TopoDS_Face connectingFace = APICreateMidSurfaceHelper::CreateConnectingFace(
+						backwardEdges,
+						forwardEdgesB,
+						minXA,
+						maxXA,
+						minXB,
+						maxXB
+					);
+
+
 					TopoDS_Compound allFacesCompound;
 					BRep_Builder builder;
 					builder.MakeCompound(allFacesCompound);
 
-					for (auto a : forwardEdges)
-					{
-						builder.Add(allFacesCompound, a);
-					}
 
-					for (auto e : backwardEdges)
-					{
-						builder.Add(allFacesCompound, e);
-					}
+
+
+					builder.Add(allFacesCompound, faceA);
+					builder.Add(allFacesCompound, faceB);
+					builder.Add(allFacesCompound, connectingFace);
+
+
 
 		
-					//TopoDS_Wire outerWire = APICreateMidSurfaceHelper::GetOuterWire(allFacesCompound);
 					// 显示复合形状（洋红色）
 					Handle(AIS_Shape) aisAllFaces = new AIS_Shape(allFacesCompound);
 					aisAllFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 统一用洋红色
@@ -751,6 +762,22 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 					// 调整视图适配所有内容
 					view->FitAll();
+
+
+
+
+
+
+
+
+
+
+					
+
+
+
+
+
 
 					break;
 				}

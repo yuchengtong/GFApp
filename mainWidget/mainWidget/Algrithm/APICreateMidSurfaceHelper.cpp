@@ -226,9 +226,13 @@ void APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(
 
 	std::vector<TopoDS_Edge> allEdges;
 	TopExp_Explorer edgeExplorer(wire, TopAbs_EDGE);
-	for (; edgeExplorer.More(); edgeExplorer.Next()) 
+	for (; edgeExplorer.More(); edgeExplorer.Next())
 	{
 		allEdges.push_back(TopoDS::Edge(edgeExplorer.Current()));
+	}
+
+	if (allEdges.empty()) {
+		return;
 	}
 
 	size_t startIndex = allEdges.size();
@@ -242,38 +246,110 @@ void APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(
 		gp_Pnt p1 = BRep_Tool::Pnt(vtx1);
 		gp_Pnt p2 = BRep_Tool::Pnt(vtx2);
 
-		if (!isCollecting) 
-		{		
+		if (!isCollecting)
+		{
 			if (p1.IsEqual(startPnt, Precision::Confusion()))
 			{
 				isCollecting = true;
-				startIndex = i; 
+				startIndex = i;
 				forwardEdges.push_back(edge);
-				
-				if (p2.IsEqual(endPnt, Precision::Confusion()))
-				{
-					endIndex = i;
-					break;
-				}
+			}
+			else if (p2.IsEqual(startPnt, Precision::Confusion()))
+			{
+				isCollecting = true;
+				startIndex = i+1;
 			}
 		}
-		else {
+		else
+		{
 			forwardEdges.push_back(edge);
+
 			if (p2.IsEqual(endPnt, Precision::Confusion()))
 			{
-				endIndex = i; 
+				endIndex = i;
 				break;
 			}
 		}
 	}
 
-	for (size_t i = endIndex + 1; i < allEdges.size(); ++i)
+	if (startIndex != allEdges.size() && endIndex != allEdges.size())
 	{
-		backwardEdges.push_back(allEdges[i]);
+		for (size_t i = endIndex + 1; i < allEdges.size(); ++i)
+		{
+			backwardEdges.push_back(allEdges[i]);
+		}
+		for (size_t i = 0; i < startIndex; ++i)
+		{
+			backwardEdges.push_back(allEdges[i]);
+		}
+	}
+}
+
+
+
+
+TopoDS_Face APICreateMidSurfaceHelper::CreateConnectingFace(
+	const std::vector<TopoDS_Edge>& backwardEdges,  // 来自 faceA, 路径是 maxXA -> ... -> minXA
+	const std::vector<TopoDS_Edge>& forwardEdgesB,  // 来自 faceB, 路径是 minXB -> ... -> maxXB
+	const gp_Pnt& minXA,
+	const gp_Pnt& maxXA,
+	const gp_Pnt& minXB,
+	const gp_Pnt& maxXB)
+{
+	// --- 步骤 1: 检查输入边链是否为空 ---
+	if (backwardEdges.empty() || forwardEdgesB.empty())
+	{
+		return TopoDS_Face(); // 边链为空，无法创建面
 	}
 
-	for (size_t i = 0; i < startIndex; ++i) 
+	// --- 步骤 2: 创建连接边 ---
+	// 边1: 连接 minXA (backwardEdges 的终点) 和 minXB (forwardEdgesB 的起点)
+	BRepBuilderAPI_MakeEdge edgeMaker1(minXA, minXB);
+	if (!edgeMaker1.IsDone()) return TopoDS_Face();
+	TopoDS_Edge connectingEdge1 = edgeMaker1.Edge();
+
+	// 边2: 连接 maxXB (forwardEdgesB 的终点) 和 maxXA (backwardEdges 的起点)
+	BRepBuilderAPI_MakeEdge edgeMaker2(maxXB, maxXA);
+	if (!edgeMaker2.IsDone()) return TopoDS_Face();
+	TopoDS_Edge connectingEdge2 = edgeMaker2.Edge();
+
+	// --- 步骤 3: 组合成一个封闭的 Wire ---
+	BRepBuilderAPI_MakeWire wireMaker;
+
+	// 1. 添加 backwardEdges (顺序：maxXA -> ... -> minXA)
+	for (const auto& edge : backwardEdges)
 	{
-		backwardEdges.push_back(allEdges[i]);
+		wireMaker.Add(edge);
+	}
+
+	// 2. 添加第一条连接边 (顺序：minXA -> minXB)
+	wireMaker.Add(connectingEdge1);
+
+	// 3. 添加 forwardEdgesB (顺序：minXB -> ... -> maxXB)
+	for (const auto& edge : forwardEdgesB)
+	{
+		wireMaker.Add(edge);
+	}
+
+	// 4. 添加第二条连接边 (顺序：maxXB -> maxXA)
+	wireMaker.Add(connectingEdge2);
+
+	if (!wireMaker.IsDone())
+	{
+		return TopoDS_Face(); // 创建 Wire 失败
+	}
+	TopoDS_Wire closedWire = wireMaker.Wire();
+
+	// --- 步骤 4: 使用封闭的 Wire 创建 Face ---
+	BRepBuilderAPI_MakeFace faceMaker(closedWire);
+
+	if (faceMaker.IsDone())
+	{
+		return faceMaker.Face();
+	}
+	else
+	{
+		// 创建失败，可能是因为 Wire 不平面或不自交
+		return TopoDS_Face();
 	}
 }
