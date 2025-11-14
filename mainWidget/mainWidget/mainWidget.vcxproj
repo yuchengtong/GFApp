@@ -31,13 +31,13 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
-    <QtInstall>msvc2019_64</QtInstall>
-    <QtModules>core;gui;axcontainer;widgets;charts</QtModules>
+    <QtInstall>msvc2017_64</QtInstall>
+    <QtModules>core;gui;axcontainer;widgets;charts;datavisualization</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
     <QtInstall>msvc2017_64</QtInstall>
-    <QtModules>core;gui;widgets;charts</QtModules>
+    <QtModules>core;gui;axcontainer;widgets;charts</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
   <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
@@ -110,6 +110,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GraphicWidget.cpp" />
     <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp" />
     <ClCompile Include="AuxiliaryAnalysisWidget.cpp" />
     <ClCompile Include="CustomPolarChart.cpp" />
@@ -278,6 +279,7 @@
     <QtMoc Include="PropertyWidget\CalculationPropertyWidget.h" />
     <QtMoc Include="LoginDialog.h" />
     <QtMoc Include="DataStructure\ModelDataManager.h" />
+    <QtMoc Include="GraphicWidget.h" />
     <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
     <QtMoc Include="CustomPolarChart.h" />

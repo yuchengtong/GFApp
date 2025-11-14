@@ -83,6 +83,9 @@ void IntelligentShootPropertyWidget::initWidget()
 		}
 
 	}
+	QTableWidgetItem* valueColimnItem = m_tableWidget->item(1, 2);
+	int valueItemWidth = QFontMetrics(m_tableWidget->font()).width(valueColimnItem->text());
+	m_tableWidget->setColumnWidth(2, valueItemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 将第0行0列的单元格文本字体加粗
 	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);

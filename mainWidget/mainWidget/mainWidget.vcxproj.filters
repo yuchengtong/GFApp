@@ -217,7 +217,10 @@
     <ClCompile Include="ParamAnalyCalculateWorker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-	<ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp">
+    <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -391,6 +394,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="ParamAnalyCalculateWorker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="GraphicWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

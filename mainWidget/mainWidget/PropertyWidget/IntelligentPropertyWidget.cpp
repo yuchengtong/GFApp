@@ -72,6 +72,9 @@ void IntelligentPropertyWidget::initWidget()
 		}
 
 	}
+	QTableWidgetItem* valueColimnItem = m_tableWidget->item(1, 2);
+	int valueItemWidth = QFontMetrics(m_tableWidget->font()).width(valueColimnItem->text());
+	m_tableWidget->setColumnWidth(2, valueItemWidth + m_tableWidget->verticalHeader()->width());
 
 	QStringList unitLabels = { " ","DOE","CCD", "2D", "3D"};
 	for (int row = 0; row < unitLabels.size(); ++row) {

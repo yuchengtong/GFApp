@@ -316,7 +316,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	x_comboBox->setFixedWidth(180);
 	QLabel* y_label = new QLabel("Y轴：");
 	y_comboBox = new QComboBox();
-	y_comboBox->addItems({ "壳体最大应力 ", "进剂最大应力", "壳体最高温度", "推进剂最高温度"});
+	y_comboBox->addItems({ "壳体最大应力 ", "推进剂最大应力", "壳体最高温度", "推进剂最高温度"});
 	
 	// 连接信号槽
 	connect(x_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -364,6 +364,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	}
 
 	m_chartView = new QChartView(m_chart);
+	m_chartView->setBackgroundBrush(QBrush(Qt::white));
 	m_chartView->setRenderHint(QPainter::Antialiasing);  // 抗锯齿
 	m_chartView->setMinimumHeight(400);
 
@@ -384,14 +385,61 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 
 
+	// 三维图形
+
+	
+
+	QLabel* grapgicLabel = new QLabel("结果集：");
+	m_grapgicComboBox = new QComboBox();
+	m_grapgicComboBox->addItems({ "壳体最大应力 ", "推进剂最大应力", "壳体最高温度", "推进剂最高温度" });
+	connect(m_grapgicComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, &IntelligentAnalyWidget::onComboBoxIndexGraphicChanged);
+
+	QLabel* hspinBoxLabel = new QLabel("水平：");
+	QSpinBox* hspinBox = new QSpinBox();
+	hspinBox->setMinimum(-180);
+	hspinBox->setMaximum(180);
+	hspinBox->setSingleStep(5);
+	hspinBox->setMinimumWidth(200);
+	hspinBox->setSuffix("°");
+	connect(hspinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+		this, &IntelligentAnalyWidget::hspinChange);
+
+	QLabel* vspinBoxLabel = new QLabel("垂直：");
+	QSpinBox* vspinBox = new QSpinBox();
+	vspinBox->setMinimum(0);
+	vspinBox->setMaximum(90);
+	vspinBox->setSingleStep(5);
+	vspinBox->setMinimumWidth(200);
+	vspinBox->setSuffix("°");
+	connect(vspinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+		this, &IntelligentAnalyWidget::vspinChange);
 
 
-	QChart* chart1 = new QChart();
-	QChartView* chartView2 = new QChartView(chart1);
+	QHBoxLayout* choseLayou = new QHBoxLayout();
+	choseLayou->addWidget(grapgicLabel);
+	choseLayou->addWidget(m_grapgicComboBox);
 
+	choseLayou->addWidget(hspinBoxLabel);
+	choseLayou->addWidget(hspinBox);
+
+	choseLayou->addWidget(vspinBoxLabel);
+	choseLayou->addWidget(vspinBox);
+
+	choseLayou->setContentsMargins(0, 0, 0, 0);
+	choseLayou->addStretch(200);
+
+
+	m_3dGraphicWid = new GraphicWidget();
+
+
+	// 构建布局
+	QVBoxLayout* m_rightLayout = new QVBoxLayout();
+	m_rightLayout->addLayout(choseLayou);
+	m_rightLayout->addWidget(m_3dGraphicWid);
 
 	graphicLayout->addLayout(m_leftLayout, 1);
-	graphicLayout->addWidget(chartView2, 1);
+	graphicLayout->addLayout(m_rightLayout, 1);
 	graphicWid->setLayout(graphicLayout);
 
 
@@ -431,8 +479,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	// 设置分割器的Handle宽度为0（消除视觉间隙）
 	mainSplitter->setHandleWidth(1);
 
-	mainSplitter->setStretchFactor(0, 2);
-	mainSplitter->setStretchFactor(1, 8);
+	mainSplitter->setStretchFactor(0, 3);
+	mainSplitter->setStretchFactor(1, 7);
 
 	QVBoxLayout* layout = new QVBoxLayout();
 	layout->addWidget(mainSplitter);
@@ -514,6 +562,40 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	}
 
 	onComboBoxIndexChanged(0);
+
+	// 更新三维模型数据
+	QVector<QVector<double>> newData;
+	QVector<double> data1;
+	data1.append(m_tableWidget->item(1, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(4, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(7, 3)->text().toDouble());
+	newData.append(data1);
+	QVector<double> data2;
+	data2.append(m_tableWidget->item(2, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(5, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(8, 3)->text().toDouble());
+	newData.append(data2);
+	QVector<double> data3;
+	data3.append(m_tableWidget->item(3, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(6, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(9, 3)->text().toDouble());
+	newData.append(data3);
+
+	QVector<double> xCoords;
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
+
+	QVector<double> yCoords;
+	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(4, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(7, 2)->text().toDouble());
+
+
+	updateGraphicData("", x_comboBox->itemText(1), "壳体最大应力", xCoords, yCoords, newData,
+		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(3, 1)->text().toDouble(),
+		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(7, 2)->text().toDouble());
+
 }
 
 void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
@@ -521,6 +603,66 @@ void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
 	x_comboBox->currentIndex();
 	dataChange(0);
 	
+}
+void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
+{
+	int z = 3;
+	QString zName = "壳体最大应力";
+	if (index == 0)
+	{
+		z = 3;
+		zName = "壳体最大应力";
+	}
+	else if (index == 1)
+	{
+		z = 4;
+		zName = "推进剂最大应力";
+	}
+	else if (index == 2)
+	{
+		z = 5;
+		zName = "壳体最高温度";
+	}
+	else if (index == 3)
+	{
+		z = 6;
+		zName = "推进剂最高温度";
+	}
+	// 更新三维模型数据
+	QVector<QVector<double>> newData;
+	QVector<double> data1;
+	data1.append(m_tableWidget->item(1, z)->text().toDouble());
+	data1.append(m_tableWidget->item(4, z)->text().toDouble());
+	data1.append(m_tableWidget->item(7, z)->text().toDouble());
+	newData.append(data1);
+	QVector<double> data2;
+	data2.append(m_tableWidget->item(2, z)->text().toDouble());
+	data2.append(m_tableWidget->item(5, z)->text().toDouble());
+	data2.append(m_tableWidget->item(8, z)->text().toDouble());
+	newData.append(data2);
+	QVector<double> data3;
+	data3.append(m_tableWidget->item(3, z)->text().toDouble());
+	data3.append(m_tableWidget->item(6, z)->text().toDouble());
+	data3.append(m_tableWidget->item(9, z)->text().toDouble());
+	newData.append(data3);
+
+	QVector<double> xCoords;
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
+
+	QVector<double> yCoords;
+	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(4, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(7, 2)->text().toDouble());
+
+
+
+	updateGraphicData("", "", zName, xCoords, yCoords, newData,
+		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(3, 1)->text().toDouble(),
+		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(7, 2)->text().toDouble());
+
+
 }
 
 void IntelligentAnalyWidget::dataChange(int index)
@@ -698,4 +840,45 @@ void IntelligentAnalyWidget::createChartDataGroup(QLineSeries * &lineSeries, QSc
 	scatterSeries->setMarkerSize(8);                                  // 圆点大小（8px）
 	scatterSeries->setBrush(QBrush(color));                            // 圆点填充色
 	scatterSeries->setPen(QPen(Qt::black, 1));                         // 圆点边框（黑色，1px）
+}
+
+
+
+void IntelligentAnalyWidget::hspinChange(int val)
+{
+	m_3dGraphicWid->on_angleValueChange(0, val);
+}
+
+void IntelligentAnalyWidget::vspinChange(int val)
+{
+	m_3dGraphicWid->on_angleValueChange(1, val);
+}
+
+void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QString zName, 
+	const QVector<double>& xCoords,
+	const QVector<double>& yCoords, 
+	const QVector<QVector<double>>& newData,
+	double xMin,
+	double xMax,
+	double yMin,
+	double yMax)
+{
+	if (zName == "壳体最大应力")
+	{
+		m_grapgicComboBox->setCurrentIndex(0);
+	} 
+	else if (zName == "推进剂最大应力")
+	{
+		m_grapgicComboBox->setCurrentIndex(1);
+	}
+	else if (zName == "壳体最高温度")
+	{
+		m_grapgicComboBox->setCurrentIndex(2);
+	}
+	else if (zName == "推进剂最高温度")
+	{
+		m_grapgicComboBox->setCurrentIndex(3);
+	}
+	m_3dGraphicWid->axisTitleChange(xName, yName, zName);
+	m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
 }

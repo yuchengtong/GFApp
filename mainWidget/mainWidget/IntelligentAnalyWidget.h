@@ -22,6 +22,8 @@
 #include "IntelligentExplosiveBlastPropertyWidget.h"
 #include "IntelligentSacrificeExplosionPropertyWidget.h"
 
+#include "GraphicWidget.h"
+
 
 class IntelligentAnalyWidget : public QWidget
 {
@@ -57,13 +59,31 @@ public:
 	QScatterSeries* getScatter2() { return m_scatter2; }
 	QScatterSeries* getScatter3() { return m_scatter3; }
 
+	// 更新三维坐标数据
+	void updateGraphicData(QString xName, QString yName, QString zName, 
+		const QVector<double>& xCoords,
+		const QVector<double>& yCoords, 
+		const QVector<QVector<double>>& newData,
+		double xMin,
+		double xMax,
+		double yMin,
+		double yMax);
+
 
 private slots:
 	void onTreeItemClicked(const QString& itemData);
 
 	void onComboBoxIndexChanged(int index);
 
+	void onComboBoxIndexGraphicChanged(int index);
+
 	void dataChange(int index);
+
+	void hspinChange(int val);
+
+	void vspinChange(int val);
+
+	
 
 private:
 
@@ -116,6 +136,10 @@ private:
 
 	QChartView* chartView2;
 
+	QComboBox* m_grapgicComboBox;
+
+	GraphicWidget* m_3dGraphicWid;
+
 	QHBoxLayout* graphicLayout;
 	QVBoxLayout* m_leftLayout;
 
@@ -130,4 +154,6 @@ private:
 
 	void createChartDataGroup(QLineSeries*& lineSeries, QScatterSeries*& scatterSeries,
 		const QString& name, const QColor& color);
+
+
 };

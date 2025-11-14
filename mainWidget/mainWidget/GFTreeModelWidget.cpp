@@ -88,8 +88,8 @@
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 
-#include <gmsh.h>
-using namespace gmsh;
+//#include <gmsh.h>
+//using namespace gmsh;
 
 #include "APICreateMidSurfaceHelper.h"
 

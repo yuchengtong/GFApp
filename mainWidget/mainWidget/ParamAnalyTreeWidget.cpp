@@ -282,453 +282,6 @@ void ParamAnalyTreeWidget::calculate()
 		if (paParent)
 		{
 			
-
-			// U1权重向量A1与一致性Rc1计算
-			auto u1WeightTtableWidget = paParent->getU1WeightTtableWidget();
-			// table数据转Vector
-			auto u1WeightVector = convertTableToVector(u1WeightTtableWidget);
-			// 计算权重向量
-			auto u1Weight = calculateWeights(u1WeightVector);
-			// 一致性
-			auto u1Consistency = consistencyCheck(u1WeightVector, u1Weight);
-			
-			auto u1CalculationTableWidget = paParent->getU1CalculationTableWidget();
-			QTableWidgetItem* A1Item = new QTableWidgetItem("A1=" + vectorToString(u1Weight, 4));
-			A1Item->setFlags(A1Item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			u1CalculationTableWidget->setItem(0, 2, A1Item);
-
-			QTableWidgetItem* u1ConsistencyItem = new QTableWidgetItem(u1Consistency <= 0.1 ? "通过，" + QString::number(u1Consistency) : "不通过，" + QString::number(u1Consistency));
-			u1ConsistencyItem->setFlags(u1ConsistencyItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			u1CalculationTableWidget->setItem(1, 2, u1ConsistencyItem);
-			u1CalculationTableWidget->resizeColumnsToContents();
-
-
-			// U2权重向量A2与一致性Rc2计算
-			auto u2WeightTtableWidget = paParent->getU2WeightTtableWidget();
-			// table数据转Vector
-			auto u2WeightVector = convertTableToVector(u2WeightTtableWidget);
-			// 计算权重向量
-			auto u2Weight = calculateWeights(u2WeightVector);
-			// 一致性
-			auto u2Consistency = consistencyCheck(u2WeightVector, u2Weight);
-
-			auto u2CalculationTableWidget = paParent->getU2CalculationTableWidget();
-			QTableWidgetItem* A2Item = new QTableWidgetItem("A2=" + vectorToString(u2Weight, 4));
-			A2Item->setFlags(A2Item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			u2CalculationTableWidget->setItem(0, 2, A2Item);
-
-			QTableWidgetItem* u2ConsistencyItem = new QTableWidgetItem(u2Consistency <= 0.1 ? "通过，" + QString::number(u2Consistency) : "不通过，" + QString::number(u2Consistency));
-			u2ConsistencyItem->setFlags(u2ConsistencyItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			u2CalculationTableWidget->setItem(1, 2, u2ConsistencyItem);
-			u2CalculationTableWidget->resizeColumnsToContents();
-			
-
-			auto ins = ModelDataManager::GetInstance();
-			// 跌落计算结果
-			StressResult m_FallStressResult = ins->GetFallStressResult();
-			StrainResult m_FallStrainResult = ins->GetFallStrainResult();
-			TemperatureResult m_FallTemperatureResult = ins->GetFallTemperatureResult();
-			OverpressureResult m_FallOverpressureResult = ins->GetFallOverpressureResult();
-			// 快烤计算结果
-			TemperatureResult m_FastCombustionTemperatureResult = ins->GetFastCombustionTemperatureResult();
-			// 慢烤计算结果
-			TemperatureResult m_SlowCombustionTemperatureResult = ins->GetSlowCombustionTemperatureResult();
-			// 枪击计算结果
-			StressResult m_ShootStressResult = ins->GetShootStressResult();
-			StrainResult m_ShootStrainResult = ins->GetShootStrainResult();
-			TemperatureResult m_ShootTemperatureResult = ins->GetShootTemperatureResult();
-			OverpressureResult m_ShootOverpressureResult = ins->GetShootOverpressureResult();
-			// 射流冲击计算结果
-			StressResult m_JetImpactStressResult = ins->GetJetImpactStressResult();
-			StrainResult m_JetImpactStrainResult = ins->GetJetImpactStrainResult();
-			TemperatureResult m_JetImpactTemperatureResult = ins->GetJetImpactTemperatureResult();
-			OverpressureResult m_JetImpactOverpressureResult = ins->GetJetImpactOverpressureResult();
-			// 破片撞击计算结果
-			StressResult m_FragmentationImpactStressResult = ins->GetFragmentationImpactStressResult();
-			StrainResult m_FragmentationImpactStrainResult = ins->GetFragmentationImpactStrainResult();
-			TemperatureResult m_FragmentationImpactTemperatureResult = ins->GetFragmentationImpactTemperatureResult();
-			OverpressureResult m_FragmentationImpactOverpressureResult = ins->GetFragmentationImpactOverpressureResult();
-			// 爆炸冲击波计算结果
-			StressResult m_ExplosiveBlastStressResult = ins->GetExplosiveBlastStressResult();
-			StrainResult m_ExplosiveBlastStrainResult = ins->GetExplosiveBlastStrainResult();
-			TemperatureResult m_ExplosiveBlastTemperatureResult = ins->GetExplosiveBlastTemperatureResult();
-			OverpressureResult m_ExplosiveBlastOverpressureResult = ins->GetExplosiveBlastOverpressureResult();
-			// 殉爆计算结果
-			StressResult m_SacrificeExplosionStressResult = ins->GetSacrificeExplosionStressResult();
-			StrainResult m_SacrificeExplosionStrainResult = ins->GetSacrificeExplosionStrainResult();
-			TemperatureResult m_SacrificeExplosionTemperatureResult = ins->GetSacrificeExplosionTemperatureResult();
-			OverpressureResult m_SacrificeExplosionOverpressureResult = ins->GetSacrificeExplosionOverpressureResult();
-			// U1权重向量A1与一致性Rc1计算
-			auto u1EvaluationMatrixTableWidget = paParent->getU1EvaluationMatrixTableWidget();
-			// 推进剂超压
-			double one_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.7;
-			double two_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.8;
-			double three_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.9;
-
-			// 推进剂温度
-			double one_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature-50;
-			double two_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature-30;
-			double three_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature-10;
-
-			u1EvaluationMatrixTableWidget->item(1, 1)->setText(QString::number(m_FallOverpressureResult.propellantsMaxOverpressure) + "MPa");
-			vector<double> fallOverpressureMembership =  getMembership(m_FallOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
-			u1EvaluationMatrixTableWidget->item(1, 2)->setText(vectorToString(fallOverpressureMembership ,2));
-
-			u1EvaluationMatrixTableWidget->item(2, 1)->setText(QString::number(m_FallTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> fallTemperatureMembership = getMembership(m_FallTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(2, 2)->setText(vectorToString(fallTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(3, 1)->setText(QString::number(m_FastCombustionTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> fastCombustionTemperatureMembership = getMembership(m_FastCombustionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(3, 2)->setText(vectorToString(fastCombustionTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(4, 1)->setText(QString::number(m_SlowCombustionTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> slowCombustionTemperatureMembership = getMembership(m_SlowCombustionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(4, 2)->setText(vectorToString(slowCombustionTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(5, 1)->setText(QString::number(m_ShootOverpressureResult.propellantsMaxOverpressure) + "MPa");
-			vector<double> shootOverpressureMembership = getMembership(m_ShootOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
-			u1EvaluationMatrixTableWidget->item(5, 2)->setText(vectorToString(shootOverpressureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(6, 1)->setText(QString::number(m_ShootTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> shootTemperatureMembership = getMembership(m_ShootTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(6, 2)->setText(vectorToString(shootTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(7, 1)->setText(QString::number(m_FragmentationImpactOverpressureResult.propellantsMaxOverpressure) + "MPa");
-			vector<double> fragmentationImpactOverpressureMembership = getMembership(m_FragmentationImpactOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
-			u1EvaluationMatrixTableWidget->item(7, 2)->setText(vectorToString(fragmentationImpactOverpressureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(8, 1)->setText(QString::number(m_FragmentationImpactTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> fragmentationImpactTemperatureMembership = getMembership(m_FragmentationImpactTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(8, 2)->setText(vectorToString(fragmentationImpactTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(9, 1)->setText(QString::number(m_SacrificeExplosionOverpressureResult.propellantsMaxOverpressure) + "MPa");
-			vector<double> sacrificeExplosionOverpressureMembership = getMembership(m_SacrificeExplosionOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
-			u1EvaluationMatrixTableWidget->item(9, 2)->setText(vectorToString(sacrificeExplosionOverpressureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(10, 1)->setText(QString::number(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> sacrificeExplosionTemperatureMembership = getMembership(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(10, 2)->setText(vectorToString(sacrificeExplosionTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(11, 1)->setText(QString::number(m_JetImpactOverpressureResult.propellantsMaxOverpressure) + "MPa");
-			vector<double> jetImpactOverpressureMembership = getMembership(m_JetImpactOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
-			u1EvaluationMatrixTableWidget->item(11, 2)->setText(vectorToString(jetImpactOverpressureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(12, 1)->setText(QString::number(m_JetImpactTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> jetImpactTemperatureMembership = getMembership(m_JetImpactTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(12, 2)->setText(vectorToString(jetImpactTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(13, 1)->setText(QString::number(m_ExplosiveBlastOverpressureResult.propellantsMaxOverpressure) + "MPa");
-			vector<double> explosiveBlastOverpressureMembership = getMembership(m_ExplosiveBlastOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
-			u1EvaluationMatrixTableWidget->item(13, 2)->setText(vectorToString(explosiveBlastOverpressureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->item(14, 1)->setText(QString::number(m_ExplosiveBlastTemperatureResult.propellantsMaxTemperature) + "℃");
-			vector<double> explosiveBlastTemperatureMembership = getMembership(m_ExplosiveBlastTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
-			u1EvaluationMatrixTableWidget->item(14, 2)->setText(vectorToString(explosiveBlastTemperatureMembership, 2));
-
-			u1EvaluationMatrixTableWidget->resizeColumnsToContents();
-			// U2权重向量A1与一致性Rc1计算
-
-			// 壳体应力
-			double one_yieldStrengthe = ins->GetSteelPropertyInfo().yieldStrength * 0.7;
-			double two_yieldStrength = ins->GetSteelPropertyInfo().yieldStrength * 0.8;
-			double three_yieldStrength = ins->GetSteelPropertyInfo().yieldStrength * 0.9;
-			auto u2EvaluationMatrixTableWidget = paParent->getU2EvaluationMatrixTableWidget();
-			u2EvaluationMatrixTableWidget->item(1, 1)->setText(QString::number(m_FallStressResult.propellantsMaxStress) + "MPa");
-			vector<double> fallStressMembership = getMembership(m_FallStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
-			u2EvaluationMatrixTableWidget->item(1, 2)->setText(vectorToString(fallStressMembership, 2));
-
-			u2EvaluationMatrixTableWidget->item(2, 1)->setText(QString::number(m_ShootStressResult.propellantsMaxStress) + "MPa");
-			vector<double> shootStressMembership = getMembership(m_ShootStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
-			u2EvaluationMatrixTableWidget->item(2, 2)->setText(vectorToString(shootStressMembership, 2));
-
-			u2EvaluationMatrixTableWidget->item(3, 1)->setText(QString::number(m_FragmentationImpactStressResult.propellantsMaxStress) + "MPa");
-			vector<double> fragmentationImpactStressMembership = getMembership(m_FragmentationImpactStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
-			u2EvaluationMatrixTableWidget->item(3, 2)->setText(vectorToString(fragmentationImpactStressMembership, 2));
-
-			u2EvaluationMatrixTableWidget->item(4, 1)->setText(QString::number(m_SacrificeExplosionStressResult.propellantsMaxStress) + "MPa");
-			vector<double> sacrificeExplosionStressMembership = getMembership(m_SacrificeExplosionStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
-			u2EvaluationMatrixTableWidget->item(4, 2)->setText(vectorToString(sacrificeExplosionStressMembership, 2));
-
-			u2EvaluationMatrixTableWidget->item(5, 1)->setText(QString::number(m_JetImpactStressResult.propellantsMaxStress) + "MPa");
-			vector<double> jetImpactStressMembership = getMembership(m_JetImpactStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
-			u2EvaluationMatrixTableWidget->item(5, 2)->setText(vectorToString(jetImpactStressMembership, 2));
-
-			u2EvaluationMatrixTableWidget->item(6, 1)->setText(QString::number(m_ExplosiveBlastStressResult.propellantsMaxStress) + "MPa");
-			vector<double> explosiveBlastStressMembership = getMembership(m_ExplosiveBlastStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
-			u2EvaluationMatrixTableWidget->item(6, 2)->setText(vectorToString(explosiveBlastStressMembership, 2));
-
-			u2EvaluationMatrixTableWidget->resizeColumnsToContents();
-
-
-			
-			double yieldStrength = ins->GetSteelPropertyInfo().yieldStrength; // 壳体应力
-			double ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature; //推进剂温度
-			double fireOverpressure = ins->GetPropellantPropertyInfo().fireOverpressure; //推进剂超压
-
-			// U1等级定量标准
-			auto u1GradeDefinitionTableWidget = paParent->getU1GradeDefinitionTableWidget();
-			u1GradeDefinitionTableWidget->item(0, 1)->setText("跌落场景推进剂超压（P₁=" + QString::number(fireOverpressure) + "MPa）");
-			u1GradeDefinitionTableWidget->item(0, 2)->setText("跌落场景推进剂温度（T₁=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 3)->setText("快速烤燃场景推进剂温度（T₂=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 4)->setText("慢速烤燃场景推进剂温度（T₃=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 5)->setText("子弹撞击场景推进剂超压（P₄=" + QString::number(fireOverpressure) + "MPa）");
-			u1GradeDefinitionTableWidget->item(0, 6)->setText("子弹撞击场景推进剂温度（T₄=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 7)->setText("破片撞击场景推进剂超压（P₅=" + QString::number(fireOverpressure) + "MPa）");
-			u1GradeDefinitionTableWidget->item(0, 8)->setText("破片撞击场景推进剂温度（T₅=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 9)->setText("殉爆场景推进剂超压（P₆=" + QString::number(fireOverpressure) + "MPa）");
-			u1GradeDefinitionTableWidget->item(0, 10)->setText("殉爆场景推进剂温度（T₆=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 11)->setText("射流场景推进剂超压（P₇=" + QString::number(fireOverpressure) + "MPa）");
-			u1GradeDefinitionTableWidget->item(0, 12)->setText("射流场景推进剂温度（T₇=" + QString::number(ignitionTemperature) + "℃）");
-			u1GradeDefinitionTableWidget->item(0, 13)->setText("爆炸冲击场景推进剂超压（P₈=" + QString::number(fireOverpressure) + "MPa）");
-			u1GradeDefinitionTableWidget->item(0, 14)->setText("爆炸冲击场景推进剂温度（T₈=" + QString::number(ignitionTemperature) + "℃）");
-
-			u1GradeDefinitionTableWidget->item(1, 1)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₁）");
-			u1GradeDefinitionTableWidget->item(1, 2)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₁-50）");
-			u1GradeDefinitionTableWidget->item(1, 3)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₂-50）");
-			u1GradeDefinitionTableWidget->item(1, 4)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₃-50）");
-			u1GradeDefinitionTableWidget->item(1, 5)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₂）");
-			u1GradeDefinitionTableWidget->item(1, 6)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₄-50）");
-			u1GradeDefinitionTableWidget->item(1, 7)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₃）");
-			u1GradeDefinitionTableWidget->item(1, 8)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₅-50）");
-			u1GradeDefinitionTableWidget->item(1, 9)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₄）");
-			u1GradeDefinitionTableWidget->item(1, 10)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₆-50）");
-			u1GradeDefinitionTableWidget->item(1, 11)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₅）");
-			u1GradeDefinitionTableWidget->item(1, 12)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₇-50）");
-			u1GradeDefinitionTableWidget->item(1, 13)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₆）");
-			u1GradeDefinitionTableWidget->item(1, 14)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₈-50）");
-
-			u1GradeDefinitionTableWidget->item(2, 1)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₁）");
-			u1GradeDefinitionTableWidget->item(2, 2)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₁-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 3)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₂-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 4)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₃-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 5)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₂）");
-			u1GradeDefinitionTableWidget->item(2, 6)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₄-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 7)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₃）");
-			u1GradeDefinitionTableWidget->item(2, 8)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₅-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 9)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₄）");
-			u1GradeDefinitionTableWidget->item(2, 10)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₆-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 11)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₅）");
-			u1GradeDefinitionTableWidget->item(2, 12)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₇-50~30）");
-			u1GradeDefinitionTableWidget->item(2, 13)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₆）");
-			u1GradeDefinitionTableWidget->item(2, 14)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₈-50~30）");
-
-			u1GradeDefinitionTableWidget->item(3, 1)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₁）");
-			u1GradeDefinitionTableWidget->item(3, 2)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₁-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 3)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₂-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 4)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₃-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 5)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₂）");
-			u1GradeDefinitionTableWidget->item(3, 6)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₄-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 7)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₃）");
-			u1GradeDefinitionTableWidget->item(3, 8)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₅-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 9)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₄）");
-			u1GradeDefinitionTableWidget->item(3, 10)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₆-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 11)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₅）");
-			u1GradeDefinitionTableWidget->item(3, 12)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₇-30~10）");
-			u1GradeDefinitionTableWidget->item(3, 13)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₆）");
-			u1GradeDefinitionTableWidget->item(3, 14)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₈-30~10）");
-
-			u1GradeDefinitionTableWidget->item(4, 1)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₁）");
-			u1GradeDefinitionTableWidget->item(4, 2)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₁-10）");
-			u1GradeDefinitionTableWidget->item(4, 3)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₂-10）");
-			u1GradeDefinitionTableWidget->item(4, 4)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₃-10）");
-			u1GradeDefinitionTableWidget->item(4, 5)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₂）");
-			u1GradeDefinitionTableWidget->item(4, 6)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₄-10）");
-			u1GradeDefinitionTableWidget->item(4, 7)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₃）");
-			u1GradeDefinitionTableWidget->item(4, 8)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₅-10）");
-			u1GradeDefinitionTableWidget->item(4, 9)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₄）");
-			u1GradeDefinitionTableWidget->item(4, 10)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₆-10）");
-			u1GradeDefinitionTableWidget->item(4, 11)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₅）");
-			u1GradeDefinitionTableWidget->item(4, 12)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₇-10）");
-			u1GradeDefinitionTableWidget->item(4, 13)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₆）");
-			u1GradeDefinitionTableWidget->item(4, 14)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₈-10）");
-
-			u1GradeDefinitionTableWidget->resizeColumnsToContents();
-			// U2等级定量标准
-			auto u2GradeDefinitionTableWidget = paParent->getU2GradeDefinitionTableWidget();
-			u2GradeDefinitionTableWidget->item(0, 1)->setText("跌落场景壳体应力（σ₁=" + QString::number(yieldStrength) + "MPa）");
-			u2GradeDefinitionTableWidget->item(0, 2)->setText("子弹撞击场景壳体应力（σ₂=" + QString::number(yieldStrength) + "MPa）");
-			u2GradeDefinitionTableWidget->item(0, 3)->setText("破片撞击场景壳体应力（σ₃=" + QString::number(yieldStrength) + "MPa）");
-			u2GradeDefinitionTableWidget->item(0, 4)->setText("殉爆场景壳体应力（σ₄=" + QString::number(yieldStrength) + "MPa）");
-			u2GradeDefinitionTableWidget->item(0, 5)->setText("射流场景壳体应力（σ₅=" + QString::number(yieldStrength) + "MPa）");
-			u2GradeDefinitionTableWidget->item(0, 6)->setText("爆炸冲击场景壳体应力（σ₆=" + QString::number(yieldStrength) + "MPa）");
-
-			u2GradeDefinitionTableWidget->item(1, 1)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₁）");
-			u2GradeDefinitionTableWidget->item(1, 2)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₂）");
-			u2GradeDefinitionTableWidget->item(1, 3)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₃）");
-			u2GradeDefinitionTableWidget->item(1, 4)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₄）");
-			u2GradeDefinitionTableWidget->item(1, 5)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₅）");
-			u2GradeDefinitionTableWidget->item(1, 6)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₆）");
-
-			u2GradeDefinitionTableWidget->item(2, 1)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₁）");
-			u2GradeDefinitionTableWidget->item(2, 2)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₂）");
-			u2GradeDefinitionTableWidget->item(2, 3)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₃）");
-			u2GradeDefinitionTableWidget->item(2, 4)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₄）");
-			u2GradeDefinitionTableWidget->item(2, 5)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₅）");
-			u2GradeDefinitionTableWidget->item(2, 6)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₆）");
-
-			u2GradeDefinitionTableWidget->item(3, 1)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₁）");
-			u2GradeDefinitionTableWidget->item(3, 2)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₂）");
-			u2GradeDefinitionTableWidget->item(3, 3)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₃）");
-			u2GradeDefinitionTableWidget->item(3, 4)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₄）");
-			u2GradeDefinitionTableWidget->item(3, 5)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₅）");
-			u2GradeDefinitionTableWidget->item(3, 6)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₆）");
-
-			u2GradeDefinitionTableWidget->item(4, 1)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₁）");
-			u2GradeDefinitionTableWidget->item(4, 2)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₂）");
-			u2GradeDefinitionTableWidget->item(4, 3)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₃）");
-			u2GradeDefinitionTableWidget->item(4, 4)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₄）");
-			u2GradeDefinitionTableWidget->item(4, 5)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₅）");
-			u2GradeDefinitionTableWidget->item(4, 6)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₆）");
-
-			u2GradeDefinitionTableWidget->resizeColumnsToContents();
-			// 准则层隶属度
-			vector<vector<double>> A1;
-			A1.push_back(u1Weight);
-			vector<vector<double>> A2;
-			A2.push_back(u2Weight);
-			vector<vector<double>> R1;
-			R1.push_back(fallOverpressureMembership);
-			R1.push_back(fallTemperatureMembership);
-			R1.push_back(fastCombustionTemperatureMembership);
-			R1.push_back(slowCombustionTemperatureMembership);
-			R1.push_back(shootOverpressureMembership);
-			R1.push_back(shootTemperatureMembership);
-			R1.push_back(fragmentationImpactOverpressureMembership);
-			R1.push_back(fragmentationImpactTemperatureMembership);
-			R1.push_back(sacrificeExplosionOverpressureMembership);
-			R1.push_back(sacrificeExplosionTemperatureMembership);
-			R1.push_back(jetImpactOverpressureMembership);
-			R1.push_back(jetImpactTemperatureMembership);
-			R1.push_back(explosiveBlastOverpressureMembership);
-			R1.push_back(explosiveBlastTemperatureMembership);
-
-
-			vector<vector<double>> R2;
-			R2.push_back(fallStressMembership);
-			R2.push_back(shootStressMembership);
-			R2.push_back(fragmentationImpactStressMembership);
-			R2.push_back(sacrificeExplosionStressMembership);
-			R2.push_back(jetImpactStressMembership);
-			R2.push_back(explosiveBlastStressMembership);
-
-			auto B1 = matrixMultiply(A1, R1);
-			auto B2 = matrixMultiply(A2, R2);
-
-			auto criterionTableWidget = paParent->getCriterionTableWidget();
-			criterionTableWidget->item(1, 2)->setText(vectorToString(B1[0], 2));
-			criterionTableWidget->item(2, 2)->setText(vectorToString(B2[0], 2));
-			criterionTableWidget->resizeColumnsToContents();
-
-			auto weightTtableWidget = paParent->getWeightTtableWidget();
-			// table数据转Vector
-			auto weightVector = convertTableToVector(weightTtableWidget);
-			// 计算权重向量
-			auto weight = calculateWeights(weightVector);
-
-			vector<vector<double>> A;
-			A.push_back(weight);
-			vector<vector<double>> B;
-			B.push_back(B1[0]);
-			B.push_back(B2[0]);
-
-			// 目标层隶属度
-			auto targetTableWidget = paParent->getTargetTableWidget();
-
-			auto result = matrixMultiply(A, B)[0];
-
-			targetTableWidget->item(1, 2)->setText(vectorToString(result, 2));
-			targetTableWidget->resizeColumnsToContents();
-
-			// 等级判定
-			auto levelTableWidget = paParent->getLevelTableWidget();
-			auto max_it = std::max_element(result.begin(), result.end());
-			size_t max_index = std::distance(result.begin(), max_it);
-			double max_value = *max_it;
-
-			vector<QString> level = {"V1（优，安全）","V2（良，基本安全）" ,"V3（中，需管控）" ,"V4（差，不安全）" };
-			
-			levelTableWidget->item(1, 1)->setText(QString::number(max_value, 'f', 2));
-			levelTableWidget->item(1, 2)->setText(level[max_index]);
-			levelTableWidget->resizeColumnsToContents();
-
-			// 分数评定
-			auto sourceTableWidget = paParent->getScoreTableWidget();
-			vector<double> scoreVector = {95,80,65,30};
-			double score = 0;
-			for (size_t i = 0; i < scoreVector.size(); ++i) {
-				score = score + scoreVector[i] * result[i];
-			}
-			QString scoreText = "";
-			if (score>=85)
-			{
-				scoreText = "V₁（优）";
-			}
-			else if (score >= 70 && score < 85)
-			{
-				scoreText = "V₂（良）";
-			}
-			else if (score >= 50 && score < 70)
-			{
-				scoreText = "V₃（中）";
-			}
-			else 
-			{
-				scoreText = "V₄（差）";
-			}
-			sourceTableWidget->item(1, 1)->setText(QString::number(score, 'f', 2));
-			sourceTableWidget->item(1, 2)->setText(scoreText);
-			sourceTableWidget->resizeColumnsToContents();
-
-
-
-			// 计算安全性指标评分结果数据
-			double fallOverpressurePoint = getPoint(fallOverpressureMembership);
-			double fallTemperaturePoint = getPoint(fallTemperatureMembership);
-			double fallStressPoint = getPoint(fallStressMembership);
-			double fallPoint = (fallOverpressurePoint + fallTemperaturePoint + fallStressPoint)/3.0;
-
-			double fastCombustionPoint = getPoint(fastCombustionTemperatureMembership);
-
-			double slowCombustionPoint = getPoint(slowCombustionTemperatureMembership);
-
-			double shootOverpressurePoint = getPoint(shootOverpressureMembership);
-			double shootTemperaturePoint = getPoint(shootTemperatureMembership);
-			double shootStressPoint = getPoint(shootStressMembership);
-			double shootPoint = (shootOverpressurePoint + shootTemperaturePoint + shootStressPoint) / 3.0;
-
-			double fragmentationImpactOverpressurePoint = getPoint(fragmentationImpactOverpressureMembership);
-			double fragmentationImpactTemperaturePoint = getPoint(fragmentationImpactTemperatureMembership);
-			double fragmentationImpactStressPoint = getPoint(fragmentationImpactStressMembership);
-			double fragmentationImpactPoint = (fragmentationImpactOverpressurePoint + fragmentationImpactTemperaturePoint + fragmentationImpactStressPoint) / 3.0;
-
-			double sacrificeExplosionOverpressurePoint = getPoint(sacrificeExplosionOverpressureMembership);
-			double sacrificeExplosionTemperaturePoint = getPoint(sacrificeExplosionTemperatureMembership);
-			double sacrificeExplosionStressPoint = getPoint(sacrificeExplosionStressMembership);
-			double sacrificeExplosionPoint = (sacrificeExplosionOverpressurePoint + sacrificeExplosionTemperaturePoint + sacrificeExplosionStressPoint) / 3.0;
-
-			double jetImpactOverpressurePoint = getPoint(jetImpactOverpressureMembership);
-			double jetImpactTemperaturePoint = getPoint(jetImpactTemperatureMembership);
-			double jetImpactStressPoint = getPoint(jetImpactStressMembership);
-			double jetImpactPoint = (jetImpactOverpressurePoint + jetImpactTemperaturePoint + jetImpactStressPoint) / 3.0;
-
-			double explosiveBlastOverpressurePoint = getPoint(explosiveBlastOverpressureMembership);
-			double explosiveBlastTemperaturePoint = getPoint(explosiveBlastTemperatureMembership);
-			double explosiveBlastStressPoint = getPoint(explosiveBlastStressMembership);
-			double explosiveBlastPoint = (explosiveBlastOverpressurePoint + explosiveBlastTemperaturePoint + explosiveBlastStressPoint) / 3.0;
-
-			auto pointResult = ins->GetPointResult();
-			pointResult.fallPoint = fallPoint;
-			pointResult.fastCombustionPoint = fastCombustionPoint;
-			pointResult.slowCombustionPoint = slowCombustionPoint;
-			pointResult.shootPoint = shootPoint;
-			pointResult.jetImpactPoint = jetImpactPoint;
-			pointResult.fragmentationImpactPoint = fragmentationImpactPoint;
-			pointResult.explosiveBlastPoint = explosiveBlastPoint;
-			pointResult.sacrificeExplosionPoint = sacrificeExplosionPoint;
-			ins->SetPointResult(pointResult);
-
-
 			// 创建进度对话框
 			ProgressDialog* progressDialog = new ProgressDialog("开始计算", parent);
 			progressDialog->show();
@@ -747,6 +300,451 @@ void ParamAnalyTreeWidget::calculate()
 			// 处理导入结果
 			connect(calculateWorker, &ParamAnalyCalculateWorker::WorkFinished, this,
 				[=](bool success, const QString& msg) {
+
+					// U1权重向量A1与一致性Rc1计算
+					auto u1WeightTtableWidget = paParent->getU1WeightTtableWidget();
+					// table数据转Vector
+					auto u1WeightVector = convertTableToVector(u1WeightTtableWidget);
+					// 计算权重向量
+					auto u1Weight = calculateWeights(u1WeightVector);
+					// 一致性
+					auto u1Consistency = consistencyCheck(u1WeightVector, u1Weight);
+
+					auto u1CalculationTableWidget = paParent->getU1CalculationTableWidget();
+					QTableWidgetItem* A1Item = new QTableWidgetItem("A1=" + vectorToString(u1Weight, 4));
+					A1Item->setFlags(A1Item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+					u1CalculationTableWidget->setItem(0, 2, A1Item);
+
+					QTableWidgetItem* u1ConsistencyItem = new QTableWidgetItem(u1Consistency <= 0.1 ? "通过，" + QString::number(u1Consistency) : "不通过，" + QString::number(u1Consistency));
+					u1ConsistencyItem->setFlags(u1ConsistencyItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
+					u1CalculationTableWidget->setItem(1, 2, u1ConsistencyItem);
+					u1CalculationTableWidget->resizeColumnsToContents();
+
+
+					// U2权重向量A2与一致性Rc2计算
+					auto u2WeightTtableWidget = paParent->getU2WeightTtableWidget();
+					// table数据转Vector
+					auto u2WeightVector = convertTableToVector(u2WeightTtableWidget);
+					// 计算权重向量
+					auto u2Weight = calculateWeights(u2WeightVector);
+					// 一致性
+					auto u2Consistency = consistencyCheck(u2WeightVector, u2Weight);
+
+					auto u2CalculationTableWidget = paParent->getU2CalculationTableWidget();
+					QTableWidgetItem* A2Item = new QTableWidgetItem("A2=" + vectorToString(u2Weight, 4));
+					A2Item->setFlags(A2Item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+					u2CalculationTableWidget->setItem(0, 2, A2Item);
+
+					QTableWidgetItem* u2ConsistencyItem = new QTableWidgetItem(u2Consistency <= 0.1 ? "通过，" + QString::number(u2Consistency) : "不通过，" + QString::number(u2Consistency));
+					u2ConsistencyItem->setFlags(u2ConsistencyItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
+					u2CalculationTableWidget->setItem(1, 2, u2ConsistencyItem);
+					u2CalculationTableWidget->resizeColumnsToContents();
+
+
+					auto ins = ModelDataManager::GetInstance();
+					// 跌落计算结果
+					StressResult m_FallStressResult = ins->GetFallStressResult();
+					StrainResult m_FallStrainResult = ins->GetFallStrainResult();
+					TemperatureResult m_FallTemperatureResult = ins->GetFallTemperatureResult();
+					OverpressureResult m_FallOverpressureResult = ins->GetFallOverpressureResult();
+					// 快烤计算结果
+					TemperatureResult m_FastCombustionTemperatureResult = ins->GetFastCombustionTemperatureResult();
+					// 慢烤计算结果
+					TemperatureResult m_SlowCombustionTemperatureResult = ins->GetSlowCombustionTemperatureResult();
+					// 枪击计算结果
+					StressResult m_ShootStressResult = ins->GetShootStressResult();
+					StrainResult m_ShootStrainResult = ins->GetShootStrainResult();
+					TemperatureResult m_ShootTemperatureResult = ins->GetShootTemperatureResult();
+					OverpressureResult m_ShootOverpressureResult = ins->GetShootOverpressureResult();
+					// 射流冲击计算结果
+					StressResult m_JetImpactStressResult = ins->GetJetImpactStressResult();
+					StrainResult m_JetImpactStrainResult = ins->GetJetImpactStrainResult();
+					TemperatureResult m_JetImpactTemperatureResult = ins->GetJetImpactTemperatureResult();
+					OverpressureResult m_JetImpactOverpressureResult = ins->GetJetImpactOverpressureResult();
+					// 破片撞击计算结果
+					StressResult m_FragmentationImpactStressResult = ins->GetFragmentationImpactStressResult();
+					StrainResult m_FragmentationImpactStrainResult = ins->GetFragmentationImpactStrainResult();
+					TemperatureResult m_FragmentationImpactTemperatureResult = ins->GetFragmentationImpactTemperatureResult();
+					OverpressureResult m_FragmentationImpactOverpressureResult = ins->GetFragmentationImpactOverpressureResult();
+					// 爆炸冲击波计算结果
+					StressResult m_ExplosiveBlastStressResult = ins->GetExplosiveBlastStressResult();
+					StrainResult m_ExplosiveBlastStrainResult = ins->GetExplosiveBlastStrainResult();
+					TemperatureResult m_ExplosiveBlastTemperatureResult = ins->GetExplosiveBlastTemperatureResult();
+					OverpressureResult m_ExplosiveBlastOverpressureResult = ins->GetExplosiveBlastOverpressureResult();
+					// 殉爆计算结果
+					StressResult m_SacrificeExplosionStressResult = ins->GetSacrificeExplosionStressResult();
+					StrainResult m_SacrificeExplosionStrainResult = ins->GetSacrificeExplosionStrainResult();
+					TemperatureResult m_SacrificeExplosionTemperatureResult = ins->GetSacrificeExplosionTemperatureResult();
+					OverpressureResult m_SacrificeExplosionOverpressureResult = ins->GetSacrificeExplosionOverpressureResult();
+					// U1权重向量A1与一致性Rc1计算
+					auto u1EvaluationMatrixTableWidget = paParent->getU1EvaluationMatrixTableWidget();
+					// 推进剂超压
+					double one_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.7;
+					double two_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.8;
+					double three_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.9;
+
+					// 推进剂温度
+					double one_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature - 50;
+					double two_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature - 30;
+					double three_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature - 10;
+
+					u1EvaluationMatrixTableWidget->item(1, 1)->setText(QString::number(m_FallOverpressureResult.propellantsMaxOverpressure) + "MPa");
+					vector<double> fallOverpressureMembership = getMembership(m_FallOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+					u1EvaluationMatrixTableWidget->item(1, 2)->setText(vectorToString(fallOverpressureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(2, 1)->setText(QString::number(m_FallTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> fallTemperatureMembership = getMembership(m_FallTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(2, 2)->setText(vectorToString(fallTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(3, 1)->setText(QString::number(m_FastCombustionTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> fastCombustionTemperatureMembership = getMembership(m_FastCombustionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(3, 2)->setText(vectorToString(fastCombustionTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(4, 1)->setText(QString::number(m_SlowCombustionTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> slowCombustionTemperatureMembership = getMembership(m_SlowCombustionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(4, 2)->setText(vectorToString(slowCombustionTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(5, 1)->setText(QString::number(m_ShootOverpressureResult.propellantsMaxOverpressure) + "MPa");
+					vector<double> shootOverpressureMembership = getMembership(m_ShootOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+					u1EvaluationMatrixTableWidget->item(5, 2)->setText(vectorToString(shootOverpressureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(6, 1)->setText(QString::number(m_ShootTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> shootTemperatureMembership = getMembership(m_ShootTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(6, 2)->setText(vectorToString(shootTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(7, 1)->setText(QString::number(m_FragmentationImpactOverpressureResult.propellantsMaxOverpressure) + "MPa");
+					vector<double> fragmentationImpactOverpressureMembership = getMembership(m_FragmentationImpactOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+					u1EvaluationMatrixTableWidget->item(7, 2)->setText(vectorToString(fragmentationImpactOverpressureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(8, 1)->setText(QString::number(m_FragmentationImpactTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> fragmentationImpactTemperatureMembership = getMembership(m_FragmentationImpactTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(8, 2)->setText(vectorToString(fragmentationImpactTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(9, 1)->setText(QString::number(m_SacrificeExplosionOverpressureResult.propellantsMaxOverpressure) + "MPa");
+					vector<double> sacrificeExplosionOverpressureMembership = getMembership(m_SacrificeExplosionOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+					u1EvaluationMatrixTableWidget->item(9, 2)->setText(vectorToString(sacrificeExplosionOverpressureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(10, 1)->setText(QString::number(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> sacrificeExplosionTemperatureMembership = getMembership(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(10, 2)->setText(vectorToString(sacrificeExplosionTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(11, 1)->setText(QString::number(m_JetImpactOverpressureResult.propellantsMaxOverpressure) + "MPa");
+					vector<double> jetImpactOverpressureMembership = getMembership(m_JetImpactOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+					u1EvaluationMatrixTableWidget->item(11, 2)->setText(vectorToString(jetImpactOverpressureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(12, 1)->setText(QString::number(m_JetImpactTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> jetImpactTemperatureMembership = getMembership(m_JetImpactTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(12, 2)->setText(vectorToString(jetImpactTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(13, 1)->setText(QString::number(m_ExplosiveBlastOverpressureResult.propellantsMaxOverpressure) + "MPa");
+					vector<double> explosiveBlastOverpressureMembership = getMembership(m_ExplosiveBlastOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+					u1EvaluationMatrixTableWidget->item(13, 2)->setText(vectorToString(explosiveBlastOverpressureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->item(14, 1)->setText(QString::number(m_ExplosiveBlastTemperatureResult.propellantsMaxTemperature) + "℃");
+					vector<double> explosiveBlastTemperatureMembership = getMembership(m_ExplosiveBlastTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+					u1EvaluationMatrixTableWidget->item(14, 2)->setText(vectorToString(explosiveBlastTemperatureMembership, 2));
+
+					u1EvaluationMatrixTableWidget->resizeColumnsToContents();
+					// U2权重向量A1与一致性Rc1计算
+
+					// 壳体应力
+					double one_yieldStrengthe = ins->GetSteelPropertyInfo().yieldStrength * 0.7;
+					double two_yieldStrength = ins->GetSteelPropertyInfo().yieldStrength * 0.8;
+					double three_yieldStrength = ins->GetSteelPropertyInfo().yieldStrength * 0.9;
+					auto u2EvaluationMatrixTableWidget = paParent->getU2EvaluationMatrixTableWidget();
+					u2EvaluationMatrixTableWidget->item(1, 1)->setText(QString::number(m_FallStressResult.propellantsMaxStress) + "MPa");
+					vector<double> fallStressMembership = getMembership(m_FallStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+					u2EvaluationMatrixTableWidget->item(1, 2)->setText(vectorToString(fallStressMembership, 2));
+
+					u2EvaluationMatrixTableWidget->item(2, 1)->setText(QString::number(m_ShootStressResult.propellantsMaxStress) + "MPa");
+					vector<double> shootStressMembership = getMembership(m_ShootStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+					u2EvaluationMatrixTableWidget->item(2, 2)->setText(vectorToString(shootStressMembership, 2));
+
+					u2EvaluationMatrixTableWidget->item(3, 1)->setText(QString::number(m_FragmentationImpactStressResult.propellantsMaxStress) + "MPa");
+					vector<double> fragmentationImpactStressMembership = getMembership(m_FragmentationImpactStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+					u2EvaluationMatrixTableWidget->item(3, 2)->setText(vectorToString(fragmentationImpactStressMembership, 2));
+
+					u2EvaluationMatrixTableWidget->item(4, 1)->setText(QString::number(m_SacrificeExplosionStressResult.propellantsMaxStress) + "MPa");
+					vector<double> sacrificeExplosionStressMembership = getMembership(m_SacrificeExplosionStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+					u2EvaluationMatrixTableWidget->item(4, 2)->setText(vectorToString(sacrificeExplosionStressMembership, 2));
+
+					u2EvaluationMatrixTableWidget->item(5, 1)->setText(QString::number(m_JetImpactStressResult.propellantsMaxStress) + "MPa");
+					vector<double> jetImpactStressMembership = getMembership(m_JetImpactStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+					u2EvaluationMatrixTableWidget->item(5, 2)->setText(vectorToString(jetImpactStressMembership, 2));
+
+					u2EvaluationMatrixTableWidget->item(6, 1)->setText(QString::number(m_ExplosiveBlastStressResult.propellantsMaxStress) + "MPa");
+					vector<double> explosiveBlastStressMembership = getMembership(m_ExplosiveBlastStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+					u2EvaluationMatrixTableWidget->item(6, 2)->setText(vectorToString(explosiveBlastStressMembership, 2));
+
+					u2EvaluationMatrixTableWidget->resizeColumnsToContents();
+
+
+
+					double yieldStrength = ins->GetSteelPropertyInfo().yieldStrength; // 壳体应力
+					double ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature; //推进剂温度
+					double fireOverpressure = ins->GetPropellantPropertyInfo().fireOverpressure; //推进剂超压
+
+					// U1等级定量标准
+					auto u1GradeDefinitionTableWidget = paParent->getU1GradeDefinitionTableWidget();
+					u1GradeDefinitionTableWidget->item(0, 1)->setText("跌落场景推进剂超压（P₁=" + QString::number(fireOverpressure) + "MPa）");
+					u1GradeDefinitionTableWidget->item(0, 2)->setText("跌落场景推进剂温度（T₁=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 3)->setText("快速烤燃场景推进剂温度（T₂=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 4)->setText("慢速烤燃场景推进剂温度（T₃=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 5)->setText("子弹撞击场景推进剂超压（P₄=" + QString::number(fireOverpressure) + "MPa）");
+					u1GradeDefinitionTableWidget->item(0, 6)->setText("子弹撞击场景推进剂温度（T₄=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 7)->setText("破片撞击场景推进剂超压（P₅=" + QString::number(fireOverpressure) + "MPa）");
+					u1GradeDefinitionTableWidget->item(0, 8)->setText("破片撞击场景推进剂温度（T₅=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 9)->setText("殉爆场景推进剂超压（P₆=" + QString::number(fireOverpressure) + "MPa）");
+					u1GradeDefinitionTableWidget->item(0, 10)->setText("殉爆场景推进剂温度（T₆=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 11)->setText("射流场景推进剂超压（P₇=" + QString::number(fireOverpressure) + "MPa）");
+					u1GradeDefinitionTableWidget->item(0, 12)->setText("射流场景推进剂温度（T₇=" + QString::number(ignitionTemperature) + "℃）");
+					u1GradeDefinitionTableWidget->item(0, 13)->setText("爆炸冲击场景推进剂超压（P₈=" + QString::number(fireOverpressure) + "MPa）");
+					u1GradeDefinitionTableWidget->item(0, 14)->setText("爆炸冲击场景推进剂温度（T₈=" + QString::number(ignitionTemperature) + "℃）");
+
+					u1GradeDefinitionTableWidget->item(1, 1)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₁）");
+					u1GradeDefinitionTableWidget->item(1, 2)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₁-50）");
+					u1GradeDefinitionTableWidget->item(1, 3)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₂-50）");
+					u1GradeDefinitionTableWidget->item(1, 4)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₃-50）");
+					u1GradeDefinitionTableWidget->item(1, 5)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₂）");
+					u1GradeDefinitionTableWidget->item(1, 6)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₄-50）");
+					u1GradeDefinitionTableWidget->item(1, 7)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₃）");
+					u1GradeDefinitionTableWidget->item(1, 8)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₅-50）");
+					u1GradeDefinitionTableWidget->item(1, 9)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₄）");
+					u1GradeDefinitionTableWidget->item(1, 10)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₆-50）");
+					u1GradeDefinitionTableWidget->item(1, 11)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₅）");
+					u1GradeDefinitionTableWidget->item(1, 12)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₇-50）");
+					u1GradeDefinitionTableWidget->item(1, 13)->setText("≤ " + QString::number(fireOverpressure * 0.7) + "MPa（0.7P₆）");
+					u1GradeDefinitionTableWidget->item(1, 14)->setText("≤ " + QString::number(ignitionTemperature - 50) + "℃（≤T₈-50）");
+
+					u1GradeDefinitionTableWidget->item(2, 1)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₁）");
+					u1GradeDefinitionTableWidget->item(2, 2)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₁-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 3)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₂-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 4)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₃-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 5)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₂）");
+					u1GradeDefinitionTableWidget->item(2, 6)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₄-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 7)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₃）");
+					u1GradeDefinitionTableWidget->item(2, 8)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₅-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 9)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₄）");
+					u1GradeDefinitionTableWidget->item(2, 10)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₆-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 11)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₅）");
+					u1GradeDefinitionTableWidget->item(2, 12)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₇-50~30）");
+					u1GradeDefinitionTableWidget->item(2, 13)->setText(QString::number(fireOverpressure * 0.7) + "~" + QString::number(fireOverpressure * 0.8) + "MPa（0.7~0.8P₆）");
+					u1GradeDefinitionTableWidget->item(2, 14)->setText(QString::number(ignitionTemperature - 50) + "~" + QString::number(ignitionTemperature - 30) + "℃（≤T₈-50~30）");
+
+					u1GradeDefinitionTableWidget->item(3, 1)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₁）");
+					u1GradeDefinitionTableWidget->item(3, 2)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₁-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 3)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₂-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 4)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₃-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 5)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₂）");
+					u1GradeDefinitionTableWidget->item(3, 6)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₄-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 7)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₃）");
+					u1GradeDefinitionTableWidget->item(3, 8)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₅-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 9)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₄）");
+					u1GradeDefinitionTableWidget->item(3, 10)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₆-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 11)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₅）");
+					u1GradeDefinitionTableWidget->item(3, 12)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₇-30~10）");
+					u1GradeDefinitionTableWidget->item(3, 13)->setText(QString::number(fireOverpressure * 0.8) + "~" + QString::number(fireOverpressure * 0.9) + "MPa（0.8~0.9P₆）");
+					u1GradeDefinitionTableWidget->item(3, 14)->setText(QString::number(ignitionTemperature - 30) + "~" + QString::number(ignitionTemperature - 10) + "℃（≤T₈-30~10）");
+
+					u1GradeDefinitionTableWidget->item(4, 1)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₁）");
+					u1GradeDefinitionTableWidget->item(4, 2)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₁-10）");
+					u1GradeDefinitionTableWidget->item(4, 3)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₂-10）");
+					u1GradeDefinitionTableWidget->item(4, 4)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₃-10）");
+					u1GradeDefinitionTableWidget->item(4, 5)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₂）");
+					u1GradeDefinitionTableWidget->item(4, 6)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₄-10）");
+					u1GradeDefinitionTableWidget->item(4, 7)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₃）");
+					u1GradeDefinitionTableWidget->item(4, 8)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₅-10）");
+					u1GradeDefinitionTableWidget->item(4, 9)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₄）");
+					u1GradeDefinitionTableWidget->item(4, 10)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₆-10）");
+					u1GradeDefinitionTableWidget->item(4, 11)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₅）");
+					u1GradeDefinitionTableWidget->item(4, 12)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₇-10）");
+					u1GradeDefinitionTableWidget->item(4, 13)->setText("> " + QString::number(fireOverpressure * 0.9) + "MPa（0.9P₆）");
+					u1GradeDefinitionTableWidget->item(4, 14)->setText("> " + QString::number(ignitionTemperature - 10) + "℃（≤T₈-10）");
+
+					u1GradeDefinitionTableWidget->resizeColumnsToContents();
+					// U2等级定量标准
+					auto u2GradeDefinitionTableWidget = paParent->getU2GradeDefinitionTableWidget();
+					u2GradeDefinitionTableWidget->item(0, 1)->setText("跌落场景壳体应力（σ₁=" + QString::number(yieldStrength) + "MPa）");
+					u2GradeDefinitionTableWidget->item(0, 2)->setText("子弹撞击场景壳体应力（σ₂=" + QString::number(yieldStrength) + "MPa）");
+					u2GradeDefinitionTableWidget->item(0, 3)->setText("破片撞击场景壳体应力（σ₃=" + QString::number(yieldStrength) + "MPa）");
+					u2GradeDefinitionTableWidget->item(0, 4)->setText("殉爆场景壳体应力（σ₄=" + QString::number(yieldStrength) + "MPa）");
+					u2GradeDefinitionTableWidget->item(0, 5)->setText("射流场景壳体应力（σ₅=" + QString::number(yieldStrength) + "MPa）");
+					u2GradeDefinitionTableWidget->item(0, 6)->setText("爆炸冲击场景壳体应力（σ₆=" + QString::number(yieldStrength) + "MPa）");
+
+					u2GradeDefinitionTableWidget->item(1, 1)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₁）");
+					u2GradeDefinitionTableWidget->item(1, 2)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₂）");
+					u2GradeDefinitionTableWidget->item(1, 3)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₃）");
+					u2GradeDefinitionTableWidget->item(1, 4)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₄）");
+					u2GradeDefinitionTableWidget->item(1, 5)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₅）");
+					u2GradeDefinitionTableWidget->item(1, 6)->setText("≤ " + QString::number(yieldStrength * 0.7) + "MPa（0.7σ₆）");
+
+					u2GradeDefinitionTableWidget->item(2, 1)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₁）");
+					u2GradeDefinitionTableWidget->item(2, 2)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₂）");
+					u2GradeDefinitionTableWidget->item(2, 3)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₃）");
+					u2GradeDefinitionTableWidget->item(2, 4)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₄）");
+					u2GradeDefinitionTableWidget->item(2, 5)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₅）");
+					u2GradeDefinitionTableWidget->item(2, 6)->setText(QString::number(yieldStrength * 0.7) + "~" + QString::number(yieldStrength * 0.8) + "MPa（0.7~0.8σ₆）");
+
+					u2GradeDefinitionTableWidget->item(3, 1)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₁）");
+					u2GradeDefinitionTableWidget->item(3, 2)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₂）");
+					u2GradeDefinitionTableWidget->item(3, 3)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₃）");
+					u2GradeDefinitionTableWidget->item(3, 4)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₄）");
+					u2GradeDefinitionTableWidget->item(3, 5)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₅）");
+					u2GradeDefinitionTableWidget->item(3, 6)->setText(QString::number(yieldStrength * 0.8) + "~" + QString::number(yieldStrength * 0.9) + "MPa（0.8~0.9σ₆）");
+
+					u2GradeDefinitionTableWidget->item(4, 1)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₁）");
+					u2GradeDefinitionTableWidget->item(4, 2)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₂）");
+					u2GradeDefinitionTableWidget->item(4, 3)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₃）");
+					u2GradeDefinitionTableWidget->item(4, 4)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₄）");
+					u2GradeDefinitionTableWidget->item(4, 5)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₅）");
+					u2GradeDefinitionTableWidget->item(4, 6)->setText("> " + QString::number(yieldStrength * 0.9) + "MPa（0.9σ₆）");
+
+					u2GradeDefinitionTableWidget->resizeColumnsToContents();
+					// 准则层隶属度
+					vector<vector<double>> A1;
+					A1.push_back(u1Weight);
+					vector<vector<double>> A2;
+					A2.push_back(u2Weight);
+					vector<vector<double>> R1;
+					R1.push_back(fallOverpressureMembership);
+					R1.push_back(fallTemperatureMembership);
+					R1.push_back(fastCombustionTemperatureMembership);
+					R1.push_back(slowCombustionTemperatureMembership);
+					R1.push_back(shootOverpressureMembership);
+					R1.push_back(shootTemperatureMembership);
+					R1.push_back(fragmentationImpactOverpressureMembership);
+					R1.push_back(fragmentationImpactTemperatureMembership);
+					R1.push_back(sacrificeExplosionOverpressureMembership);
+					R1.push_back(sacrificeExplosionTemperatureMembership);
+					R1.push_back(jetImpactOverpressureMembership);
+					R1.push_back(jetImpactTemperatureMembership);
+					R1.push_back(explosiveBlastOverpressureMembership);
+					R1.push_back(explosiveBlastTemperatureMembership);
+
+
+					vector<vector<double>> R2;
+					R2.push_back(fallStressMembership);
+					R2.push_back(shootStressMembership);
+					R2.push_back(fragmentationImpactStressMembership);
+					R2.push_back(sacrificeExplosionStressMembership);
+					R2.push_back(jetImpactStressMembership);
+					R2.push_back(explosiveBlastStressMembership);
+
+					auto B1 = matrixMultiply(A1, R1);
+					auto B2 = matrixMultiply(A2, R2);
+
+					auto criterionTableWidget = paParent->getCriterionTableWidget();
+					criterionTableWidget->item(1, 2)->setText(vectorToString(B1[0], 2));
+					criterionTableWidget->item(2, 2)->setText(vectorToString(B2[0], 2));
+					criterionTableWidget->resizeColumnsToContents();
+
+					auto weightTtableWidget = paParent->getWeightTtableWidget();
+					// table数据转Vector
+					auto weightVector = convertTableToVector(weightTtableWidget);
+					// 计算权重向量
+					auto weight = calculateWeights(weightVector);
+
+					vector<vector<double>> A;
+					A.push_back(weight);
+					vector<vector<double>> B;
+					B.push_back(B1[0]);
+					B.push_back(B2[0]);
+
+					// 目标层隶属度
+					auto targetTableWidget = paParent->getTargetTableWidget();
+
+					auto result = matrixMultiply(A, B)[0];
+
+					targetTableWidget->item(1, 2)->setText(vectorToString(result, 2));
+					targetTableWidget->resizeColumnsToContents();
+
+					// 等级判定
+					auto levelTableWidget = paParent->getLevelTableWidget();
+					auto max_it = std::max_element(result.begin(), result.end());
+					size_t max_index = std::distance(result.begin(), max_it);
+					double max_value = *max_it;
+
+					vector<QString> level = { "V1（优，安全）","V2（良，基本安全）" ,"V3（中，需管控）" ,"V4（差，不安全）" };
+
+					levelTableWidget->item(1, 1)->setText(QString::number(max_value, 'f', 2));
+					levelTableWidget->item(1, 2)->setText(level[max_index]);
+					levelTableWidget->resizeColumnsToContents();
+
+					// 分数评定
+					auto sourceTableWidget = paParent->getScoreTableWidget();
+					vector<double> scoreVector = { 95,80,65,30 };
+					double score = 0;
+					for (size_t i = 0; i < scoreVector.size(); ++i) {
+						score = score + scoreVector[i] * result[i];
+					}
+					QString scoreText = "";
+					if (score >= 85)
+					{
+						scoreText = "V₁（优）";
+					}
+					else if (score >= 70 && score < 85)
+					{
+						scoreText = "V₂（良）";
+					}
+					else if (score >= 50 && score < 70)
+					{
+						scoreText = "V₃（中）";
+					}
+					else
+					{
+						scoreText = "V₄（差）";
+					}
+					sourceTableWidget->item(1, 1)->setText(QString::number(score, 'f', 2));
+					sourceTableWidget->item(1, 2)->setText(scoreText);
+					sourceTableWidget->resizeColumnsToContents();
+
+
+
+					// 计算安全性指标评分结果数据
+					double fallOverpressurePoint = getPoint(fallOverpressureMembership);
+					double fallTemperaturePoint = getPoint(fallTemperatureMembership);
+					double fallStressPoint = getPoint(fallStressMembership);
+					double fallPoint = (fallOverpressurePoint + fallTemperaturePoint + fallStressPoint) / 3.0;
+
+					double fastCombustionPoint = getPoint(fastCombustionTemperatureMembership);
+
+					double slowCombustionPoint = getPoint(slowCombustionTemperatureMembership);
+
+					double shootOverpressurePoint = getPoint(shootOverpressureMembership);
+					double shootTemperaturePoint = getPoint(shootTemperatureMembership);
+					double shootStressPoint = getPoint(shootStressMembership);
+					double shootPoint = (shootOverpressurePoint + shootTemperaturePoint + shootStressPoint) / 3.0;
+
+					double fragmentationImpactOverpressurePoint = getPoint(fragmentationImpactOverpressureMembership);
+					double fragmentationImpactTemperaturePoint = getPoint(fragmentationImpactTemperatureMembership);
+					double fragmentationImpactStressPoint = getPoint(fragmentationImpactStressMembership);
+					double fragmentationImpactPoint = (fragmentationImpactOverpressurePoint + fragmentationImpactTemperaturePoint + fragmentationImpactStressPoint) / 3.0;
+
+					double sacrificeExplosionOverpressurePoint = getPoint(sacrificeExplosionOverpressureMembership);
+					double sacrificeExplosionTemperaturePoint = getPoint(sacrificeExplosionTemperatureMembership);
+					double sacrificeExplosionStressPoint = getPoint(sacrificeExplosionStressMembership);
+					double sacrificeExplosionPoint = (sacrificeExplosionOverpressurePoint + sacrificeExplosionTemperaturePoint + sacrificeExplosionStressPoint) / 3.0;
+
+					double jetImpactOverpressurePoint = getPoint(jetImpactOverpressureMembership);
+					double jetImpactTemperaturePoint = getPoint(jetImpactTemperatureMembership);
+					double jetImpactStressPoint = getPoint(jetImpactStressMembership);
+					double jetImpactPoint = (jetImpactOverpressurePoint + jetImpactTemperaturePoint + jetImpactStressPoint) / 3.0;
+
+					double explosiveBlastOverpressurePoint = getPoint(explosiveBlastOverpressureMembership);
+					double explosiveBlastTemperaturePoint = getPoint(explosiveBlastTemperatureMembership);
+					double explosiveBlastStressPoint = getPoint(explosiveBlastStressMembership);
+					double explosiveBlastPoint = (explosiveBlastOverpressurePoint + explosiveBlastTemperaturePoint + explosiveBlastStressPoint) / 3.0;
+
+					auto pointResult = ins->GetPointResult();
+					pointResult.fallPoint = fallPoint;
+					pointResult.fastCombustionPoint = fastCombustionPoint;
+					pointResult.slowCombustionPoint = slowCombustionPoint;
+					pointResult.shootPoint = shootPoint;
+					pointResult.jetImpactPoint = jetImpactPoint;
+					pointResult.fragmentationImpactPoint = fragmentationImpactPoint;
+					pointResult.explosiveBlastPoint = explosiveBlastPoint;
+					pointResult.sacrificeExplosionPoint = sacrificeExplosionPoint;
+					ins->SetPointResult(pointResult);
 
 					if (!success)
 					{

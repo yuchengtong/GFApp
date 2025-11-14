@@ -28,7 +28,7 @@ void PropellantPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(22);
+	m_tableWidget->setRowCount(23);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -51,7 +51,7 @@ void PropellantPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "材料属性","材料牌号", "密度", "热膨胀系数", "杨氏模量","泊松比","发火温度","发火超压","热导率","比热容","I","a","b","c","d","G1","e" ,"g" ,"x" ,"y" ,"z" ,"G2" };
+	QStringList labels = { "材料属性","材料牌号","类别", "密度", "热膨胀系数", "杨氏模量","泊松比","发火温度","发火超压","热导率","比热容","I","a","b","c","d","G1","e" ,"g" ,"x" ,"y" ,"z" ,"G2" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -75,12 +75,12 @@ void PropellantPropertyWidget::initWidget()
 	}
 
 	// 设置列宽度
-	QTableWidgetItem *colimnItem = m_tableWidget->item(3, 1);
+	QTableWidgetItem *colimnItem = m_tableWidget->item(4, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位列
-	QStringList unitLabels = { " "," ", "kg/m^3", "/K", "Pa"," ","℃","MPa","W/m K","J/kg K"," "," "," "," "," "," "," " ," " ," " ," " ," " ," " };
+	QStringList unitLabels = { " "," "," ", "kg/m^3", "/K", "Pa"," ","℃","MPa","W/m K","J/kg K"," "," "," "," "," "," "," " ," " ," " ," " ," " ," " };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{

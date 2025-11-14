@@ -33,7 +33,7 @@ void ParamAnalyCalculateWorker::DoWork()
         if (success && !m_interrupted)
         {
             QThread::msleep(3000);
-            emit StatusUpdated("生成报告...");
+            emit StatusUpdated("计算数据...");
             emit ProgressUpdated(80);
 
             QThread::msleep(3000);
