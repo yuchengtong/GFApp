@@ -17,7 +17,7 @@ public:
 public slots:
     void DoWork();
 
-    void RequestInterruption() { m_interrupted = true; }
+    void RequestInterruption();
 
 signals:
     void ProgressUpdated(int progress);
@@ -26,7 +26,7 @@ signals:
 
 private:
     QString m_filePath;
-    volatile bool m_interrupted;
+    std::atomic<bool> m_interrupted;
     TopoDS_Shape m_shape;
 
     // ½âÎöSTEPÎÄ¼ş

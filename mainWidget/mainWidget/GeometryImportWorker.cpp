@@ -45,19 +45,29 @@ void GeometryImportWorker::DoWork()
             success = false;
         }
 
-        if (success && !m_interrupted)
+        // 在判断成功之前检查中断
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导入已取消", info);
+            return;
+        }
+
+        if (success)
         {
             emit StatusUpdated("计算模型边界盒...");
             emit ProgressUpdated(80);
+
+            // 在计算边界框前检查中断
+            if (m_interrupted)
+            {
+                emit WorkFinished(false, "导入已取消", info);
+                return;
+            }
+
             CalculateBoundingBox(info);
             info.path = m_filePath;
             msg = "几何模型导入成功";
             emit ProgressUpdated(100);
-        }
-        else if (m_interrupted)
-        {
-            msg = "导入已取消";
-            success = false;
         }
         else
         {
@@ -66,22 +76,48 @@ void GeometryImportWorker::DoWork()
     }
     catch (const Standard_Failure& e)
     {
-        msg = QString("导入错误: %1").arg(e.GetMessageString());
-        success = false;
+        if (m_interrupted)
+        {
+            msg = "导入已取消";
+            success = false;
+        }
+        else 
+        {
+            msg = QString("导入错误: %1").arg(e.GetMessageString());
+            success = false;
+        }
     }
     catch (...)
     {
-        msg = "导入时发生未知错误";
-        success = false;
+        if (m_interrupted) 
+        {
+            msg = "导入已取消";
+            success = false;
+        }
+        else 
+        {
+            msg = "导入时发生未知错误";
+            success = false;
+        }
     }
 
     emit WorkFinished(success, msg, info);
+}
+
+void GeometryImportWorker::RequestInterruption()
+{
+    m_interrupted = true;
 }
 
 bool GeometryImportWorker::ImportSTEP(ModelGeometryInfo& info)
 {
     emit StatusUpdated("解析STEP文件...");
     emit ProgressUpdated(30);
+
+    if (m_interrupted)
+    {
+        return false;
+    }
 
     STEPControl_Reader reader;
     QByteArray utf8Bytes = m_filePath.toUtf8();
@@ -95,16 +131,34 @@ bool GeometryImportWorker::ImportSTEP(ModelGeometryInfo& info)
     {
         return false;
     }
+
     emit ProgressUpdated(50);
     emit StatusUpdated("转换STEP模型...");
 
+    if (m_interrupted)
+    {
+        return false;
+    }
+
     reader.TransferRoots();
+
+    if (m_interrupted)
+    {
+        return false;
+    }
+
     m_shape = reader.OneShape();
 
     if (m_shape.IsNull())
     {
         return false;
     }
+
+    if (m_interrupted)
+    {
+        return false;
+    }
+
     info.shape = m_shape;
 
     emit ProgressUpdated(70);

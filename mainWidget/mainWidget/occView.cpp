@@ -108,6 +108,11 @@ const Handle(AIS_InteractiveContext)& OccView::getContext() const
     return myContext;
 }
 
+void OccView::SetCameraRotationState(bool isRotation)
+{
+    b_IsRatotion = isRotation;
+}
+
 /*!
 Get paint engine for the OpenGL viewer. [ virtual public ]
 */
@@ -321,7 +326,8 @@ void OccView::onMouseMove( const int theFlags, const QPoint thePoint )
         switch (myCurrentMode)
         {
         case CurAction3d_DynamicRotation:
-            myView->Rotation(thePoint.x(), thePoint.y());
+            if(b_IsRatotion)
+                myView->Rotation(thePoint.x(), thePoint.y());
             break;
 
         case CurAction3d_DynamicZooming:

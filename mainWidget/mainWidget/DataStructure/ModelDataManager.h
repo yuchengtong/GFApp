@@ -14,7 +14,6 @@
 struct UserInfo {
 	QString username = "";
 	QString password = "";
-
 };
 
 struct ModelGeometryInfo {
@@ -31,7 +30,7 @@ struct ModelMeshInfo {
 };
 
 struct FallAnalysisResultInfo {
-	Handle(TriangleStructure) triangleStructure;
+	TriangleStructure triangleStructure;
 	bool isChecked = false;
 	double maxValue;
 	double minValue;

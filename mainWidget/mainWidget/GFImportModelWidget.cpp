@@ -1,4 +1,4 @@
-#pragma execution_character_set("utf-8")
+ï»¿#pragma execution_character_set("utf-8")
 #include "GFImportModelWidget.h"
 #include <AIS_Shape.hxx>
 #include <AIS_ColorScale.hxx>
@@ -26,6 +26,10 @@
 #include <QTabWidget>
 #include <QSplitter>
 
+#include <V3d_View.hxx>
+#include <V3d_TypeOfOrientation.hxx>
+
+
 #include "OccView.h"
 #include "GFLogWidget.h"
 #include "GFTreeModelWidget.h"
@@ -34,19 +38,19 @@
 void HSVtoRGB(double h, double s, double v, double& r, double& g, double& b)
 {
 	if (s <= 0.0) {
-		// ÎŞ±¥ºÍ¶ÈÊ±Îª»Ò¶È
+		// æ— é¥±å’Œåº¦æ—¶ä¸ºç°åº¦
 		r = v;
 		g = v;
 		b = v;
 		return;
 	}
 
-	// HSV×ªRGBºËĞÄ¼ÆËã
-	double c = v * s;                  // É«¶È
+	// HSVè½¬RGBæ ¸å¿ƒè®¡ç®—
+	double c = v * s;                  // è‰²åº¦
 	double x = c * (1.0 - std::fabs(std::fmod(h * 6.0, 2.0) - 1.0));
-	double m = v - c;                  // Ã÷¶ÈÆ«ÒÆÖµ
+	double m = v - c;                  // æ˜åº¦åç§»å€¼
 
-	// ¸ù¾İHueÖµÈ·¶¨RGB·ÖÁ¿
+	// æ ¹æ®Hueå€¼ç¡®å®šRGBåˆ†é‡
 	double r_temp, g_temp, b_temp;
 	if (h < 1.0 / 6.0) {
 		r_temp = c;
@@ -79,7 +83,7 @@ void HSVtoRGB(double h, double s, double v, double& r, double& g, double& b)
 		b_temp = x;
 	}
 
-	// Ó¦ÓÃÃ÷¶ÈÆ«ÒÆ²¢ÏŞÖÆ·¶Î§
+	// åº”ç”¨æ˜åº¦åç§»å¹¶é™åˆ¶èŒƒå›´
 	r = std::clamp(r_temp + m, 0.0, 1.0);
 	g = std::clamp(g_temp + m, 0.0, 1.0);
 	b = std::clamp(b_temp + m, 0.0, 1.0);
@@ -91,9 +95,9 @@ MeshVS_DataMapOfIntegerColor getMeshDataMap(std::vector<double> tt, double min, 
 	MeshVS_DataMapOfIntegerColor colormap;
 	int index = 0;
 
-	// ´¦ÀíÌØÊâÇé¿ö£º±ÜÃâ³ıÁã
+	// å¤„ç†ç‰¹æ®Šæƒ…å†µï¼šé¿å…é™¤é›¶
 	if (max <= min) {
-		Quantity_Color defaultColor(0.5, 0.5, 0.5, Quantity_TOC_RGB); // »ÒÉ«
+		Quantity_Color defaultColor(0.5, 0.5, 0.5, Quantity_TOC_RGB); // ç°è‰²
 		for (size_t i = 0; i < tt.size(); ++i) {
 			colormap.Bind(i + 1, defaultColor);
 		}
@@ -102,20 +106,20 @@ MeshVS_DataMapOfIntegerColor getMeshDataMap(std::vector<double> tt, double min, 
 
 	for (double t : tt)
 	{
-		// 1. ¹éÒ»»¯µ½[0,1]·¶Î§
+		// 1. å½’ä¸€åŒ–åˆ°[0,1]èŒƒå›´
 		a = (t - min) / (max - min);
-		a = std::clamp(a, 0.0, 1.0); // È·±£ÖµÔÚÓĞĞ§·¶Î§
+		a = std::clamp(a, 0.0, 1.0); // ç¡®ä¿å€¼åœ¨æœ‰æ•ˆèŒƒå›´
 
-		// 2. ¶¨ÒåHSV²ÎÊı£¨±£³ÖÀ¶¡úÂÌ¡úºìÇ÷ÊÆ£©
-		// H: 0.666(À¶) ¡ú 0.333(ÂÌ) ¡ú 0(ºì)£¬¶ÔÓ¦HSVÉ«ÂÖ
-		double h = 0.666 - a * 0.666; // ´ÓÀ¶É«(0.666)¹ı¶Éµ½ºìÉ«(0)
-		double s = 1.0;               // ×î´ó±¥ºÍ¶È
-		double v = 1.0;               // ×î´óÃ÷¶È
+		// 2. å®šä¹‰HSVå‚æ•°ï¼ˆä¿æŒè“â†’ç»¿â†’çº¢è¶‹åŠ¿ï¼‰
+		// H: 0.666(è“) â†’ 0.333(ç»¿) â†’ 0(çº¢)ï¼Œå¯¹åº”HSVè‰²è½®
+		double h = 0.666 - a * 0.666; // ä»è“è‰²(0.666)è¿‡æ¸¡åˆ°çº¢è‰²(0)
+		double s = 1.0;               // æœ€å¤§é¥±å’Œåº¦
+		double v = 1.0;               // æœ€å¤§æ˜åº¦
 
-		// 3. ÊÖ¶¯×ª»»HSVµ½RGB
+		// 3. æ‰‹åŠ¨è½¬æ¢HSVåˆ°RGB
 		HSVtoRGB(h, s, v, r, g, b);
 
-		// 4. °ó¶¨ÑÕÉ«µ½Ë÷Òı
+		// 4. ç»‘å®šé¢œè‰²åˆ°ç´¢å¼•
 		colormap.Bind(index + 1, Quantity_Color(r, g, b, Quantity_TOC_RGB));
 		index++;
 	}
@@ -128,10 +132,10 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 {
 	m_treeModelWidget = new GFTreeModelWidget();
 	m_PropertyStackWidget = new QStackedWidget();
-	// ÉèÖÃm_PropertyStackWidgetµÄ±³¾°Îª°×É«
+	// è®¾ç½®m_PropertyStackWidgetçš„èƒŒæ™¯ä¸ºç™½è‰²
 	m_PropertyStackWidget->setStyleSheet("background-color: white;");
 
-	// ³õÊ¼»¯ËùÓĞµÄ PropertyWidget
+	// åˆå§‹åŒ–æ‰€æœ‰çš„ PropertyWidget
 	m_geomPropertyWidget = new GeomPropertyWidget();
 	m_materialPropertyWidget = new MaterialPropertyWidget();
 	m_meshPropertyWidget = new MeshPropertyWidget();
@@ -158,7 +162,7 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_sacrificeExplosionPropertyWidget = new SacrificeExplosionPropertyWidget();
 	m_databasePropertyWidget = new DatabasePropertyWidget();
 
-	// ½«ËùÓĞµÄ PropertyWidget Ìí¼Óµ½ QStackedWidget ÖĞ
+	// å°†æ‰€æœ‰çš„ PropertyWidget æ·»åŠ åˆ° QStackedWidget ä¸­
 	m_PropertyStackWidget->addWidget(m_geomPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_materialPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_meshPropertyWidget);
@@ -190,34 +194,34 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_LogWidget = new GFLogWidget();
 
 
-	// ------ ×ó²à´¹Ö±·Ö¸îÆ÷£¨Ê÷½á¹¹ÓëÊôĞÔ±í£© ------
+	// ------ å·¦ä¾§å‚ç›´åˆ†å‰²å™¨ï¼ˆæ ‘ç»“æ„ä¸å±æ€§è¡¨ï¼‰ ------
 	auto leftSplitter = new QSplitter(Qt::Vertical);
 	leftSplitter->addWidget(m_treeModelWidget);
 	leftSplitter->addWidget(m_PropertyStackWidget);
 	leftSplitter->setStretchFactor(0, 3);
 	leftSplitter->setStretchFactor(1, 1);
 	leftSplitter->setContentsMargins(0, 0, 0, 0);
-	// ÉèÖÃ·Ö¸îÆ÷µÄHandle¿í¶ÈÎª0£¨Ïû³ıÊÓ¾õ¼äÏ¶£©
+	// è®¾ç½®åˆ†å‰²å™¨çš„Handleå®½åº¦ä¸º0ï¼ˆæ¶ˆé™¤è§†è§‰é—´éš™ï¼‰
 	leftSplitter->setHandleWidth(1);
 
 
-	// ------ ÓÒ²à´¹Ö±·Ö¸îÆ÷£¨Ê÷½á¹¹ÓëÊôĞÔ±í£© ------
+	// ------ å³ä¾§å‚ç›´åˆ†å‰²å™¨ï¼ˆæ ‘ç»“æ„ä¸å±æ€§è¡¨ï¼‰ ------
 	auto rightSplitter = new QSplitter(Qt::Vertical);
 	rightSplitter->addWidget(m_OccView);
 	rightSplitter->addWidget(m_LogWidget);
 	rightSplitter->setStretchFactor(0, 21);
 	rightSplitter->setStretchFactor(1, 1);
 	rightSplitter->setContentsMargins(0, 0, 0, 0);
-	// ÉèÖÃ·Ö¸îÆ÷µÄHandle¿í¶ÈÎª0£¨Ïû³ıÊÓ¾õ¼äÏ¶£©
+	// è®¾ç½®åˆ†å‰²å™¨çš„Handleå®½åº¦ä¸º0ï¼ˆæ¶ˆé™¤è§†è§‰é—´éš™ï¼‰
 	rightSplitter->setHandleWidth(1);
 
 
-	// ------ Ö÷Ë®Æ½·Ö¸îÆ÷£¨×ó²àÓëÓÒ²à£© ------
+	// ------ ä¸»æ°´å¹³åˆ†å‰²å™¨ï¼ˆå·¦ä¾§ä¸å³ä¾§ï¼‰ ------
 	auto mainSplitter = new QSplitter(Qt::Horizontal);
 	mainSplitter->addWidget(leftSplitter);
 	mainSplitter->addWidget(rightSplitter);
 	mainSplitter->setContentsMargins(0, 0, 0, 0);
-	// ÉèÖÃ·Ö¸îÆ÷µÄHandle¿í¶ÈÎª0£¨Ïû³ıÊÓ¾õ¼äÏ¶£©
+	// è®¾ç½®åˆ†å‰²å™¨çš„Handleå®½åº¦ä¸º0ï¼ˆæ¶ˆé™¤è§†è§‰é—´éš™ï¼‰
 	mainSplitter->setHandleWidth(1);
 
 	mainSplitter->setStretchFactor(0, 1);
@@ -228,7 +232,7 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	layout->setContentsMargins(0, 0, 0, 0);
 	setLayout(layout);
 
-	// Á¬½ÓĞÅºÅºÍ²Û
+	// è¿æ¥ä¿¡å·å’Œæ§½
 	connect(m_treeModelWidget, &GFTreeModelWidget::itemClicked, this, &GFImportModelWidget::onTreeItemClicked);
 }
 
@@ -253,7 +257,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			context->Display(modelPresentation, false);
 			occView->fitAll();
 		}
-
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
 	else if (itemData == "Material") {
@@ -342,7 +345,8 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		}
 
 	}
-	else if (itemData == "StressResult") {
+	else if (itemData == "StressResult")
+ {
 		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 
 		auto occView = GetOccView();
@@ -350,7 +354,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		auto view = occView->getView();
 		context->RemoveAll(true);
 
-		// ½ö´¦Àí double ÀàĞÍµÄ clamp º¯Êı
+		// ä»…å¤„ç† double ç±»å‹çš„ clamp å‡½æ•°
 		auto my_clamp =[](double value, double low, double high) {
 			if (value < low) 
 				return low;
@@ -362,117 +366,103 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		auto fallAnalysisResultInfo=ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 		if (fallAnalysisResultInfo.isChecked)
 		{
-			auto allnode = fallAnalysisResultInfo.triangleStructure->GetAllNodes();
-			auto nodecoords = fallAnalysisResultInfo.triangleStructure->GetmyNodeCoords();
+			TColStd_PackedMapOfInteger allnode;
+			Handle(TColStd_HArray2OfReal) nodecoords;
+
+			allnode = fallAnalysisResultInfo.triangleStructure.GetAllNodes();
+			nodecoords = fallAnalysisResultInfo.triangleStructure.GetmyNodeCoords();
+			
 			auto max_value = fallAnalysisResultInfo.maxValue;
 			auto min_value = fallAnalysisResultInfo.minValue;
 
 			std::vector<double> nodeValues;
 
 			Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(fallAnalysisResultInfo.triangleStructure);
+			aMesh->SetDataSource(&fallAnalysisResultInfo.triangleStructure);
 
-			// ÍÖÔ²²ÎÊı
-			const double f1x = 20.0, f1z = -200.0;   // ½¹µã1
-			const double f2x = 820.0, f2z = -200.0; // ½¹µã2
-			const double twoA = 900.0;              // ³¤Öá³¤¶È
-			const double twoB = 140.0;              // ¶ÌÖá³¤¶È
 
-			// ÊıÖµ·¶Î§²ÎÊı
-			const double focusValue = min_value+(max_value- min_value)*0.5;         // ½¹µã´¦µÄÖµ
-			const double minValue = min_value;           // ÍÖÔ²ÄÚ×îĞ¡Öµ
+			double xMax, xMin, zMax, zMin;
+			bool isFirstNode = true;
 
-			// ¼ÆËãÁ½½¹µãÖ®¼äµÄ¾àÀë
-			const double focusDistance = sqrt(pow(f2x - f1x, 2) + pow(f2z - f1z, 2));
-
-			// lambda±í´ïÊ½£ºÅĞ¶ÏµãÊÇ·ñÔÚÍÖÔ²ÄÚ²¢¼ÆËã¶ÔÓ¦Öµ
-			auto getEllipseValue = [&](double x, double z) {
-				// ¼ÆËãµãµ½Á½½¹µãµÄ¾àÀëÖ®ºÍ
-				double d1 = sqrt(pow(x - f1x, 2) + pow(z - f1z, 2));
-				double d2 = sqrt(pow(x - f2x, 2) + pow(z - f2z, 2));
-				double sumD = d1 + d2;
-
-				// ÅĞ¶ÏÊÇ·ñÔÚÍÖÔ²ÄÚ
-				if (sumD < twoA) {
-					// ¹éÒ»»¯¾àÀë£¨0±íÊ¾ÔÚ½¹µã¸½½ü£¬1±íÊ¾ÔÚÍÖÔ²±ßÔµ£©
-					// ×îĞ¡¾àÀëºÍÎªÁ½½¹µã¾àÀë£¨½¹µã´¦£©£¬×î´óÎª2a£¨ÍÖÔ²±ßÔµ£©
-					double t = (sumD - focusDistance) / (twoA - focusDistance);
-					t = my_clamp(t, 0.0, 1.0);
-
-					// ¼ÆËãÖµ£º´Ó½¹µãÖµÏßĞÔ¹ı¶Éµ½×îĞ¡Öµ
-					return focusValue - (focusValue - minValue) * t;
-				}
-				else {
-					// ÍÖÔ²ÍâµÄµã£º·µ»Ø×Ô¶¨ÒåÖµ£¨Ê¾ÀıÓÃz×ø±ê£©
-					return minValue;
-				}
-			};
-
-			// ±éÀúËùÓĞ½Úµã¼ÆËãÖµ
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+			// 3. éå†æ‰€æœ‰èŠ‚ç‚¹ï¼Œæ›´æ–°æå€¼
+			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+			{
 				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // ½Úµãx×ø±ê
-				double z = nodecoords->Value(nodeID, 3); // ½Úµãz×ø±ê
+				if (nodeID < nodecoords->LowerRow() || nodeID > nodecoords->UpperRow())
+					continue;
 
-				// µ÷ÕûzãĞÖµÎª-235£¬Í¬Ê±±£³ÖËõĞ¡ºóµÄÇøÓò·¶Î§
-				bool isOriginalArea = (z < -235 &&  // ´Ó-230¸ÄÎª-235
-					((f1x + 35 < x && x < f1x + 45) ||  // Î¬³Ö10µ¥Î»¿í¶È
-					(f2x - 45 < x && x < f2x - 35)));   // Î¬³Ö10µ¥Î»¿í¶È
+				double x = nodecoords->Value(nodeID, 1); // xåæ ‡ï¼ˆåˆ—1ï¼‰
+				double z = nodecoords->Value(nodeID, 3); // zåæ ‡ï¼ˆåˆ—3ï¼‰
 
-				// ÖÜÎ§Ò»È¦µÄÌõ¼ş£¨Í¬²½µ÷ÕûzãĞÖµ£©
-				double offset = 15.0;
-				bool isSurroundingArea =
-					// ÉÏ²à±ß½çÇøÓò£¨zãĞÖµÍ¬²½µ÷ÕûÎª-235£©
-					(z < -235 + offset &&
-					((f1x + 35 < x && x < f1x + 45) ||
-						(f2x - 45 < x && x < f2x - 35))) ||
-					// ×ó²à±ß½çÇøÓò
-						(z < -235 + offset &&
-					((f1x + 35 - offset < x && x <= f1x + 35) ||
-							(f2x - 45 - offset < x && x <= f2x - 45))) ||
-					// ÓÒ²à±ß½çÇøÓò
-						(z < -235 + offset &&
-					((f1x + 45 <= x && x < f1x + 45 + offset) ||
-							(f2x - 35 <= x && x < f2x - 35 + offset)));
-
-				bool isSurroundingArea_box =
-					// ÉÏ²à±ß½çÇøÓò£¨zãĞÖµÍ¬²½µ÷Õû£©
-					(z < -235 + offset + 10 &&
-					((f1x + 37 < x && x < f1x + 43) ||
-						(f2x - 43 < x && x < f2x - 37)));
-
-				if (isOriginalArea) {
-					nodeValues.push_back(max_value);
-				}
-				else if (isSurroundingArea) {
-					nodeValues.push_back(0.6 * max_value);
-				}
-				else if (isSurroundingArea_box) {
-					nodeValues.push_back(0.55 * max_value);
+				if (isFirstNode)
+				{
+					xMax = xMin = x;
+					zMax = zMin = z;
+					isFirstNode = false;
 				}
 				else
 				{
-					// »ñÈ¡ÍÖÔ²ÄÚµÄ¼ÆËãÖµ
-					double value = getEllipseValue(x, z);
-					nodeValues.push_back(value);
+					if (x > xMax) 
+						xMax = x;
+					if (x < xMin) 
+						xMin = x;
+
+					if (z > zMax) 
+						zMax = z;
+					if (z < zMin) 
+						zMin = z;
 				}
-				
 			}
 
+			double red_line_z = xMin;
+			//z = -0.0006*(x-xMin+(xMax- xMin)/2.0)Â² - 50
 
-			// ÉèÖÃÑÕÉ«Ó³ÉäºÍÏÔÊ¾£¨ÓëÔ­Âß¼­Ò»ÖÂ£©
+			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+				int nodeID = it.Key();
+				double x = nodecoords->Value(nodeID, 1); // èŠ‚ç‚¹xåæ ‡
+				double z = nodecoords->Value(nodeID, 3); // èŠ‚ç‚¹zåæ ‡
+
+				double delta_x = x  -( xMin+(xMax - xMin) / 2.0);
+				double green_curve_z = -0.0006 * std::pow(delta_x, 2)-50;
+
+				if (x< xMin + 100 || x>xMax -100)
+				{
+					nodeValues.push_back(min_value);
+				}
+				else if (z <= red_line_z-30)
+				{
+					nodeValues.push_back(max_value);
+				}
+				else if (z <= green_curve_z)
+				{
+					nodeValues.push_back(0.5 * max_value);
+				}
+				else if (z <= green_curve_z+100)
+				{
+					nodeValues.push_back(0.3 * max_value);
+				}
+				else
+				{
+					nodeValues.push_back(min_value);
+				}
+			}
+
+			// è®¾ç½®é¢œè‰²æ˜ å°„å’Œæ˜¾ç¤ºï¼ˆä¸åŸé€»è¾‘ä¸€è‡´ï¼‰
 			MeshVS_DataMapOfIntegerColor colormap = getMeshDataMap(nodeValues, min_value, max_value);
 			Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 			nodal->SetColors(colormap);
 			aMesh->AddBuilder(nodal);
-			aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+			aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, true);
 
-			// ÏÔÊ¾Ä£ĞÍ
+			// æ˜¾ç¤ºæ¨¡å‹
 			context->Display(aMesh, Standard_True);
 			occView->fitAll();
+			auto view = occView->getView();
+			//view->SetProj(V3d_Zpos, Standard_False);
+			//occView->SetCameraRotationState(false);
 
-			// ÑÕÉ«ÌõÏÔÊ¾£¨ÓëÔ­Âß¼­Ò»ÖÂ£©
-			TCollection_ExtendedString tostr("µøÂäÊÔÑé\nÓ¦Á¦·ÖÎö\nµ¥Î»:MPa", true);
+			// é¢œè‰²æ¡æ˜¾ç¤ºï¼ˆä¸åŸé€»è¾‘ä¸€è‡´ï¼‰
+			TCollection_ExtendedString tostr("è·Œè½è¯•éªŒ\nåº”åŠ›åˆ†æ\nå•ä½:MPa", true);
 			Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
 			aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
 			aColorScale->SetSize(100, 400);

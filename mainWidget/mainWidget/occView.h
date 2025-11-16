@@ -47,6 +47,8 @@ public:
 
 	TopoDS_Shape& GetShape() { return m_Shape; }
 
+    void SetCameraRotationState(bool isRotation);
+
 signals:
     void selectionChanged(void);
 
@@ -57,7 +59,6 @@ public slots:
     void reset(void);
     void zoom(void);
     void rotate(void);
-
 protected:
     virtual QPaintEngine* paintEngine() const;
 
@@ -124,6 +125,8 @@ private:
 
 
 	TopoDS_Shape m_Shape;
+
+    bool b_IsRatotion = true;
 };
 
 #endif // _OCCVIEW_H_

@@ -32,7 +32,7 @@ void ProgressDialog::SetProgress(int progress)
         progress = 100;
     }
     setValue(progress);
-    QApplication::processEvents(); // 强制刷新UI（避免进度条卡顿）
+    //QApplication::processEvents(); // 强制刷新UI（避免进度条卡顿）
 }
 
 // 设置状态文本
@@ -51,7 +51,6 @@ bool ProgressDialog::IsCanceled() const
 // 内部取消按钮点击处理
 void ProgressDialog::OnCancelButtonClicked()
 {
-    emit Canceled(); // 发送取消信号给Worker
-    setLabelText("正在取消三角化...");
-    QApplication::processEvents();
+    emit Canceled();
+    this->close();
 }

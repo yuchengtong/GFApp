@@ -56,7 +56,7 @@ mainWidget::mainWidget(QWidget *parent)
 
     ui->setupUi(this);
 	setWindowTitle("固体发动机安全性分析与评估系统");
-	showMaximized();
+	//showMaximized();
 	//setMinimumSize(1050, 800);
 
 	// 状态栏

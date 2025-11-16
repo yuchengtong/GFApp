@@ -220,6 +220,9 @@
     <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TriangulationWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="GraphicWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -394,6 +397,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="ParamAnalyCalculateWorker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="TriangulationWorker.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="GraphicWidget.h">

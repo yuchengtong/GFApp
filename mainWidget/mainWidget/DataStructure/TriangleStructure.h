@@ -44,9 +44,11 @@ class TriangleStructure : public MeshVS_DataSource
 public:
 	Standard_EXPORT TriangleStructure();
     //! Constructor
-    Standard_EXPORT TriangleStructure(const TopoDS_Shape& shape, const Standard_Real linearDeflection = 0.5);
+    Standard_EXPORT TriangleStructure(const TopoDS_Shape& shape, const Standard_Real linearDeflection = 0.5, volatile bool* interrupted = nullptr);
 
-    Standard_EXPORT void AddTriangulation(const Handle(Poly_Triangulation)& triangulation, const TopLoc_Location& loc);
+    Standard_EXPORT void AddTriangulation(const Handle(Poly_Triangulation)& triangulation, const TopLoc_Location& loc, volatile bool* interrupted = nullptr);
+
+    Standard_EXPORT bool CheckInterruption(volatile bool* interrupted) const;
 
 	void ExtractEdges();
 

@@ -22,139 +22,174 @@ TriangleStructure::TriangleStructure()
 	myElemNormals = new TColStd_HArray2OfReal(0, 0, 1, 3);
 }
 
-TriangleStructure::TriangleStructure(const TopoDS_Shape& shape, const Standard_Real linearDeflection)
+TriangleStructure::TriangleStructure(const TopoDS_Shape& shape, const Standard_Real linearDeflection, volatile bool* interrupted)
 {
     // 正确初始化空数组
     myNodeCoords = new TColStd_HArray2OfReal(0, 0, 1, 3);
     myElemNodes = new TColStd_HArray2OfInteger(0, 0, 1, 3);
     myElemNormals = new TColStd_HArray2OfReal(0, 0, 1, 3);
 
+    // 检查中断
+    if (CheckInterruption(interrupted)) 
+    {
+        return;
+    }
+
     // 首先对形状进行网格划分
-    BRepMesh_IncrementalMesh mesher(shape, linearDeflection);
+    BRepMesh_IncrementalMesh mesher(shape, 0.08, Standard_False,0.2, Standard_False);
     mesher.Perform();
 
+    if (CheckInterruption(interrupted))
+    {
+        return;
+    }
 
     TopTools_IndexedMapOfShape faceMap;
     TopExp::MapShapes(shape, TopAbs_FACE, faceMap);
 
     // 遍历所有面并提取三角网格
     TopExp_Explorer explorer(shape, TopAbs_FACE);
-    for (; explorer.More(); explorer.Next()) {
+    int faceCount = 0;
+    int totalFaces = faceMap.Extent();
+    for (; explorer.More(); explorer.Next())
+    {
+        // 每处理几个面检查一次中断
+        if (faceCount % 10 == 0 && CheckInterruption(interrupted)) 
+        {
+            return;
+        }
+
         const TopoDS_Face& face = TopoDS::Face(explorer.Current());
         TopLoc_Location loc;
         Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation(face, loc);
 
-        if (!triangulation.IsNull()) {
+        if (!triangulation.IsNull())
+        {
             AddTriangulation(triangulation, loc);
+
+            // 检查中断
+            if (CheckInterruption(interrupted)) 
+            {
+                return;
+            }
         }
+
+        faceCount++;
+    }
+
+    if (CheckInterruption(interrupted))
+    {
+        return;
     }
 
 	ExtractEdges();
  
 }
 
-void TriangleStructure::AddTriangulation(const Handle(Poly_Triangulation)& triangulation, const TopLoc_Location& loc)
+bool TriangleStructure::CheckInterruption(volatile bool* interrupted) const
+{
+    return interrupted && *interrupted;
+}
+
+
+
+void TriangleStructure::AddTriangulation(const Handle(Poly_Triangulation)& triangulation, const TopLoc_Location& loc, volatile bool* interrupted)
 {
     if (triangulation.IsNull())
         return;
 
+    // 检查中断
+    if (CheckInterruption(interrupted)) 
+    {
+        return;
+    }
+
+
     const Standard_Integer nbNodes = triangulation->NbNodes();
     const Standard_Integer nbTriangles = triangulation->NbTriangles();
 
+
     // 应用位置变换
     gp_Trsf transformation = loc.Transformation();
+    const Standard_Boolean isIdentity = loc.IsIdentity();
+
+    // --- 优化点 1: 预分配内存 ---
+    // 为新单元预分配空间
+    Standard_Integer newElemCount = nbTriangles;
+    Standard_Integer startElemId = myElemNodes->UpperRow() + 1;
+    if (startElemId > 1)
+    { // 如果不是第一个单元
+        myElemNodes->Resize(1, startElemId + newElemCount - 1, 1, 3, Standard_True);
+        myElemNormals->Resize(1, startElemId + newElemCount - 1, 1, 3, Standard_True);
+    }
+    else 
+    { // 如果是第一个单元
+        myElemNodes->Resize(1, newElemCount, 1, 3, Standard_True);
+        myElemNormals->Resize(1, newElemCount, 1, 3, Standard_True);
+    }
 
     // 用于映射局部节点ID到全局节点ID的临时数组
-    TColStd_Array1OfInteger localToGlobalNodeMap(1, nbNodes);
+    std::vector<Standard_Integer> localToGlobalNodeMap(nbNodes + 1); // 1-based indexing
 
-    // 遍历所有局部节点，检查是否需要创建新节点或重用已有节点
+    // --- 优化点 2: 批量处理节点，并建立局部到全局的映射 ---
     for (Standard_Integer i = 1; i <= nbNodes; ++i)
     {
         gp_Pnt p = triangulation->Node(i);
-        if (!loc.IsIdentity()) {
+        if (!isIdentity) {
             p.Transform(transformation);
         }
+        gp_XYZ p_xyz = p.XYZ(); // 使用 gp_XYZ 进行比较和存储，效率更高
 
         // 检查是否已有相同坐标的节点存在
-        auto it = myCoordToNodeMap.find(p);
+        auto it = myCoordToNodeMap.find(p_xyz);
         if (it != myCoordToNodeMap.end()) {
             // 重用已有节点
-            localToGlobalNodeMap(i) = it->second;
+            localToGlobalNodeMap[i] = it->second;
         }
         else {
             // 创建新节点
             Standard_Integer newNodeId = myNodeCoords->UpperRow() + 1;
-            if (newNodeId == 1) {
-                myNodeCoords->Resize(1, 1, 1, 3, Standard_True);
-            }
-            else {
-                myNodeCoords->Resize(1, newNodeId, 1, 3, Standard_True);
-            }
+            myNodeCoords->Resize(1, newNodeId, 1, 3, Standard_True); // Resize一次
 
             // 存储节点坐标
             myNodeCoords->SetValue(newNodeId, 1, p.X());
             myNodeCoords->SetValue(newNodeId, 2, p.Y());
             myNodeCoords->SetValue(newNodeId, 3, p.Z());
 
-            // 添加到节点ID集合
             myNodes.Add(newNodeId);
-
-            // 记录局部节点到全局节点的映射
-            localToGlobalNodeMap(i) = newNodeId;
-
-            // 将新节点添加到坐标到ID的映射中
-            myCoordToNodeMap[p] = newNodeId;
+            localToGlobalNodeMap[i] = newNodeId;
+            myCoordToNodeMap[p_xyz] = newNodeId;
         }
     }
 
-    // 计算单元偏移量
-    Standard_Integer elemOffset = myElemNodes->UpperRow();
-    if (elemOffset == 0)
-        elemOffset = 1;
-    else
-        elemOffset += 1;
-
-    // 调整数组大小以容纳新单元
-    myElemNodes->Resize(1, elemOffset + nbTriangles - 1, 1, 3, Standard_True);
-    myElemNormals->Resize(1, elemOffset + nbTriangles - 1, 1, 3, Standard_True);
-
-    // 添加所有单元
+    // --- 优化点 3: 批量处理单元和法向量，避免重复变换 ---
     for (Standard_Integer j = 1; j <= nbTriangles; j++)
     {
         auto aTri = triangulation->Triangle(j);
         Standard_Integer V[3];
         aTri.Get(V[0], V[1], V[2]);
 
-        // 当前单元的全局ID
-        Standard_Integer globalElemId = elemOffset + j - 1;
+        Standard_Integer globalElemId = startElemId + j - 1;
 
-        // 使用映射的全局节点ID
-        Standard_Integer n1 = localToGlobalNodeMap(V[0]);
-        Standard_Integer n2 = localToGlobalNodeMap(V[1]);
-        Standard_Integer n3 = localToGlobalNodeMap(V[2]);
+        Standard_Integer n1 = localToGlobalNodeMap[V[0]];
+        Standard_Integer n2 = localToGlobalNodeMap[V[1]];
+        Standard_Integer n3 = localToGlobalNodeMap[V[2]];
 
         // 存储单元节点索引
         myElemNodes->SetValue(globalElemId, 1, n1);
         myElemNodes->SetValue(globalElemId, 2, n2);
         myElemNodes->SetValue(globalElemId, 3, n3);
 
-        // 添加到单元ID集合
         myElements.Add(globalElemId);
 
-        // 计算法向量
-        gp_Pnt p1 = triangulation->Node(V[0]);
-        gp_Pnt p2 = triangulation->Node(V[1]);
-        gp_Pnt p3 = triangulation->Node(V[2]);
-        if (!loc.IsIdentity())
-        {
-            p1.Transform(transformation);
-            p2.Transform(transformation);
-            p3.Transform(transformation);
-        }
+        // --- 优化点 3 (续): 直接使用全局坐标计算法向量 ---
+        gp_Pnt p1(myNodeCoords->Value(n1, 1), myNodeCoords->Value(n1, 2), myNodeCoords->Value(n1, 3));
+        gp_Pnt p2(myNodeCoords->Value(n2, 1), myNodeCoords->Value(n2, 2), myNodeCoords->Value(n2, 3));
+        gp_Pnt p3(myNodeCoords->Value(n3, 1), myNodeCoords->Value(n3, 2), myNodeCoords->Value(n3, 3));
 
-        gp_Vec  v1(p1, p2);
-        gp_Vec  v2(p2, p3);
-        gp_Vec  normal = v1.Crossed(v2);
+        gp_Vec v1(p1, p2);
+        gp_Vec v2(p1, p3); // 通常从第一个点出发，结果一样
+        gp_Vec normal = v1.Crossed(v2);
 
         if (normal.SquareMagnitude() > MY_PRECISION * MY_PRECISION)
         {
@@ -165,41 +200,7 @@ void TriangleStructure::AddTriangulation(const Handle(Poly_Triangulation)& trian
         myElemNormals->SetValue(globalElemId, 1, normal.X());
         myElemNormals->SetValue(globalElemId, 2, normal.Y());
         myElemNormals->SetValue(globalElemId, 3, normal.Z());
-    }
-
-
-    //Standard_Integer nodeIdCount = myNodes.Extent();  // 节点ID的数量（即节点总数）
-    //std::cout << "myNodes 包含的节点ID数量: " << nodeIdCount << std::endl;
-
-    //Standard_Integer elementIdCount = myElements.Extent();  // 元素ID的数量（即元素总数）
-    //std::cout << "myElements 包含的元素ID数量: " << elementIdCount << std::endl;
-
-    //// 遍历所有元素
-    //Standard_Integer elemMin = myElemNodes->LowerRow();
-    //Standard_Integer elemMax = myElemNodes->UpperRow();
-    //for (Standard_Integer elemID = elemMin; elemID <= elemMax; ++elemID)
-    //{
-    //    std::cout << "=== 元素ID: " << elemID << " ===" << std::endl;
-
-    //    // 1. 获取元素的法向量
-    //    Standard_Real nx = myElemNormals->Value(elemID, 1);
-    //    Standard_Real ny = myElemNormals->Value(elemID, 2);
-    //    Standard_Real nz = myElemNormals->Value(elemID, 3);
-    //    std::cout << "法向量: (" << nx << ", " << ny << ", " << nz << ")" << std::endl;
-
-    //    // 2. 获取元素包含的节点ID及坐标
-    //    for (Standard_Integer i = 1; i <= 3; ++i)  // 三角形有3个节点
-    //    {
-    //        Standard_Integer nodeID = myElemNodes->Value(elemID, i);
-    //        // 从节点坐标数组中获取该节点的坐标
-    //        Standard_Real x = myNodeCoords->Value(nodeID, 1);
-    //        Standard_Real y = myNodeCoords->Value(nodeID, 2);
-    //        Standard_Real z = myNodeCoords->Value(nodeID, 3);
-    //        std::cout << "节点" << i << " (ID=" << nodeID << "): "
-    //            << "(" << x << ", " << y << ", " << z << ")" << std::endl;
-    //    }
-    //    std::cout << std::endl;
-    //}
+    }  
 }
 
 void TriangleStructure::ExtractEdges()

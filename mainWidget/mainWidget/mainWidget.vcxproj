@@ -72,7 +72,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(ProjectDir)3rdParty\OpenCASCADE\opencascade-7.6.0\win64\vc14\lib;$(ProjectDir)3rdParty\QXlsx\bin64;$(QTDIR)\lib;$(ProjectDir)3rdParty\Gmesh\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>gmsh.lib;Qt5AxContainer.lib;Qt5AxBase.lib;QXlsx.lib;$(Qt_LIBS_);TKBin.lib;TKBinL.lib;TKBinTObj.lib;TKBinXCAF.lib;TKBO.lib;TKBool.lib;TKBRep.lib;TKCAF.lib;TKCDF.lib;TKD3DHost.lib;TKD3DHostTest.lib;TKDCAF.lib;TKDFBrowser.lib;TKDraw.lib;TKernel.lib;TKFeat.lib;TKFillet.lib;TKG2d.lib;TKG3d.lib;TKGeomAlgo.lib;TKGeomBase.lib;TKHLR.lib;TKIGES.lib;TKIVtk.lib;TKIVtkDraw.lib;TKLCAF.lib;TKMath.lib;TKMesh.lib;TKMeshVS.lib;TKMessageModel.lib;TKMessageView.lib;TKOffset.lib;TKOpenGl.lib;TKOpenGles.lib;TKOpenGlesTest.lib;TKOpenGlTest.lib;TKPrim.lib;TKQADraw.lib;TKRWMesh.lib;TKService.lib;TKShapeView.lib;TKShHealing.lib;TKStd.lib;TKStdL.lib;TKSTEP.lib;TKSTEP209.lib;TKSTEPAttr.lib;TKSTEPBase.lib;TKSTL.lib;TKTInspector.lib;TKTInspectorAPI.lib;TKTObj.lib;TKTObjDRAW.lib;TKToolsDraw.lib;TKTopAlgo.lib;TKTopTest.lib;TKTreeModel.lib;TKV3d.lib;TKVCAF.lib;TKView.lib;TKViewerTest.lib;TKVInspector.lib;TKVRML.lib;TKXCAF.lib;TKXDEDRAW.lib;TKXDEIGES.lib;TKXDESTEP.lib;TKXMesh.lib;TKXml.lib;TKXmlL.lib;TKXmlTObj.lib;TKXmlXCAF.lib;TKXSBase.lib;TKXSDRAW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Qt5AxContainer.lib;Qt5AxBase.lib;QXlsx.lib;$(Qt_LIBS_);TKBin.lib;TKBinL.lib;TKBinTObj.lib;TKBinXCAF.lib;TKBO.lib;TKBool.lib;TKBRep.lib;TKCAF.lib;TKCDF.lib;TKD3DHost.lib;TKD3DHostTest.lib;TKDCAF.lib;TKDFBrowser.lib;TKDraw.lib;TKernel.lib;TKFeat.lib;TKFillet.lib;TKG2d.lib;TKG3d.lib;TKGeomAlgo.lib;TKGeomBase.lib;TKHLR.lib;TKIGES.lib;TKIVtk.lib;TKIVtkDraw.lib;TKLCAF.lib;TKMath.lib;TKMesh.lib;TKMeshVS.lib;TKMessageModel.lib;TKMessageView.lib;TKOffset.lib;TKOpenGl.lib;TKOpenGles.lib;TKOpenGlesTest.lib;TKOpenGlTest.lib;TKPrim.lib;TKQADraw.lib;TKRWMesh.lib;TKService.lib;TKShapeView.lib;TKShHealing.lib;TKStd.lib;TKStdL.lib;TKSTEP.lib;TKSTEP209.lib;TKSTEPAttr.lib;TKSTEPBase.lib;TKSTL.lib;TKTInspector.lib;TKTInspectorAPI.lib;TKTObj.lib;TKTObjDRAW.lib;TKToolsDraw.lib;TKTopAlgo.lib;TKTopTest.lib;TKTreeModel.lib;TKV3d.lib;TKVCAF.lib;TKView.lib;TKViewerTest.lib;TKVInspector.lib;TKVRML.lib;TKXCAF.lib;TKXDEDRAW.lib;TKXDEIGES.lib;TKXDESTEP.lib;TKXMesh.lib;TKXml.lib;TKXmlL.lib;TKXmlTObj.lib;TKXmlXCAF.lib;TKXSBase.lib;TKXSDRAW.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -168,6 +168,7 @@
     <ClCompile Include="PropertyWidget\StrainResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\StressResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\TemperatureResultWidget.cpp" />
+    <ClCompile Include="TriangulationWorker.cpp" />
     <ClCompile Include="WordExporter.cpp" />
     <ClCompile Include="WordExporterWorker.cpp" />
     <QtRcc Include="mainWidget.qrc" />
@@ -247,6 +248,7 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="TriangulationWorker.h" />
     <QtMoc Include="ParamAnalyCalculateWorker.h" />
     <QtMoc Include="WordExporterWorker.h" />
     <QtMoc Include="PropertyWidget\IntelligentShootPropertyWidget.h" />

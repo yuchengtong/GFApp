@@ -1,145 +1,155 @@
+#pragma execution_character_set("utf-8")
 #include "TriangulationWorker.h"
+#include <BRepMesh_IncrementalMesh.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS_Face.hxx>
+#include <Poly_Triangulation.hxx>
+#include <Poly_Triangle.hxx>
+#include <BRep_Tool.hxx>
+#include <gp_Pnt.hxx>
 #include <QThread>
+#include <cmath>
 
-// 构造函数1：处理STL网格三角化
-TriangulationWorker::TriangulationWorker(Handle(Poly_Triangulation) stlMesh,
-    const TopLoc_Location& loc,
-    Handle(TriangleStructure) dataSource,
-    QObject* parent)
-    : QObject(parent),
-    m_stlMesh(stlMesh),
-    m_loc(loc),
-    m_dataSource(dataSource),
-    m_taskType(Task_STL),
-    m_interrupted(false)
-{
-    // 连接TriangleStructure的信号到自身（转发给UI）
-    if (!m_dataSource.IsNull())
-    {
-        connect(m_dataSource.get(), &TriangleStructure::ProgressUpdated,
-            this, &TriangulationWorker::ProgressUpdated);
-        connect(m_dataSource.get(), &TriangleStructure::StatusUpdated,
-            this, &TriangulationWorker::StatusUpdated);
-    }
-}
-
-// 构造函数2：处理OCC形状三角化
-TriangulationWorker::TriangulationWorker(const TopoDS_Shape& shape,
-    const Standard_Real linearDeflection,
-    Handle(TriangleStructure) dataSource,
-    QObject* parent)
-    : QObject(parent),
-    m_shape(shape),
-    m_linearDeflection(linearDeflection),
-    m_dataSource(dataSource),
-    m_taskType(Task_Shape),
-    m_interrupted(false)
-{
-    // 连接TriangleStructure的信号到自身（转发给UI）
-    if (!m_dataSource.IsNull())
-    {
-        connect(m_dataSource.get(), &TriangleStructure::ProgressUpdated,
-            this, &TriangulationWorker::ProgressUpdated);
-        connect(m_dataSource.get(), &TriangleStructure::StatusUpdated,
-            this, &TriangulationWorker::StatusUpdated);
-    }
-}
-
-// 线程核心执行函数
 void TriangulationWorker::DoWork()
 {
-    // 1. 检查核心参数有效性
-    if (m_dataSource.IsNull())
-    {
-        emit WorkFinished(false, "错误：三角化数据源为空", m_dataSource);
-        return;
-    }
-
-    // 2. 根据任务类型执行三角化
-    bool success = true;
-    QString msg = "三角化成功";
+    ModelMeshInfo meshInfo;
+    bool success = false;
+    QString msg;
 
     try
     {
-        switch (m_taskType)
+        emit StatusUpdated("开始网格划分准备...");
+        emit ProgressUpdated(5);
+
+        if (m_interrupted)
         {
-        case Task_STL:
-            // 处理STL网格
-            if (m_stlMesh.IsNull())
-            {
-                success = false;
-                msg = "错误：STL网格为空";
-            }
-            else
-            {
-                m_dataSource->AddTriangulation(m_stlMesh, m_loc);
-                if (m_dataSource->IsInterrupted())
-                {
-                    success = false;
-                    msg = "三角化已取消（STL处理）";
-                }
-                else
-                {
-                    msg = QString("STL三角化成功：节点%1个，单元%2个")
-                        .arg(m_dataSource->GetAllNodes()->Length())
-                        .arg(m_dataSource->GetElemNodes()->UpperRow());
-                }
-            }
-            break;
-
-        case Task_Shape:
-            // 处理OCC形状
-            if (m_shape.IsNull())
-            {
-                success = false;
-                msg = "错误：OCC形状为空";
-            }
-            else
-            {
-                m_dataSource->TriangulateShape(m_shape, m_linearDeflection);
-                if (m_dataSource->IsInterrupted())
-                {
-                    success = false;
-                    msg = "三角化已取消（OCC形状处理）";
-                }
-                else
-                {
-                    msg = QString("OCC形状三角化成功：节点%1个，单元%2个")
-                        .arg(m_dataSource->GetAllNodes()->Length())
-                        .arg(m_dataSource->GetElemNodes()->UpperRow());
-                }
-            }
-            break;
-
-        default:
-            success = false;
-            msg = "错误：未知任务类型";
-            break;
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
         }
+
+        if (!CheckGeometryValidity())
+        {
+            msg = "输入几何模型无效";
+            emit WorkFinished(false, msg, meshInfo);
+            return;  // 添加立即返回
+        }
+
+        // 检查中断
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
+        }
+
+        emit StatusUpdated("三角化网格划分");
+        emit ProgressUpdated(30);
+
+        // 检查中断
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
+        }
+
+        auto aDataSource = new TriangleStructure(m_originalShape, 0.5, &m_interrupted);
+
+        // 在设置结果前检查中断
+        if (m_interrupted)
+        {
+            delete aDataSource;  // 清理资源
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
+        }
+
+        meshInfo.isChecked = true;
+        meshInfo.triangleStructure = *aDataSource;
+        delete aDataSource;  // 清理资源
+
+        // 检查中断
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
+        }
+
+        emit StatusUpdated("计算网格统计信息");
+        emit ProgressUpdated(85);
+
+        // 模拟耗时操作，但需要检查中断
+        for (int i = 0; i < 50; ++i)
+        {
+            if (m_interrupted)
+            {
+                emit WorkFinished(false, "网格划分已取消", meshInfo);
+                return;
+            }
+            QThread::msleep(10);
+        }
+
+        // 最终检查中断
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
+        }
+
+        success = true;
+        msg = "网格划分完成";
+        emit ProgressUpdated(100);
     }
     catch (const Standard_Failure& e)
     {
-        // 捕获OCC异常
+        msg = QString("网格划分错误: %1").arg(e.GetMessageString());
         success = false;
-        msg = QString("三角化异常：%1").arg(e.GetMessageString());
     }
     catch (...)
     {
-        // 捕获其他异常
+        msg = "网格划分时发生未知错误";
         success = false;
-        msg = "三角化异常：未知错误";
     }
 
-    // 3. 发送完成信号（携带结果）
-    emit WorkFinished(success, msg, m_dataSource);
-}
-
-// 接收取消请求
-void TriangulationWorker::RequestInterruption()
-{
-    m_interrupted = true;
-    if (!m_dataSource.IsNull())
+    // 最终检查：如果在中途被取消，覆盖之前的成功状态
+    if (m_interrupted)
     {
-        m_dataSource->RequestInterruption(); // 通知TriangleStructure中断
+        emit WorkFinished(false, "网格划分已取消", meshInfo);
+    }
+    else
+    {
+        emit WorkFinished(success, msg, meshInfo);
     }
 }
+
+
+void TriangulationWorker::RequestInterruption() 
+{
+    m_interrupted = true; 
+}
+
+
+bool TriangulationWorker::CheckGeometryValidity()
+{
+    emit StatusUpdated("检查几何模型");
+    emit ProgressUpdated(15);
+
+    if (m_originalShape.IsNull())
+    {
+        return false;
+    }
+
+    TopExp_Explorer faceExplorer(m_originalShape, TopAbs_FACE);
+    if (!faceExplorer.More())
+    {
+        return false;
+    }
+
+    if (m_interrupted)
+    {
+        return false;
+    }
+
+    emit ProgressUpdated(25);
+    return true;
+}
+
+
+

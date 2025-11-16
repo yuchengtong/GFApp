@@ -19,11 +19,6 @@
 
 
 
-
-
-
-
-
 class APICreateMidSurfaceHelper
 {
 public:

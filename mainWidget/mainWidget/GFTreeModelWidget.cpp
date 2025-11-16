@@ -8,40 +8,56 @@
 #include <QIcon>
 #include <QFileDialog>
 #include <QDateTime>
-#include <algorithm>
 #include <QRegExp>
 #include <QRegularExpression> 
 #include <QValidator>
 #include <QThread>
+#include <algorithm>
 
 #include <AIS_Shape.hxx>
 #include <AIS_ColorScale.hxx>
-#include <STEPControl_Reader.hxx>
-#include <TopoDS_Edge.hxx>
-#include <TopoDS_Vertex.hxx>
-#include <Quantity_ColorRGBA.hxx>
-#include <Prs3d_LineAspect.hxx>
-#include <Prs3d_Drawer.hxx>
+
+#include <BRepBndLib.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRep_Builder.hxx>
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAlgo_FaceRestrictor.hxx>
+#include <BRepBuilderAPI_MakeEdge2d.hxx>
+#include <BRepProj_Projection.hxx>
+
+#include <GProp_GProps.hxx>
+
+#include <HLRBRep_Algo.hxx>
+#include <HLRBRep_HLRToShape.hxx>
 
 #include <MeshVS_Mesh.hxx>
 #include <MeshVS_Drawer.hxx>
 #include <MeshVS_DrawerAttribute.hxx>
 #include <MeshVS_MeshPrsBuilder.hxx>
 #include <MeshVS_NodalColorPrsBuilder.hxx>
-#include <V3d_View.hxx>
-#include <V3d_Viewer.hxx> 
 
-#include <BRepBndLib.hxx>
-#include <BRepBuilderAPI_MakeVertex.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRep_Builder.hxx>
-#include <StlAPI_Reader.hxx>
+#include <Prs3d_LineAspect.hxx>
+#include <Prs3d_Drawer.hxx>
+#include <Quantity_ColorRGBA.hxx>
+
 #include <RWStl.hxx>
+#include <STEPControl_Reader.hxx>
+#include <STEPControl_Writer.hxx>
+#include <StlAPI_Reader.hxx>
 
+#include <TopoDS_Edge.hxx>
+#include <TopoDS_Vertex.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TColStd_HArray2OfInteger.hxx>
 #include <TColStd_HArray2OfReal.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
+
+
+#include <V3d_View.hxx>
+#include <V3d_Viewer.hxx> 
+
 
 #include "GFImportModelWidget.h"
 #include "TriangleStructure.h"
@@ -50,48 +66,15 @@
 #include "ProgressDialog.h"
 #include "GeometryImportWorker.h"
 #include "WordExporterWorker.h"
-#include <HLRBRep_Algo.hxx>
-#include <BRepProj_Projection.hxx>
-#include <TopExp_Explorer.hxx>
-#include <BRepBuilderAPI_MakeEdge2d.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <HLRBRep_HLRToShape.hxx>
-#include <BRepAdaptor_Curve.hxx>
-#include <BRepAlgo_FaceRestrictor.hxx>
-#include <GProp_GProps.hxx>
-#include <BRepAlgo_FaceRestrictor.hxx>
-#include <BRepTools.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <BRepGProp.hxx>
-#include <GProp_GProps.hxx>
-#include <Bnd_Box.hxx>
-#include <BRepBndLib.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
-#include <TopExp.hxx>
-#include <BRepAlgoAPI_Section.hxx> 
-#include <ShapeAnalysis_FreeBounds.hxx>
-#include <BRepTools.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <BRepGProp.hxx>
-#include <GProp_GProps.hxx>
-#include <Bnd_Box.hxx>
-#include <BRepBndLib.hxx>
-#include <TopExp_Explorer.hxx>
-#include <TopTools_ListOfShape.hxx>
-#include <Geom2d_Curve.hxx>
-#include <BRep_Tool.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-#include <Bnd_Box2d.hxx>
-#include <BRepAlgoAPI_Splitter.hxx>
-#include <Geom_Plane.hxx>
-#include <BRepPrimAPI_MakeBox.hxx>
-#include <BRepAlgoAPI_Common.hxx>
-
-//#include <gmsh.h>
-//using namespace gmsh;
-
 #include "APICreateMidSurfaceHelper.h"
+
+
+
+
+#include <QScreen>
+#include <QtCore/qstandardpaths.h>
+#include "TriangulationWorker.h"
+
 
 // 仅处理 double 类型的 clamp 函数
 double my_clamp(double value, double low, double high) {
@@ -119,6 +102,8 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	wordExporter = new WordExporter(this);
 
 	qRegisterMetaType<ModelGeometryInfo>("ModelGeometryInfo");
+	qRegisterMetaType<ModelMeshInfo>("ModelMeshInfo");
+
 
 	QIcon error_icon(":/src/Error.svg");
 	QIcon checked_icon(":/src/Checked.svg");
@@ -718,87 +703,219 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				checkedChildItems.append(childItem);
 			}
 		}
-
-				
+		
+		/*
 		connect(exportAction, &QAction::triggered, [this, text]() {
 			QWidget* parent = parentWidget();
 			while (parent)
 			{
 				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 				if (gfParent)
-				{						
+				{	
+					QDateTime currentTime = QDateTime::currentDateTime();
+					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+					auto logWidget = gfParent->GetLogWidget();
+					auto textEdit = logWidget->GetTextEdit();
+					QString text = timeStr + "[信息]>开始进行跌落试验";
+					textEdit->appendPlainText(text);
+					logWidget->update();
+
+					// 关键：强制刷新UI，确保日志立即显示
+					QApplication::processEvents();
+
 					auto occView = gfParent->GetOccView();
 					Handle(AIS_InteractiveContext) context = occView->getContext();
 					auto view = occView->getView();
 					context->RemoveAll(true);
 
-					auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-					TopoDS_Shape model_shape=modelInfo.shape;
+					view->SetProj(V3d_Yneg);
+					view->Redraw();
 
-					auto faces=APICreateMidSurfaceHelper::GetIntersectionFacesWithCenterXOY(model_shape);
-					auto faceA = faces.first;
-					auto faceB = faces.second;
+					auto meshInfo=ModelDataManager::GetInstance()->GetModelMeshInfo();
+					auto aDataSource = &meshInfo.triangleStructure;
 
-					gp_Pnt minXA, maxXA, minXB, maxXB;
-					APICreateMidSurfaceHelper::FindMinMaxXPoints(faceA, minXA, maxXA, APICreateMidSurfaceHelper::FacePosition::Face_Upper);
-					APICreateMidSurfaceHelper::FindMinMaxXPoints(faceB, minXB, maxXB, APICreateMidSurfaceHelper::FacePosition::Face_Lower);
+					auto allnode = aDataSource->GetAllNodes();
+					auto nodecoords = aDataSource->GetmyNodeCoords();
 
-					
-					std::vector<TopoDS_Edge> forwardEdges, backwardEdges;
-					TopoDS_Wire outerWire = APICreateMidSurfaceHelper::GetOuterWire(faceA);
-					APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(outerWire, minXA, maxXA, forwardEdges, backwardEdges);
-					std::vector<TopoDS_Edge> forwardEdgesB, backwardEdgesB;
-					TopoDS_Wire outerWireB = APICreateMidSurfaceHelper::GetOuterWire(faceB);
-					APICreateMidSurfaceHelper::CollectEdgesFromStartToEnd(outerWireB, minXB, maxXB, forwardEdgesB, backwardEdgesB);
+					std::vector<double> nodeValues;
 
-					TopoDS_Face connectingFace = APICreateMidSurfaceHelper::CreateConnectingFace(
-						backwardEdges,
-						forwardEdgesB,
-						minXA,
-						maxXA,
-						minXB,
-						maxXB
-					);
+					auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+					auto propellantInfo = ModelDataManager::GetInstance()->GetPropellantPropertyInfo();
+					auto calInfo = ModelDataManager::GetInstance()->GetCalculationPropertyInfo();
+					auto fallInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+					auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+
+					auto A = 1;
+					auto B = steelInfo.density;
+					auto C = 0;
+					auto D = steelInfo.thermalConductivity;
+					auto E = steelInfo.specificHeatCapacity;
+
+					auto F = propellantInfo.density;
+					auto G = 0;
+					auto H = propellantInfo.thermalConductivity;
+					auto I = propellantInfo.specificHeatCapacity;
+					auto J = fallInfo.high * 1000;//跌落高度
+					auto K = modelGeomInfo.length;//长
+					auto L = modelGeomInfo.width;//宽
+					auto M = 5;//厚
+
+					auto formulaCal = calInfo.calculation;
+
+					auto calculateFormula = [](const QString& formula,
+						double B, double C, double D, double E,
+						double F, double G, double H, double I,
+						double J, double K, double L, double M, double A)
+					{
+						QString processedFormula = formula;  // 复制到非const变量
+						processedFormula.remove(' ');
+						// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
+						const QMap<QString, double> varMap = {
+							{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
+							{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
+							{"K", K}, {"L", L}, {"M", M}
+						};
+
+						QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
+						regExp.setMinimal(false);
+
+						double result = 0.0;
+						int pos = 0;
+						int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
+
+						// 处理公式开头的第一项（可能无符号）
+						if (processedFormula[0] != '+' && processedFormula[0] != '-') {
+							processedFormula = "+" + processedFormula; // 补全正号，统一格式
+						}
+
+						while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
+							++matchCount;
+							QString signStr = regExp.cap(1);       // 符号（+/-）
+							QString coeffStr = regExp.cap(2);      // 系数
+							QString varName = regExp.cap(3);       // 变量
+
+							// 解析符号（默认正号）
+							double sign = (signStr == "-") ? -1.0 : 1.0;
+
+							// 解析系数（处理转换失败）
+							bool ok = false;
+							double coeff = coeffStr.toDouble(&ok);
+							if (!ok) {
+								throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
+							}
+
+							// 计算当前项的值
+							double term = sign * coeff;
+							if (!varName.isEmpty()) {
+								if (!varMap.contains(varName)) {
+									throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
+								}
+								term *= varMap[varName];  // 变量项：符号×系数×变量值
+							}
+
+							result += term;
+							pos += regExp.matchedLength();
+						}
+
+						// 校验公式是否完全解析（无残留无效字符）
+						if (matchCount == 0) {
+							throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
+						}
+
+						return result;
+					};
+
+					std::vector<double> results;
+					results.reserve(formulaCal.size());
+					for (int i = 0; i < formulaCal.size(); ++i)
+					{
+						double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+						results.push_back(res);
+					}
+					for (size_t i = 0; i < results.size(); ++i) {
+						results[i] = results[i] * 0.7 * 0.6;
+						if (results[i] < 0)
+						{
+							results[i] = 0;
+						}
+					}
+
+					double min_value = *std::min_element(results.begin(), results.end());
+					double max_value = *std::max_element(results.begin(), results.end());
+
+					// 更新结果
+
+					double shellMaxValue = max_value; // 发动机壳体最大应力
+					double shellMinValue = 0; // 发动机壳体最小应力
+					double shellAvgValue = shellMaxValue * 0.6; // 发动机壳体平均应力
+					double shellStandardValue = getStd(results); // 发动机壳体应力标准差
+					double maxValue = max_value * 0.6; // 固体推进剂最大应力
+					double minValue = 0; // 固体推进剂最小应力
+					double avgValue = maxValue * 0.6; // 固体推进剂平均应力
+					double standardValue = 0; // 固体推进剂应力标准差
+					gfParent->GetStressResultWidget()->updateData(shellMaxValue, shellMinValue, shellAvgValue, shellStandardValue, maxValue, minValue, avgValue, standardValue);
 
 
-					TopoDS_Compound allFacesCompound;
-					BRep_Builder builder;
-					builder.MakeCompound(allFacesCompound);
+					FallAnalysisResultInfo fallAnalysisResultInfo;
+
+					fallAnalysisResultInfo.isChecked = true;
+					fallAnalysisResultInfo.triangleStructure = *aDataSource;
+					fallAnalysisResultInfo.maxValue = max_value;
+					fallAnalysisResultInfo.minValue = min_value;
+					ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
+
+					auto a = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+					auto allnode1 = a.triangleStructure.GetAllNodes();
+					auto nodecoords1 = a.triangleStructure.GetmyNodeCoords();
+
+					// 应力分析结果
+					StressResult fallStressResult;
+					fallStressResult.metalsMaxStress = shellMaxValue;
+					fallStressResult.metalsMinStress = shellMinValue;
+					fallStressResult.metalsAvgStress = shellAvgValue;
+					fallStressResult.metalsStandardStress = shellStandardValue;
+					fallStressResult.propellantsMaxStress = maxValue;
+					fallStressResult.propellantsMinStress = minValue;
+					fallStressResult.propellantsAvgStress = avgValue;
+					fallStressResult.propellantsStandardStress = standardValue;
+					fallStressResult.outheatMaxStress = shellMaxValue;
+					fallStressResult.outheatMinStress = shellMinValue;
+					fallStressResult.outheatAvgStress = shellAvgValue;
+					fallStressResult.outheatStandardStress = shellStandardValue;
+					fallStressResult.insulatingheatMaxStress = maxValue;
+					fallStressResult.insulatingheatMinStress = minValue;
+					fallStressResult.insulatingheatAvgStress = avgValue;
+					fallStressResult.insulatingheatStandardStress = standardValue;
+					ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
+
+					// 应变分析结果
+					StrainResult fallStrainResult;
+					fallStrainResult.metalsMaxStrain = fallStressResult.metalsMaxStress * steelInfo.modulus;
+					fallStrainResult.metalsMinStrain = fallStressResult.metalsMinStress * steelInfo.modulus;
+					fallStrainResult.metalsAvgStrain = fallStressResult.metalsAvgStress * steelInfo.modulus;
+					fallStrainResult.metalsStandardStrain = fallStressResult.metalsStandardStress * steelInfo.modulus;
+					fallStrainResult.propellantsMaxStrain = fallStressResult.propellantsMaxStress * steelInfo.modulus;
+					fallStrainResult.propellantsMinStrain = fallStressResult.propellantsMaxStress * steelInfo.modulus;
+					fallStrainResult.mpropellantsAvgStrain = fallStressResult.propellantsAvgStress * steelInfo.modulus;
+					fallStrainResult.propellantsStandardStrain = fallStressResult.propellantsStandardStress * steelInfo.modulus;
+					fallStrainResult.outheatMaxStrain = fallStressResult.outheatMaxStress * steelInfo.modulus;
+					fallStrainResult.outheatMinStrain = fallStressResult.outheatMinStress * steelInfo.modulus;
+					fallStrainResult.outheatAvgStrain = fallStressResult.outheatAvgStress * steelInfo.modulus;
+					fallStrainResult.outheatStandardStrain = fallStressResult.outheatStandardStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatMaxStrain = fallStressResult.insulatingheatMaxStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatMinStrain = fallStressResult.insulatingheatMinStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatAvgStrain = fallStressResult.insulatingheatAvgStress * steelInfo.modulus;
+					fallStrainResult.insulatingheatStandardStrain = fallStressResult.insulatingheatStandardStress * steelInfo.modulus;
+					ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
 
 
-
-
-					builder.Add(allFacesCompound, faceA);
-					builder.Add(allFacesCompound, faceB);
-					builder.Add(allFacesCompound, connectingFace);
-
-
-
-		
-					// 显示复合形状（洋红色）
-					Handle(AIS_Shape) aisAllFaces = new AIS_Shape(allFacesCompound);
-					aisAllFaces->SetColor(Quantity_Color(Quantity_NOC_MAGENTA)); // 统一用洋红色
-
-					context->Display(aisAllFaces, Standard_True); // 显示
-
-					// 调整视图适配所有内容
-					view->FitAll();
-
-
-
-
-
-
-
-
-
-
-					
-
-
-
-
-
+					{
+						QDateTime currentTime = QDateTime::currentDateTime();
+						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+						QString text = timeStr + "[信息]>跌落试验计算完成";
+						textEdit->appendPlainText(text);
+						logWidget->update();
+					}
 
 					break;
 				}
@@ -808,7 +925,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				}
 			}
 			});
-		
+			*/
+
 		connect(calAction, &QAction::triggered, this, [item, this]() {
 			QWidget* parent = parentWidget();
 			while (parent)
@@ -986,7 +1104,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					FallAnalysisResultInfo fallAnalysisResultInfo;
 
 					fallAnalysisResultInfo.isChecked = true;
-					fallAnalysisResultInfo.triangleStructure = aDataSource;
+					fallAnalysisResultInfo.triangleStructure = *aDataSource;
 					fallAnalysisResultInfo.maxValue = max_value;
 					fallAnalysisResultInfo.minValue = min_value;
 					ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
@@ -1094,7 +1212,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					
 
 					// 创建进度对话框
-					ProgressDialog* progressDialog = new ProgressDialog("几何模型导入进度", gfParent);
+					ProgressDialog* progressDialog = new ProgressDialog("几何模型导入", gfParent);
 					progressDialog->show();
 
 					// 创建工作线程和工作对象
@@ -1109,7 +1227,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					connect(worker, &GeometryImportWorker::StatusUpdated,
 						progressDialog, &ProgressDialog::SetStatusText);
 					connect(progressDialog, &ProgressDialog::Canceled,
-						worker, &GeometryImportWorker::RequestInterruption);
+						worker, &GeometryImportWorker::RequestInterruption,
+						Qt::DirectConnection); 
 
 					// 处理导入结果
 					connect(worker, &GeometryImportWorker::WorkFinished, this,
@@ -1149,15 +1268,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							// 清理资源
 							progressDialog->close();
 							workerThread->quit();
-							workerThread->wait();
+							if (!workerThread->wait(500)) 
+							{  
+								workerThread->terminate();
+							}
 							worker->deleteLater();
 							workerThread->deleteLater();
 							progressDialog->deleteLater();
-
-							// 测试截图
-							QString m_privateDirPath = "src/template/测试模型.png";
-							QDir privateDir(m_privateDirPath);
-							wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
 						});
 
 					// 启动线程
@@ -1183,94 +1300,112 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			{
 				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 				if (gfParent)
-				{
-					{
-						
+				{								
+					QDateTime currentTime = QDateTime::currentDateTime();
+					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+					auto logWidget = gfParent->GetLogWidget();
+					auto textEdit = logWidget->GetTextEdit();
+					QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
+					textEdit->appendPlainText(text);
+					logWidget->update();
 
-
-						QDateTime currentTime = QDateTime::currentDateTime();
-						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-						auto logWidget = gfParent->GetLogWidget();
-						auto textEdit = logWidget->GetTextEdit();
-						QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
-						textEdit->appendPlainText(text);
-						logWidget->update();
-
-						// 关键：强制刷新UI，确保日志立即显示
-						QApplication::processEvents();
-					}
-
-					ModelMeshInfo meshInfo;
-
+					//// 关键：强制刷新UI，确保日志立即显示
+					//QApplication::processEvents();
+					
 					auto occView = gfParent->GetOccView();
 					Handle(AIS_InteractiveContext) context = occView->getContext();
 					auto view = occView->getView();
 					context->RemoveAll(true);
 
-					Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
+					// 创建进度对话框
+					ProgressDialog* progressDialog = new ProgressDialog("网格划分", gfParent);
+					progressDialog->show();
 
+					// 创建工作线程和工作对象
 					auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+					TriangulationWorker* worker = new TriangulationWorker(geomInfo.shape);
+					QThread* workerThread = new QThread();
+					worker->moveToThread(workerThread);
 
-					auto aDataSource = new TriangleStructure(geomInfo.shape, 0.5);
+					// 连接信号槽
+					connect(workerThread, &QThread::started, worker, &TriangulationWorker::DoWork);
+					connect(worker, &TriangulationWorker::ProgressUpdated,
+						progressDialog, &ProgressDialog::SetProgress);
+					connect(worker, &TriangulationWorker::StatusUpdated,
+						progressDialog, &ProgressDialog::SetStatusText);
+					connect(progressDialog, &ProgressDialog::Canceled,
+						worker, &TriangulationWorker::RequestInterruption,
+						Qt::DirectConnection);
 
+					// 处理导入结果
+					connect(worker, &TriangulationWorker::WorkFinished, this,
+						[=](bool success, const QString& msg, const ModelMeshInfo& info) {
+							// 更新日志
+							QDateTime finishTime = QDateTime::currentDateTime();
+							QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
+							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+							if (success)
+							{
+								ModelDataManager::GetInstance()->SetModelMeshInfo(info);
+								BRep_Builder builder;
+								TopoDS_Compound compound;
+								builder.MakeCompound(compound);
 
-					meshInfo.isChecked = true;
-					meshInfo.triangleStructure = *aDataSource;
-					ModelDataManager::GetInstance()->SetModelMeshInfo(meshInfo);
+								auto aDataSource = info.triangleStructure;
+								auto myEdges = aDataSource.GetMyEdge();
+								auto myNodeCoords = aDataSource.GetmyNodeCoords();
+								for (const auto& edge : myEdges)
+								{
+									Standard_Integer node1ID = edge.first;
+									Standard_Integer node2ID = edge.second;
 
+									Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
+									Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
+									Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
 
-					BRep_Builder builder;
-					TopoDS_Compound compound;
-					builder.MakeCompound(compound);
+									Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
+									Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
+									Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
 
-					auto myEdges = aDataSource->GetMyEdge();
+									gp_Pnt p1(x1, y1, z1);
+									gp_Pnt p2(x2, y2, z2);
 
-					auto myNodeCoords = aDataSource->GetmyNodeCoords();
+									TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
+									TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
 
-					for (const auto& edge : myEdges)
-					{
-						Standard_Integer node1ID = edge.first;
-						Standard_Integer node2ID = edge.second;
+									TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
 
-						Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
-						Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
-						Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
+									builder.Add(compound, edgeShape);
+								}
+								Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
+								context->Display(aisCompound, Standard_True);
 
-						Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
-						Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
-						Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
+								updataIcon();
 
-						gp_Pnt p1(x1, y1, z1);
-						gp_Pnt p2(x2, y2, z2);
+								QDateTime currentTime = QDateTime::currentDateTime();
+								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+								QString text = timeStr + "[信息]>网格划分完成";
+								textEdit->appendPlainText(text);
 
-						TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
-						TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
+								auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
+								meshProWid->UpdataPropertyInfo();
+							}
+							else if (!success)
+							{
+								QMessageBox::warning(this, "导入失败", msg);
+							}
 
-						TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
+							// 清理资源
+							progressDialog->close();
+							workerThread->quit();
+							workerThread->wait();
+							worker->deleteLater();
+							workerThread->deleteLater();
+							progressDialog->deleteLater();
+						});
 
-						// 将边线添加到复合形状中
-						builder.Add(compound, edgeShape);
-
-						//Handle(AIS_Shape) aisEdge = new AIS_Shape(edgeShape);
-						//context->Display(aisEdge, Standard_True);
-					}
-
-					Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
-					context->Display(aisCompound, Standard_True);
-
-					updataIcon();
-
-					{
-						QDateTime currentTime = QDateTime::currentDateTime();
-						QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-						auto logWidget = gfParent->GetLogWidget();
-						auto textEdit = logWidget->GetTextEdit();
-						QString text = timeStr + "[信息]>网格划分完成";
-						textEdit->appendPlainText(text);
-					}
-
-					auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
-					meshProWid->UpdataPropertyInfo();
+					// 启动线程
+					workerThread->start();
 
 					break;
 				}
@@ -1292,8 +1427,6 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 		GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 		if (gfParent)
 		{
-			
-
 			{
 				QDateTime currentTime = QDateTime::currentDateTime();
 				QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -1307,31 +1440,31 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 				QApplication::processEvents();
 			}
 
-			ProjectPropertyWidge *m_projectPropertyWidge = gfParent->GetProjectPropertyWidget();
+			ProjectPropertyWidge* m_projectPropertyWidge = gfParent->GetProjectPropertyWidget();
 			QTableWidget* m_projectTableWid = m_projectPropertyWidge->GetQTableWidget();
 
-			GeomPropertyWidget *m_geomPropertyWidget = gfParent->GetGeomPropertyWidget();
+			GeomPropertyWidget* m_geomPropertyWidget = gfParent->GetGeomPropertyWidget();
 			QTableWidget* m_geomTableWid = m_geomPropertyWidget->GetQTableWidget();
 
-			MaterialPropertyWidget *m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
+			MaterialPropertyWidget* m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
 			QTableWidget* m_materialTableWid = m_materialPropertyWidget->GetQTableWidget();
 
-			DatabasePropertyWidget *m_databasePropertyWidget = gfParent->GetDatabasePropertyWidget();
+			DatabasePropertyWidget* m_databasePropertyWidget = gfParent->GetDatabasePropertyWidget();
 			QTableWidget* m_databaseTableWid = m_databasePropertyWidget->GetQTableWidget();
 
-			FallPropertyWidget *m_fallPropertyWidget = gfParent->GetFallPropertyWidget();
+			FallPropertyWidget* m_fallPropertyWidget = gfParent->GetFallPropertyWidget();
 			QTableWidget* m_fallTableWid = m_fallPropertyWidget->GetQTableWidget();
 
-			StressResultWidget *m_stressResultWidget = gfParent->GetStressResultWidget();
+			StressResultWidget* m_stressResultWidget = gfParent->GetStressResultWidget();
 			QTableWidget* m_stressTableWid = m_stressResultWidget->GetQTableWidget();
 
-;			StrainResultWidget *m_strainResultWidget = gfParent->GetStrainResultWidget();
+			StrainResultWidget* m_strainResultWidget = gfParent->GetStrainResultWidget();
 			QTableWidget* m_strainTableWid = m_strainResultWidget->GetQTableWidget();
 
-			TemperatureResultWidget *m_temperatureResultWidget = gfParent->GetTemperatureResultWidget();
+			TemperatureResultWidget* m_temperatureResultWidget = gfParent->GetTemperatureResultWidget();
 			QTableWidget* m_temperatureTableWid = m_temperatureResultWidget->GetQTableWidget();
 
-			OverpressureResultWidget *m_overpressureResultWidge = gfParent->GetOverpressureResultWidget();
+			OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetOverpressureResultWidget();
 			QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
 			QMap<QString, QVariant> data;
@@ -1348,7 +1481,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			// 跌落输入数据
 			data.insert("测试项目", m_fallTableWid->item(1, 2)->text());
 			data.insert("跌落高度", m_fallTableWid->item(2, 2)->text());
-			QComboBox *comboBox = qobject_cast<QComboBox*>(m_fallTableWid->cellWidget(3, 2));
+			QComboBox* comboBox = qobject_cast<QComboBox*>(m_fallTableWid->cellWidget(3, 2));
 			if (comboBox)
 			{
 				QString selectedText = comboBox->currentText();
@@ -1362,7 +1495,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			data.insert("温度传感器数量", m_fallTableWid->item(5, 2)->text());
 			if (m_fallTableWid->item(6, 2))
 			{
-				data.insert("冲击波超压传感器数量",m_fallTableWid->item(6, 2)->text());
+				data.insert("冲击波超压传感器数量", m_fallTableWid->item(6, 2)->text());
 			}
 			else
 			{
@@ -1439,12 +1572,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			data.insert("外防热平均超压", m_overpressureTableWid->item(15, 2)->text());
 			data.insert("外防热超压标准差", m_overpressureTableWid->item(16, 2)->text());
 
-
 			QMap<QString, QString> imagePaths;
 			QString a = QDir("src/template/测试模型.png").absolutePath();
 			imagePaths.insert("测试模型", QDir("src/template/测试模型.png").absolutePath());
 			imagePaths.insert("应力云图", QDir("src/template/跌落试验/应力云图.png").absolutePath());
-			
 
 			// 创建进度对话框
 			ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", gfParent);
@@ -1463,10 +1594,9 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 
 			// 处理导入结果
 			connect(wordExporterWorker, &WordExporterWorker::WorkFinished, this,
-				[=](bool success, const QString& msg) {
-					
-
-					if (success )
+				[=](bool success, const QString& msg)
+				{
+					if (success)
 					{
 						// 更新日志
 						{
@@ -1496,7 +1626,6 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 					wordExporterThread->deleteLater();
 					progressDialog->deleteLater();
 				});
-
 			// 启动线程
 			wordExporterThread->start();
 			break;
@@ -1506,5 +1635,4 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			parent = parent->parentWidget();
 		}
 	}
-	
 }
