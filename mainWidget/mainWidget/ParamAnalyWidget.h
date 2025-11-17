@@ -43,6 +43,8 @@ public:
 
 	QTableWidget* getScoreTableWidget() { return scoreTableWidget; }
 
+	void exportWord(const QString& directory, const QString& text);
+
 private slots:
 	void onTreeItemClicked(const QString& itemData);
 

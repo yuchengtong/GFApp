@@ -1576,13 +1576,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			QString a = QDir("src/template/测试模型.png").absolutePath();
 			imagePaths.insert("测试模型", QDir("src/template/测试模型.png").absolutePath());
 			imagePaths.insert("应力云图", QDir("src/template/跌落试验/应力云图.png").absolutePath());
+			QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 			// 创建进度对话框
 			ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", gfParent);
 			progressDialog->show();
 
 			// 创建工作线程和工作对象
-			WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory + "/跌落仿真计算数据表.docx", data, imagePaths);
+			WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory + "/跌落仿真计算数据表.docx", data, imagePaths, tableData);
 			QThread* wordExporterThread = new QThread();
 			wordExporterWorker->moveToThread(wordExporterThread);
 

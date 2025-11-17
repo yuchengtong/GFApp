@@ -52,6 +52,11 @@ void CustomPolarChart::setupChart()
 
 	this->setTitle("跌落试验");
 	this->setTitleBrush(Qt::white);
+
+	// 保证八边形在绘图区域变化时重绘（包含窗口/大小变化/坐标变换）
+	connect(this, &QChart::plotAreaChanged, this, [this](const QRectF&) {
+		drawOctagonOverlay();
+		});
 }
 
 void CustomPolarChart::buildSeries()

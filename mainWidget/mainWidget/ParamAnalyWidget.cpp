@@ -7,7 +7,48 @@
 #include <QTabWidget>
 #include <QSplitter>
 #include <QHeaderView>
+#include <QFileDialog>
+#include <QDateTime>
+#include <QThread>
 
+#include "ProgressDialog.h"
+#include "WordExporterWorker.h"
+
+
+QVector<QVector<QVariant>> tableWidgetToVariantVector(QTableWidget* tableWidget)
+{
+	QVector<QVector<QVariant>> result;
+	if (!tableWidget || tableWidget->rowCount() == 0) {
+		return result; // 空表格直接返回
+	}
+
+	int rowCount = tableWidget->rowCount();
+	int colCount = tableWidget->columnCount();
+
+	// 2. 遍历数据行和列，填充表格数据
+	for (int row = 0; row < rowCount; ++row) {
+		QVector<QVariant> dataRow;
+		for (int col = 0; col < colCount; ++col) {
+			// 获取单元格项，为空时用空QVariant填充（避免空指针）
+			QTableWidgetItem* cellItem = tableWidget->item(row, col);
+			if (cellItem) {
+				// 优先获取单元格的原始数据（如果设置过setData），没有则用文本
+				if (cellItem->data(Qt::DisplayRole).isValid()) {
+					dataRow.append(cellItem->data(Qt::DisplayRole));
+				}
+				else {
+					dataRow.append(cellItem->text());
+				}
+			}
+			else {
+				dataRow.append(QVariant("")); // 空单元格填充空字符串，避免数据缺失
+			}
+		}
+		result.append(dataRow);
+	}
+
+	return result;
+}
 
 ParamAnalyWidget::ParamAnalyWidget(QWidget* parent)
 	: QWidget(parent)
@@ -71,6 +112,7 @@ ParamAnalyWidget::ParamAnalyWidget(QWidget* parent)
 	evaluationSystemTableWidget->setSpan(2, 1, 14, 1);
 	evaluationSystemTableWidget->item(0, 2)->setTextAlignment(Qt::AlignCenter);
 	evaluationSystemTableWidget->item(1, 2)->setTextAlignment(Qt::AlignCenter);
+	evaluationSystemTableWidget->item(2, 1)->setTextAlignment(Qt::AlignCenter);
 	evaluationSystemTableWidget->setSpan(16, 0, 8, 1);
 	evaluationSystemTableWidget->setSpan(16, 1, 8, 1);
 	evaluationSystemTableWidget->item(16, 0)->setTextAlignment(Qt::AlignCenter);
@@ -110,20 +152,20 @@ ParamAnalyWidget::ParamAnalyWidget(QWidget* parent)
 	u1WeightTtableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> u1WeightData = {
 		{"U1","U11", "U12", "U13",  "U14", "U15", "U16", "U17", "U18" ,"U19", "U110", "U111", "U112", "U113" ,"U114" },
-		{"U₁₁（跌落超压）","1", "3", "7", "9", "1/5", "1/7", "1/7", "1/9" ,"1/9", "1/9", "1/7", "1/9", "1/9" ,"1/9" },
-		{"U₁₂（跌落温度）","1/3", "1",  "5", "7", "7", "1/7","1/9", "1/9", "1/9" ,"1/9", "1/9", "1/9", "1/9", "1/9"  },
-		{"U₁₃（快速烤燃温度）","1/7", "1/3", "3", "3", "1/9", "1/9", "1/9", "1/9" ,"1/9", "1/9", "1/9", "1/9", "1/9" ,"1/9" },
-		{"U₁₄（慢速烤燃温度）","1/9", "1/5", "1/3", "1", "1/9", "1/9", "1/9", "1/9" ,"1/9", "1/9", "1/9", "1/9", "1/9" ,"1/9" },
-		{"U₁₅（子弹撞击超压）","5", "9", "9", "9", "1", "3", "3", "1/5" ,"1/7", "1/7", "1/3", "1/5", "1/7" ,"1/7" },
-		{"U₁₆（子弹撞击温度）","7", "9", "9", "9", "1/3", "1", "3", "1/7" ,"1/9", "1/9", "1/5", "1/7", "1/9" ,"1/9" },
-		{"U₁₇（破片撞击超压）","7", "9", "9", "9", "1/3", "1/3", "1", "1/3" ,"1/5", "1/5", "1/3", "1/3", "1/5" ,"1/5" },
-		{"U₁₈（破片撞击温度）","9",  "9", "9", "9", "5", "7", "3", "1" ,"3", "3", "1", "1/3", "1/5" ,"1/5" },
-		{"U₁₉（殉爆超压）","9", "9", "9", "9", "7", "9", "5", "1/3" ,"1", "3", "1/3", "1/3", "1/3" ,"1/3" },
-		{"U₁₁₀（殉爆温度）","9", "9", "9", "9", "7", "9", "5", "1/3" ,"1/3", "1", "1/3", "1/3", "1/3" ,"1/3" },
-		{"U₁₁₁（射流超压）","7", "9",   "9", "9", "3", "5", "3", "1" ,"3", "3", "1", "3", "1/3" ,"1/3" },
-		{"U₁₁₂（射流温度）","9", "9",  "9", "9", "5", "7", "3", "3" ,"3", "3", "1/3", "1", "1/5" ,"1/5" },
-		{"U₁₁₃（爆炸冲击超压）","9", "9", "9", "9", "7", "9", "5", "5" ,"3", "3", "3", "5", "1" ,"3" },
-		{"U₁₁₄（爆炸冲击温度）","9", "9", "9", "9", "7", "9", "5", "5" ,"3", "3", "3", "5", "1/3" ,"1" },
+		{"U₁₁（跌落超压）","1", "2", "3", "3", "1/3", "1/3", "1/3", "1/3" ,"1/3", "1/3", "1/3", "1/3", "1/3" ,"1/3" },
+		{"U₁₂（跌落温度）","1/2", "1",  "3", "3", "3", "1/3","1/3", "1/3", "1/3" ,"1/3", "1/3", "1/3", "1/3", "1/3"  },
+		{"U₁₃（快速烤燃温度）","1/3", "1/2", "2", "2", "1/3", "1/3", "1/3", "1/3" ,"1/3", "1/3", "1/3", "1/3", "1/3" ,"1/3" },
+		{"U₁₄（慢速烤燃温度）","1/3", "1/3", "1/2", "1", "1/3", "1/3", "1/3", "1/3" ,"1/3", "1/3", "1/3", "1/3", "1/3" ,"1/3" },
+		{"U₁₅（子弹撞击超压）","3", "3", "3", "3", "1", "2", "2", "1/3" ,"1/3", "1/3", "1/2", "1/3", "1/3" ,"1/3" },
+		{"U₁₆（子弹撞击温度）","3", "3", "3", "3", "1/2", "1", "2", "1/3" ,"1/3", "1/3", "1/3", "1/3", "1/3" ,"1/3" },
+		{"U₁₇（破片撞击超压）","3", "3", "3", "3", "1/2", "1/2", "1", "1/2" ,"1/3", "1/3", "1/2", "1/2", "1/3" ,"1/3" },
+		{"U₁₈（破片撞击温度）","3",  "3", "3", "3", "3", "3", "2", "1" ,"2", "2", "1", "1/2", "1/3" ,"1/3" },
+		{"U₁₉（殉爆超压）","3", "3", "3", "3", "3", "3", "3", "1/2" ,"1", "2", "1/2", "1/2", "1/2" ,"1/2" },
+		{"U₁₁₀（殉爆温度）","3", "3", "3", "3", "3", "3", "3", "1/2" ,"1/2", "1", "1/2", "1/2", "1/2" ,"1/2" },
+		{"U₁₁₁（射流超压）","3", "3",   "3", "3", "2", "3", "2", "1" ,"2", "2", "1", "2", "1/2" ,"1/2" },
+		{"U₁₁₂（射流温度）","3", "3",  "3", "3", "3", "3", "2", "2" ,"2", "2", "1/2", "1", "1/3" ,"1/3" },
+		{"U₁₁₃（爆炸冲击超压）","3", "3", "3", "3", "3", "3", "3", "3" ,"2", "2", "2", "3", "1" ,"2" },
+		{"U₁₁₄（爆炸冲击温度）","3", "3", "3", "3", "3", "3", "3", "3" ,"2", "2", "2", "3", "1/2" ,"1" },
 	};
 	// 遍历二维数组并填充到QTableWidget中
 	for (int i = 0; i < u1WeightData.size(); ++i) {
@@ -582,4 +624,196 @@ void ParamAnalyWidget::onTreeItemClicked(const QString& itemData)
 	{
 		m_tableStackWidget->setCurrentWidget(scoreTableWidget);
 	}
+	else if (itemData == "Report")
+	{
+		QString directory = QFileDialog::getExistingDirectory(nullptr,
+			tr("选择文件夹"),
+			"/home", // 默认的起始目录
+			QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks); // 选项
+		if (!directory.isEmpty()) {
+			exportWord(directory, "Hello, World!"); // 直接在Lambda中传递参数
+		}
+	}
+}
+
+
+void ParamAnalyWidget::exportWord(const QString& directory, const QString& text)
+{
+	QMap<QString, QVariant> data;
+	if (u1CalculationTableWidget->item(0, 2))
+	{
+
+		data.insert("A1", u1CalculationTableWidget->item(0, 2)->text());
+	}
+	else
+	{
+		data.insert("A1", "");
+	}
+
+	if (u1CalculationTableWidget->item(1, 2))
+	{
+
+		data.insert("RI1", u1CalculationTableWidget->item(1, 2)->text());
+	}
+	else
+	{
+		data.insert("RI1", "");
+	}
+
+	if (u2CalculationTableWidget->item(0, 2))
+	{
+
+		data.insert("A2", u2CalculationTableWidget->item(0, 2)->text());
+	}
+	else
+	{
+		data.insert("A2", "");
+	}
+
+	if (u2CalculationTableWidget->item(1, 2))
+	{
+
+		data.insert("RI2", u2CalculationTableWidget->item(1, 2)->text());
+	}
+	else
+	{
+		data.insert("RI2", "");
+	}
+
+	QString R1 = "[";
+	for (int row = 1; row < u1EvaluationMatrixTableWidget->rowCount(); ++row) {
+		QTableWidgetItem* item = u1EvaluationMatrixTableWidget->item(row, 2); // 获取第三列的元素
+		if (item) { // 检查是否该行存在第三列的元素
+			if (row == (u1EvaluationMatrixTableWidget->rowCount() -1) )
+			{
+				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+				R1 = R1 + text;
+			}
+			else
+			{
+				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+				R1 = R1 + text  + "\r\n" ;
+			}
+		}
+	}
+	R1 = R1 + "]";
+	data.insert("R-1", R1);
+
+	QString R2 = "[";
+	for (int row = 1; row < u2EvaluationMatrixTableWidget->rowCount(); ++row) {
+		QTableWidgetItem* item = u2EvaluationMatrixTableWidget->item(row, 2); // 获取第三列的元素
+		if (item) { // 检查是否该行存在第三列的元素
+			if (row == (u2EvaluationMatrixTableWidget->rowCount() -1))
+			{
+				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+				R2 = R2 + text;
+			}
+			else
+			{
+				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+				R2 = R2 + text + "\r\n";
+			}
+		}
+	}
+	R2 = R2 + "]";
+	data.insert("R2", R2);
+
+	if (criterionTableWidget->item(1, 2))
+	{
+
+		data.insert("B1", criterionTableWidget->item(1, 2)->text());
+	}
+	else
+	{
+		data.insert("B1", "");
+	}
+	if (criterionTableWidget->item(2, 2))
+	{
+
+		data.insert("B2", criterionTableWidget->item(2, 2)->text());
+	}
+	else
+	{
+		data.insert("B2", "");
+	}
+	if (targetTableWidget->item(1, 2))
+	{
+
+		data.insert("B", targetTableWidget->item(1, 2)->text());
+	}
+	else
+	{
+		data.insert("B", "");
+	}
+
+	if (levelTableWidget->item(1, 1))
+	{
+
+		data.insert("等级", "最大隶属度 =" + levelTableWidget->item(1, 1)->text() + "," + levelTableWidget->item(1, 2)->text());
+	}
+	else
+	{
+		data.insert("等级", "");
+	}
+
+	if (scoreTableWidget->item(1, 1))
+	{
+
+		data.insert("分数", "最大分值 =" + scoreTableWidget->item(1, 1)->text() + "," + scoreTableWidget->item(1, 2)->text());
+	}
+	else
+	{
+		data.insert("分数", "");
+	}
+	
+	QMap<QString, QString> imagePaths;
+
+	QMap<QString, QVector<QVector<QVariant>>> tableData;
+	QVector<QVector<QVariant>> u1GradeDefinition = tableWidgetToVariantVector(u1GradeDefinitionTableWidget);
+	QVector<QVector<QVariant>> u2GradeDefinition = tableWidgetToVariantVector(u2GradeDefinitionTableWidget);
+	QVector<QVector<QVariant>> U1 = tableWidgetToVariantVector(u1WeightTtableWidget);
+	QVector<QVector<QVariant>> U2 = tableWidgetToVariantVector(u2WeightTableWidget);
+	tableData["标准一"] = u1GradeDefinition;
+	tableData["标准二"] = u2GradeDefinition;
+	tableData["U1"] = U1;
+	tableData["U2"] = U2;
+
+	// 创建进度对话框
+	ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", this);
+	progressDialog->show();
+
+	// 创建工作线程和工作对象
+	WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/安全性分析与评估报告.docx").absolutePath(), directory + "/安全性分析与评估报告.docx", data, imagePaths, tableData);
+	QThread* wordExporterThread = new QThread();
+	wordExporterWorker->moveToThread(wordExporterThread);
+
+	// 连接信号槽
+	connect(wordExporterThread, &QThread::started, wordExporterWorker, &WordExporterWorker::DoWork);
+	connect(wordExporterWorker, &WordExporterWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
+	connect(wordExporterWorker, &WordExporterWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
+	connect(progressDialog, &ProgressDialog::Canceled, wordExporterWorker, &WordExporterWorker::RequestInterruption);
+
+	// 处理导入结果
+	connect(wordExporterWorker, &WordExporterWorker::WorkFinished, this,
+		[=](bool success, const QString& msg) {
+
+
+			if (success)
+			{
+			}
+			else if (!success)
+			{
+				QMessageBox::warning(this, "导出失败", msg);
+			}
+			// 清理资源
+			progressDialog->close();
+			wordExporterThread->quit();
+			wordExporterThread->wait();
+			wordExporterWorker->deleteLater();
+			wordExporterThread->deleteLater();
+			progressDialog->deleteLater();
+		});
+
+	// 启动线程
+	wordExporterThread->start();
 }

@@ -72,6 +72,16 @@ void WordExporterWorker::DoWork()
             return;
         }
 
+        // 插入表格数据（新增）
+        if (!insertTables(m_tableData)) {
+            qDebug() << "插入表格数据失败";
+            msg = "解析数据失败";
+            success = false;
+            return;
+        }
+
+
+
         // 插入图片
         if (!insertImagesAtMarkers(m_imageWidgets)) {
             qDebug() << "插入图片失败";
@@ -284,4 +294,136 @@ bool WordExporterWorker::insertImageAtMarker(const QString& marker, QString imag
 		qDebug() << "插入图片时发生异常，标记:" << marker;
 		return false;
 	}
+}
+
+
+bool WordExporterWorker::insertTables(const QMap<QString, QVector<QVector<QVariant>>>& tableData)
+{
+    if (!activeDocument || tableData.isEmpty()) return true;
+
+    QMap<QString, QVector<QVector<QVariant>>>::const_iterator it;
+    for (it = tableData.constBegin(); it != tableData.constEnd(); ++it) {
+        if (!insertTableAtMarker(it.key(), it.value())) {
+            qDebug() << "插入表格失败: " << it.key();
+        }
+    }
+    return true;
+}
+
+bool WordExporterWorker::insertTableAtMarker(const QString& marker, const QVector<QVector<QVariant>>& tableData)
+{
+    if (tableData.isEmpty()) return false;
+
+    try {
+        // 获取文档内容范围
+        QAxObject* content = activeDocument->querySubObject("Content");
+        if (!content || content->isNull()) {
+            qWarning() << "无法获取文档内容";
+            return false;
+        }
+
+        // 获取查找对象
+        QAxObject* find = content->querySubObject("Find");
+        if (!find || find->isNull()) {
+            qWarning() << "无法获取Find对象";
+            delete content;
+            return false;
+        }
+
+        // 表格占位标记格式: {{Table:marker}}
+        QString tablePlaceholder = QString("{{Table:%1}}").arg(marker);
+        find->setProperty("Text", tablePlaceholder);
+
+        // 执行查找
+        bool found = find->dynamicCall("Execute()").toBool();
+
+        if (found) {
+            // 获取找到的范围
+            QAxObject* range = find->querySubObject("Parent");
+            if (range && !range->isNull()) {
+                // 删除占位标记
+                range->dynamicCall("Delete()");
+
+                // 获取行数和列数
+                int rows = tableData.size();
+                int cols = tableData.first().size();
+
+                // 获取当前范围的段落
+                QAxObject* paragraphs = range->querySubObject("Paragraphs");
+                QAxObject* paragraph = paragraphs->querySubObject("Add()");
+                QAxObject* paraRange = paragraph->querySubObject("Range");
+
+                // 在段落位置插入表格
+                QAxObject* tables = activeDocument->querySubObject("Tables");
+                QAxObject* table = tables->querySubObject("Add(const QVariant&, int, int)",
+                    paraRange->asVariant(), rows, cols);
+
+                // ========== 设置表格所有框线（核心部分）==========
+                QAxObject* borders = table->querySubObject("Borders");
+                if (borders && !borders->isNull()) {
+                    // 全局边框默认样式（可统一修改）
+                    int lineStyle = 1;    // 单实线（wdLineStyleSingle）
+                    int lineWidth = 2;    // 0.5磅（wdLineWidth050pt）
+                    int color = 0;        // 黑色（wdColorBlack）
+
+                    // 外框：上、下、左、右
+                    setBorderStyle(borders, 1, lineStyle, lineWidth, color); // 上边框
+                    setBorderStyle(borders, 4, lineStyle, lineWidth, color); // 下边框
+                    setBorderStyle(borders, 2, lineStyle, lineWidth, color); // 左边框
+                    setBorderStyle(borders, 3, lineStyle, lineWidth, color); // 右边框
+                    // 内部框：横线（行之间）、竖线（列之间）
+                    setBorderStyle(borders, 5, lineStyle, lineWidth, color); // 内部横线
+                    setBorderStyle(borders, 6, lineStyle, lineWidth, color); // 内部竖线
+
+                    borders->deleteLater();
+                }
+
+                // 填充表格数据
+                for (int i = 0; i < rows; ++i) {
+                    for (int j = 0; j < cols; ++j) {
+                        // Word表格行索引从1开始
+                        QAxObject* cell = table->querySubObject("Cell(int, int)", i + 1, j + 1);
+                        if (cell && !cell->isNull()) {
+                            QAxObject* cellRange = cell->querySubObject("Range");
+                            cellRange->setProperty("Text", tableData[i][j].toString());
+                            cell->deleteLater();
+                            cellRange->deleteLater();
+                        }
+                    }
+                }
+
+                // 释放资源
+                tables->deleteLater();
+                table->deleteLater();
+                paraRange->deleteLater();
+                paragraph->deleteLater();
+                paragraphs->deleteLater();
+            }
+            range->deleteLater();
+        }
+
+        // 释放资源
+        delete find;
+        delete content;
+
+        return found;
+    }
+    catch (...) {
+        qDebug() << "插入表格时发生异常: " << marker;
+        return false;
+    }
+}
+
+void WordExporterWorker::setBorderStyle(QAxObject* borders, int borderType, int lineStyle, int lineWidth, int color)
+{
+    if (!borders || borders->isNull()) return;
+
+    // 获取指定类型的边框（如上边框、内部横线等）
+    QAxObject* border = borders->querySubObject("Item(int)", borderType);
+    if (border && !border->isNull()) {
+        border->setProperty("LineStyle", lineStyle);  // 线条样式
+        border->setProperty("LineWidth", lineWidth);  // 线条粗细
+        border->setProperty("Color", color);          // 线条颜色
+        border->deleteLater();
+    }
 }

@@ -939,73 +939,97 @@ void mainWidget::deleteWidget(QLayout *layout)
 }
 
 void mainWidget::refreshMemoryUsage(QLabel *m_statusLabel) {
-	// 初始化上一次的 CPU 时间
-	GetSystemTimes(&prevIdleTime, &prevKernelTime, &prevUserTime);
-	// 创建定时器
-	timer = new QTimer(this);
-	timer->setInterval(5000);
-	QObject::connect(timer, &QTimer::timeout, [this, m_statusLabel]() {
-		getMemoryUsage(m_statusLabel);
-	});
+	// 避免重复创建定时器（防止内存泄漏和多次触发）
+	if (timer) {
+		timer->stop();
+		delete timer;
+	}
 
-	// 每5秒触发一次
+	timer = new QTimer(this);
+	timer->setInterval(5000); // 5秒采样一次（合理间隔，平衡实时性和性能）
+	connect(timer, &QTimer::timeout, [this, m_statusLabel]() {
+		getMemoryUsage(m_statusLabel);
+		});
+
+	// 初始化首次采样的基准时间（关键：提前获取初始时间，避免首次计算异常）
+	GetSystemTimes(&prevIdleTime, &prevKernelTime, &prevUserTime);
+	isFirstSample = true; // 标记首次采样
 	timer->start();
-	getMemoryUsage(m_statusLabel);
+	getMemoryUsage(m_statusLabel); // 首次调用（此时CPU显示为0%，避免异常值）
 }
 
 void mainWidget::getMemoryUsage(QLabel *m_statusLabel) {
-	QString memory = "";
-	QString cpu = "";
+	QString memoryText = "0.00";
+	QString cpuText = "0.00";
+
 	// 内存
 	MEMORYSTATUSEX statex;
 	statex.dwLength = sizeof(statex);
 	if (GlobalMemoryStatusEx(&statex)) {
-		ULONGLONG totalPhysicalMem = statex.ullTotalPhys; // 总物理内存大小（字节）
-		ULONGLONG availPhysicalMem = statex.ullAvailPhys; // 可用物理内存大小（字节）
-		double memoryUsage = ((totalPhysicalMem - availPhysicalMem) / (double)totalPhysicalMem) * 100.0; // 使用率计算
-		memory = QString::number(memoryUsage, 'f', 2);
+		ULONGLONG totalPhys = statex.ullTotalPhys;
+		ULONGLONG availPhys = statex.ullAvailPhys;
+		double memoryUsage = ((totalPhys - availPhys) / static_cast<double>(totalPhys)) * 100.0;
+		memoryText = QString::number(memoryUsage, 'f', 2);
 	}
 	else {
-		double memoryUsage = 0; // 无法获取内存信息时返回0
+		qWarning() << "获取内存信息失败，错误码：" << GetLastError();
+		memoryText = "获取失败";
 	}
 
 	// CPU
-	FILETIME idleTime, kernelTime, userTime;
-	double cpuUsage = 0;
-	// 获取当前系统时间
-	if (!GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
-		qWarning() << "无法获取系统时间。错误代码:" << GetLastError();
-		cpuUsage = 0;
+	FILETIME currIdleTime, currKernelTime, currUserTime;
+	if (!GetSystemTimes(&currIdleTime, &currKernelTime, &currUserTime)) {
+		qWarning() << "获取系统时间失败，错误码：" << GetLastError();
+		cpuText = "获取失败";
+	}
+	else {
+		// 首次采样：仅更新基准时间，不计算使用率（避免异常值）
+		if (isFirstSample) {
+			prevIdleTime = currIdleTime;
+			prevKernelTime = currKernelTime;
+			prevUserTime = currUserTime;
+			isFirstSample = false;
+			cpuText = "0.00"; // 首次显示0%
+		}
+		else {
+			// 计算时间差（64位整数，无溢出）
+			ULONGLONG idleDiff = fileTimeToULL(currIdleTime) - fileTimeToULL(prevIdleTime);
+			ULONGLONG kernelDiff = fileTimeToULL(currKernelTime) - fileTimeToULL(prevKernelTime);
+			ULONGLONG userDiff = fileTimeToULL(currUserTime) - fileTimeToULL(prevUserTime);
+
+			// 总系统时间 = 内核时间 + 用户时间（所有CPU核心的总运行时间）
+			ULONGLONG totalSysDiff = kernelDiff + userDiff;
+
+			// 避免除零（极端情况，如系统无任何操作）
+			if (totalSysDiff == 0) {
+				cpuText = "0.00";
+			}
+			else {
+				// 计算CPU使用率：(总时间 - 空闲时间) / 总时间 × 100%
+				double cpuUsage = (1.0 - static_cast<double>(idleDiff) / totalSysDiff) * 100.0;
+				// 边界限制：确保数值在0%~100%之间（避免计算误差导致的超界）
+				cpuUsage = qBound(0.0, cpuUsage, 100.0);
+				cpuText = QString::number(cpuUsage, 'f', 2);
+			}
+
+			// 更新基准时间（为下一次计算做准备）
+			prevIdleTime = currIdleTime;
+			prevKernelTime = currKernelTime;
+			prevUserTime = currUserTime;
+		}
 	}
 
-	// 计算时间差
-	ULARGE_INTEGER idle, kernel, user;
-	idle.LowPart = idleTime.dwLowDateTime - prevIdleTime.dwLowDateTime;
-	idle.HighPart = idleTime.dwHighDateTime - prevIdleTime.dwHighDateTime;
+	// 更新QLabel显示
+	m_statusLabel->setText(QString("内存使用：%1%, CPU使用：%2%").arg(memoryText).arg(cpuText));
 
-	kernel.LowPart = kernelTime.dwLowDateTime - prevKernelTime.dwLowDateTime;
-	kernel.HighPart = kernelTime.dwHighDateTime - prevKernelTime.dwHighDateTime;
+}
 
-	user.LowPart = userTime.dwLowDateTime - prevUserTime.dwLowDateTime;
-	user.HighPart = userTime.dwHighDateTime - prevUserTime.dwHighDateTime;
 
-	// 保存当前时间作为下一次的"前一次"时间
-	prevIdleTime = idleTime;
-	prevKernelTime = kernelTime;
-	prevUserTime = userTime;
-
-	// 计算总系统时间和总空闲时间
-	ULONGLONG sysTime = kernel.QuadPart + user.QuadPart;
-
-	if (sysTime == 0) {
-		qWarning() << "系统时间为零，无法计算CPU使用率";
-		cpuUsage = 0;
-	}
-
-	// 计算CPU使用率
-	cpuUsage = 100.0 * (sysTime - idle.QuadPart) / sysTime;
-	cpu = QString::number(cpuUsage, 'f', 2);
-
-	m_statusLabel->setText("内存使用：" + memory + "%,CPU使用：" + cpu + "%");
-
+// 辅助函数：FILETIME 转 64位整数（核心修复：正确合并高低位）
+ULONGLONG mainWidget::fileTimeToULL(const FILETIME& ft)
+{
+	ULARGE_INTEGER ul;
+	ul.LowPart = ft.dwLowDateTime;
+	ul.HighPart = ft.dwHighDateTime;
+	return ul.QuadPart; // 返回完整的64位时间戳（100纳秒为单位）
 }

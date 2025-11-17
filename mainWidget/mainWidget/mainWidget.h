@@ -60,12 +60,15 @@ private:
 	//QAction* m_HelpAct = nullptr;
 
 
-	QTimer *timer;
+	QTimer* timer = nullptr; // 定时器指针（初始化为空）
+	// 存储上一次采样的系统时间（类成员变量，跨函数保留基准）
+	FILETIME prevIdleTime = { 0 };
+	FILETIME prevKernelTime = { 0 };
+	FILETIME prevUserTime = { 0 };
+	bool isFirstSample = true; // 标记是否为首次采样
 
-	// 保存上一次的CPU时间
-	FILETIME prevIdleTime;
-	FILETIME prevKernelTime;
-	FILETIME prevUserTime;
+	// 辅助函数：将 FILETIME 转换为 64 位整数（100纳秒为单位）
+	ULONGLONG fileTimeToULL(const FILETIME& ft);
 
 
 };

@@ -16,11 +16,13 @@ public:
     explicit WordExporterWorker(const QString& templatePath,
         const QString& outputPath,
         const QMap<QString, QVariant>& textData,
-        const QMap<QString, QString>& imageWidgets, QObject* parent = nullptr)
+        const QMap<QString, QString>& imageWidgets,
+        const QMap<QString, QVector<QVector<QVariant>>>& tableData, QObject* parent = nullptr)
         : QObject(parent), m_templateFilePath(templatePath),
         m_outputFilePath(outputPath),
         m_textData(textData),
         m_imageWidgets(imageWidgets),
+        m_tableData(tableData),
                 m_interrupted(false) {}
 
 public slots:
@@ -52,13 +54,25 @@ private:
     // 在标记位置插入图片
     bool insertImageAtMarker(const QString& marker, QString imagePath);
 
+
+    // 插入表格数据
+    bool insertTables(const QMap<QString, QVector<QVector<QVariant>>>& tableData);
+
+    // 在指定标记位置插入表格
+    bool insertTableAtMarker(const QString& marker, const QVector<QVector<QVariant>>& tableData);
+
+    // 设置表格边框
+    void WordExporterWorker::setBorderStyle(QAxObject* borders, int borderType, int lineStyle, int lineWidth, int color);
+
 private:
     volatile bool m_interrupted;
 
     QString m_templateFilePath; // 模板文件路径
     QString m_outputFilePath; // 导出文件路径
-    QMap<QString, QVariant> m_textData; // 模板文件路径
-    QMap<QString, QString> m_imageWidgets; // 模板文件路径
+    QMap<QString, QVariant> m_textData; // 文字
+    QMap<QString, QString> m_imageWidgets; // 截图
+    QMap<QString, QVector<QVector<QVariant>>> m_tableData; // 表格
+
 
     QAxObject* wordApp;
     QAxObject* activeDocument;
