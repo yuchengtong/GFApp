@@ -110,6 +110,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Algrithm\APIRotateMeshHelper.cpp" />
     <ClCompile Include="GraphicWidget.cpp" />
     <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp" />
     <ClCompile Include="AuxiliaryAnalysisWidget.cpp" />
@@ -283,6 +284,7 @@
     <QtMoc Include="DataStructure\ModelDataManager.h" />
     <QtMoc Include="GraphicWidget.h" />
     <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h" />
+    <ClInclude Include="Algrithm\APIRotateMeshHelper.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
     <QtMoc Include="CustomPolarChart.h" />
     <ClInclude Include="DataStructure\TriangleStructure.h" />

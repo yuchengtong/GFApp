@@ -301,6 +301,36 @@ void FallPropertyWidget::initWidget()
 		}
 		});
 
+	connect(m_tableWidget, &QTableWidget::itemChanged, this, [this, heightValueItem](QTableWidgetItem* item) {
+		if (item == heightValueItem) 
+		{
+			auto heightValue = item->text().toDouble();
+			auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+			fallSettingInfo.high = heightValue;
+
+			ModelDataManager::GetInstance()->SetFallSettingInfo(fallSettingInfo);
+		}
+		});
+
+
+	connect(postureComboBox, &QComboBox::currentTextChanged,this, [postureComboBox]() {
+		int currentIndex = postureComboBox->currentIndex(); 
+		auto fallSettingInfo=ModelDataManager::GetInstance()->GetFallSettingInfo();
+		if (currentIndex == 0)
+		{
+			fallSettingInfo.angle = 0;
+		}
+		else if (currentIndex == 1)
+		{
+			fallSettingInfo.angle = 45;
+		}
+		else
+		{
+			fallSettingInfo.angle = 90;
+		}
+		ModelDataManager::GetInstance()->SetFallSettingInfo(fallSettingInfo);
+		});
+
 
 
 }

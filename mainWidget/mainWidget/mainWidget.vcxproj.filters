@@ -226,6 +226,9 @@
     <ClCompile Include="GraphicWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Algrithm\APIRotateMeshHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -425,6 +428,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Algrithm\APIRotateMeshHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
