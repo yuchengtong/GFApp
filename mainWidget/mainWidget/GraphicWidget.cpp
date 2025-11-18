@@ -33,13 +33,11 @@ GraphicWidget::~GraphicWidget()
 
 }
 
-
 QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
 {
     // 创建三维曲面图对象
     surface = new Q3DSurface;
     
-
     //! 创建三维散点图的坐标轴
     //! 因为是三维散点图，所以包括X、Y、Z三个方向的坐标轴(并且三个坐标轴类型都为值坐标轴哦)
     // 创建X、Y、Z轴并添加 q
@@ -77,7 +75,6 @@ QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
 
     // 返回三维曲面图对象
     return surface;
-
 }
 
 
@@ -101,32 +98,29 @@ QCategory3DAxis* GraphicWidget::createCategory3DAxis(QString axisTitle, bool tit
     axis->setLabels(labList);   // 设置坐标轴标签
     // 返回坐标轴对象
     return axis;
-
 }
 
 
 void GraphicWidget::on_angleValueChange(int type, int val)
 {
-        // 判断当前方向类型，并将角度赋到对应位置
+    // 判断当前方向类型，并将角度赋到对应位置
     if (0 == type)
     {
         // 获取图表的视图->活动摄像头->设置角度
         m_graph->scene()->activeCamera()->setXRotation(val);
     }
     else if (1 == type)
-    {
-       
+    {       
         // 获取图表的视图->活动摄像头->设置角度
         m_graph->scene()->activeCamera()->setYRotation(val);
     }
-
 }
 
 
 void GraphicWidget::on_scaleSlider_sliderMoved(int position)
 {
     // 设置图表缩放
-     m_graph->scene()->activeCamera()->setZoomLevel(position);
+    m_graph->scene()->activeCamera()->setZoomLevel(position);
 }
 
 
@@ -198,16 +192,14 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     m_axisZ->setRange(yMin, yMax);
     m_axisY->setRange(zMin, zMax);
 
-   
-
     series->dataProxy()->resetArray(m_array);
     surface->show();
-
 }
 
 void GraphicWidget::setAxisAutoAdjust(bool xAuto, bool yAuto, bool zAuto)
 {
-    if (!surface) return;
+    if (!surface) 
+        return;
     // 禁用自动调整后，轴范围由手动控制（避免 Qt 自动缩放覆盖比例）
     surface->axisX()->setAutoAdjustRange(xAuto);
     surface->axisY()->setAutoAdjustRange(yAuto);

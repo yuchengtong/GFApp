@@ -86,12 +86,14 @@ TriangleStructure::TriangleStructure(const TopoDS_Shape& shape, const Standard_R
  
 }
 
+
+
+
+
 bool TriangleStructure::CheckInterruption(volatile bool* interrupted) const
 {
     return interrupted && *interrupted;
 }
-
-
 
 void TriangleStructure::AddTriangulation(const Handle(Poly_Triangulation)& triangulation, const TopLoc_Location& loc, volatile bool* interrupted)
 {

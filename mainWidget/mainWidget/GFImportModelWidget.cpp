@@ -328,7 +328,8 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			occView->fitAll();
 		}
 	}
-	else if (itemData == "FallAnalysis") {
+	else if (itemData == "FallAnalysis")
+	{
 		m_PropertyStackWidget->setCurrentWidget(m_fallPropertyWidget);
 
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
@@ -346,12 +347,12 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 	}
 	else if (itemData == "StressResult")
- {
+	{
 		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 
 		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
-		auto view = occView->getView();
+		Handle(V3d_View) view = occView->getView();
 		context->RemoveAll(true);
 
 		// 仅处理 double 类型的 clamp 函数

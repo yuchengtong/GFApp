@@ -31,7 +31,7 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
-    <QtInstall>msvc2017_64</QtInstall>
+    <QtInstall>msvc2019_64</QtInstall>
     <QtModules>core;gui;axcontainer;widgets;charts;datavisualization</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
@@ -110,6 +110,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Algrithm\APICalculateHepler.cpp" />
     <ClCompile Include="Algrithm\APIRotateMeshHelper.cpp" />
     <ClCompile Include="GraphicWidget.cpp" />
     <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp" />
@@ -283,6 +284,7 @@
     <QtMoc Include="LoginDialog.h" />
     <QtMoc Include="DataStructure\ModelDataManager.h" />
     <QtMoc Include="GraphicWidget.h" />
+    <ClInclude Include="Algrithm\APICalculateHepler.h" />
     <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h" />
     <ClInclude Include="Algrithm\APIRotateMeshHelper.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
