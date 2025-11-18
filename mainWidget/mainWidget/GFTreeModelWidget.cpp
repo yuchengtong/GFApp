@@ -898,6 +898,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 									gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3], 
 										resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+
+									auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+									gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+										resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+								
+
 								}
 								else
 								{
@@ -954,20 +960,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					//auto fallInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
 					//auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 
-					double shellMaxValue = max_value; // 发动机壳体最大应力
-					double shellMinValue = 0; // 发动机壳体最小应力
-					double shellAvgValue = shellMaxValue * 0.6; // 发动机壳体平均应力
-					double shellStandardValue = getStd(results); // 发动机壳体应力标准差
-					double maxValue = max_value * 0.6; // 固体推进剂最大应力
-					double minValue = 0; // 固体推进剂最小应力
-					double avgValue = maxValue * 0.6; // 固体推进剂平均应力
-					double standardValue = 0; // 固体推进剂应力标准差
-					// 更新应力结果属性栏
-					gfParent->GetStressResultWidget()->updateData(shellMaxValue, shellMinValue, shellAvgValue, shellStandardValue, maxValue, minValue, avgValue, standardValue);
-
-					gfParent->GetStrainResultWidget()->updateData(shellMaxValue * steelInfo.modulus, shellMinValue * steelInfo.modulus, shellAvgValue * steelInfo.modulus, shellStandardValue * steelInfo.modulus, maxValue * steelInfo.modulus, minValue * steelInfo.modulus, avgValue * steelInfo.modulus, standardValue * steelInfo.modulus);
-
-					FallAnalysisResultInfo fallAnalysisResultInfo;
+					
+					//FallAnalysisResultInfo fallAnalysisResultInfo;
 					//auto calculateFormula = [](const QString& formula,
 					//	double B, double C, double D, double E,
 					//	double F, double G, double H, double I,
