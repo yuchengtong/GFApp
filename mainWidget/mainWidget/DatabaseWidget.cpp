@@ -466,9 +466,24 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
 		ui.queryTitle->setText("账号");
 	}
-	else if (currentDataaseType == "1.跌落试验")
+	else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验.xlsx");
+		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
+		ui.queryTitle->setText("材料牌号");
+	}
+	else if (currentDataaseType == "0°")
+	{
+		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
+		ui.queryTitle->setText("材料牌号");
+	}
+	else if (currentDataaseType == "45°")
+	{
+		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-45.xlsx");
+		ui.queryTitle->setText("材料牌号");
+	}
+	else if (currentDataaseType == "90°")
+	{
+		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-90.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "2.快速烤燃试验")
@@ -593,9 +608,21 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/防隔热材料.xlsx");
 		}
-		else if (currentDataaseType == "1.跌落试验")
+		else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-跌落试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-0.xlsx");
+		}
+		else if (currentDataaseType == "0°")
+		{
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-0.xlsx");
+		}
+		else if (currentDataaseType == "45°")
+		{
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-45.xlsx");
+		}
+		else if (currentDataaseType == "90°")
+		{
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-90.xlsx");
 		}
 		else if (currentDataaseType == "2.快速烤燃试验")
 		{
@@ -625,10 +652,6 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		{
 			privateFilePath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
 		}
-		else
-		{
-			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型.xlsx");
-		}
 
 		QFile file(privateFilePath);
 
@@ -642,8 +665,17 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 			int xlsxrow = m_rowCount;
 			for (int row = 2; row <= rowcount; ++row) {
 				for (int col = 1; col <= colcount; ++col) {
-					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-					tableWidge->setItem(xlsxrow, col - 1, item);
+					if (col == 1)
+					{
+						QTableWidgetItem* item = new QTableWidgetItem(QString::number(xlsxrow));
+						tableWidge->setItem(xlsxrow, col - 1, item);
+					}
+					else
+					{
+						QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
+						tableWidge->setItem(xlsxrow, col - 1, item);
+					}
+					
 				}
 				xlsxrow++;
 			}

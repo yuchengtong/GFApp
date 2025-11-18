@@ -159,7 +159,8 @@ struct CalculationPropertyInfo {
 };
 
 struct FallSettingInfo {
-	double high = 0;
+	double high = 0; // 跌落高度
+	int angle = 0; // 跌落姿态
 };
 
 // 应力分析结果
