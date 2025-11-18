@@ -314,7 +314,15 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 8;
 	}
 	for (double& val : datasets1[3]) {
-		val = val * 1000000;
+		if (val < 10)
+		{
+			val = val * 1000000;
+		}
+		else if (val > 1000)
+		{
+			val = val / 100000000000 * 0.8;
+		}
+		
 	}
 	m_polarChart1->updateDatasets(datasets1, labelGroups);
 

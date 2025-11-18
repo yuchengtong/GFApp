@@ -482,8 +482,25 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 			GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 			if (gfParent)
 			{
-				// 测试截图
-				QString m_privateDirPath = "src/template/跌落试验/应力云图.png";
+				// 截图结果云图
+				QString m_privateDirPath = "";
+				if (itemData == "StressResult")
+				{
+					m_privateDirPath = "src/template/跌落试验/应力云图.png";
+				}
+				else if (itemData == "StrainResult")
+				{
+					m_privateDirPath = "src/template/跌落试验/应变云图.png";
+				}
+				else if (itemData == "TemperatureResult")
+				{
+					m_privateDirPath = "src/template/跌落试验/温度云图.png";
+				}
+				else if (itemData == "OverpressureResult")
+				{
+					m_privateDirPath = "src/template/跌落试验/超压云图.png";
+				}
+				
 				QDir privateDir(m_privateDirPath);
 				wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
 				break;
@@ -937,23 +954,20 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					//auto fallInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
 					//auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 
-					//auto A = 1;
-					//auto B = steelInfo.density;
-					//auto C = 0;
-					//auto D = steelInfo.thermalConductivity;
-					//auto E = steelInfo.specificHeatCapacity;
+					double shellMaxValue = max_value; // 发动机壳体最大应力
+					double shellMinValue = 0; // 发动机壳体最小应力
+					double shellAvgValue = shellMaxValue * 0.6; // 发动机壳体平均应力
+					double shellStandardValue = getStd(results); // 发动机壳体应力标准差
+					double maxValue = max_value * 0.6; // 固体推进剂最大应力
+					double minValue = 0; // 固体推进剂最小应力
+					double avgValue = maxValue * 0.6; // 固体推进剂平均应力
+					double standardValue = 0; // 固体推进剂应力标准差
+					// 更新应力结果属性栏
+					gfParent->GetStressResultWidget()->updateData(shellMaxValue, shellMinValue, shellAvgValue, shellStandardValue, maxValue, minValue, avgValue, standardValue);
 
-					//auto F = propellantInfo.density;
-					//auto G = 0;
-					//auto H = propellantInfo.thermalConductivity;
-					//auto I = propellantInfo.specificHeatCapacity;
-					//auto J = fallInfo.high * 1000;//跌落高度
-					//auto K = modelGeomInfo.length;//长
-					//auto L = modelGeomInfo.width;//宽
-					//auto M = 5;//厚
+					gfParent->GetStrainResultWidget()->updateData(shellMaxValue * steelInfo.modulus, shellMinValue * steelInfo.modulus, shellAvgValue * steelInfo.modulus, shellStandardValue * steelInfo.modulus, maxValue * steelInfo.modulus, minValue * steelInfo.modulus, avgValue * steelInfo.modulus, standardValue * steelInfo.modulus);
 
-					//auto formulaCal = calInfo.calculation;
-
+					FallAnalysisResultInfo fallAnalysisResultInfo;
 					//auto calculateFormula = [](const QString& formula,
 					//	double B, double C, double D, double E,
 					//	double F, double G, double H, double I,
@@ -1217,6 +1231,11 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							worker->deleteLater();
 							workerThread->deleteLater();
 							progressDialog->deleteLater();
+
+							// 截图计算模型
+							QString m_privateDirPath = "src/template/计算模型.png";
+							QDir privateDir(m_privateDirPath);
+							wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
 						});
 
 					// 启动线程
@@ -1512,9 +1531,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			data.insert("外防热超压标准差", m_overpressureTableWid->item(16, 2)->text());
 
 			QMap<QString, QString> imagePaths;
-			QString a = QDir("src/template/测试模型.png").absolutePath();
-			imagePaths.insert("测试模型", QDir("src/template/测试模型.png").absolutePath());
+			imagePaths.insert("计算模型", QDir("src/template/计算模型.png").absolutePath());
 			imagePaths.insert("应力云图", QDir("src/template/跌落试验/应力云图.png").absolutePath());
+			imagePaths.insert("应变云图", QDir("src/template/跌落试验/应变云图.png").absolutePath());
+			imagePaths.insert("温度云图", QDir("src/template/跌落试验/温度云图.png").absolutePath());
+			imagePaths.insert("超压云图", QDir("src/template/跌落试验/超压云图.png").absolutePath());
 			QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 			// 创建进度对话框
@@ -1530,7 +1551,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, const QString& text
 			connect(wordExporterThread, &QThread::started, wordExporterWorker, &WordExporterWorker::DoWork);
 			connect(wordExporterWorker, &WordExporterWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
 			connect(wordExporterWorker, &WordExporterWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
-			connect(progressDialog, &ProgressDialog::Canceled, wordExporterWorker, &WordExporterWorker::RequestInterruption);
+			connect(progressDialog, &ProgressDialog::Canceled, wordExporterWorker, &WordExporterWorker::RequestInterruption, Qt::DirectConnection);
 
 			// 处理导入结果
 			connect(wordExporterWorker, &WordExporterWorker::WorkFinished, this,

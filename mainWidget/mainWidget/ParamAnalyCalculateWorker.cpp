@@ -22,9 +22,21 @@ void ParamAnalyCalculateWorker::DoWork()
         emit StatusUpdated("初始化数据...");
         emit ProgressUpdated(20);
 
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
+
         QThread::msleep(3000);
         emit StatusUpdated("解析数据...");
         emit ProgressUpdated(40);
+
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
 
         QThread::msleep(3000);
         emit StatusUpdated("计算数据...");

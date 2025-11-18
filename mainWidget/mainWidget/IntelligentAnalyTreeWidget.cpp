@@ -180,7 +180,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 					connect(calculateThread, &QThread::started, calculateWorker, &ParamAnalyCalculateWorker::DoWork);
 					connect(calculateWorker, &ParamAnalyCalculateWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
 					connect(calculateWorker, &ParamAnalyCalculateWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
-					connect(progressDialog, &ProgressDialog::Canceled, calculateWorker, &ParamAnalyCalculateWorker::RequestInterruption);
+					connect(progressDialog, &ProgressDialog::Canceled, calculateWorker, &ParamAnalyCalculateWorker::RequestInterruption, Qt::DirectConnection);
 
 					// 处理导入结果
 					connect(calculateWorker, &ParamAnalyCalculateWorker::WorkFinished, this,

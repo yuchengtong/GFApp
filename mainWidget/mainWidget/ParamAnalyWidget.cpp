@@ -680,43 +680,43 @@ void ParamAnalyWidget::exportWord(const QString& directory, const QString& text)
 		data.insert("RI2", "");
 	}
 
-	QString R1 = "[";
-	for (int row = 1; row < u1EvaluationMatrixTableWidget->rowCount(); ++row) {
-		QTableWidgetItem* item = u1EvaluationMatrixTableWidget->item(row, 2); // 获取第三列的元素
-		if (item) { // 检查是否该行存在第三列的元素
-			if (row == (u1EvaluationMatrixTableWidget->rowCount() -1) )
-			{
-				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
-				R1 = R1 + text;
-			}
-			else
-			{
-				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
-				R1 = R1 + text  + "\r\n" ;
-			}
-		}
-	}
-	R1 = R1 + "]";
-	data.insert("R-1", R1);
+	//QString R1 = "[";
+	//for (int row = 1; row < u1EvaluationMatrixTableWidget->rowCount(); ++row) {
+	//	QTableWidgetItem* item = u1EvaluationMatrixTableWidget->item(row, 2); // 获取第三列的元素
+	//	if (item) { // 检查是否该行存在第三列的元素
+	//		if (row == (u1EvaluationMatrixTableWidget->rowCount() - 1))
+	//		{
+	//			QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+	//			R1 = R1 + text;
+	//		}
+	//		else
+	//		{
+	//			QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+	//			R1 = R1 + text + "\r\n";
+	//		}
+	//	}
+	//}
+	//R1 = R1 + "]";
+	//data.insert("矩阵", R1);
 
-	QString R2 = "[";
-	for (int row = 1; row < u2EvaluationMatrixTableWidget->rowCount(); ++row) {
-		QTableWidgetItem* item = u2EvaluationMatrixTableWidget->item(row, 2); // 获取第三列的元素
-		if (item) { // 检查是否该行存在第三列的元素
-			if (row == (u2EvaluationMatrixTableWidget->rowCount() -1))
-			{
-				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
-				R2 = R2 + text;
-			}
-			else
-			{
-				QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
-				R2 = R2 + text + "\r\n";
-			}
-		}
-	}
-	R2 = R2 + "]";
-	data.insert("R2", R2);
+	//QString R2 = "[";
+	//for (int row = 1; row < u2EvaluationMatrixTableWidget->rowCount(); ++row) {
+	//	QTableWidgetItem* item = u2EvaluationMatrixTableWidget->item(row, 2); // 获取第三列的元素
+	//	if (item) { // 检查是否该行存在第三列的元素
+	//		if (row == (u2EvaluationMatrixTableWidget->rowCount() -1))
+	//		{
+	//			QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+	//			R2 = R2 + text;
+	//		}
+	//		else
+	//		{
+	//			QString text = item->text().replace(",", " ").replace("[", "").replace("]", "");
+	//			R2 = R2 + text + "\r\n";
+	//		}
+	//	}
+	//}
+	//R2 = R2 + "]";
+	//data.insert("R2", R2);
 
 	if (criterionTableWidget->item(1, 2))
 	{
@@ -773,10 +773,14 @@ void ParamAnalyWidget::exportWord(const QString& directory, const QString& text)
 	QVector<QVector<QVariant>> u2GradeDefinition = tableWidgetToVariantVector(u2GradeDefinitionTableWidget);
 	QVector<QVector<QVariant>> U1 = tableWidgetToVariantVector(u1WeightTtableWidget);
 	QVector<QVector<QVariant>> U2 = tableWidgetToVariantVector(u2WeightTableWidget);
+	QVector<QVector<QVariant>> R1 = tableWidgetToVariantVector(u1EvaluationMatrixTableWidget);
+	QVector<QVector<QVariant>> R2 = tableWidgetToVariantVector(u2EvaluationMatrixTableWidget);
 	tableData["标准一"] = u1GradeDefinition;
 	tableData["标准二"] = u2GradeDefinition;
 	tableData["U1"] = U1;
 	tableData["U2"] = U2;
+	tableData["R1"] = R1;
+	tableData["R2"] = R2;
 
 	// 创建进度对话框
 	ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", this);

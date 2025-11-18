@@ -146,11 +146,11 @@ void GraphicWidget::axisTitleChange(QString xName, QString yName, QString zName)
     }
     if (yName != "")
     {
-        m_axisY->setTitle(yName);
+        m_axisZ->setTitle(yName);
     }
     if (zName != "")
     {
-        m_axisZ->setTitle(zName);
+        m_axisY->setTitle(zName);
     }
 }
 
@@ -192,14 +192,20 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     m_axisZ->setRange(yMin, yMax);
     m_axisY->setRange(zMin, zMax);
 
+    QLinearGradient gradient;
+    gradient.setColorAt(0.0, Qt::green);
+    gradient.setColorAt(0.8, Qt::red);
+    gradient.setColorAt(1.0, Qt::red);
+    series->setBaseGradient(gradient);
+    series->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
+
     series->dataProxy()->resetArray(m_array);
     surface->show();
 }
 
 void GraphicWidget::setAxisAutoAdjust(bool xAuto, bool yAuto, bool zAuto)
 {
-    if (!surface) 
-        return;
+    if (!surface) return;
     // 禁用自动调整后，轴范围由手动控制（避免 Qt 自动缩放覆盖比例）
     surface->axisX()->setAutoAdjustRange(xAuto);
     surface->axisY()->setAutoAdjustRange(yAuto);

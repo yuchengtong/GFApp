@@ -38,12 +38,23 @@ void WordExporterWorker::DoWork()
             success = false;
             return;
         }
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
 
         // 获取文档集合
         QAxObject* documents = wordApp->querySubObject("Documents");
         if (documents->isNull()) {
             msg = "无法获取Documents对象";
             success = false;
+            return;
+        }
+
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
             return;
         }
 
@@ -63,12 +74,24 @@ void WordExporterWorker::DoWork()
         emit StatusUpdated("解析数据...");
         emit ProgressUpdated(50);
 
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
+
         // 替换文本标记
         if (!replaceTextMarkers(m_textData)) {
             qDebug() << "替换文本标记失败";
 
             msg = "解析数据失败";
             success = false;
+            return;
+        }
+
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
             return;
         }
 
@@ -80,7 +103,11 @@ void WordExporterWorker::DoWork()
             return;
         }
 
-
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
 
         // 插入图片
         if (!insertImagesAtMarkers(m_imageWidgets)) {
@@ -88,9 +115,21 @@ void WordExporterWorker::DoWork()
             // 继续执行，不直接返回失败
         }
 
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
+
         // 生成报告
         emit StatusUpdated("开始导出报告...");
         emit ProgressUpdated(80);
+
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "导出已取消");
+            return;
+        }
 
         // 保存文档
         QVariant varOutputPath(m_outputFilePath);
