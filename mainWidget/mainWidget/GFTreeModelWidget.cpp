@@ -252,7 +252,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* fastCombustionTemperatureResult = new QTreeWidgetItem();
 	fastCombustionTemperatureResult->setText(0, "温度分析");
-	fastCombustionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	fastCombustionTemperatureResult->setData(0, Qt::UserRole, "FastCombustionTemperatureResult");
 	fastCombustionTemperatureResult->setIcon(0, error_icon);
 
 	fastCombustionAnalysis->addChild(fastCombustionTemperatureResult);
@@ -266,7 +266,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* slowCombustionTemperatureResult = new QTreeWidgetItem();
 	slowCombustionTemperatureResult->setText(0, "温度分析");
-	slowCombustionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	slowCombustionTemperatureResult->setData(0, Qt::UserRole, "slowCombustionTemperatureResult");
 	slowCombustionTemperatureResult->setIcon(0, error_icon);
 
 	slowCombustionAnalysis->addChild(slowCombustionTemperatureResult);
@@ -280,22 +280,22 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* shootStressResult = new QTreeWidgetItem();
 	shootStressResult->setText(0, "应力分析");
-	shootStressResult->setData(0, Qt::UserRole, "StressResult");
+	shootStressResult->setData(0, Qt::UserRole, "ShootStressResult");
 	shootStressResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* shootStrainResult = new QTreeWidgetItem();
 	shootStrainResult->setText(0, "应变分析");
-	shootStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	shootStrainResult->setData(0, Qt::UserRole, "ShootStrainResult");
 	shootStrainResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* shootTemperatureResult = new QTreeWidgetItem();
 	shootTemperatureResult->setText(0, "温度分析");
-	shootTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	shootTemperatureResult->setData(0, Qt::UserRole, "ShootTemperatureResult");
 	shootTemperatureResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* shootOverpressureResult = new QTreeWidgetItem();
 	shootOverpressureResult->setText(0, "超压分析");
-	shootOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	shootOverpressureResult->setData(0, Qt::UserRole, "ShootOverpressureResult");
 	shootOverpressureResult->setIcon(0, error_icon);
 
 	shootAnalysis->addChild(shootStressResult);
@@ -312,22 +312,22 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* jetImpactStressResult = new QTreeWidgetItem();
 	jetImpactStressResult->setText(0, "应力分析");
-	jetImpactStressResult->setData(0, Qt::UserRole, "StressResult");
+	jetImpactStressResult->setData(0, Qt::UserRole, "JetImpactStressResult");
 	jetImpactStressResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* jetStrainResult = new QTreeWidgetItem();
 	jetStrainResult->setText(0, "应变分析");
-	jetStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	jetStrainResult->setData(0, Qt::UserRole, "JetImpactStrainResult");
 	jetStrainResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* jetImpactTemperatureResult = new QTreeWidgetItem();
 	jetImpactTemperatureResult->setText(0, "温度分析");
-	jetImpactTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	jetImpactTemperatureResult->setData(0, Qt::UserRole, "JetImpactTemperatureResult");
 	jetImpactTemperatureResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* jetImpactOverpressureResult = new QTreeWidgetItem();
 	jetImpactOverpressureResult->setText(0, "超压分析");
-	jetImpactOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	jetImpactOverpressureResult->setData(0, Qt::UserRole, "JetImpactOverpressureResult");
 	jetImpactOverpressureResult->setIcon(0, error_icon);
 
 	jetImpactAnalysis->addChild(jetImpactStressResult);
@@ -344,22 +344,22 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* fragmentationImpactStressResult = new QTreeWidgetItem();
 	fragmentationImpactStressResult->setText(0, "应力分析");
-	fragmentationImpactStressResult->setData(0, Qt::UserRole, "StressResult");
+	fragmentationImpactStressResult->setData(0, Qt::UserRole, "FragmentationImpactStressResult");
 	fragmentationImpactStressResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* fragmentationStrainResult = new QTreeWidgetItem();
 	fragmentationStrainResult->setText(0, "应变分析");
-	fragmentationStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	fragmentationStrainResult->setData(0, Qt::UserRole, "FragmentationImpactStrainResult");
 	fragmentationStrainResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* fragmentationImpactTemperatureResult = new QTreeWidgetItem();
 	fragmentationImpactTemperatureResult->setText(0, "温度分析");
-	fragmentationImpactTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	fragmentationImpactTemperatureResult->setData(0, Qt::UserRole, "FragmentationImpactTemperatureResult");
 	fragmentationImpactTemperatureResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* fragmentationImpactOverpressureResult = new QTreeWidgetItem();
 	fragmentationImpactOverpressureResult->setText(0, "超压分析");
-	fragmentationImpactOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	fragmentationImpactOverpressureResult->setData(0, Qt::UserRole, "FragmentationImpactOverpressureResult");
 	fragmentationImpactOverpressureResult->setIcon(0, error_icon);
 
 	fragmentationImpactAnalysis->addChild(fragmentationImpactStressResult);
@@ -376,22 +376,22 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* explosiveBlastStressResult = new QTreeWidgetItem();
 	explosiveBlastStressResult->setText(0, "应力分析");
-	explosiveBlastStressResult->setData(0, Qt::UserRole, "StressResult");
+	explosiveBlastStressResult->setData(0, Qt::UserRole, "ExplosiveBlastStressResult");
 	explosiveBlastStressResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* explosiveBlastStrainResult = new QTreeWidgetItem();
 	explosiveBlastStrainResult->setText(0, "应变分析");
-	explosiveBlastStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	explosiveBlastStrainResult->setData(0, Qt::UserRole, "ExplosiveBlastStrainResult");
 	explosiveBlastStrainResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* explosiveBlastTemperatureResult = new QTreeWidgetItem();
 	explosiveBlastTemperatureResult->setText(0, "温度分析");
-	explosiveBlastTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	explosiveBlastTemperatureResult->setData(0, Qt::UserRole, "ExplosiveBlastTemperatureResult");
 	explosiveBlastTemperatureResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* explosiveBlastOverpressureResult = new QTreeWidgetItem();
 	explosiveBlastOverpressureResult->setText(0, "超压分析");
-	explosiveBlastOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	explosiveBlastOverpressureResult->setData(0, Qt::UserRole, "ExplosiveBlastOverpressureResult");
 	explosiveBlastOverpressureResult->setIcon(0, error_icon);
 
 	explosiveBlastAnalysis->addChild(explosiveBlastStressResult);
@@ -408,22 +408,22 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	
 	QTreeWidgetItem* sacrificeExplosionStressResult = new QTreeWidgetItem();
 	sacrificeExplosionStressResult->setText(0, "应力分析");
-	sacrificeExplosionStressResult->setData(0, Qt::UserRole, "StressResult");
+	sacrificeExplosionStressResult->setData(0, Qt::UserRole, "SacrificeExplosioStressResult");
 	sacrificeExplosionStressResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* sacrificeExplosionStrainResult = new QTreeWidgetItem();
 	sacrificeExplosionStrainResult->setText(0, "应变分析");
-	sacrificeExplosionStrainResult->setData(0, Qt::UserRole, "StrainResult");
+	sacrificeExplosionStrainResult->setData(0, Qt::UserRole, "SacrificeExplosioStrainResult");
 	sacrificeExplosionStrainResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* sacrificeExplosionTemperatureResult = new QTreeWidgetItem();
 	sacrificeExplosionTemperatureResult->setText(0, "温度分析");
-	sacrificeExplosionTemperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
+	sacrificeExplosionTemperatureResult->setData(0, Qt::UserRole, "SacrificeExplosioTemperatureResult");
 	sacrificeExplosionTemperatureResult->setIcon(0, error_icon);
 
 	QTreeWidgetItem* sacrificeExplosionOverpressureResult = new QTreeWidgetItem();
 	sacrificeExplosionOverpressureResult->setText(0, "超压分析");
-	sacrificeExplosionOverpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
+	sacrificeExplosionOverpressureResult->setData(0, Qt::UserRole, "SacrificeExplosioOverpressureResult");
 	sacrificeExplosionOverpressureResult->setIcon(0, error_icon);
 
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStressResult);
