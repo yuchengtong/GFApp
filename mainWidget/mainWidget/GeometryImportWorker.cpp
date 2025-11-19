@@ -215,6 +215,13 @@ void GeometryImportWorker::CalculateBoundingBox(ModelGeometryInfo& info)
     Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
     bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
 
+    info.theXmin = xmin;
+    info.theYmin = ymin;
+    info.theZmin = zmin;
+    info.theXmax = xmax;
+    info.theYmax = ymax;
+    info.theZmax = zmax;
+
     info.length = xmax - xmin;
     info.width = ymax - ymin;
     info.height = zmax - zmin;

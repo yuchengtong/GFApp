@@ -251,7 +251,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		{
 			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
-			context->RemoveAll(true);
+			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
 			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
 			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
@@ -307,7 +307,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 				builder.Add(compound, edgeShape);
 			}
 			Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
-			context->RemoveAll(true);
+			context->EraseAll(true);
 			context->Display(aisCompound, Standard_True);
 		}
 
@@ -321,7 +321,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		{
 			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
-			context->RemoveAll(true);
+			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
 			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
 			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
@@ -338,7 +338,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		{
 			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
-			context->RemoveAll(true);
+			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
 			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
 			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
@@ -354,11 +354,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		context->RemoveAll(true);
 
 		std::vector<double> nodeValues;
 		APISetNodeValue::SetFallStressResult(occView, nodeValues);
-		occView->fitAll();
 
 		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 		auto max_value = fallAnalysisResultInfo.stressMaxValue;
@@ -393,11 +391,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		context->RemoveAll(true);
+		//context->RemoveAll(true);
 
 		std::vector<double> nodeValues;
 		APISetNodeValue::SetFallTemperatureResult(occView, nodeValues);
-		occView->fitAll();
+
 
 		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 		auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
@@ -428,7 +426,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		context->RemoveAll(true);
+		//context->RemoveAll(true);
 
 		std::vector<double> nodeValues;
 		APISetNodeValue::SetFallOverpressureResult(occView, nodeValues);
@@ -440,7 +438,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 
 		// 颜色条显示（与原逻辑一致）
-		TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:℃", true);
+		TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
 		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
 		aColorScale->SetSize(100, 400);

@@ -15,4 +15,6 @@ private:
 
 private:
 	QTableWidget* m_tableWidget = nullptr;
+
+	QString m_highValue = "20";
 };

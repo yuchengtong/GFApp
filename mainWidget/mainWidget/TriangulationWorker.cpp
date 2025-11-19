@@ -63,7 +63,17 @@ void TriangulationWorker::DoWork()
 
         meshInfo.isChecked = true;
         meshInfo.triangleStructure = *aDataSource;
-        delete aDataSource;  // 清理资源
+
+        //创建旋转网格
+        auto modelGeometryInfo= ModelDataManager::GetInstance()->GetModelGeometryInfo();
+        auto meshData45=aDataSource->RotateXZ(45,(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax)/2.0, 
+            (modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0);
+        auto meshData90 = aDataSource->RotateXZ(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+            (modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0);
+        meshInfo.triangleStructure45 = *meshData45;
+        meshInfo.triangleStructure90 = *meshData90;
+
+        //delete aDataSource;  // 清理资源
 
         // 检查中断
         if (m_interrupted)

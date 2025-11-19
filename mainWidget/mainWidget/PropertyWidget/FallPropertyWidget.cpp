@@ -83,7 +83,7 @@ void FallPropertyWidget::initWidget()
 
 	QTableWidgetItem* titeItem = new QTableWidgetItem("跌落试验");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* heightValueItem = new QTableWidgetItem("0");
+	QTableWidgetItem* heightValueItem = new QTableWidgetItem(m_highValue);
 	QTableWidgetItem* hardnessValueItem = new QTableWidgetItem("刚体");
 	hardnessValueItem->setFlags(hardnessValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* temperatureSensorValueItem = new QTableWidgetItem("40");
@@ -304,9 +304,21 @@ void FallPropertyWidget::initWidget()
 	connect(m_tableWidget, &QTableWidget::itemChanged, this, [this, heightValueItem](QTableWidgetItem* item) {
 		if (item == heightValueItem) 
 		{
-			auto heightValue = item->text().toDouble();
+			auto text = item->text();
+			auto heightValue = text.toDouble();
+			if (heightValue >= 20 && heightValue <= 50)
+			{
+				m_highValue = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_highValue);
+				m_tableWidget->blockSignals(false);
+			}
+
 			auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-			fallSettingInfo.high = heightValue;
+			fallSettingInfo.high = m_highValue.toDouble();
 
 			ModelDataManager::GetInstance()->SetFallSettingInfo(fallSettingInfo);
 		}

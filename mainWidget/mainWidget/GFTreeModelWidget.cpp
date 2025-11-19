@@ -152,11 +152,13 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	databaseNode->setText(0, "数据库");
 	databaseNode->setData(0, Qt::UserRole, "Database");
 	databaseNode->setIcon(0, error_icon);
+	databaseNode->setExpanded(true);
 
 	QTreeWidgetItem* materialNode = new QTreeWidgetItem();
 	materialNode->setText(0, "材料库");
 	materialNode->setData(0, Qt::UserRole, "Material");
 	materialNode->setIcon(0, error_icon);
+	materialNode->setExpanded(true);
 
 	databaseNode->addChild(materialNode);
 
@@ -211,6 +213,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	analysisNode->setText(0, "工况设置");
 	analysisNode->setData(0, Qt::UserRole, "Analysis");
 	analysisNode->setIcon(0, error_icon);
+	analysisNode->setExpanded(true);
 
 	QTreeWidgetItem* fallAnalysis = new QTreeWidgetItem();
 	fallAnalysis->setText(0, "1.跌落试验");
@@ -810,7 +813,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 									QString text = timeStr + "[信息]>跌落试验计算完成";
 									textEdit->appendPlainText(text);
 
-									context->RemoveAll(true);
+									context->EraseAll(true);
 									view->SetProj(V3d_Yneg);
 									view->Redraw();
 
@@ -818,35 +821,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 									auto oriShape = geomInfo.shape;
 									auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
 									auto angle = fallSettingInfo.angle;
-
-
-									GProp_GProps system;
-									BRepGProp::VolumeProperties(oriShape, system);
-									gp_Pnt centerOfMass = system.CentreOfMass();
-
-									gp_Trsf trsf;
-									trsf.SetTranslation(gp_Vec(centerOfMass, gp_Pnt(0, 0, 0)));
-
-									double angleRad = angle * M_PI / 180.0;
-									gp_Ax1 rotationAxis(gp_Pnt(0, 0, 0), gp_Dir(0, 1, 0));
-									trsf.SetRotation(rotationAxis, angleRad);
-									trsf.SetTranslationPart(gp_Vec(centerOfMass.XYZ()));
-
-									BRepBuilderAPI_Transform myTransform(oriShape, trsf, true);
-									myTransform.Build();
-
-									if (!myTransform.IsDone())
-									{
-										// 处理变换失败的逻辑
-										return;
-									}
-
-									TopoDS_Shape rotatedShape = myTransform.Shape();
-									auto fallResultDataSource = new TriangleStructure(rotatedShape, 0.5);
-
-									auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-									fallAnalysisResultInfo.triangleStructure = *fallResultDataSource;
-									ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
 
 									//BRep_Builder builder;
 									//TopoDS_Compound compound;
@@ -881,7 +855,38 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							}
 							else if (processedName == "枪击试验")
 							{
+								std::vector<double> resultValue;
+								resultValue.reserve(8);
+								bool success = APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue);
 
+								QDateTime currentTime = QDateTime::currentDateTime();
+								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+								if (success)
+								{
+									QString text = timeStr + "[信息]>枪击试验计算完成";
+									textEdit->appendPlainText(text);
+
+									context->EraseAll(true);
+									view->SetProj(V3d_Yneg);
+									view->Redraw();
+
+									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+									auto oriShape = geomInfo.shape;
+									auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+									auto angle = fallSettingInfo.angle;
+
+									//gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+									//	resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+
+									//auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+									//gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+									//	resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+								}
+								else
+								{
+									QString text = timeStr + "[信息]>枪击试验计算失败";
+									textEdit->appendPlainText(text);
+								}
 							}
 							else if (processedName == "射流冲击试验")
 							{
@@ -889,7 +894,38 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							}
 							else if (processedName == "破片撞击试验")
 							{
+								std::vector<double> resultValue;
+								resultValue.reserve(8);
+								bool success = APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue);
 
+								QDateTime currentTime = QDateTime::currentDateTime();
+								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+								if (success)
+								{
+									QString text = timeStr + "[信息]>破片试验计算完成";
+									textEdit->appendPlainText(text);
+
+									context->EraseAll(true);
+									view->SetProj(V3d_Yneg);
+									view->Redraw();
+
+									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+									auto oriShape = geomInfo.shape;
+									auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+									auto angle = fallSettingInfo.angle;
+
+									//gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+									//	resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+
+									//auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+									//gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+									//	resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+								}
+								else
+								{
+									QString text = timeStr + "[信息]>破片试验计算失败";
+									textEdit->appendPlainText(text);
+								}
 							}
 							else if (processedName == "爆炸冲击波试验")
 							{
@@ -992,7 +1028,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								// 更新显示
 								auto occView = gfParent->GetOccView();
 								Handle(AIS_InteractiveContext) context = occView->getContext();
-								context->RemoveAll(true);
+								context->EraseAll(true);
 
 								Handle(AIS_Shape) modelPresentation = new AIS_Shape(info.shape);
 								context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
@@ -1062,7 +1098,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					auto occView = gfParent->GetOccView();
 					Handle(AIS_InteractiveContext) context = occView->getContext();
 					auto view = occView->getView();
-					context->RemoveAll(true);
+					context->EraseAll(true);
 
 					// 创建进度对话框
 					ProgressDialog* progressDialog = new ProgressDialog("网格划分", gfParent);

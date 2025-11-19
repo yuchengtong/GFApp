@@ -36,7 +36,8 @@ TriangleStructure::TriangleStructure(const TopoDS_Shape& shape, const Standard_R
     }
 
     // 首先对形状进行网格划分
-    BRepMesh_IncrementalMesh mesher(shape, 0.08, Standard_False,0.2, Standard_False);
+    //BRepMesh_IncrementalMesh mesher(shape, 0.08, Standard_False,0.2, Standard_False);
+    BRepMesh_IncrementalMesh mesher(shape, 0.8, Standard_False, 0.8, Standard_False);
     mesher.Perform();
 
     if (CheckInterruption(interrupted))
@@ -233,6 +234,118 @@ void TriangleStructure::ExtractEdges()
 		edgeSet.insert(edge3);
 	}
 	myEdges.assign(edgeSet.begin(), edgeSet.end());
+}
+
+Handle(TriangleStructure) TriangleStructure::RotateXZ(const Standard_Real angleDeg, const Standard_Real x0, const Standard_Real z0) const
+{
+    // 创建新的TriangleStructure对象
+    Handle(TriangleStructure) rotatedStructure = new TriangleStructure();
+
+    // 将角度转换为弧度
+    Standard_Real angleRad = angleDeg * M_PI / 180.0;
+    Standard_Real cosAngle = cos(angleRad);
+    Standard_Real sinAngle = sin(angleRad);
+
+    // 复制节点坐标并应用旋转
+    Standard_Integer nodeCount = myNodeCoords->UpperRow() - myNodeCoords->LowerRow() + 1;
+    rotatedStructure->myNodeCoords = new TColStd_HArray2OfReal(1, nodeCount, 1, 3);
+
+    for (Standard_Integer i = 1; i <= nodeCount; ++i)
+    {
+        Standard_Real x = myNodeCoords->Value(i, 1);
+        Standard_Real y = myNodeCoords->Value(i, 2);
+        Standard_Real z = myNodeCoords->Value(i, 3);
+
+        // 平移到旋转中心
+        Standard_Real translatedX = x - x0;
+        Standard_Real translatedZ = z - z0;
+
+        // 应用旋转矩阵（绕Y轴旋转，在XOZ平面）
+        Standard_Real rotatedX = translatedX * cosAngle + translatedZ * sinAngle;
+        Standard_Real rotatedZ = -translatedX * sinAngle + translatedZ * cosAngle;
+
+        // 平移回原位置
+        rotatedX += x0;
+        rotatedZ += z0;
+
+        // 设置旋转后的坐标
+        rotatedStructure->myNodeCoords->SetValue(i, 1, rotatedX);
+        rotatedStructure->myNodeCoords->SetValue(i, 2, y);  // Y坐标不变
+        rotatedStructure->myNodeCoords->SetValue(i, 3, rotatedZ);
+
+        // 添加到节点集合
+        rotatedStructure->myNodes.Add(i);
+    }
+
+    // 复制单元连接关系（不变）
+    Standard_Integer elemCount = myElemNodes->UpperRow() - myElemNodes->LowerRow() + 1;
+    rotatedStructure->myElemNodes = new TColStd_HArray2OfInteger(1, elemCount, 1, 3);
+
+    for (Standard_Integer i = 1; i <= elemCount; ++i)
+    {
+        rotatedStructure->myElemNodes->SetValue(i, 1, myElemNodes->Value(i, 1));
+        rotatedStructure->myElemNodes->SetValue(i, 2, myElemNodes->Value(i, 2));
+        rotatedStructure->myElemNodes->SetValue(i, 3, myElemNodes->Value(i, 3));
+        rotatedStructure->myElements.Add(i);
+    }
+
+    // 重新计算法向量（因为旋转后法向量也改变了）
+    rotatedStructure->myElemNormals = new TColStd_HArray2OfReal(1, elemCount, 1, 3);
+
+    for (Standard_Integer i = 1; i <= elemCount; ++i)
+    {
+        Standard_Integer n1 = rotatedStructure->myElemNodes->Value(i, 1);
+        Standard_Integer n2 = rotatedStructure->myElemNodes->Value(i, 2);
+        Standard_Integer n3 = rotatedStructure->myElemNodes->Value(i, 3);
+
+        // 获取旋转后的节点坐标
+        gp_Pnt p1(
+            rotatedStructure->myNodeCoords->Value(n1, 1),
+            rotatedStructure->myNodeCoords->Value(n1, 2),
+            rotatedStructure->myNodeCoords->Value(n1, 3)
+        );
+        gp_Pnt p2(
+            rotatedStructure->myNodeCoords->Value(n2, 1),
+            rotatedStructure->myNodeCoords->Value(n2, 2),
+            rotatedStructure->myNodeCoords->Value(n2, 3)
+        );
+        gp_Pnt p3(
+            rotatedStructure->myNodeCoords->Value(n3, 1),
+            rotatedStructure->myNodeCoords->Value(n3, 2),
+            rotatedStructure->myNodeCoords->Value(n3, 3)
+        );
+
+        // 计算新的法向量
+        gp_Vec v1(p1, p2);
+        gp_Vec v2(p1, p3);
+        gp_Vec normal = v1.Crossed(v2);
+
+        if (normal.SquareMagnitude() > MY_PRECISION * MY_PRECISION)
+        {
+            normal.Normalize();
+        }
+
+        // 存储新的法向量
+        rotatedStructure->myElemNormals->SetValue(i, 1, normal.X());
+        rotatedStructure->myElemNormals->SetValue(i, 2, normal.Y());
+        rotatedStructure->myElemNormals->SetValue(i, 3, normal.Z());
+    }
+
+    // 重新构建坐标到节点的映射
+    for (Standard_Integer i = 1; i <= nodeCount; ++i)
+    {
+        gp_Pnt p(
+            rotatedStructure->myNodeCoords->Value(i, 1),
+            rotatedStructure->myNodeCoords->Value(i, 2),
+            rotatedStructure->myNodeCoords->Value(i, 3)
+        );
+        rotatedStructure->myCoordToNodeMap[p] = i;
+    }
+
+    // 重新提取边信息
+    rotatedStructure->ExtractEdges();
+
+    return rotatedStructure;
 }
 
 std::vector<std::pair<Standard_Integer, Standard_Integer>> TriangleStructure::GetMyEdge()

@@ -446,13 +446,20 @@ mainWidget::mainWidget(QWidget *parent)
 
 					gp_Pnt bboxMin, bboxMax;
 					Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
-					bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax); // 获取边界盒最小/最大点
+					bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax); // 获取边界盒最小/最大点(包围盒)
 					auto length = double(theXmax - theXmin);
 					auto width = double(theYmax - theYmin);
 					auto height = double(theZmax - theZmin);
 
 					info.shape = aShape;
 					info.path = filePath;
+					info.theXmin = theXmin;
+					info.theYmin = theYmin;
+					info.theZmin = theZmin;
+					info.theXmax = theXmax;
+					info.theYmax = theYmax;
+					info.theZmax = theZmax;
+
 					info.length = length;
 					info.width = width;
 					info.height = height;
@@ -506,7 +513,7 @@ mainWidget::mainWidget(QWidget *parent)
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 
 			// 清除之前的显示
-			context->RemoveAll(true);
+			context->EraseAll(true);
 
 			// 创建模型的AIS表示
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(aShape);

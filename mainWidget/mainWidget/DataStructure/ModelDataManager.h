@@ -19,6 +19,14 @@ struct UserInfo {
 struct ModelGeometryInfo {
 	TopoDS_Shape shape;
 	QString path="";
+	double theXmin = 0.0;
+	double theYmin = 0.0;
+	double theZmin = 0.0;
+	double theXmax = 0.0;
+	double theYmax = 0.0;
+	double theZmax = 0.0;
+
+
 	double length = 0.0; 
 	double width = 0.0;
 	double height = 0.0;
@@ -26,11 +34,13 @@ struct ModelGeometryInfo {
 
 struct ModelMeshInfo {
 	TriangleStructure triangleStructure;
+	TriangleStructure triangleStructure45;
+	TriangleStructure triangleStructure90;
 	bool isChecked=false;
 };
 
 struct FallAnalysisResultInfo {
-	TriangleStructure triangleStructure;
+	//TriangleStructure triangleStructure;
 	bool isChecked = false;
 
 	double stressMaxValue;
@@ -256,7 +266,7 @@ struct CalculationPropertyInfo {
 };
 
 struct FallSettingInfo {
-	double high = 0; // µøÂä¸ß¶È
+	double high = 20; // µøÂä¸ß¶È
 	int angle = 0; // µøÂä×ËÌ¬
 };
 

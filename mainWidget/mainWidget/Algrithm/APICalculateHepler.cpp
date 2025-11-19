@@ -10,7 +10,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 {  
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	auto view = occView->getView();
-	context->RemoveAll(true);
+	context->EraseAll(true);
 
 	view->SetProj(V3d_Yneg);
 	view->Redraw();
@@ -215,5 +215,35 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
     
     return true;
+}
+
+bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	auto view = occView->getView();
+	context->EraseAll(true);
+
+	view->SetProj(V3d_Yneg);
+	view->Redraw();
+
+
+
+
+
+	return true;
+}
+
+bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	auto view = occView->getView();
+	context->EraseAll(true);
+
+	view->SetProj(V3d_Yneg);
+	view->Redraw();
+
+
+
+	return true;
 }
 

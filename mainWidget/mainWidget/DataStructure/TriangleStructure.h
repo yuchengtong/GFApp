@@ -52,6 +52,9 @@ public:
 
 	void ExtractEdges();
 
+    Standard_EXPORT Handle(TriangleStructure) RotateXZ(const Standard_Real angleDeg, const Standard_Real x0, const Standard_Real z0) const;
+
+
 	std::vector<std::pair<Standard_Integer, Standard_Integer>> GetMyEdge();
 	Handle(TColStd_HArray2OfReal) GetmyNodeCoords();
 
