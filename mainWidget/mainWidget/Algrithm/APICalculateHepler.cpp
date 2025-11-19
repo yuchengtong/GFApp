@@ -159,11 +159,19 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 
 	FallAnalysisResultInfo fallAnalysisResultInfo;
+	ModelDataManager::GetInstance()->GetFallTemperatureResult();
+	ModelDataManager::GetInstance()->GetFallOverpressureResult();
 
 	fallAnalysisResultInfo.isChecked = true;
 	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
 	fallAnalysisResultInfo.stressMaxValue = max_value;
 	fallAnalysisResultInfo.stressMinValue = min_value;
+	fallAnalysisResultInfo.strainMaxValue = max_value * steelInfo.modulus;
+	fallAnalysisResultInfo.strainMinValue = min_value * steelInfo.modulus;
+	fallAnalysisResultInfo.temperatureMaxValue = ModelDataManager::GetInstance()->GetFallTemperatureResult().propellantsMaxTemperature;
+	fallAnalysisResultInfo.temperatureMinValue = ModelDataManager::GetInstance()->GetFallTemperatureResult().propellantsMinTemperature;
+	fallAnalysisResultInfo.overpressureMaxValue = ModelDataManager::GetInstance()->GetFallOverpressureResult().propellantsMaxOverpressure;
+	fallAnalysisResultInfo.overpressureMinValue = ModelDataManager::GetInstance()->GetFallOverpressureResult().propellantsMinOverpressure;
 	ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
 
 	// 应力分析结果
