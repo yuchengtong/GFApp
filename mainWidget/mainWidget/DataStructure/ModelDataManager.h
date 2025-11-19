@@ -6,7 +6,7 @@
 #include <QObject>
 #include <string>
 #include <QString>
-#include<QRandomGenerator>
+#include <QRandomGenerator>
 
 #include "TriangleStructure.h"
 
@@ -32,8 +32,15 @@ struct ModelMeshInfo {
 struct FallAnalysisResultInfo {
 	TriangleStructure triangleStructure;
 	bool isChecked = false;
-	double maxValue;
-	double minValue;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
 };
 
 // ¿ÇÌå²ÄÁÏ

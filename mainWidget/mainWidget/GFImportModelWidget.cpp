@@ -34,6 +34,7 @@
 #include "GFLogWidget.h"
 #include "GFTreeModelWidget.h"
 #include "colour_change_algrithm.h"
+#include "APISetNodeValue.h"
 
 void HSVtoRGB(double h, double s, double v, double& r, double& g, double& b)
 {
@@ -355,132 +356,33 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		Handle(V3d_View) view = occView->getView();
 		context->RemoveAll(true);
 
-		// 仅处理 double 类型的 clamp 函数
-		auto my_clamp =[](double value, double low, double high) {
-			if (value < low) 
-				return low;
-			if (value > high) 
-				return high;
-			return value;
-		};
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFallStressResult(occView, nodeValues);
+		occView->fitAll();
 
-		auto fallAnalysisResultInfo=ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-		if (fallAnalysisResultInfo.isChecked)
-		{
-			TColStd_PackedMapOfInteger allnode;
-			Handle(TColStd_HArray2OfReal) nodecoords;
-
-			allnode = fallAnalysisResultInfo.triangleStructure.GetAllNodes();
-			nodecoords = fallAnalysisResultInfo.triangleStructure.GetmyNodeCoords();
-			
-			auto max_value = fallAnalysisResultInfo.maxValue;
-			auto min_value = fallAnalysisResultInfo.minValue;
-
-			std::vector<double> nodeValues;
-
-			Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&fallAnalysisResultInfo.triangleStructure);
+		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+		auto max_value = fallAnalysisResultInfo.stressMaxValue;
+		auto min_value = fallAnalysisResultInfo.stressMinValue;
 
 
-			double xMax, xMin, zMax, zMin;
-			bool isFirstNode = true;
-
-			// 3. 遍历所有节点，更新极值
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-			{
-				int nodeID = it.Key();
-				if (nodeID < nodecoords->LowerRow() || nodeID > nodecoords->UpperRow())
-					continue;
-
-				double x = nodecoords->Value(nodeID, 1); // x坐标（列1）
-				double z = nodecoords->Value(nodeID, 3); // z坐标（列3）
-
-				if (isFirstNode)
-				{
-					xMax = xMin = x;
-					zMax = zMin = z;
-					isFirstNode = false;
-				}
-				else
-				{
-					if (x > xMax) 
-						xMax = x;
-					if (x < xMin) 
-						xMin = x;
-
-					if (z > zMax) 
-						zMax = z;
-					if (z < zMin) 
-						zMin = z;
-				}
-			}
-
-			double red_line_z = xMin;
-			//z = -0.0006*(x-xMin+(xMax- xMin)/2.0)² - 50
-
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				double delta_x = x  -( xMin+(xMax - xMin) / 2.0);
-				double green_curve_z = -0.0006 * std::pow(delta_x, 2)-50;
-
-				if (x< xMin + 100 || x>xMax -100)
-				{
-					nodeValues.push_back(min_value);
-				}
-				else if (z <= red_line_z-30)
-				{
-					nodeValues.push_back(max_value);
-				}
-				else if (z <= green_curve_z)
-				{
-					nodeValues.push_back(0.5 * max_value);
-				}
-				else if (z <= green_curve_z+100)
-				{
-					nodeValues.push_back(0.3 * max_value);
-				}
-				else
-				{
-					nodeValues.push_back(min_value);
-				}
-			}
-
-			// 设置颜色映射和显示（与原逻辑一致）
-			MeshVS_DataMapOfIntegerColor colormap = getMeshDataMap(nodeValues, min_value, max_value);
-			Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-			nodal->SetColors(colormap);
-			aMesh->AddBuilder(nodal);
-			aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, true);
-
-			// 显示模型
-			context->Display(aMesh, Standard_True);
-			occView->fitAll();
-			auto view = occView->getView();
-			//view->SetProj(V3d_Zpos, Standard_False);
-			//occView->SetCameraRotationState(false);
-
-			// 颜色条显示（与原逻辑一致）
-			TCollection_ExtendedString tostr("跌落试验\n应力分析\n单位:MPa", true);
-			Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-			aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
-			aColorScale->SetSize(100, 400);
-			aColorScale->SetRange(min_value, max_value);
-			aColorScale->SetNumberOfIntervals(9);
-			aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
-			aColorScale->SetTextHeight(14);
-			aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
-			aColorScale->SetTitle(tostr);
-			aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
-			aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
-			aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
-			Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
-			context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
-			context->SetDisplayMode(aColorScale, 1, Standard_False);
-			context->Display(aColorScale, Standard_True);
-		}
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("跌落试验\n应力分析\n单位:MPa", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	else if (itemData == "StrainResult") {
 		m_PropertyStackWidget->setCurrentWidget(m_strainResultWidget);
@@ -488,11 +390,73 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "TemperatureResult") {
 		m_PropertyStackWidget->setCurrentWidget(m_temperatureResultWidget);
+		auto occView = GetOccView();
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		context->RemoveAll(true);
 
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFallTemperatureResult(occView, nodeValues);
+		occView->fitAll();
+
+		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+		auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = fallAnalysisResultInfo.temperatureMinValue;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("跌落试验\n温度分析\n单位:℃", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	else if (itemData == "OverpressureResult") {
 		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+		auto occView = GetOccView();
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		context->RemoveAll(true);
 
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFallOverpressureResult(occView, nodeValues);
+		occView->fitAll();
+
+		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+		auto max_value = fallAnalysisResultInfo.overpressureMaxValue;
+		auto min_value = fallAnalysisResultInfo.overpressureMinValue;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:℃", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	else if (itemData == "FastCombustionAnalysis") {
 		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);

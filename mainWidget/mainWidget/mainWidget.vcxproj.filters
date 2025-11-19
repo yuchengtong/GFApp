@@ -232,6 +232,9 @@
     <ClCompile Include="Algrithm\APICalculateHepler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Algrithm\APISetNodeValue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -437,6 +440,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Algrithm\APICalculateHepler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Algrithm\APISetNodeValue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

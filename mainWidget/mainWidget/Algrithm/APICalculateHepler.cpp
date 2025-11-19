@@ -162,8 +162,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 	fallAnalysisResultInfo.isChecked = true;
 	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	fallAnalysisResultInfo.maxValue = max_value;
-	fallAnalysisResultInfo.minValue = min_value;
+	fallAnalysisResultInfo.stressMaxValue = max_value;
+	fallAnalysisResultInfo.stressMinValue = min_value;
 	ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
 
 	// 应力分析结果
