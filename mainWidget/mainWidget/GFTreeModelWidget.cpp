@@ -475,7 +475,7 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 	QString itemData = item->data(0, Qt::UserRole).toString();
 	emit itemClicked(itemData);
 
-	if (itemData == "StressResult" || itemData == "StrainResult" || itemData == "TemperatureResult" || itemData == "OverpressureResult" )
+	if (itemData.contains("StressResult")|| itemData.contains("StrainResult") || itemData.contains("TemperatureResult") || itemData.contains("OverpressureResult") )
 	{
 		QWidget* parent = parentWidget();
 		while (parent) {
@@ -499,6 +499,40 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 				else if (itemData == "OverpressureResult")
 				{
 					m_privateDirPath = "src/template/跌落试验/超压云图.png";
+				}
+
+				if (itemData == "ShootStressResult")
+				{
+					m_privateDirPath = "src/template/枪击试验/应力云图.png";
+				}
+				else if (itemData == "ShootStrainResult")
+				{
+					m_privateDirPath = "src/template/枪击试验/应变云图.png";
+				}
+				else if (itemData == "ShootTemperatureResult")
+				{
+					m_privateDirPath = "src/template/枪击试验/温度云图.png";
+				}
+				else if (itemData == "ShootOverpressureResult")
+				{
+					m_privateDirPath = "src/template/枪击试验/超压云图.png";
+				}
+
+				if (itemData == "FragmentationImpactStressResult")
+				{
+					m_privateDirPath = "src/template/破片撞击试验/应力云图.png";
+				}
+				else if (itemData == "FragmentationImpactStrainResult")
+				{
+					m_privateDirPath = "src/template/破片撞击试验/应变云图.png";
+				}
+				else if (itemData == "FragmentationImpactTemperatureResult")
+				{
+					m_privateDirPath = "src/template/破片撞击试验/温度云图.png";
+				}
+				else if (itemData == "FragmentationImpactOverpressureResult")
+				{
+					m_privateDirPath = "src/template/破片撞击试验/超压云图.png";
 				}
 				
 				QDir privateDir(m_privateDirPath);
