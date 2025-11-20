@@ -39,6 +39,11 @@ struct ModelMeshInfo {
 	bool isChecked=false;
 };
 
+struct FallSettingInfo {
+	double high = 20; // 跌落高度
+	int angle = 0; // 跌落姿态
+};
+
 struct FallAnalysisResultInfo {
 	//TriangleStructure triangleStructure;
 	bool isChecked = false;
@@ -52,6 +57,43 @@ struct FallAnalysisResultInfo {
 	double overpressureMaxValue;
 	double overpressureMinValue;
 };
+
+
+struct ShootSettingInfo {
+	double speed = 20;
+};
+
+struct ShootAnalysisResultInfo {
+	bool isChecked = false;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
+};
+
+struct FragmentationSettingInfo {
+	double speed = 20;
+};
+
+struct FragmentationAnalysisResultInfo {
+	bool isChecked = false;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
+};
+
+
 
 // 壳体材料
 struct SteelPropertyInfo {
@@ -265,11 +307,6 @@ struct CalculationPropertyInfo {
 	bool isChecked = false;
 };
 
-struct FallSettingInfo {
-	double high = 20; // 跌落高度
-	int angle = 0; // 跌落姿态
-};
-
 // 应力分析结果
 struct StressResult {
 	double metalsMaxStress = QRandomGenerator::securelySeeded().bounded(200, 800); //发动机壳体最大应力
@@ -402,8 +439,25 @@ public:
 	void SetModelMeshInfo(const ModelMeshInfo& info);
 	const ModelMeshInfo& GetModelMeshInfo() const;
 
+	void SetFallSettingInfo(const FallSettingInfo& info);
+	const FallSettingInfo& GetFallSettingInfo() const;
+
+	void SetShootSettingInfo(const ShootSettingInfo& info);
+	const ShootSettingInfo& GetShootSettingInfo() const;
+
+	void SetFragmentationSettingInfo(const FragmentationSettingInfo& info);
+	const FragmentationSettingInfo& GetFragmentationSettingInfo() const;
+
 	void SetFallAnalysisResultInfo(const FallAnalysisResultInfo& info);
 	const FallAnalysisResultInfo& GetFallAnalysisResultInfo() const;
+
+	void SetShootAnalysisResultInfo(const ShootAnalysisResultInfo& info);
+	const ShootAnalysisResultInfo& GetShootAnalysisResultInfo() const;
+
+	void SetFragmentationAnalysisResultInfo(const FragmentationAnalysisResultInfo& info);
+	const FragmentationAnalysisResultInfo& GetFragmentationAnalysisResultInfo() const;
+
+
 
 	void SetSteelPropertyInfo(const SteelPropertyInfo& info);
 	const SteelPropertyInfo& GetSteelPropertyInfo() const;
@@ -423,8 +477,7 @@ public:
 	void SetUserInfo(const UserInfo& info);
 	const UserInfo& GetUserInfo() const;
 
-	void SetFallSettingInfo(const FallSettingInfo& info);
-	const FallSettingInfo& GetFallSettingInfo() const;
+
 
 	void SetJudgementPropertyInfo(const JudgementPropertyInfo& info);
 	const JudgementPropertyInfo& GetJudgementPropertyInfo() const;
@@ -524,7 +577,15 @@ private:
 	static ModelDataManager* m_Instance; 
 	ModelGeometryInfo m_ModelGeometryInfo; 
 	ModelMeshInfo m_ModelMeshInfo;
+
+	FallSettingInfo m_FallSettingInfo;
+	ShootSettingInfo m_ShootSettingInfo;
+	FragmentationSettingInfo m_FragmentationSettingInfo;
+
 	FallAnalysisResultInfo m_FallAnalysisResultInfo;
+	ShootAnalysisResultInfo m_ShootAnalysisResultInfo;
+	FragmentationAnalysisResultInfo m_FragmentationAnalysisResultInfo;
+
 
 	SteelPropertyInfo m_SteelPropertyInfo;
 	PropellantPropertyInfo m_PropellantPropertyInfo;
@@ -536,7 +597,7 @@ private:
 
 	UserInfo m_UserInfo;
 
-	FallSettingInfo m_FallSettingInfo;
+
 
 	// 跌落计算结果
 	StressResult m_FallStressResult;

@@ -52,6 +52,26 @@ const FallAnalysisResultInfo & ModelDataManager::GetFallAnalysisResultInfo() con
 	return m_FallAnalysisResultInfo;
 }
 
+void ModelDataManager::SetShootAnalysisResultInfo(const ShootAnalysisResultInfo& info)
+{
+	m_ShootAnalysisResultInfo = info;
+}
+
+const ShootAnalysisResultInfo& ModelDataManager::GetShootAnalysisResultInfo() const
+{
+	return m_ShootAnalysisResultInfo;
+}
+
+void ModelDataManager::SetFragmentationAnalysisResultInfo(const FragmentationAnalysisResultInfo& info)
+{
+	m_FragmentationAnalysisResultInfo = info;
+}
+
+const FragmentationAnalysisResultInfo& ModelDataManager::GetFragmentationAnalysisResultInfo() const
+{
+	return m_FragmentationAnalysisResultInfo;
+}
+
 
 // ²ÄÁÏ¿â
 const SteelPropertyInfo & ModelDataManager::GetSteelPropertyInfo() const
@@ -117,6 +137,26 @@ void ModelDataManager::SetFallSettingInfo(const FallSettingInfo & info)
 const FallSettingInfo & ModelDataManager::GetFallSettingInfo() const
 {
 	return m_FallSettingInfo;
+}
+
+void ModelDataManager::SetShootSettingInfo(const ShootSettingInfo& info)
+{
+	m_ShootSettingInfo = info;
+}
+
+const ShootSettingInfo& ModelDataManager::GetShootSettingInfo() const
+{
+	return m_ShootSettingInfo;
+}
+
+void ModelDataManager::SetFragmentationSettingInfo(const FragmentationSettingInfo& info)
+{
+	m_FragmentationSettingInfo = info;
+}
+
+const FragmentationSettingInfo& ModelDataManager::GetFragmentationSettingInfo() const
+{
+	return m_FragmentationSettingInfo;
 }
 
 void ModelDataManager::SetUserInfo(const UserInfo& info)

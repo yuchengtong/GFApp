@@ -896,7 +896,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							{
 								std::vector<double> resultValue;
 								resultValue.reserve(8);
-								bool success = APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue);
+								bool success = APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue);
 
 								QDateTime currentTime = QDateTime::currentDateTime();
 								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");

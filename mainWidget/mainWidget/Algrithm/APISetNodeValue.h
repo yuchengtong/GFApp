@@ -14,4 +14,15 @@ public:
 	static bool SetFallOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 
 
+
+	static bool SetShootStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+
 };

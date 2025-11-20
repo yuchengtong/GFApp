@@ -605,16 +605,6 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-
-	// 仅处理 double 类型的 clamp 函数
-	auto my_clamp = [](double value, double low, double high) {
-		if (value < low)
-			return low;
-		if (value > high)
-			return high;
-		return value;
-	};
-
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
@@ -851,4 +841,143 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 	}
 
 	return true;
+}
+
+bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	auto shootSettingInfo=ModelDataManager::GetInstance()->GetShootSettingInfo();
+	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
+	
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
+	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
+	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
+	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
+	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+
+	if (shootAnalysisResultInfo.isChecked)
+	{
+		TColStd_PackedMapOfInteger allnode;
+		Handle(TColStd_HArray2OfReal) nodecoords;
+
+		auto max_value = shootAnalysisResultInfo.stressMaxValue;
+		auto min_value = shootAnalysisResultInfo.stressMinValue;
+
+		//std::vector<double> nodeValues;
+
+		Handle(MeshVS_Mesh) aMesh = nullptr;
+
+		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+
+		aMesh = new MeshVS_Mesh();
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
+
+		const double x_min = modelGeometryInfo.theXmin;
+		const double x_max = modelGeometryInfo.theXmax;
+		const double z_min = modelGeometryInfo.theZmin;
+		const double z_max = modelGeometryInfo.theZmax;
+
+		// --- 2. 根据矩形角点计算椭圆参数 ---
+		const double ellipse_h = (x_min + x_max) / 2.0;
+		const double ellipse_k = z_min + (x_max - x_min) / 5;
+		const double rect_length = x_max - x_min;
+		const double rect_width = z_max - z_min;
+		const double ellipse_a = rect_length * 0.8 / 2.0;
+		const double ellipse_b = rect_width * 0.6 / 2.0;
+
+		double red_line_z = z_min + 150;
+		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
+
+			// --- 数学判断逻辑 ---
+			// 计算椭圆方程左边的值
+			// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
+			double dx = x - ellipse_h;
+			double dz = z - ellipse_k;
+
+			// 为了提高精度和效率，可以比较平方和，避免开方和除法
+			// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
+			double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
+			double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
+
+			// 考虑浮点计算误差，使用一个小的容差
+			if (z < red_line_z)
+			{
+				nodeValues.push_back(max_value);
+			}
+			else
+			{
+				if (value < threshold + Precision::Confusion())
+				{
+					nodeValues.push_back(0.5 * max_value);
+				}
+				else if (value == threshold + Precision::Confusion() && abs(z - ellipse_h) < 5)
+				{
+					nodeValues.push_back(min_value);
+				}
+				else
+				{
+					nodeValues.push_back(0.2 * min_value);
+				}
+			}
+		}
+
+
+		// 设置颜色映射和显示（与原逻辑一致）
+		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nodal->SetColors(colormap);
+		aMesh->AddBuilder(nodal);
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		context->EraseAll(true);
+		context->Display(aMesh, Standard_True);
+		occView->fitAll();
+
+	}
+	return true;
+}
+
+bool APISetNodeValue::SetShootStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
 }
