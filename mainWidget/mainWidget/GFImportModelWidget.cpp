@@ -36,97 +36,6 @@
 #include "colour_change_algrithm.h"
 #include "APISetNodeValue.h"
 
-void HSVtoRGB(double h, double s, double v, double& r, double& g, double& b)
-{
-	if (s <= 0.0) {
-		// 无饱和度时为灰度
-		r = v;
-		g = v;
-		b = v;
-		return;
-	}
-
-	// HSV转RGB核心计算
-	double c = v * s;                  // 色度
-	double x = c * (1.0 - std::fabs(std::fmod(h * 6.0, 2.0) - 1.0));
-	double m = v - c;                  // 明度偏移值
-
-	// 根据Hue值确定RGB分量
-	double r_temp, g_temp, b_temp;
-	if (h < 1.0 / 6.0) {
-		r_temp = c;
-		g_temp = x;
-		b_temp = 0.0;
-	}
-	else if (h < 2.0 / 6.0) {
-		r_temp = x;
-		g_temp = c;
-		b_temp = 0.0;
-	}
-	else if (h < 3.0 / 6.0) {
-		r_temp = 0.0;
-		g_temp = c;
-		b_temp = x;
-	}
-	else if (h < 4.0 / 6.0) {
-		r_temp = 0.0;
-		g_temp = x;
-		b_temp = c;
-	}
-	else if (h < 5.0 / 6.0) {
-		r_temp = x;
-		g_temp = 0.0;
-		b_temp = c;
-	}
-	else {
-		r_temp = c;
-		g_temp = 0.0;
-		b_temp = x;
-	}
-
-	// 应用明度偏移并限制范围
-	r = std::clamp(r_temp + m, 0.0, 1.0);
-	g = std::clamp(g_temp + m, 0.0, 1.0);
-	b = std::clamp(b_temp + m, 0.0, 1.0);
-}
-
-MeshVS_DataMapOfIntegerColor getMeshDataMap(std::vector<double> tt, double min, double max)
-{
-	double a, r, g, b;
-	MeshVS_DataMapOfIntegerColor colormap;
-	int index = 0;
-
-	// 处理特殊情况：避免除零
-	if (max <= min) {
-		Quantity_Color defaultColor(0.5, 0.5, 0.5, Quantity_TOC_RGB); // 灰色
-		for (size_t i = 0; i < tt.size(); ++i) {
-			colormap.Bind(i + 1, defaultColor);
-		}
-		return colormap;
-	}
-
-	for (double t : tt)
-	{
-		// 1. 归一化到[0,1]范围
-		a = (t - min) / (max - min);
-		a = std::clamp(a, 0.0, 1.0); // 确保值在有效范围
-
-		// 2. 定义HSV参数（保持蓝→绿→红趋势）
-		// H: 0.666(蓝) → 0.333(绿) → 0(红)，对应HSV色轮
-		double h = 0.666 - a * 0.666; // 从蓝色(0.666)过渡到红色(0)
-		double s = 1.0;               // 最大饱和度
-		double v = 1.0;               // 最大明度
-
-		// 3. 手动转换HSV到RGB
-		HSVtoRGB(h, s, v, r, g, b);
-
-		// 4. 绑定颜色到索引
-		colormap.Bind(index + 1, Quantity_Color(r, g, b, Quantity_TOC_RGB));
-		index++;
-	}
-	return colormap;
-}
-
 
 GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	:QWidget(parent)
@@ -267,11 +176,13 @@ GFImportModelWidget::~GFImportModelWidget()
 void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 {
 	if (itemData == "Geometry") {
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
-			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
@@ -283,18 +194,26 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
 	else if (itemData == "Material") {
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_materialPropertyWidget);
 	}
 	else if (itemData == "Database") {
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_databasePropertyWidget);
 	}
 	else if (itemData == "Mesh") {
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
 
 		auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 		if (meshInfo.isChecked)
 		{
-			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 
 			BRep_Builder builder;
@@ -336,12 +255,14 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		m_meshPropertyWidget->UpdataPropertyInfo();
 	}
 	else if (itemData == "Analysis") {
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_settingPropertyWidget);
 
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
-			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
@@ -353,12 +274,14 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FallAnalysis")
 	{
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fallPropertyWidget);
 
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
-			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
@@ -371,9 +294,12 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "StressResult")
 	{
+		auto occView = GetOccView();
+		occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 
-		auto occView = GetOccView();
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -404,16 +330,24 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
-	else if (itemData == "StrainResult") {
-		m_PropertyStackWidget->setCurrentWidget(m_strainResultWidget);
+	else if (itemData == "StrainResult")
+	{
 		auto occView = GetOccView();
+		occView->SetCameraRotationState(false);
+
+		m_PropertyStackWidget->setCurrentWidget(m_strainResultWidget);
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		context->EraseAll(true);
 	}
-	else if (itemData == "TemperatureResult") {
-		m_PropertyStackWidget->setCurrentWidget(m_temperatureResultWidget);
+	else if (itemData == "TemperatureResult")
+	{
 		auto occView = GetOccView();
+		occView->SetCameraRotationState(false);
+
+		m_PropertyStackWidget->setCurrentWidget(m_temperatureResultWidget);
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -446,9 +380,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
-	else if (itemData == "OverpressureResult") {
-		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	else if (itemData == "OverpressureResult")
+	{
 		auto occView = GetOccView();
+		occView->SetCameraRotationState(false);
+
+		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -481,7 +419,8 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
-	else if (itemData == "FastCombustionAnalysis") {
+	else if (itemData == "FastCombustionAnalysis")
+	{
 		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);
 	}
 	else if (itemData == "SlowCombustionAnalysis") {
@@ -513,12 +452,14 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootAnalysis")	//枪击试验
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
 
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
-			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
@@ -530,9 +471,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootStressResult") //枪击试验应力分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_shootStressResultWidget);
 
-		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -566,17 +509,23 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootStrainResult")  //枪击试验应变分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_shootStrainResultWidget);
-		auto occView = GetOccView();
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		context->EraseAll(true);
 	}
 	else if (itemData == "ShootTemperatureResult") //枪击试验温度分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_shootTemperatureResultWidget);
 
-		auto occView = GetOccView();
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -610,8 +559,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootOverpressureResult") //枪击试验超压分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_shootOverpressureResultWidge);
-		auto occView = GetOccView();
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -649,6 +601,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactAnalysis")	//破片试验
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(true);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
@@ -665,9 +620,12 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactStressResult") //破片试验应力分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStressResultWidget);
 
-		auto occView = GetOccView();
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -701,17 +659,22 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactStrainResult")  //破片试验应变分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStrainResultWidget);
-		auto occView = GetOccView();
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		context->EraseAll(true);
 	}
 	else if (itemData == "FragmentationImpactTemperatureResult") //破片试验温度分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactTemperatureResultWidget);
 
-		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -746,9 +709,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactOverpressureResult") //破片试验超压分析
 	{
+	auto occView = GetOccView();
+	occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactOverpressureResultWidge);
 
-		auto occView = GetOccView();
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);

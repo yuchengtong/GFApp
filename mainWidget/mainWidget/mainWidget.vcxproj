@@ -113,6 +113,7 @@
     <ClCompile Include="Algrithm\APICalculateHepler.cpp" />
     <ClCompile Include="Algrithm\APIRotateMeshHelper.cpp" />
     <ClCompile Include="Algrithm\APISetNodeValue.cpp" />
+    <ClCompile Include="CalculateWorker.cpp" />
     <ClCompile Include="GraphicWidget.cpp" />
     <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp" />
     <ClCompile Include="AuxiliaryAnalysisWidget.cpp" />
@@ -291,6 +292,7 @@
     <ClInclude Include="Algrithm\APISetNodeValue.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
     <QtMoc Include="CustomPolarChart.h" />
+    <QtMoc Include="CalculateWorker.h" />
     <ClInclude Include="DataStructure\TriangleStructure.h" />
   </ItemGroup>
   <ItemGroup>

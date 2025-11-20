@@ -235,6 +235,9 @@
     <ClCompile Include="Algrithm\APISetNodeValue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CalculateWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -412,6 +415,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="GraphicWidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="CalculateWorker.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

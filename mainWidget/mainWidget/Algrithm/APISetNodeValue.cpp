@@ -366,8 +366,8 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 		TColStd_PackedMapOfInteger allnode;
 		Handle(TColStd_HArray2OfReal) nodecoords;
 
-		auto max_value = fallAnalysisResultInfo.stressMaxValue;
-		auto min_value = fallAnalysisResultInfo.stressMinValue;
+		auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = fallAnalysisResultInfo.temperatureMinValue;
 
 		//std::vector<double> nodeValues;
 
@@ -416,7 +416,7 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 				{
 					if (value <= threshold + Precision::Confusion())
 					{
-						nodeValues.push_back(0.5 * max_value);
+						nodeValues.push_back(min_value+0.5 * (max_value- min_value));
 					}
 					else
 					{
@@ -966,7 +966,7 @@ bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<do
 			{
 				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(0.5 * max_value);
+					nodeValues.push_back(min_value+0.5 * (max_value- min_value));
 				}
 				else
 				{
@@ -1264,7 +1264,7 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 			{
 				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(0.5 * max_value);
+					nodeValues.push_back(min_value+0.5 * (max_value- min_value));
 				}
 				else
 				{

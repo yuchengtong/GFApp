@@ -80,7 +80,7 @@
 #include <QtCore/qstandardpaths.h>
 #include "TriangulationWorker.h"
 #include "APICalculateHepler.h"
-
+#include "CalculateWorker.h"
 
 
 // 仅处理 double 类型的 clamp 函数
@@ -771,7 +771,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			{
 				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 				if (gfParent)
-				{	
+				{
 					QDateTime currentTime = QDateTime::currentDateTime();
 					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 					auto logWidget = gfParent->GetLogWidget();
@@ -781,158 +781,195 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					Handle(AIS_InteractiveContext) context = occView->getContext();
 					Handle(V3d_View) view = occView->getView();
 
-					for (int i = 0; i < item->childCount(); ++i) {
-						QTreeWidgetItem* childItem = item->child(i);
-						auto originalName = childItem->text(0);
-						int dotIndex = originalName.indexOf('.');
-						QString processedName;
-						if (dotIndex != -1)
-						{
-							processedName = originalName.mid(dotIndex + 1).trimmed();
-						}
-						else {
-							processedName = originalName;
-						}
+					// 创建进度对话框
+					ProgressDialog* progressDialog = new ProgressDialog("计算", gfParent);
+					progressDialog->show();
 
-						bool isChecked = (childItem->checkState(0) == Qt::Checked);
-						if (isChecked)
-						{
-							QString text = timeStr + "[信息]>开始进行" + processedName;
-							textEdit->appendPlainText(text);
+					// 创建工作线程和工作对象
+					auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+					CalculateWorker* worker = new CalculateWorker();
+					QThread* workerThread = new QThread();
+					worker->moveToThread(workerThread);
 
-							if (processedName == "跌落试验")
+					// 连接信号槽
+					connect(workerThread, &QThread::started, worker, &CalculateWorker::DoWork);
+					connect(worker, &CalculateWorker::ProgressUpdated,
+						progressDialog, &ProgressDialog::SetProgress);
+					connect(worker, &CalculateWorker::StatusUpdated,
+						progressDialog, &ProgressDialog::SetStatusText);
+					connect(progressDialog, &ProgressDialog::Canceled,
+						worker, &CalculateWorker::RequestInterruption,
+						Qt::DirectConnection);
+
+					// 处理导入结果
+					connect(worker, &CalculateWorker::WorkFinished, this,
+						[=](bool success, const QString& msg) {
+							// 更新日志
+							QDateTime finishTime = QDateTime::currentDateTime();
+							QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
+							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+							if (success)
 							{
-								std::vector<double> resultValue;
-								resultValue.reserve(8);
-								bool success = APICalculateHepler::CalculateFallAnalysisResult(occView, resultValue);
+								for (int i = 0; i < item->childCount(); ++i) {
+									QTreeWidgetItem* childItem = item->child(i);
+									auto originalName = childItem->text(0);
+									int dotIndex = originalName.indexOf('.');
+									QString processedName;
+									if (dotIndex != -1)
+									{
+										processedName = originalName.mid(dotIndex + 1).trimmed();
+									}
+									else {
+										processedName = originalName;
+									}
 
-								QDateTime currentTime = QDateTime::currentDateTime();
-								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-								if (success)
-								{
-									QString text = timeStr + "[信息]>跌落试验计算完成";
-									textEdit->appendPlainText(text);
+									bool isChecked = (childItem->checkState(0) == Qt::Checked);
+									if (isChecked)
+									{
+										QString text = timeStr + "[信息]>开始进行" + processedName;
+										textEdit->appendPlainText(text);
 
-									context->EraseAll(true);
-									view->SetProj(V3d_Yneg);
-									view->Redraw();
+										if (processedName == "跌落试验")
+										{
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateFallAnalysisResult(occView, resultValue);
 
-									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-									auto oriShape = geomInfo.shape;
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>跌落试验计算完成";
+												textEdit->appendPlainText(text);
 
-									//BRep_Builder builder;
-									//TopoDS_Compound compound;
-									//builder.MakeCompound(compound);
-									//builder.Add(compound, rotatedShape);
-									//Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
-									//context->Display(aisCompound, Standard_True);
-									//occView->fitAll();
+												context->EraseAll(true);
+												view->SetProj(V3d_Yneg);
+												view->Redraw();
 
-									gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3], 
-										resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+												auto oriShape = geomInfo.shape;
 
-									auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-									gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-										resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
-								
 
+												gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+													resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+
+												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+												gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>跌落试验计算失败";
+												textEdit->appendPlainText(text);
+											}
+										}
+										else if (processedName == "快速烤燃试验")
+										{
+
+										}
+										else if (processedName == "慢速烤燃试验")
+										{
+
+										}
+										else if (processedName == "枪击试验")
+										{
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue);
+
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>枪击试验计算完成";
+												textEdit->appendPlainText(text);
+
+												context->EraseAll(true);
+												view->SetProj(V3d_Yneg);
+												view->Redraw();
+
+												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+												auto oriShape = geomInfo.shape;
+
+												gfParent->GetShootStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+													resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+
+												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+												gfParent->GetShootStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>枪击试验计算失败";
+												textEdit->appendPlainText(text);
+											}
+										}
+										else if (processedName == "射流冲击试验")
+										{
+
+										}
+										else if (processedName == "破片撞击试验")
+										{
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue);
+
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>破片试验计算完成";
+												textEdit->appendPlainText(text);
+
+												context->EraseAll(true);
+												view->SetProj(V3d_Yneg);
+												view->Redraw();
+
+												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+												auto oriShape = geomInfo.shape;
+
+												gfParent->GetFragmentationImpactStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+													resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+
+												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+												gfParent->GetFragmentationImpactStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>破片试验计算失败";
+												textEdit->appendPlainText(text);
+											}
+										}
+										else if (processedName == "爆炸冲击波试验")
+										{
+
+										}
+										else if (processedName == "殉爆试验")
+										{
+
+										}
+									}
 								}
-								else
-								{
-									QString text = timeStr + "[信息]>跌落试验计算失败";
-									textEdit->appendPlainText(text);
-								}
+								logWidget->update();
 							}
-							else if (processedName == "快速烤燃试验")
+							else if (!success)
 							{
-
+								QMessageBox::warning(this, "计算", msg);
 							}
-							else if (processedName == "慢速烤燃试验")
-							{
 
-							}
-							else if (processedName == "枪击试验")
-							{
-								std::vector<double> resultValue;
-								resultValue.reserve(8);
-								bool success = APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue);
+							// 清理资源
+							progressDialog->close();
+							workerThread->quit();
+							workerThread->wait();
+							worker->deleteLater();
+							workerThread->deleteLater();
+							progressDialog->deleteLater();
+						});
 
-								QDateTime currentTime = QDateTime::currentDateTime();
-								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-								if (success)
-								{
-									QString text = timeStr + "[信息]>枪击试验计算完成";
-									textEdit->appendPlainText(text);
-
-									context->EraseAll(true);
-									view->SetProj(V3d_Yneg);
-									view->Redraw();
-
-									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-									auto oriShape = geomInfo.shape;
-
-									gfParent->GetShootStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-										resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
-
-									auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-									gfParent->GetShootStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-										resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
-								}
-								else
-								{
-									QString text = timeStr + "[信息]>枪击试验计算失败";
-									textEdit->appendPlainText(text);
-								}
-							}
-							else if (processedName == "射流冲击试验")
-							{
-
-							}
-							else if (processedName == "破片撞击试验")
-							{
-								std::vector<double> resultValue;
-								resultValue.reserve(8);
-								bool success = APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue);
-
-								QDateTime currentTime = QDateTime::currentDateTime();
-								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-								if (success)
-								{
-									QString text = timeStr + "[信息]>破片试验计算完成";
-									textEdit->appendPlainText(text);
-
-									context->EraseAll(true);
-									view->SetProj(V3d_Yneg);
-									view->Redraw();
-
-									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-									auto oriShape = geomInfo.shape;
-
-									gfParent->GetFragmentationImpactStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-										resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
-
-									auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-									gfParent->GetFragmentationImpactStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-										resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
-								}
-								else
-								{
-									QString text = timeStr + "[信息]>破片试验计算失败";
-									textEdit->appendPlainText(text);
-								}
-							}
-							else if (processedName == "爆炸冲击波试验")
-							{
-
-							}
-							else if (processedName == "殉爆试验")
-							{
-
-							}
-						}
-					}
-					logWidget->update();
-				
+					// 启动线程
+					workerThread->start();
 					break;
 				}
 				else
