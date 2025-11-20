@@ -10,6 +10,8 @@ public:
 
 	QTableWidget* GetQTableWidget() { return m_tableWidget; }
 
+	void updateData(double shellMaxValue, double shellMinValue, double shellAvgValue, double shellStandardValue, double maxValue, double minValue, double avgValue, double standardValue);
+
 private:
 	void initWidget() override;
 

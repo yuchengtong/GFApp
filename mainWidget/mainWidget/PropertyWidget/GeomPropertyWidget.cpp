@@ -17,12 +17,15 @@ void GeomPropertyWidget::UpdataPropertyInfo()
 	QTableWidgetItem* length_item = m_tableWidget->item(3, 2);
 	QTableWidgetItem* width_item = m_tableWidget->item(4, 2);
 	QTableWidgetItem* height_item = m_tableWidget->item(5, 2);
+	QTableWidgetItem* thickness_item = m_tableWidget->item(6, 2);
+
 	if (path_item && length_item && width_item && height_item)
 	{
 		path_item->setText(modelInfo.path);
 		length_item->setText(QString::number(modelInfo.length, 'f', 3));
 		width_item->setText(QString::number(modelInfo.width, 'f', 3));
 		height_item->setText(QString::number(modelInfo.height, 'f', 3));
+		thickness_item->setText(QString::number(3, 'f', 3));
 	}
 }
 

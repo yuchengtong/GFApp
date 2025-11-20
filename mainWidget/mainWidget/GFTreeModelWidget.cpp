@@ -857,6 +857,15 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
 													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
 
+												auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+												gfParent->GetTemperatureResultWidget()->updateData(fallTemperatureResult.metalsMaxTemperature, fallTemperatureResult.metalsMinTemperature, fallTemperatureResult.metalsAvgTemperature, fallTemperatureResult.metalsStandardTemperature,
+													fallTemperatureResult.propellantsMaxTemperature, fallTemperatureResult.propellantsMinTemperature, fallTemperatureResult.mpropellantsAvgTemperature, fallTemperatureResult.propellantsStandardTemperature);
+
+												auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+												gfParent->GetOverpressureResultWidget()->updateData(fallOverpressureResult.metalsMaxOverpressure, fallOverpressureResult.metalsMinOverpressure, fallOverpressureResult.metalsAvgOverpressure, fallOverpressureResult.metalsStandardOverpressure,
+													fallOverpressureResult.propellantsMaxOverpressure, fallOverpressureResult.propellantsMinOverpressure, fallOverpressureResult.mpropellantsAvgOverpressure, fallOverpressureResult.propellantsStandardOverpressure);
+
+
 											}
 											else
 											{
@@ -898,7 +907,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 												gfParent->GetShootStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
 													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
-											}
+											
+												auto temperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
+												gfParent->GetShootTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+												auto overpressureResult = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+												gfParent->GetShootOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+
+}
 											else
 											{
 												QString text = timeStr + "[信息]>枪击试验计算失败";
@@ -935,6 +953,15 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 												gfParent->GetFragmentationImpactStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
 													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+											
+												auto temperatureResult = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
+												gfParent->GetFragmentationImpactTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+												auto overpressureResult = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+												gfParent->GetFragmentationImpactOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+
 											}
 											else
 											{
