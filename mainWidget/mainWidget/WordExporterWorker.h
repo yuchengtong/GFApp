@@ -74,8 +74,8 @@ private:
     QMap<QString, QVector<QVector<QVariant>>> m_tableData; // ±í¸ñ
 
 
-    QAxObject* wordApp;
-    QAxObject* activeDocument;
+    QAxObject* wordApp = nullptr;
+    QAxObject* activeDocument = nullptr;
 
   
 };

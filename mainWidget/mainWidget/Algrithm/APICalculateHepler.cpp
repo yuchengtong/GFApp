@@ -611,7 +611,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	fragmentationImpactStrainResult.metalsAvgStrain = fragmentationImpactStressResult.metalsAvgStress * steelInfo.modulus;
 	fragmentationImpactStrainResult.metalsStandardStrain = fragmentationImpactStressResult.metalsStandardStress * steelInfo.modulus;
 	fragmentationImpactStrainResult.propellantsMaxStrain = fragmentationImpactStressResult.propellantsMaxStress * steelInfo.modulus;
-	fragmentationImpactStrainResult.propellantsMinStrain = fragmentationImpactStressResult.propellantsMaxStress * steelInfo.modulus;
+	fragmentationImpactStrainResult.propellantsMinStrain = fragmentationImpactStressResult.propellantsMinStress * steelInfo.modulus;
 	fragmentationImpactStrainResult.mpropellantsAvgStrain = fragmentationImpactStressResult.propellantsAvgStress * steelInfo.modulus;
 	fragmentationImpactStrainResult.propellantsStandardStrain = fragmentationImpactStressResult.propellantsStandardStress * steelInfo.modulus;
 	fragmentationImpactStrainResult.outheatMaxStrain = fragmentationImpactStressResult.outheatMaxStress * steelInfo.modulus;

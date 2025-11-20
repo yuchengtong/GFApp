@@ -313,6 +313,9 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	for (double& val : datasets1[1]) {
 		val = val * 8;
 	}
+	for (double& val : datasets1[2]) {
+		val = val * 80;
+	}
 	for (double& val : datasets1[3]) {
 		if (val < 10)
 		{
@@ -365,11 +368,27 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_ShootOverpressureResult.metalsMinOverpressure,  m_ShootOverpressureResult.propellantsMinOverpressure,  m_ShootOverpressureResult.outheatMinOverpressure,  m_ShootOverpressureResult.insulatingheatMinOverpressure, };
 	datasets4[3] = { m_ShootStrainResult.metalsMaxStrain, m_ShootStrainResult.propellantsMaxStrain, m_ShootStrainResult.outheatMaxStrain, m_ShootStrainResult.insulatingheatMaxStrain,
 	 m_ShootStrainResult.metalsMinStrain,  m_ShootStrainResult.propellantsMinStrain,  m_ShootStrainResult.outheatMinStrain,  m_ShootStrainResult.insulatingheatMinStrain, };
+	for (double& val : datasets4[0]) {
+		if (val < 100)
+		{
+			val = val * 20;
+		}
+	}
 	for (double& val : datasets4[1]) {
 		val = val * 8;
 	}
+	for (double& val : datasets4[2]) {
+		val = val * 60;
+	}
 	for (double& val : datasets4[3]) {
-		val = val * 1000000;
+		if (val > 1000)
+		{
+			val = val / 10000000000;
+		}
+		else
+		{
+			val = val * 1000000;
+		}
 	}
 	m_polarChart4->updateDatasets(datasets4, labelGroups);
 
@@ -391,6 +410,9 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	for (double& val : datasets5[1]) {
 		val = val * 8;
 	}
+	for (double& val : datasets5[2]) {
+		val = val * 80;
+	}
 	for (double& val : datasets5[3]) {
 		val = val * 1000000;
 	}
@@ -411,8 +433,17 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_FragmentationImpactOverpressureResult.metalsMinOverpressure,  m_FragmentationImpactOverpressureResult.propellantsMinOverpressure,  m_FragmentationImpactOverpressureResult.outheatMinOverpressure,  m_FragmentationImpactOverpressureResult.insulatingheatMinOverpressure, };
 	datasets6[3] = { m_FragmentationImpactStrainResult.metalsMaxStrain, m_FragmentationImpactStrainResult.propellantsMaxStrain, m_FragmentationImpactStrainResult.outheatMaxStrain, m_FragmentationImpactStrainResult.insulatingheatMaxStrain,
 	 m_FragmentationImpactStrainResult.metalsMinStrain,  m_FragmentationImpactStrainResult.propellantsMinStrain,  m_FragmentationImpactStrainResult.outheatMinStrain,  m_FragmentationImpactStrainResult.insulatingheatMinStrain, };
+	for (double& val : datasets6[0]) {
+		if (val < 100)
+		{
+			val = val * 20;
+		}
+	}
 	for (double& val : datasets6[1]) {
 		val = val * 8;
+	}
+	for (double& val : datasets6[2]) {
+		val = val * 80;
 	}
 	for (double& val : datasets6[3]) {
 		val = val * 1000000;
@@ -437,6 +468,9 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	for (double& val : datasets7[1]) {
 		val = val * 8;
 	}
+	for (double& val : datasets7[2]) {
+		val = val * 80;
+	}
 	for (double& val : datasets7[3]) {
 		val = val * 1000000;
 	}
@@ -459,6 +493,9 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_SacrificeExplosionStrainResult.metalsMinStrain,  m_SacrificeExplosionStrainResult.propellantsMinStrain,  m_SacrificeExplosionStrainResult.outheatMinStrain,  m_SacrificeExplosionStrainResult.insulatingheatMinStrain, };
 	for (double& val : datasets8[1]) {
 		val = val * 8;
+	}
+	for (double& val : datasets8[2]) {
+		val = val * 80;
 	}
 	for (double& val : datasets8[3]) {
 		val = val * 1000000;

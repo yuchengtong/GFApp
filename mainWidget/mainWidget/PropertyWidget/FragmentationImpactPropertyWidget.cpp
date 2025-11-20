@@ -65,7 +65,7 @@ void FragmentationImpactPropertyWidget::initWidget()
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位
-	QStringList unitLabels = { " ", " ", "m/s", "°"," ", "mm","g","个"," ", "个", "m/s" };
+	QStringList unitLabels = { " ", " ", "m/s", "°"," ", "mm","g"," ","个", "个", "m/s" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{

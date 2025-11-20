@@ -12,13 +12,13 @@ int main(int argc, char *argv[])
 	QApplication::setFont(font);
 	mainWidget w;
 	QCoreApplication::setApplicationName(QStringLiteral("固体发动机安全性分析与评估系统"));
-	/*w.hide();
+	w.hide();
 	LoginDialog loginDialog;
 	if (loginDialog.exec() == QDialog::Accepted) {
 		w.show();
 		return a.exec();
-	}*/
-	w.show();
+	}
+	//w.show();
 	return a.exec();
 
 }
