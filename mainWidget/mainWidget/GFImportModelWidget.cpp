@@ -162,6 +162,19 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_explosiveBlastPropertyWidget = new ExplosiveBlastPropertyWidget();
 	m_sacrificeExplosionPropertyWidget = new SacrificeExplosionPropertyWidget();
 	m_databasePropertyWidget = new DatabasePropertyWidget();
+	// 枪击结果
+	m_shootStressResultWidget = new StressResultWidget();
+	m_shootTemperatureResultWidget = new TemperatureResultWidget();
+	m_shootOverpressureResultWidge = new OverpressureResultWidget();
+	m_shootStrainResultWidget = new StrainResultWidget();
+	// 破片结果
+	m_fragmentationImpactStressResultWidget = new StressResultWidget();
+	m_fragmentationImpactTemperatureResultWidget = new TemperatureResultWidget();
+	m_fragmentationImpactOverpressureResultWidge = new OverpressureResultWidget();
+	m_fragmentationImpactStrainResultWidget = new StrainResultWidget();
+	
+
+
 
 	// 将所有的 PropertyWidget 添加到 QStackedWidget 中
 	m_PropertyStackWidget->addWidget(m_geomPropertyWidget);
@@ -189,6 +202,15 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_PropertyStackWidget->addWidget(m_explosiveBlastPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_sacrificeExplosionPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_databasePropertyWidget);
+
+	m_PropertyStackWidget->addWidget(m_shootStressResultWidget);
+	m_PropertyStackWidget->addWidget(m_shootTemperatureResultWidget);
+	m_PropertyStackWidget->addWidget(m_shootOverpressureResultWidge);
+	m_PropertyStackWidget->addWidget(m_shootStrainResultWidget);
+	m_PropertyStackWidget->addWidget(m_fragmentationImpactStressResultWidget);
+	m_PropertyStackWidget->addWidget(m_fragmentationImpactTemperatureResultWidget);
+	m_PropertyStackWidget->addWidget(m_fragmentationImpactOverpressureResultWidge);
+	m_PropertyStackWidget->addWidget(m_fragmentationImpactStrainResultWidget);
 
 
 	m_OccView = new OccView(this);
@@ -462,7 +484,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "SlowCombustionAnalysis") {
 		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
 	}
-	else if (itemData == "Results") {
+		else if (itemData == "Results") {
 		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
 	}
 	else if (itemData == "Steel") {
@@ -486,14 +508,49 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "Outheat") {
 		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
 	}
-	else if (itemData == "ShootAnalysis") {
+	else if (itemData == "ShootAnalysis")	//枪击试验
+	{
 		m_PropertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
+	}
+	else if (itemData == "ShootStressResult") //枪击试验应力分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_shootStressResultWidget);
+	}
+	else if (itemData == "ShootStrainResult")  //枪击试验应变分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_shootStrainResultWidget);
+	}
+	else if (itemData == "ShootTemperatureResult") //枪击试验温度分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_shootTemperatureResultWidget);
+	}
+	else if (itemData == "ShootOverpressureResult") //枪击试验超压分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_shootOverpressureResultWidge);
+
 	}
 	else if (itemData == "JetImpactAnalysis") {
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
 	}
-	else if (itemData == "FragmentationImpactAnalysis") {
+	else if (itemData == "FragmentationImpactAnalysis")	//破片试验
+	{
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
+	}
+	else if (itemData == "FragmentationImpactStressResult") //破片试验应力分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStressResultWidget);
+	}
+	else if (itemData == "FragmentationImpactStrainResult")  //破片试验应变分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStrainResultWidget);
+	}
+	else if (itemData == "FragmentationImpactTemperatureResult") //破片试验温度分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactTemperatureResultWidget);
+	}
+	else if (itemData == "FragmentationImpactOverpressureResult") //破片试验超压分析
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactOverpressureResultWidge);
 	}
 	else if (itemData == "ExplosiveBlastAnalysis") {
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);

@@ -57,6 +57,16 @@ public:
 
 	FallPropertyWidget* GetFallPropertyWidget() { return m_fallPropertyWidget; }
 
+	StressResultWidget* GetShootStressResultWidget() { return m_shootStressResultWidget; }
+	StrainResultWidget* GetShootStrainResultWidget() { return m_shootStrainResultWidget; }
+	TemperatureResultWidget* GetShootTemperatureResultWidget() { return m_shootTemperatureResultWidget; }
+	OverpressureResultWidget* GetShootOverpressureResultWidget() { return m_shootOverpressureResultWidge; }
+
+	StressResultWidget* GetFragmentationImpactStressResultWidget() { return m_fragmentationImpactStressResultWidget; }
+	StrainResultWidget* GetFragmentationImpactStrainResultWidget() { return m_fragmentationImpactStrainResultWidget; }
+	TemperatureResultWidget* GetFragmentationImpactTemperatureResultWidget() { return m_fragmentationImpactTemperatureResultWidget; }
+	OverpressureResultWidget* GetFragmentationImpactOverpressureResultWidget() { return m_fragmentationImpactOverpressureResultWidge; }
+
 private slots:
 	void onTreeItemClicked(const QString& itemData);
 
@@ -92,5 +102,16 @@ private:
 	SacrificeExplosionPropertyWidget* m_sacrificeExplosionPropertyWidget = nullptr;
 	DatabasePropertyWidget* m_databasePropertyWidget = nullptr;
 
+	// 枪击结果
+	StressResultWidget* m_shootStressResultWidget = nullptr;
+	TemperatureResultWidget* m_shootTemperatureResultWidget = nullptr;
+	OverpressureResultWidget* m_shootOverpressureResultWidge = nullptr;
+	StrainResultWidget* m_shootStrainResultWidget = nullptr;
+
+	// 破片结果
+	StressResultWidget* m_fragmentationImpactStressResultWidget = nullptr;
+	TemperatureResultWidget* m_fragmentationImpactTemperatureResultWidget = nullptr;
+	OverpressureResultWidget* m_fragmentationImpactOverpressureResultWidge = nullptr;
+	StrainResultWidget* m_fragmentationImpactStrainResultWidget = nullptr;
 };
 
