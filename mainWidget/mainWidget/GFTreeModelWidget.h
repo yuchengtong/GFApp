@@ -11,6 +11,17 @@
 #include "GFTreeWidget.h"
 #include "WordExporter.h"
 
+#include "ProjectPropertyWidge.h"
+#include "GeomPropertyWidget.h"
+#include "MaterialPropertyWidget.h"
+#include "DatabasePropertyWidget.h"
+#include "StressResultWidget.h"
+#include "StrainResultWidget.h"
+#include "TemperatureResultWidget.h"
+#include "OverpressureResultWidget.h"
+
+
+
 class GFTreeModelWidget :public QWidget
 {
 	Q_OBJECT
@@ -32,7 +43,17 @@ signals:
 private slots:
 	void onTreeItemClicked(QTreeWidgetItem* item, int column);
 
-	void exportWord(const QString& directory, const QString& text);
+	void exportWord(const QString& directory, QTreeWidgetItem* item);
+
+	// 转换导出文本数据
+	QMap<QString, QVariant> convertTextData(ProjectPropertyWidge* projectPropertyWidge,
+		GeomPropertyWidget* geomPropertyWidget,
+		MaterialPropertyWidget* materialPropertyWidget,
+		DatabasePropertyWidget* databasePropertyWidget,
+		StressResultWidget* stressResultWidget,
+		StrainResultWidget* strainResultWidget,
+		TemperatureResultWidget* temperatureResultWidget,
+		OverpressureResultWidget* overpressureResultWidge);
 
 
 private:

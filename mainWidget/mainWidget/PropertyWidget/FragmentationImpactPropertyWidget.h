@@ -8,6 +8,8 @@ class FragmentationImpactPropertyWidget : public BasePropertyWidget
 public:
 	explicit FragmentationImpactPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

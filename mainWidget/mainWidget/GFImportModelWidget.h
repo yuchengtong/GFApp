@@ -56,6 +56,8 @@ public:
 	DatabasePropertyWidget* GetDatabasePropertyWidget() { return m_databasePropertyWidget; }
 
 	FallPropertyWidget* GetFallPropertyWidget() { return m_fallPropertyWidget; }
+	ShootPropertyWidget* GetShootPropertyWidget() { return m_shootPropertyWidget; }
+	FragmentationImpactPropertyWidget* GetFragmentationImpactPropertyWidget() { return m_fragmentationImpactPropertyWidget; }
 
 	StressResultWidget* GetShootStressResultWidget() { return m_shootStressResultWidget; }
 	StrainResultWidget* GetShootStrainResultWidget() { return m_shootStrainResultWidget; }

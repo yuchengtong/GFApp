@@ -290,17 +290,6 @@ void FallPropertyWidget::initWidget()
 	}
 
 
-	connect(m_tableWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
-		if (item->row() == 1 && item->column() == 2) {
-			QString value = item->text();
-			double numericValue = value.toDouble();
-
-			FallSettingInfo info = ModelDataManager::GetInstance()->GetFallSettingInfo();
-			info.high = numericValue;
-			ModelDataManager::GetInstance()->SetFallSettingInfo(info);
-		}
-		});
-
 	connect(m_tableWidget, &QTableWidget::itemChanged, this, [this, heightValueItem](QTableWidgetItem* item) {
 		if (item == heightValueItem) 
 		{
