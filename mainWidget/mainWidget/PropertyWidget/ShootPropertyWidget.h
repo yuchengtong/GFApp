@@ -15,5 +15,5 @@ private:
 
 private:
 	QTableWidget* m_tableWidget = nullptr;
-
+	QString m_impactVelocityValue = "300";
 };

@@ -13,8 +13,6 @@ public:
 	static bool SetFallTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetFallOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 
-
-
 	static bool SetShootStressResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);

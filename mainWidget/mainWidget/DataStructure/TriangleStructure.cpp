@@ -234,6 +234,7 @@ void TriangleStructure::ExtractEdges()
 		edgeSet.insert(edge3);
 	}
 	myEdges.assign(edgeSet.begin(), edgeSet.end());
+
 }
 
 Handle(TriangleStructure) TriangleStructure::RotateXZ(const Standard_Real angleDeg, const Standard_Real x0, const Standard_Real z0) const

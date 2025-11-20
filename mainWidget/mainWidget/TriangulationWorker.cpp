@@ -53,6 +53,47 @@ void TriangulationWorker::DoWork()
 
         auto aDataSource = new TriangleStructure(m_originalShape, 0.5, &m_interrupted);
 
+        auto allNodes = aDataSource->GetAllNodes();
+        auto nodeCoors = aDataSource->GetmyNodeCoords();
+        //记录x，z的最值
+        double x_min = DBL_MAX;
+        double x_max = -DBL_MAX;
+        double z_min = DBL_MAX;
+        double z_max = -DBL_MAX;
+
+        if (!allNodes.IsEmpty())
+        {
+            for (TColStd_PackedMapOfInteger::Iterator it(allNodes); it.More(); it.Next())
+            {
+                int nodeID = it.Key();
+                double x = nodeCoors->Value(nodeID, 1); // 节点x坐标
+                double z = nodeCoors->Value(nodeID, 3); // 节点z坐标
+
+                if (x < x_min)
+                {
+                    x_min = x;
+                }
+                if (x > x_max)
+                {
+                    x_max = x;
+                }
+
+                if (z < z_min)
+                {
+                    z_min = z;
+                }
+                if (z > z_max)
+                {
+                    z_max = z;
+                }
+            }
+        }
+
+        meshInfo.x_min = x_min;
+        meshInfo.x_max = x_max;
+        meshInfo.z_min = z_min;
+        meshInfo.z_max = z_max;
+
         // 在设置结果前检查中断
         if (m_interrupted)
         {

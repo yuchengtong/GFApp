@@ -110,15 +110,6 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 	Handle(V3d_View) view = occView->getView();
 	
 
-	// 仅处理 double 类型的 clamp 函数
-	auto my_clamp = [](double value, double low, double high) {
-		if (value < low)
-			return low;
-		if (value > high)
-			return high;
-		return value;
-	};
-
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 
 	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
@@ -129,13 +120,20 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 	auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
+
 
 	if (fallAnalysisResultInfo.isChecked)
 	{
@@ -155,23 +153,19 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
 
-			// 从角点计算矩形边界参数
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
 
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;       
-			const double ellipse_k = z_min + (x_max - x_min)/5;   
+			const double ellipse_k = z_min + 20;   
 			const double rect_length = x_max - x_min;             
 			const double rect_width = z_max - z_min;              
 			const double ellipse_a = rect_length * 0.8 / 2.0;     
-			const double ellipse_b = rect_width * 0.6 / 2.0;      
+			const double ellipse_b = rect_width * 0.4 / 2.0;      
 
-			double red_line_z = z_min+250;
+			double red_line_z = z_min+10;
 			double min_z_value = std::numeric_limits<double>::max();
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) 
+			{
 				int nodeID = it.Key();
 				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
@@ -218,30 +212,19 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
 
-			// 从角点计算矩形边界参数
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
-
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
+			const double ellipse_k = z_min  / 2.0+20;
 			const double rect_length = x_max - x_min;
 			const double rect_width = z_max - z_min;
 			const double ellipse_a = rect_length  / 2.0;
 			const double ellipse_b = rect_width  / 2.0;
 
-			//double red_line_z = z_min + 200;
-			double min_z_value = std::numeric_limits<double>::max();
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
 				int nodeID = it.Key();
 				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				if (z < min_z_value)
-				{
-					min_z_value = z;
-				}
+
 				// --- 数学判断逻辑 ---
 				// 计算椭圆方程左边的值
 				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
@@ -279,12 +262,6 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-			// 从角点计算矩形边界参数
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
 
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
@@ -361,16 +338,6 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-
-	// 仅处理 double 类型的 clamp 函数
-	auto my_clamp = [](double value, double low, double high) {
-		if (value < low)
-			return low;
-		if (value > high)
-			return high;
-		return value;
-	};
-
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
@@ -380,13 +347,19 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 	auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (fallAnalysisResultInfo.isChecked)
 	{
@@ -407,20 +380,16 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
 
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
 
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = z_min + (x_max - x_min) / 5;
+			const double ellipse_k = z_min + 20;
 			const double rect_length = x_max - x_min;
 			const double rect_width = z_max - z_min;
 			const double ellipse_a = rect_length * 0.8 / 2.0;
-			const double ellipse_b = rect_width * 0.6 / 2.0;
+			const double ellipse_b = rect_width * 0.4 / 2.0;
 
-			double red_line_z = z_min + 250;
+			double red_line_z = z_min + 20;
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) 
 			{
 				int nodeID = it.Key();
@@ -465,12 +434,6 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
 
-			// 从角点计算矩形边界参数
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
-
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
 			const double ellipse_k = (z_min + z_max) / 2.0;
@@ -480,15 +443,11 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 			const double ellipse_b = rect_width / 2.0;
 
 			//double red_line_z = z_min + 200;
-			double min_z_value = std::numeric_limits<double>::max();
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
 				int nodeID = it.Key();
 				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				if (z < min_z_value)
-				{
-					min_z_value = z;
-				}
+
 				// --- 数学判断逻辑 ---
 				// 计算椭圆方程左边的值
 				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
@@ -527,12 +486,6 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 
 		aMesh = new MeshVS_Mesh();
 		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 从角点计算矩形边界参数
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
 
 		// --- 2. 根据矩形角点计算椭圆参数 ---
 		const double ellipse_h = (x_min + x_max) / 2.0;
@@ -614,13 +567,19 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 	auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (fallAnalysisResultInfo.isChecked)
 	{
@@ -641,20 +600,15 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
 
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
-
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = z_min + (x_max - x_min) / 5;
+			const double ellipse_k = z_min + 20;
 			const double rect_length = x_max - x_min;
 			const double rect_width = z_max - z_min;
 			const double ellipse_a = rect_length * 0.8 / 2.0;
-			const double ellipse_b = rect_width * 0.6 / 2.0;
+			const double ellipse_b = rect_width * 0.4 / 2.0;
 
-			double red_line_z = z_min + 250;
+			double red_line_z = z_min + 10;
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 			{
 				int nodeID = it.Key();
@@ -702,12 +656,6 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
-
-			// 从角点计算矩形边界参数
-			const double x_min = modelGeometryInfo.theXmin;
-			const double x_max = modelGeometryInfo.theXmax;
-			const double z_min = modelGeometryInfo.theZmin;
-			const double z_max = modelGeometryInfo.theZmax;
 
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
@@ -770,12 +718,6 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 
 		aMesh = new MeshVS_Mesh();
 		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 从角点计算矩形边界参数
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
 
 		// --- 2. 根据矩形角点计算椭圆参数 ---
 		const double ellipse_h = (x_min + x_max) / 2.0;
@@ -853,13 +795,19 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
 	
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (shootAnalysisResultInfo.isChecked)
 	{
@@ -877,11 +825,6 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 		aMesh = new MeshVS_Mesh();
 		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
-
 		const double circle_center_x = (x_min + x_max) / 2.0;
 		const double circle_center_z = z_min;
 
@@ -889,8 +832,8 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 4.0;
-
+		const double circle_radius = rect_width / 10.0;
+		const double circle_radius2 = rect_width / 10.0+20;
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;
 
@@ -917,7 +860,7 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 			}
 			else
 			{
-				if (dist_sq < circle_radius_sq+50*50)
+				if (dist_sq < circle_radius_sq+ circle_radius2 * circle_radius2)
 				{
 					nodeValues.push_back(max_value*0.5);
 				}
@@ -957,50 +900,52 @@ bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<do
 	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
 
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (shootAnalysisResultInfo.isChecked)
 	{
-		//点的坐标用0，渲染用90
-		auto allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		auto nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+		TColStd_PackedMapOfInteger allnode;
+		Handle(TColStd_HArray2OfReal) nodecoords;
 
 		auto max_value = shootAnalysisResultInfo.temperatureMaxValue;
 		auto min_value = shootAnalysisResultInfo.temperatureMinValue;
 
-		auto aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
+		Handle(MeshVS_Mesh) aMesh = nullptr;
 
-		// 从角点计算矩形边界参数
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
+		//点的坐标用0，渲染用90
+		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+
+		aMesh = new MeshVS_Mesh();
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
 		// --- 2. 根据矩形角点计算椭圆参数 ---
 		const double ellipse_h = (x_min + x_max) / 2.0;
-		const double ellipse_k = (z_min + z_max) / 2.0;
+		const double ellipse_k = z_min + 20;
 		const double rect_length = x_max - x_min;
 		const double rect_width = z_max - z_min;
-		const double ellipse_a = rect_length / 2.0;
-		const double ellipse_b = rect_width / 2.0;
+		const double ellipse_a = rect_length * 0.8 / 2.0;
+		const double ellipse_b = rect_width * 0.4 / 2.0;
 
-		//double red_line_z = z_min + 200;
-		double min_z_value = std::numeric_limits<double>::max();
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+		double red_line_z = z_min + 20;
+		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-			if (z < min_z_value)
-			{
-				min_z_value = z;
-			}
+
 			// --- 数学判断逻辑 ---
 			// 计算椭圆方程左边的值
 			// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
@@ -1012,19 +957,16 @@ bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<do
 			double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
 			double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
 
-			if (value <= threshold + Precision::Confusion())
+			// 考虑浮点计算误差，使用一个小的容差
+			if (z < red_line_z)
 			{
-				nodeValues.push_back(min_value);
+				nodeValues.push_back(max_value);
 			}
 			else
 			{
-				if (x< x_max + 50 && x>x_max - 50)
+				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(max_value);
-				}
-				else if (x > ellipse_h)
-				{
-					nodeValues.push_back(0.6 * max_value);
+					nodeValues.push_back(0.5 * max_value);
 				}
 				else
 				{
@@ -1057,13 +999,19 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
 
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (shootAnalysisResultInfo.isChecked)
 	{
@@ -1081,11 +1029,6 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 		aMesh = new MeshVS_Mesh();
 		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
-
 		const double circle_center_x = (x_min + x_max) / 2.0;
 		const double circle_center_z = z_min;
 
@@ -1093,7 +1036,7 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 5.0;
+		const double circle_radius = rect_width / 10.0;
 
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;
@@ -1149,13 +1092,19 @@ bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector
 	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
 
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (fragmentationAnalysisResultInfo.isChecked)
 	{
@@ -1171,22 +1120,17 @@ bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector
 		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
 
 		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
-
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
 		const double circle_center_x = (x_min + x_max) / 2.0;
-		const double circle_center_z = z_min+100;
+		const double circle_center_z = z_min;
 
 		// 计算矩形宽度 (x方向的长度)
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 4.0;
-
+		const double circle_radius = rect_width / 10.0;
+		const double circle_radius2 = rect_width / 10.0 + 20;
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;
 
@@ -1213,9 +1157,18 @@ bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector
 			}
 			else
 			{
-				nodeValues.push_back(min_value);
+				if (dist_sq < circle_radius_sq + circle_radius2 * circle_radius2)
+				{
+					nodeValues.push_back(max_value * 0.5);
+				}
+				else
+				{
+					nodeValues.push_back(min_value);
+				}
 			}
 		}
+
+
 
 		// 设置颜色映射和显示（与原逻辑一致）
 		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
@@ -1245,24 +1198,28 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
 	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
 
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (fragmentationAnalysisResultInfo.isChecked)
 	{
 		TColStd_PackedMapOfInteger allnode;
 		Handle(TColStd_HArray2OfReal) nodecoords;
 
-		//auto max_value = fragmentationAnalysisResultInfo.temperatureMaxValue;
-		//auto min_value = fragmentationAnalysisResultInfo.temperatureMinValue;
-		double max_value = 100;
-		double min_value = 0;
+		auto max_value = fragmentationAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = fragmentationAnalysisResultInfo.temperatureMinValue;
+
 
 		Handle(MeshVS_Mesh) aMesh = nullptr;
 
@@ -1270,32 +1227,23 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
 
 		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
-
-		// 从角点计算矩形边界参数
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
 		// --- 2. 根据矩形角点计算椭圆参数 ---
 		const double ellipse_h = (x_min + x_max) / 2.0;
-		const double ellipse_k = (z_min + z_max) / 2.0;
+		const double ellipse_k = z_min + 20;
 		const double rect_length = x_max - x_min;
 		const double rect_width = z_max - z_min;
-		const double ellipse_a = rect_length / 2.0;
-		const double ellipse_b = rect_width / 2.0;
+		const double ellipse_a = rect_length * 0.8 / 2.0;
+		const double ellipse_b = rect_width * 0.4 / 2.0;
 
-		//double red_line_z = z_min + 200;
-		double min_z_value = std::numeric_limits<double>::max();
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+		double red_line_z = z_min + 20;
+		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-			if (z < min_z_value)
-			{
-				min_z_value = z;
-			}
+
 			// --- 数学判断逻辑 ---
 			// 计算椭圆方程左边的值
 			// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
@@ -1307,19 +1255,16 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 			double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
 			double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
 
-			if (value <= threshold + Precision::Confusion())
+			// 考虑浮点计算误差，使用一个小的容差
+			if (z < red_line_z)
 			{
-				nodeValues.push_back(min_value);
+				nodeValues.push_back(max_value);
 			}
 			else
 			{
-				if (x< x_max + 50 && x>x_max - 50)
+				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(max_value);
-				}
-				else if (x > ellipse_h)
-				{
-					nodeValues.push_back(0.6 * max_value);
+					nodeValues.push_back(0.5 * max_value);
 				}
 				else
 				{
@@ -1351,25 +1296,27 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
 	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
 
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	Point p0{ (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0 };
-	Point p1{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmin };
-	Point p2{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmin };
-	Point p3{ modelGeometryInfo.theXmax, modelGeometryInfo.theZmax };
-	Point p4{ modelGeometryInfo.theXmin, modelGeometryInfo.theZmax };
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
 
 	if (fragmentationAnalysisResultInfo.isChecked)
 	{
 		TColStd_PackedMapOfInteger allnode;
 		Handle(TColStd_HArray2OfReal) nodecoords;
 
-		//auto max_value = fragmentationAnalysisResultInfo.stressMaxValue;
-		//auto min_value = fragmentationAnalysisResultInfo.stressMinValue;
-		double max_value = 100;
-		double min_value = 0;
-
+		auto max_value = fragmentationAnalysisResultInfo.stressMaxValue;
+		auto min_value = fragmentationAnalysisResultInfo.stressMinValue;
 
 		Handle(MeshVS_Mesh) aMesh = nullptr;
 
@@ -1377,12 +1324,7 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
 
 		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
-
-		const double x_min = modelGeometryInfo.theXmin;
-		const double x_max = modelGeometryInfo.theXmax;
-		const double z_min = modelGeometryInfo.theZmin;
-		const double z_max = modelGeometryInfo.theZmax;
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
 		const double circle_center_x = (x_min + x_max) / 2.0;
 		const double circle_center_z = z_min;
@@ -1391,7 +1333,7 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 4.0;
+		const double circle_radius = rect_width / 10.0;
 
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;

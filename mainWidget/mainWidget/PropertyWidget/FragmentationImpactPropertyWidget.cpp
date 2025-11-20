@@ -5,6 +5,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QComboBox>
+#include "ModelDataManager.h"
 
 FragmentationImpactPropertyWidget::FragmentationImpactPropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
@@ -88,7 +89,7 @@ void FragmentationImpactPropertyWidget::initWidget()
 	QTableWidgetItem* titeItem = new QTableWidgetItem("破片撞击试验");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
-	QTableWidgetItem* impactVelocityValueItem = new QTableWidgetItem("1830");
+	QTableWidgetItem* impactVelocityValueItem = new QTableWidgetItem(m_impactVelocityValue);
 	impactVelocityValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 
 	QTableWidgetItem* impactAngleValueItem = new QTableWidgetItem("90");
@@ -169,6 +170,30 @@ void FragmentationImpactPropertyWidget::initWidget()
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
+
+
+	connect(m_tableWidget, &QTableWidget::itemChanged, this, [this,impactVelocityValueItem](QTableWidgetItem* item) {
+		if (item == impactVelocityValueItem)
+		{
+			auto text = item->text();
+			auto impactVelocityValue = text.toDouble();
+			if (impactVelocityValue >= 1000 && impactVelocityValue <= 2500)
+			{
+				m_impactVelocityValue = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_impactVelocityValue);
+				m_tableWidget->blockSignals(false);
+			}
+
+			auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
+			fragmentationSettingInfo.speed = m_impactVelocityValue.toDouble();
+
+			ModelDataManager::GetInstance()->SetFragmentationSettingInfo(fragmentationSettingInfo);
+		}
+		});
 
 
 }

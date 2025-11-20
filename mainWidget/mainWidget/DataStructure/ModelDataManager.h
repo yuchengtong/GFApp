@@ -37,6 +37,12 @@ struct ModelMeshInfo {
 	TriangleStructure triangleStructure45;
 	TriangleStructure triangleStructure90;
 	bool isChecked=false;
+
+	double x_min = 0.0;
+	double x_max = 0.0;
+	double z_min = 0.0;
+	double z_max = 0.0;
+
 };
 
 struct FallSettingInfo {
@@ -60,7 +66,7 @@ struct FallAnalysisResultInfo {
 
 
 struct ShootSettingInfo {
-	double speed = 20;
+	double speed = 300;
 	double radius = 12.7; // 子弹直径
 };
 
@@ -78,7 +84,7 @@ struct ShootAnalysisResultInfo {
 };
 
 struct FragmentationSettingInfo {
-	double speed = 20;
+	double speed = 1000;
 	double radius = 14.3; // 子弹直径
 };
 

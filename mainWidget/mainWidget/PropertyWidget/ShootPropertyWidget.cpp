@@ -5,6 +5,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QComboBox>
+#include "ModelDataManager.h"
 
 ShootPropertyWidget::ShootPropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
@@ -88,7 +89,7 @@ void ShootPropertyWidget::initWidget()
 	QTableWidgetItem* titeItem = new QTableWidgetItem("枪击试验");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
-	QTableWidgetItem* impactVelocityValueItem = new QTableWidgetItem("820");
+	QTableWidgetItem* impactVelocityValueItem = new QTableWidgetItem(m_impactVelocityValue);
 	impactVelocityValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 
 	QTableWidgetItem* impactAngleValueItem = new QTableWidgetItem("90");
@@ -165,6 +166,30 @@ void ShootPropertyWidget::initWidget()
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
+
+
+	connect(m_tableWidget, &QTableWidget::itemChanged, this, [this, impactVelocityValueItem](QTableWidgetItem* item) {
+		if (item == impactVelocityValueItem)
+		{
+			auto text = item->text();
+			auto impactVelocityValue = text.toDouble();
+			if (impactVelocityValue >= 300 && impactVelocityValue <= 1200)
+			{
+				m_impactVelocityValue = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_impactVelocityValue);
+				m_tableWidget->blockSignals(false);
+			}
+
+			auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
+			shootSettingInfo.speed = m_impactVelocityValue.toDouble();
+
+			ModelDataManager::GetInstance()->SetShootSettingInfo(shootSettingInfo);
+		}
+		});
 
 
 }
