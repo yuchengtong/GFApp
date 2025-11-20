@@ -163,16 +163,11 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 			const double ellipse_b = rect_width * 0.4 / 2.0;      
 
 			double red_line_z = z_min+10;
-			double min_z_value = std::numeric_limits<double>::max();
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) 
 			{
 				int nodeID = it.Key();
 				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				if (z < min_z_value) 
-				{
-					min_z_value = z;
-				}
 				// --- 数学判断逻辑 ---
 				// 计算椭圆方程左边的值
 				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
@@ -189,6 +184,22 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 				{
 					nodeValues.push_back(max_value);
 				}
+				else if (z > red_line_z&&z< red_line_z+5)
+				{
+					nodeValues.push_back(min_value+(max_value- min_value)*0.8);
+				}
+				else if (z > red_line_z+5 && z < red_line_z + 10)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+				}
+				else if (z > red_line_z+10 && z < red_line_z + 15)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+				}
+				else if (z > red_line_z+15 && z < red_line_z + 20)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+				}
 				else
 				{
 					if (value <= threshold + Precision::Confusion())
@@ -201,7 +212,6 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 					}
 				}
 			}
-			int a = 0;
 		}
 		else if (angle == 45)
 		{
@@ -214,7 +224,7 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = z_min  / 2.0+20;
+			const double ellipse_k = (z_min + z_max) / 2.0;
 			const double rect_length = x_max - x_min;
 			const double rect_width = z_max - z_min;
 			const double ellipse_a = rect_length  / 2.0;
@@ -243,15 +253,40 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 				}
 				else
 				{
-					if (z < z_max + 50 && z>z_max - 50 && x< x_max + 50 && x>x_max - 50)
+					if (x > ellipse_h && z < ellipse_k)
 					{
-						nodeValues.push_back(max_value);
+						if (z >= z_min && z<z_min + 20 && x>x_max - 20 && x <= x_max)
+						{
+							nodeValues.push_back(max_value);
+						}
+						else if (z > z_min + 20 && z < z_min + 30
+							&& x < x_max-20 && x > x_max-30)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+						}
+						else if (z > z_min + 30 && z < z_min + 40
+							&& x < x_max - 30 && x > x_max - 40)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+						}
+						else if (z > z_min + 40 && z < z_min + 50
+							&& x < x_max - 40 && x > x_max - 50)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+						}
+						else
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
+						}
 					}
 					else
 					{
-						nodeValues.push_back(max_value * 0.5);
+						nodeValues.push_back(min_value);
 					}
 				}
+
+
+
 			}
 		}
 		else if (angle == 90)
@@ -272,15 +307,12 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 			const double ellipse_b = rect_width / 2.0;
 
 			//double red_line_z = z_min + 200;
-			double min_z_value = std::numeric_limits<double>::max();
+
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
 				int nodeID = it.Key();
 				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				if (z < min_z_value)
-				{
-					min_z_value = z;
-				}
+
 				// --- 数学判断逻辑 ---
 				// 计算椭圆方程左边的值
 				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
@@ -298,13 +330,28 @@ bool APISetNodeValue::SetFallStressResult(OccView* occView, std::vector<double>&
 				}
 				else
 				{
-					if (x< x_max + 50 && x>x_max - 50)
+					if (x > (x_min + x_max) / 2.0)
 					{
-						nodeValues.push_back(max_value);
-					}
-					else if (x > ellipse_h)
-					{
-						nodeValues.push_back(0.6*max_value);
+						if (x< x_max && x>x_max - 10)
+						{
+							nodeValues.push_back(max_value);
+						}
+						else if (x< x_max - 10 && x>x_max - 20)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+						}
+						else if (x< x_max - 20 && x>x_max - 30)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+						}
+						else if (x< x_max - 30 && x>x_max - 40)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+						}
+						else
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+						}
 					}
 					else
 					{
@@ -389,7 +436,7 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 			const double ellipse_a = rect_length * 0.8 / 2.0;
 			const double ellipse_b = rect_width * 0.4 / 2.0;
 
-			double red_line_z = z_min + 20;
+			double red_line_z = z_min + 10;
 			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) 
 			{
 				int nodeID = it.Key();
@@ -407,11 +454,23 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
 				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
 
-				// 考虑浮点计算误差，使用一个小的容差
+
 				if (z < red_line_z)
 				{
 					nodeValues.push_back(max_value);
 				}
+				else if (z > red_line_z && z < red_line_z + 5)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+				}
+				else if (z > red_line_z + 5 && z < red_line_z + 10)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+				}
+				//else if (z > red_line_z + 10 && z < red_line_z + 15)
+				//{
+				//	nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+				//}
 				else
 				{
 					if (value <= threshold + Precision::Confusion())
@@ -468,7 +527,29 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 				{
 					if (x > ellipse_h && z < ellipse_k)
 					{
-						nodeValues.push_back(max_value * 0.3);
+						if (z > z_min && z<z_min + 10 && x>x_max - 10 && x < x_max)
+						{
+							nodeValues.push_back(max_value);
+						}
+						else if (z > z_min + 10 && z < z_min + 20
+							&& x < x_max - 10 && x > x_max - 20)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+						}
+						else if (z > z_min + 20 && z < z_min + 30
+							&& x < x_max - 20 && x > x_max - 30)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+						}
+						else if (z > z_min + 30 && z < z_min + 40
+							&& x < x_max - 30 && x > x_max - 40)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+						}
+						else
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
+						}
 					}
 					else
 					{
@@ -480,63 +561,78 @@ bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<dou
 		}
 		else if (angle == 90)
 		{
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+			//点的坐标用0，渲染用90
+			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
 
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
+			aMesh = new MeshVS_Mesh();
+			aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
-		// --- 2. 根据矩形角点计算椭圆参数 ---
-		const double ellipse_h = (x_min + x_max) / 2.0;
-		const double ellipse_k = (z_min + z_max) / 2.0;
-		const double rect_length = x_max - x_min;
-		const double rect_width = z_max - z_min;
-		const double ellipse_a = rect_length / 2.0;
-		const double ellipse_b = rect_width / 2.0;
+			// --- 2. 根据矩形角点计算椭圆参数 ---
+			const double ellipse_h = (x_min + x_max) / 2.0;
+			const double ellipse_k = (z_min + z_max) / 2.0;
+			const double rect_length = x_max - x_min;
+			const double rect_width = z_max - z_min;
+			const double ellipse_a = rect_length / 2.0;
+			const double ellipse_b = rect_width / 2.0;
 
-		//double red_line_z = z_min + 200;
-		double min_z_value = std::numeric_limits<double>::max();
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-			if (z < min_z_value)
-			{
-				min_z_value = z;
-			}
-			// --- 数学判断逻辑 ---
-			// 计算椭圆方程左边的值
-			// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-			double dx = x - ellipse_h;
-			double dz = z - ellipse_k;
-
-			// 为了提高精度和效率，可以比较平方和，避免开方和除法
-			// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-			double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-			double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-			// 考虑浮点计算误差，使用一个小的容差
-			if (value <= threshold + Precision::Confusion())
-			{
-				nodeValues.push_back(min_value);
-			}
-			else
-			{
-				if (x< x_max + 50 && x>x_max - 50)
+			//double red_line_z = z_min + 200;
+			double min_z_value = std::numeric_limits<double>::max();
+			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+				int nodeID = it.Key();
+				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
+				if (z < min_z_value)
 				{
-					nodeValues.push_back(max_value);
+					min_z_value = z;
 				}
-				else if (x > ellipse_h)
-				{
-					nodeValues.push_back(0.6 * max_value);
-				}
-				else
+				// --- 数学判断逻辑 ---
+				// 计算椭圆方程左边的值
+				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
+				double dx = x - ellipse_h;
+				double dz = z - ellipse_k;
+
+				// 为了提高精度和效率，可以比较平方和，避免开方和除法
+				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
+				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
+				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
+
+				// 考虑浮点计算误差，使用一个小的容差
+				if (value <= threshold + Precision::Confusion())
 				{
 					nodeValues.push_back(min_value);
 				}
+				else
+				{
+					if (x > (x_min + x_max) / 2.0)
+					{
+						if (x< x_max && x>x_max - 10)
+						{
+							nodeValues.push_back(max_value);
+						}
+						else if (x< x_max - 10 && x>x_max - 20)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+						}
+						else if (x< x_max - 20 && x>x_max - 30)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+						}
+						else if (x< x_max - 30 && x>x_max - 40)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+						}
+						else
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+						}
+					}
+					else
+					{
+						nodeValues.push_back(min_value);
+					}
+				}
 			}
-		}
 		}
 
 		// 设置颜色映射和显示（与原逻辑一致）
@@ -631,13 +727,21 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 				{
 					nodeValues.push_back(max_value);
 				}
-				else 
+				else if (z > red_line_z && z < red_line_z + 5)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+				}
+				else if (z > red_line_z + 5 && z < red_line_z + 10)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+				}
+				else
 				{
 					if (value < threshold + Precision::Confusion())
 					{
 						nodeValues.push_back(0.5 * max_value);
 					}
-					else if (value == threshold + Precision::Confusion()&&abs(z- ellipse_h)<50)
+					else if (value == threshold + Precision::Confusion() && abs(z - ellipse_h) < 50)
 					{
 						nodeValues.push_back(min_value);
 					}
@@ -646,6 +750,7 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 						nodeValues.push_back(0.35 * max_value);
 					}
 				}
+
 			}
 		}
 		else if (angle == 45)
@@ -656,6 +761,78 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 
 			aMesh = new MeshVS_Mesh();
 			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
+
+			// --- 2. 根据矩形角点计算椭圆参数 ---
+			const double ellipse_h = (x_min + x_max) / 2.0;
+			const double ellipse_k = (z_min + z_max) / 2.0;
+			const double rect_length = x_max - x_min;
+			const double rect_width = z_max - z_min;
+			const double ellipse_a = rect_length / 2.0;
+			const double ellipse_b = rect_width / 2.0;
+
+			//double red_line_z = z_min + 200;
+
+			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+				int nodeID = it.Key();
+				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
+
+				// --- 数学判断逻辑 ---
+				// 计算椭圆方程左边的值
+				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
+				double dx = x - ellipse_h;
+				double dz = z - ellipse_k;
+
+				// 为了提高精度和效率，可以比较平方和，避免开方和除法
+				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
+				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
+				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
+
+				if (value <= threshold + Precision::Confusion())
+				{
+					nodeValues.push_back(min_value);
+				}
+				else
+				{
+					if (x > ellipse_h && z < ellipse_k)
+					{
+						if (z > z_min && z<z_min + 10 && x>x_max - 10 && x < x_max)
+						{
+							nodeValues.push_back(max_value);
+						}
+						else if (z > z_min + 10 && z < z_min + 20
+							&& x < x_max - 10 && x > x_max - 20)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+						}
+						else if (z > z_min + 20 && z < z_min + 30
+							&& x < x_max - 20 && x > x_max - 30)
+						{
+							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+						}
+						//else if (z > z_min + 30 && z < z_min + 40
+						//	&& x < x_max - 30 && x > x_max - 40)
+						//{
+						//	nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+						//}
+					}
+					else
+					{
+						nodeValues.push_back(min_value);
+					}
+				}
+
+
+			}
+		}
+		else if (angle == 90)
+		{
+			//点的坐标用0，渲染用90
+			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+
+			aMesh = new MeshVS_Mesh();
+			aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
 			// --- 2. 根据矩形角点计算椭圆参数 ---
 			const double ellipse_h = (x_min + x_max) / 2.0;
@@ -686,89 +863,35 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
 				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
 
+				// 考虑浮点计算误差，使用一个小的容差
 				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(max_value * 0.4);
+					nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
 				}
 				else
 				{
-					if (x > ellipse_h && z < ellipse_k)
+					if (x< x_max && x>x_max - 10)
 					{
-						if (x< x_max + 50 && x>x_max - 130)
-						{
-							nodeValues.push_back(max_value);
-						}
-						else
-						{
-							nodeValues.push_back(max_value * 0.2);
-						}
+						nodeValues.push_back(max_value);
+					}
+					else if (x< x_max - 10 && x>x_max - 20)
+					{
+						nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+					}
+					else if (x< x_max - 20 && x>x_max - 30)
+					{
+						nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+					}
+					else if (x< x_max - 30 && x>x_max - 40)
+					{
+						nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
 					}
 					else
 					{
-						nodeValues.push_back(max_value * 0.4);
+						nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
 					}
-				}			
-			}
-		}
-		else if (angle == 90)
-		{
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// --- 2. 根据矩形角点计算椭圆参数 ---
-		const double ellipse_h = (x_min + x_max) / 2.0;
-		const double ellipse_k = (z_min + z_max) / 2.0;
-		const double rect_length = x_max - x_min;
-		const double rect_width = z_max - z_min;
-		const double ellipse_a = rect_length / 2.0;
-		const double ellipse_b = rect_width / 2.0;
-
-		//double red_line_z = z_min + 200;
-		double min_z_value = std::numeric_limits<double>::max();
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-			if (z < min_z_value)
-			{
-				min_z_value = z;
-			}
-			// --- 数学判断逻辑 ---
-			// 计算椭圆方程左边的值
-			// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-			double dx = x - ellipse_h;
-			double dz = z - ellipse_k;
-
-			// 为了提高精度和效率，可以比较平方和，避免开方和除法
-			// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-			double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-			double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-			// 考虑浮点计算误差，使用一个小的容差
-			if (value <= threshold + Precision::Confusion())
-			{
-				nodeValues.push_back(max_value*0.3);
-			}
-			else
-			{
-				if (x< x_max + 50 && x>x_max - 50)
-				{
-					nodeValues.push_back(max_value);
-				}
-				else if (x > ellipse_h)
-				{
-					nodeValues.push_back(min_value);
-				}
-				else
-				{
-					nodeValues.push_back(max_value * 0.3);
 				}
 			}
-		}
 		}
 
 		// 设置颜色映射和显示（与原逻辑一致）
@@ -832,8 +955,7 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 10.0;
-		const double circle_radius2 = rect_width / 10.0+20;
+		const double circle_radius = rect_width / 20.0;
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;
 
@@ -842,7 +964,6 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 			int nodeID = it.Key();
 			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
 			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
 
 			// --- 3. 修改后的数学判断逻辑：判断点是否在圆内 ---
 			// 计算点到圆心的x和z方向的距离
@@ -858,16 +979,25 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 			{
 				nodeValues.push_back(max_value);
 			}
+			else if (dist_sq > circle_radius_sq&& dist_sq< circle_radius_sq+5*5)
+			{
+				nodeValues.push_back(min_value+(max_value- min_value)*0.8);
+			}
+			else if (dist_sq > circle_radius_sq + 5 * 5 && dist_sq < circle_radius_sq + 10 * 10)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+			}
+			else if (dist_sq > circle_radius_sq + 10 * 10 && dist_sq < circle_radius_sq + 15 * 15)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+			}
+			else if (dist_sq > circle_radius_sq + 15 * 15 && dist_sq < circle_radius_sq + 20 * 20)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+			}
 			else
 			{
-				if (dist_sq < circle_radius_sq+ circle_radius2 * circle_radius2)
-				{
-					nodeValues.push_back(max_value*0.5);
-				}
-				else
-				{
-					nodeValues.push_back(min_value);
-				}
+				nodeValues.push_back(min_value);
 			}
 		}
 
@@ -919,8 +1049,11 @@ bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<do
 		TColStd_PackedMapOfInteger allnode;
 		Handle(TColStd_HArray2OfReal) nodecoords;
 
-		auto max_value = shootAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = shootAnalysisResultInfo.temperatureMinValue;
+		//auto min_value = shootAnalysisResultInfo.temperatureMaxValue;
+		//auto max_value = shootAnalysisResultInfo.temperatureMinValue;
+
+		double max_value = 88;
+		double min_value = 73;
 
 		Handle(MeshVS_Mesh) aMesh = nullptr;
 
@@ -962,11 +1095,27 @@ bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<do
 			{
 				nodeValues.push_back(max_value);
 			}
+			else if (z > red_line_z && z < red_line_z + 5)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+			}
+			else if (z > red_line_z + 5 && z < red_line_z + 10)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+			}
+			else if (z > red_line_z + 10 && z < red_line_z + 15)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+			}
+			else if (z > red_line_z + 15 && z < red_line_z + 20)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+			}
 			else
 			{
 				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(min_value+0.5 * (max_value- min_value));
+					nodeValues.push_back(min_value + 0.5 * (max_value - min_value));
 				}
 				else
 				{
@@ -1036,7 +1185,7 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 10.0;
+		const double circle_radius = rect_width / 20.0;
 
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;
@@ -1058,13 +1207,22 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 			double dist_sq = dx * dx + dz * dz;
 
 			// 考虑浮点计算误差，使用一个小的容差
+
 			if (dist_sq < circle_radius_sq)
 			{
 				nodeValues.push_back(max_value);
 			}
+			else if (dist_sq > circle_radius_sq && dist_sq < circle_radius_sq + 5 * 5)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+			}
+			else if (dist_sq > circle_radius_sq + 5 * 5 && dist_sq < circle_radius_sq + 10 * 10)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+			}
 			else
 			{
-				nodeValues.push_back(max_value*0.5);
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
 			}
 		}
 
@@ -1150,21 +1308,29 @@ bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector
 			// 如果这个值小于或等于半径的平方，则点在圆内或圆上
 			double dist_sq = dx * dx + dz * dz;
 
-			// 考虑浮点计算误差，使用一个小的容差
 			if (dist_sq < circle_radius_sq)
 			{
 				nodeValues.push_back(max_value);
 			}
+			else if (dist_sq > circle_radius_sq && dist_sq < circle_radius_sq + 5 * 5)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+			}
+			else if (dist_sq > circle_radius_sq + 5 * 5 && dist_sq < circle_radius_sq + 10 * 10)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+			}
+			else if (dist_sq > circle_radius_sq + 10 * 10 && dist_sq < circle_radius_sq + 15 * 15)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+			}
+			else if (dist_sq > circle_radius_sq + 15 * 15 && dist_sq < circle_radius_sq + 20 * 20)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+			}
 			else
 			{
-				if (dist_sq < circle_radius_sq + circle_radius2 * circle_radius2)
-				{
-					nodeValues.push_back(max_value * 0.5);
-				}
-				else
-				{
-					nodeValues.push_back(min_value);
-				}
+				nodeValues.push_back(min_value);
 			}
 		}
 
@@ -1217,8 +1383,11 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 		TColStd_PackedMapOfInteger allnode;
 		Handle(TColStd_HArray2OfReal) nodecoords;
 
-		auto max_value = fragmentationAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = fragmentationAnalysisResultInfo.temperatureMinValue;
+		//auto  min_value = fragmentationAnalysisResultInfo.temperatureMaxValue;
+		//auto  max_value = fragmentationAnalysisResultInfo.temperatureMinValue;
+
+		double max_value = 95;
+		double min_value = 50;
 
 
 		Handle(MeshVS_Mesh) aMesh = nullptr;
@@ -1260,11 +1429,27 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 			{
 				nodeValues.push_back(max_value);
 			}
+			else if (z > red_line_z && z < red_line_z + 5)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+			}
+			else if (z > red_line_z + 5 && z < red_line_z + 10)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+			}
+			else if (z > red_line_z + 10 && z < red_line_z + 15)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
+			}
+			//else if (z > red_line_z + 15 && z < red_line_z + 20)
+			//{
+			//	nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
+			//}
 			else
 			{
 				if (value <= threshold + Precision::Confusion())
 				{
-					nodeValues.push_back(min_value+0.5 * (max_value- min_value));
+					nodeValues.push_back(min_value + 0.5 * (max_value - min_value));
 				}
 				else
 				{
@@ -1333,7 +1518,7 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 		const double rect_width = z_max - z_min;
 
 		// 计算圆的半径 (矩形宽度的1/4)
-		const double circle_radius = rect_width / 10.0;
+		const double circle_radius = rect_width / 20.0;
 
 		// 为了提高计算效率，预先计算半径的平方
 		const double circle_radius_sq = circle_radius * circle_radius;
@@ -1354,14 +1539,21 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 			// 如果这个值小于或等于半径的平方，则点在圆内或圆上
 			double dist_sq = dx * dx + dz * dz;
 
-			// 考虑浮点计算误差，使用一个小的容差
 			if (dist_sq < circle_radius_sq)
 			{
 				nodeValues.push_back(max_value);
 			}
+			else if (dist_sq > circle_radius_sq && dist_sq < circle_radius_sq + 5 * 5)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
+			}
+			else if (dist_sq > circle_radius_sq + 5 * 5 && dist_sq < circle_radius_sq + 10 * 10)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
+			}
 			else
 			{
-				nodeValues.push_back(max_value * 0.5);
+				nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
 			}
 		}
 

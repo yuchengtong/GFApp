@@ -100,21 +100,21 @@ void CalculateWorker::DoWork()
         emit StatusUpdated("射流冲击试验计算");
         emit ProgressUpdated(60);
 
-        for (int i = 0; i < 1000; ++i)
-        {
-            if (m_interrupted)
-            {
-                emit WorkFinished(false, "计算已取消");
-                return;
-            }
-            QThread::msleep(10);
-        }
+        //for (int i = 0; i < 1000; ++i)
+        //{
+        //    if (m_interrupted)
+        //    {
+        //        emit WorkFinished(false, "计算已取消");
+        //        return;
+        //    }
+        //    QThread::msleep(10);
+        //}
 
-        if (m_interrupted)
-        {
-            emit WorkFinished(false, "计算已取消");
-            return;
-        }
+        //if (m_interrupted)
+        //{
+        //    emit WorkFinished(false, "计算已取消");
+        //    return;
+        //}
 
         emit StatusUpdated("破片撞击试验计算");
         emit ProgressUpdated(70);
@@ -138,34 +138,34 @@ void CalculateWorker::DoWork()
         emit StatusUpdated("爆炸冲击波试验计算");
         emit ProgressUpdated(80);
 
-        for (int i = 0; i < 1000; ++i)
-        {
-            if (m_interrupted)
-            {
-                emit WorkFinished(false, "计算已取消");
-                return;
-            }
-            QThread::msleep(10);
-        }
+        //for (int i = 0; i < 1000; ++i)
+        //{
+        //    if (m_interrupted)
+        //    {
+        //        emit WorkFinished(false, "计算已取消");
+        //        return;
+        //    }
+        //    QThread::msleep(10);
+        //}
 
-        if (m_interrupted)
-        {
-            emit WorkFinished(false, "计算已取消");
-            return;
-        }
+        //if (m_interrupted)
+        //{
+        //    emit WorkFinished(false, "计算已取消");
+        //    return;
+        //}
 
         emit StatusUpdated("殉爆试验计算");
         emit ProgressUpdated(90);
 
-        for (int i = 0; i < 1000; ++i)
-        {
-            if (m_interrupted)
-            {
-                emit WorkFinished(false, "计算已取消");
-                return;
-            }
-            QThread::msleep(10);
-        }
+        //for (int i = 0; i < 1000; ++i)
+        //{
+        //    if (m_interrupted)
+        //    {
+        //        emit WorkFinished(false, "计算已取消");
+        //        return;
+        //    }
+        //    QThread::msleep(10);
+        //}
 
         if (m_interrupted)
         {
