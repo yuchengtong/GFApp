@@ -61,6 +61,7 @@ struct FallAnalysisResultInfo {
 
 struct ShootSettingInfo {
 	double speed = 20;
+	double radius = 12.7; // 子弹直径
 };
 
 struct ShootAnalysisResultInfo {
@@ -78,6 +79,7 @@ struct ShootAnalysisResultInfo {
 
 struct FragmentationSettingInfo {
 	double speed = 20;
+	double radius = 14.3; // 子弹直径
 };
 
 struct FragmentationAnalysisResultInfo {

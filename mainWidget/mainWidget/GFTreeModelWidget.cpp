@@ -819,8 +819,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 									auto oriShape = geomInfo.shape;
-									auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-									auto angle = fallSettingInfo.angle;
 
 									//BRep_Builder builder;
 									//TopoDS_Compound compound;
@@ -872,15 +870,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 									auto oriShape = geomInfo.shape;
-									auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-									auto angle = fallSettingInfo.angle;
 
-									//gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-									//	resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+									gfParent->GetShootStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+										resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
 
-									//auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-									//gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-									//	resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+									auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+									gfParent->GetShootStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+										resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
 								}
 								else
 								{
@@ -911,15 +907,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 									auto oriShape = geomInfo.shape;
-									auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-									auto angle = fallSettingInfo.angle;
 
-									//gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-									//	resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+									gfParent->GetFragmentationImpactStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
+										resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
 
-									//auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-									//gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-									//	resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+									auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+									gfParent->GetFragmentationImpactStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
+										resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
 								}
 								else
 								{
