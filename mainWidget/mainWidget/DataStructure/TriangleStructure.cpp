@@ -36,8 +36,8 @@ TriangleStructure::TriangleStructure(const TopoDS_Shape& shape, const Standard_R
     }
 
     // 首先对形状进行网格划分
-    //BRepMesh_IncrementalMesh mesher(shape, 0.08, Standard_False,0.2, Standard_False);
-    BRepMesh_IncrementalMesh mesher(shape, 0.8, Standard_False, 0.8, Standard_False);
+    BRepMesh_IncrementalMesh mesher(shape, 0.08, Standard_False,0.2, Standard_False);
+    //BRepMesh_IncrementalMesh mesher(shape, 0.8, Standard_False, 0.8, Standard_False);
     mesher.Perform();
 
     if (CheckInterruption(interrupted))
