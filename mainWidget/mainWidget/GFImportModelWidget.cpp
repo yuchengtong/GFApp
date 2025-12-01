@@ -82,7 +82,29 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_fragmentationImpactOverpressureResultWidge = new OverpressureResultWidget();
 	m_fragmentationImpactStrainResultWidget = new StrainResultWidget();
 	
+	// 快烤结果
+	m_fastCombustionTemperatureResultWidget = new TemperatureResultWidget();
 
+	// 慢烤结果
+	m_slowCombustionTemperatureResultWidget = new TemperatureResultWidget();
+
+	// 射流冲击结果
+	m_jetImpactStressResultWidget = new StressResultWidget();
+	m_jetImpactTemperatureResultWidget = new TemperatureResultWidget();
+	m_jetImpactOverpressureResultWidge = new OverpressureResultWidget();
+	m_jetImpactStrainResultWidget = new StrainResultWidget();
+
+	// 爆炸冲击波结果
+	m_explosiveBlastStressResultWidget = new StressResultWidget();
+	m_explosiveBlastTemperatureResultWidget = new TemperatureResultWidget();
+	m_explosiveBlastOverpressureResultWidge = new OverpressureResultWidget();
+	m_explosiveBlastStrainResultWidget = new StrainResultWidget();
+
+	// 殉爆结果
+	m_sacrificeExplosionStressResultWidget = new StressResultWidget();
+	m_sacrificeExplosionTemperatureResultWidget = new TemperatureResultWidget();
+	m_sacrificeExplosionOverpressureResultWidge = new OverpressureResultWidget();
+	m_sacrificeExplosionStrainResultWidget = new StrainResultWidget();
 
 
 	// 将所有的 PropertyWidget 添加到 QStackedWidget 中
@@ -120,6 +142,24 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_PropertyStackWidget->addWidget(m_fragmentationImpactTemperatureResultWidget);
 	m_PropertyStackWidget->addWidget(m_fragmentationImpactOverpressureResultWidge);
 	m_PropertyStackWidget->addWidget(m_fragmentationImpactStrainResultWidget);
+
+	m_PropertyStackWidget->addWidget(m_fastCombustionTemperatureResultWidget);
+	m_PropertyStackWidget->addWidget(m_slowCombustionTemperatureResultWidget);
+
+	m_PropertyStackWidget->addWidget(m_jetImpactStressResultWidget);
+	m_PropertyStackWidget->addWidget(m_jetImpactTemperatureResultWidget);
+	m_PropertyStackWidget->addWidget(m_jetImpactOverpressureResultWidge);
+	m_PropertyStackWidget->addWidget(m_jetImpactStrainResultWidget);
+
+	m_PropertyStackWidget->addWidget(m_explosiveBlastStressResultWidget);
+	m_PropertyStackWidget->addWidget(m_explosiveBlastTemperatureResultWidget);
+	m_PropertyStackWidget->addWidget(m_explosiveBlastOverpressureResultWidge);
+	m_PropertyStackWidget->addWidget(m_explosiveBlastStrainResultWidget);
+
+	m_PropertyStackWidget->addWidget(m_sacrificeExplosionStressResultWidget);
+	m_PropertyStackWidget->addWidget(m_sacrificeExplosionTemperatureResultWidget);
+	m_PropertyStackWidget->addWidget(m_sacrificeExplosionOverpressureResultWidge);
+	m_PropertyStackWidget->addWidget(m_sacrificeExplosionStrainResultWidget);
 
 
 	m_OccView = new OccView(this);
@@ -423,8 +463,16 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	{
 		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);
 	}
+	else if (itemData == "FastCombustionTemperatureResult")
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionTemperatureResultWidget);
+	}
 	else if (itemData == "SlowCombustionAnalysis") {
 		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
+	}
+	else if (itemData == "SlowCombustionTemperatureResult")
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionTemperatureResultWidget);
 	}
 	else if (itemData == "Results") {
 		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
@@ -596,8 +644,20 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->Display(aColorScale, Standard_True);
 
 	}
-	else if (itemData == "JetImpactAnalysis") {
+	else if (itemData == "JetImpactAnalysis") { //射流冲击试验
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
+	}
+	else if (itemData == "JetImpactStressResult") { //射流冲击应力分析
+		m_PropertyStackWidget->setCurrentWidget(m_jetImpactStressResultWidget);
+	}
+	else if (itemData == "JetImpactStrainResult") { //射流冲击应变分析
+		m_PropertyStackWidget->setCurrentWidget(m_jetImpactStrainResultWidget);
+	}
+	else if (itemData == "JetImpactTemperatureResult") { //射流冲击温度分析
+		m_PropertyStackWidget->setCurrentWidget(m_jetImpactTemperatureResultWidget);
+	}
+	else if (itemData == "JetImpactOverpressureResult") { //射流冲击超压分析
+		m_PropertyStackWidget->setCurrentWidget(m_jetImpactOverpressureResultWidge);
 	}
 	else if (itemData == "FragmentationImpactAnalysis")	//破片试验
 	{
@@ -745,13 +805,36 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
-	else if (itemData == "ExplosiveBlastAnalysis") {
+	else if (itemData == "ExplosiveBlastAnalysis") { //爆炸冲击波试验
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);
 	}
-	else if (itemData == "SacrificeExplosionAnalysis") {
+	else if (itemData == "ExplosiveBlastStressResult") { //爆炸冲击波应力分析
+		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastStressResultWidget);
+	}
+	else if (itemData == "ExplosiveBlastStrainResult") { //爆炸冲击波应变分析
+		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastStrainResultWidget);
+	}
+	else if (itemData == "ExplosiveBlastTemperatureResult") { //爆炸冲击波温度分析
+		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastTemperatureResultWidget);
+	}
+	else if (itemData == "ExplosiveBlastOverpressureResult") { //爆炸冲击波超压分析
+		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastOverpressureResultWidge);
+	}
+	else if (itemData == "SacrificeExplosionAnalysis") { // 殉爆试验
 		m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
 	}
-	
+	else if (itemData == "SacrificeExplosioStressResult") { //殉爆应力分析
+	m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionStressResultWidget);
+	}
+	else if (itemData == "SacrificeExplosioStrainResult") { //殉爆应变分析
+	m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionStrainResultWidget);
+	}
+	else if (itemData == "SacrificeExplosioTemperatureResult") { //殉爆温度分析
+	m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionTemperatureResultWidget);
+	}
+	else if (itemData == "SacrificeExplosioOverpressureResult") { //殉爆超压分析
+	m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionOverpressureResultWidge);
+	}
 }
 
 

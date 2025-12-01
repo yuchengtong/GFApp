@@ -269,7 +269,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	QTreeWidgetItem* slowCombustionTemperatureResult = new QTreeWidgetItem();
 	slowCombustionTemperatureResult->setText(0, "温度分析");
-	slowCombustionTemperatureResult->setData(0, Qt::UserRole, "slowCombustionTemperatureResult");
+	slowCombustionTemperatureResult->setData(0, Qt::UserRole, "SlowCombustionTemperatureResult");
 	slowCombustionTemperatureResult->setIcon(0, error_icon);
 
 	slowCombustionAnalysis->addChild(slowCombustionTemperatureResult);
@@ -875,11 +875,43 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "快速烤燃试验")
 										{
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>快速烤燃试验计算完成";
+												textEdit->appendPlainText(text);
 
+												auto temperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
+												gfParent->GetFastCombustionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>快速烤燃试验计算失败";
+												textEdit->appendPlainText(text);
+											}
 										}
 										else if (processedName == "慢速烤燃试验")
 										{
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>慢速烤燃试验计算完成";
+												textEdit->appendPlainText(text);
 
+												auto temperatureResult = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
+												gfParent->GetSlowCombustionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>慢速烤燃试验计算失败";
+												textEdit->appendPlainText(text);
+											}
 										}
 										else if (processedName == "枪击试验")
 										{
@@ -925,7 +957,37 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "射流冲击试验")
 										{
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>射流冲击试验计算完成";
+												textEdit->appendPlainText(text);
 
+										
+
+												auto stressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+												gfParent->GetJetImpactStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+
+												auto strainResult = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
+												gfParent->GetJetImpactStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+
+												auto temperatureResult = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
+												gfParent->GetJetImpactTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+												auto overpressureResult = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+												gfParent->GetJetImpactOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>射流冲击试验计算失败";
+												textEdit->appendPlainText(text);
+											}
 										}
 										else if (processedName == "破片撞击试验")
 										{
@@ -971,11 +1033,71 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "爆炸冲击波试验")
 										{
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>爆炸冲击波试验计算完成";
+												textEdit->appendPlainText(text);
 
+
+
+												auto stressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+												gfParent->GetExplosiveBlastStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+
+												auto strainResult = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
+												gfParent->GetExplosiveBlastStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+
+												auto temperatureResult = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
+												gfParent->GetExplosiveBlastTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+												auto overpressureResult = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+												gfParent->GetExplosiveBlastOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>爆炸冲击波试验计算失败";
+												textEdit->appendPlainText(text);
+											}
 										}
 										else if (processedName == "殉爆试验")
 										{
+											QDateTime currentTime = QDateTime::currentDateTime();
+											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+											if (success)
+											{
+												QString text = timeStr + "[信息]>殉爆试验计算完成";
+												textEdit->appendPlainText(text);
 
+
+
+												auto stressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+												gfParent->GetSacrificeExplosionStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+
+												auto strainResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
+												gfParent->GetSacrificeExplosionStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+
+												auto temperatureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
+												gfParent->GetSacrificeExplosionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+
+												auto overpressureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+												gfParent->GetSacrificeExplosionOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+
+											}
+											else
+											{
+												QString text = timeStr + "[信息]>殉爆试验计算失败";
+												textEdit->appendPlainText(text);
+											}
 										}
 									}
 								}

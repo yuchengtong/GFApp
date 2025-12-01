@@ -507,14 +507,14 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	auto pointResult = ins->GetPointResult();
 	QStringList resultLabels;
 
-	resultLabels << " " + QString::number(pointResult.fallPoint);
-	resultLabels << "  " + QString::number(pointResult.fastCombustionPoint);
-	resultLabels << "   " + QString::number(pointResult.slowCombustionPoint);
-	resultLabels << "    " + QString::number(pointResult.shootPoint);
-	resultLabels << QString::number(pointResult.jetImpactPoint) + " ";
-	resultLabels << QString::number(pointResult.fragmentationImpactPoint) + "  ";
-	resultLabels << QString::number(pointResult.explosiveBlastPoint) + "   ";
-	resultLabels << QString::number(pointResult.sacrificeExplosionPoint) + "    ";
+	resultLabels << "µøÂäÊÔÑé£º" + QString::number(pointResult.fallPoint);
+	resultLabels << "¿ìËÙ¿¾È¼ÊÔÑé£º" + QString::number(pointResult.fastCombustionPoint);
+	resultLabels << "ÂýËÙ¿¾È¼ÊÔÑé£º" + QString::number(pointResult.slowCombustionPoint);
+	resultLabels << "Ç¹»÷ÊÔÑé£º" + QString::number(pointResult.shootPoint);
+	resultLabels << "ÉäÁ÷³å»÷ÊÔÑé£º" + QString::number(pointResult.jetImpactPoint);
+	resultLabels << "ÆÆÆ¬×²»÷ÊÔÑé£º" + QString::number(pointResult.fragmentationImpactPoint);
+	resultLabels << "±¬Õ¨³å»÷²¨ÊÔÑé£º" + QString::number(pointResult.explosiveBlastPoint);
+	resultLabels << "Ñ³±¬ÊÔÑé£º" + QString::number(pointResult.sacrificeExplosionPoint);
 
 	QVector<QStringList> resultLabelGroups;
 	resultLabelGroups.append(resultLabels);
