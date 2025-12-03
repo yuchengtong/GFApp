@@ -115,6 +115,8 @@ void SlowCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(5, 2, shockWaveValueItem);
 	m_tableWidget->setItem(6, 2, windSpeedValueItem);
 	m_tableWidget->setItem(7, 2, balanceMomentValueItem);
+	m_tableWidget->setItem(8, 2, new QTableWidgetItem("0"));
+	m_tableWidget->setItem(9, 2, new QTableWidgetItem("0"));
 	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
 	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
 

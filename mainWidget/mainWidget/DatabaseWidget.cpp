@@ -557,6 +557,8 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 			for (int col = 1; col <= colcount; ++col) {
 				if (currentDataaseType != "用户数据库")
 				{
+					std::shared_ptr<QXlsx::Cell> cell = xlsx.cellAt(row, col);
+					
 					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 					item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
 					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
