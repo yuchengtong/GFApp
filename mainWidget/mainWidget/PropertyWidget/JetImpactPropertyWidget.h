@@ -8,6 +8,8 @@ class JetImpactPropertyWidget : public BasePropertyWidget
 public:
 	explicit JetImpactPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

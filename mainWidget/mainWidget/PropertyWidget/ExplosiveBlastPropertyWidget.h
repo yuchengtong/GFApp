@@ -8,6 +8,8 @@ class ExplosiveBlastPropertyWidget : public BasePropertyWidget
 public:
 	explicit ExplosiveBlastPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

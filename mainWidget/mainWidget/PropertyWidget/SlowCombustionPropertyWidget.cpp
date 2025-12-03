@@ -20,7 +20,7 @@ void SlowCombustionPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(10);
+	m_tableWidget->setRowCount(11);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -44,7 +44,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","加热类型", "弹药位置", "温度传感器数量", "冲击波超压传感器数量","风速","试验件达到50 ℃热平衡时刻","烘箱升温速率","烘箱终止温度" };
+	QStringList labels = { "属性","测试项目","加热类型", "弹药位置", "温度传感器数量", "冲击波超压传感器数量","风速","试验件达到50 ℃热平衡时刻","烘箱升温速率","烘箱终止温度","推进剂发火温度判断" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -64,7 +64,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位
-	QStringList unitLabels = { " ", " ", " ", " ", " ", " ", " ", "h", "℃/h", "℃" };
+	QStringList unitLabels = { " ", " ", " ", " ", " ", " ", " ", "h", "℃/h", "℃", ""};
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -115,6 +115,8 @@ void SlowCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(5, 2, shockWaveValueItem);
 	m_tableWidget->setItem(6, 2, windSpeedValueItem);
 	m_tableWidget->setItem(7, 2, balanceMomentValueItem);
+	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
+	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
 
 	//文本左对齐
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {

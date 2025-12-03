@@ -39,6 +39,8 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	QTableWidget* tableWidget = ui.tableWidget;
 	tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
 	tableWidget->setColumnWidth(0, 3);
+	tableWidget->horizontalHeader()->setDefaultSectionSize(200); // 设置默认列宽
+	tableWidget->verticalHeader()->setDefaultSectionSize(25); // 设置默认行高
 
 	tableWidget->horizontalHeader()->setStretchLastSection(true);
 	// 启用右键菜单
@@ -437,6 +439,13 @@ QTreeWidget* DatabaseWidget::getQTreeWid()
 void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 
 	QTableWidget* tableWidge = getTableWid();
+	tableWidge->setStyleSheet(R"(
+        QTableWidget::item {
+            white-space: nowrap; /* 禁止文本换行 */
+            text-overflow: ellipsis; /* 可选：文本过长时显示省略号（...） */
+        }
+    )");
+
 	QString filepath = nullptr;
 	QDir dir;
 	currentDataaseType = item->text(0);
@@ -550,6 +559,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 				{
 					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 					item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 					if (row == 1)
 					{
 						item->setBackground(QBrush(QColor(0, 237, 252)));

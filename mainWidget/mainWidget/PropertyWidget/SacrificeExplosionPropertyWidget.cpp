@@ -20,7 +20,7 @@ void SacrificeExplosionPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(8);
+	m_tableWidget->setRowCount(11);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -44,7 +44,7 @@ void SacrificeExplosionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","殉爆距离", "模拟弹药数量", "被发弹数量", "温度传感器数量","超压传感器数量","风速" };
+	QStringList labels = { "属性","测试项目","殉爆距离", "模拟弹药数量", "被发弹数量", "温度传感器数量","超压传感器数量","风速","壳体破损判断","推进剂发火温度判断","推进剂发火压力判断" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -59,12 +59,12 @@ void SacrificeExplosionPropertyWidget::initWidget()
 		m_tableWidget->setItem(row, 1, labelItem);
 	}
 	// 设置列宽度
-	QTableWidgetItem* colimnItem = m_tableWidget->item(6, 1);
+	QTableWidgetItem* colimnItem = m_tableWidget->item(10, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位
-	QStringList unitLabels = { " ", " ", "mm", "发", "发", "个", "个", "m/s" };
+	QStringList unitLabels = { " ", " ", "mm", "发", "发", "个", "个", "m/s", "", "", "" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -118,6 +118,12 @@ void SacrificeExplosionPropertyWidget::initWidget()
 	m_tableWidget->setItem(5, 2, temperatureNumValueItem);
 	m_tableWidget->setItem(6, 2, overpressureNumValueItem);
 	m_tableWidget->setItem(7, 2, windSpeedValueItem);
+	m_tableWidget->setItem(8, 2, new QTableWidgetItem(""));
+	m_tableWidget->setItem(9, 2, new QTableWidgetItem(""));
+	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
+	m_tableWidget->item(8, 2)->setBackground(QBrush(QColor(230, 230, 230)));
+	m_tableWidget->item(9, 2)->setBackground(QBrush(QColor(230, 230, 230)));
+	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
 
 	//文本左对齐
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {

@@ -56,8 +56,13 @@ public:
 	DatabasePropertyWidget* GetDatabasePropertyWidget() { return m_databasePropertyWidget; }
 
 	FallPropertyWidget* GetFallPropertyWidget() { return m_fallPropertyWidget; }
+	FastCombustionPropertyWidget* GetFastCombustionPropertyWidget() { return m_fastCombustionPropertyWidget; };
+	SlowCombustionPropertyWidget* GetSlowCombustionPropertyWidget() { return m_slowCombustionPropertyWidget; };
 	ShootPropertyWidget* GetShootPropertyWidget() { return m_shootPropertyWidget; }
+	JetImpactPropertyWidget* GetJetImpactPropertyWidget() { return m_jetImpactPropertyWidget; }
 	FragmentationImpactPropertyWidget* GetFragmentationImpactPropertyWidget() { return m_fragmentationImpactPropertyWidget; }
+	ExplosiveBlastPropertyWidget* GetExplosiveBlastPropertyWidget() { return m_explosiveBlastPropertyWidget; }
+	SacrificeExplosionPropertyWidget* GetSacrificeExplosionPropertyWidget() { return m_sacrificeExplosionPropertyWidget; }
 
 	StressResultWidget* GetShootStressResultWidget() { return m_shootStressResultWidget; }
 	StrainResultWidget* GetShootStrainResultWidget() { return m_shootStrainResultWidget; }

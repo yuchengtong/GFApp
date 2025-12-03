@@ -8,6 +8,8 @@ class SacrificeExplosionPropertyWidget : public BasePropertyWidget
 public:
 	explicit SacrificeExplosionPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

@@ -810,6 +810,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
 							if (success)
 							{
+								auto yieldStrength = ModelDataManager::GetInstance()->GetSteelPropertyInfo().yieldStrength;	// 壳体屈服强度
+								auto ignitionTemperature = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().ignitionTemperature; // 推进剂发火温度
+								auto fireOverpressure = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().fireOverpressure; // 推进剂发火超压
 								for (int i = 0; i < item->childCount(); ++i) {
 									QTreeWidgetItem* childItem = item->child(i);
 									auto originalName = childItem->text(0);
@@ -865,6 +868,32 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetOverpressureResultWidget()->updateData(fallOverpressureResult.metalsMaxOverpressure, fallOverpressureResult.metalsMinOverpressure, fallOverpressureResult.metalsAvgOverpressure, fallOverpressureResult.metalsStandardOverpressure,
 													fallOverpressureResult.propellantsMaxOverpressure, fallOverpressureResult.propellantsMinOverpressure, fallOverpressureResult.mpropellantsAvgOverpressure, fallOverpressureResult.propellantsStandardOverpressure);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetFallPropertyWidget()->GetQTableWidget();
+												if (resultValue[0]> yieldStrength)
+												{
+													tableWidget->item(8, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(8, 2)->setText("应力未超过壳体最大屈服强度");
+												}
+												if (fallTemperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火温度");
+												}
+												if (fallOverpressureResult.metalsMaxOverpressure > fireOverpressure)
+												{
+													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火超压");
+												}
 
 											}
 											else
@@ -886,6 +915,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetFastCombustionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
 													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetFastCombustionPropertyWidget()->GetQTableWidget();
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火温度");
+												}
 											}
 											else
 											{
@@ -906,6 +945,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetSlowCombustionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
 													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetSlowCombustionPropertyWidget()->GetQTableWidget();
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火温度");
+												}
 											}
 											else
 											{
@@ -948,6 +997,32 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetShootOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetShootPropertyWidget()->GetQTableWidget();
+												if (resultValue[0] > yieldStrength)
+												{
+													tableWidget->item(10, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(10, 2)->setText("应力未超过壳体最大屈服强度");
+												}
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(11, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(11, 2)->setText("温度超过推进剂最大发火温度");
+												}
+												if (overpressureResult.metalsMaxOverpressure > fireOverpressure)
+												{
+													tableWidget->item(12, 2)->setText("超压超过推进剂最大发火超压，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(12, 2)->setText("温度超过推进剂最大发火超压");
+												}
 }
 											else
 											{
@@ -982,6 +1057,32 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetJetImpactOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetJetImpactPropertyWidget()->GetQTableWidget();
+												if (stressResult.metalsMaxStress > yieldStrength)
+												{
+													tableWidget->item(8, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(8, 2)->setText("应力未超过壳体最大屈服强度");
+												}
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火温度");
+												}
+												if (overpressureResult.metalsMaxOverpressure > fireOverpressure)
+												{
+													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火超压");
+												}
 											}
 											else
 											{
@@ -1024,6 +1125,32 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetFragmentationImpactOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetFragmentationImpactPropertyWidget()->GetQTableWidget();
+												if (resultValue[0] > yieldStrength)
+												{
+													tableWidget->item(11, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(11, 2)->setText("应力未超过壳体最大屈服强度");
+												}
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(12, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(12, 2)->setText("温度超过推进剂最大发火温度");
+												}
+												if (overpressureResult.metalsMaxOverpressure > fireOverpressure)
+												{
+													tableWidget->item(13, 2)->setText("超压超过推进剂最大发火超压，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(13, 2)->setText("温度超过推进剂最大发火超压");
+												}
 											}
 											else
 											{
@@ -1058,6 +1185,32 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetExplosiveBlastOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetExplosiveBlastPropertyWidget()->GetQTableWidget();
+												if (stressResult.metalsMaxStress > yieldStrength)
+												{
+													tableWidget->item(7, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(7, 2)->setText("应力未超过壳体最大屈服强度");
+												}
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(8, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(8, 2)->setText("温度超过推进剂最大发火温度");
+												}
+												if (overpressureResult.metalsMaxOverpressure > fireOverpressure)
+												{
+													tableWidget->item(9, 2)->setText("超压超过推进剂最大发火超压，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火超压");
+												}
 											}
 											else
 											{
@@ -1092,6 +1245,32 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												gfParent->GetSacrificeExplosionOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
 
+												// 更新判断结果
+												auto tableWidget = gfParent->GetSacrificeExplosionPropertyWidget()->GetQTableWidget();
+												if (stressResult.metalsMaxStress > yieldStrength)
+												{
+													tableWidget->item(8, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(8, 2)->setText("应力未超过壳体最大屈服强度");
+												}
+												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火温度，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火温度");
+												}
+												if (overpressureResult.metalsMaxOverpressure > fireOverpressure)
+												{
+													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压，有燃爆风险");
+												}
+												else
+												{
+													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火超压");
+												}
 											}
 											else
 											{

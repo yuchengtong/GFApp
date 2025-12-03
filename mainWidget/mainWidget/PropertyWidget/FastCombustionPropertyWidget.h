@@ -8,6 +8,8 @@ class FastCombustionPropertyWidget : public BasePropertyWidget
 public:
     explicit FastCombustionPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 
