@@ -217,12 +217,12 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {
-
+	return true;
 }
 
 bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {
-
+	return true;
 }
 
 bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
@@ -433,7 +433,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 
 bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {
-
+	return true;
 }
 
 bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
@@ -645,10 +645,10 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 
 bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {
-
+	return true;
 }
 
 bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {
-
+	return true;
 }
