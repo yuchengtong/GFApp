@@ -342,7 +342,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 		QString sheetName = nullptr;
 		QDir dir;
 
-		if (currentDataaseType == "壳体材料")
+		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体材料.xlsx");
 			sheetName = "壳体材料";
@@ -367,11 +367,72 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 			filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
 			sheetName = "用户数据库";
 		}
+		else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-0.xlsx");
+			sheetName = "跌落试验-0";
+		}
+		else if (currentDataaseType == "0°")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-0.xlsx");
+			sheetName = "跌落试验-0";
+		}
+		else if (currentDataaseType == "45°")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-45.xlsx");
+			sheetName = "跌落试验-45";
+		}
+		else if (currentDataaseType == "90°")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-90.xlsx");
+			sheetName = "跌落试验-90";
+		}
+		else if (currentDataaseType == "2.快速烤燃试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-快速烤燃试验.xlsx");
+			sheetName = "快速烤燃试验";
+		}
+		else if (currentDataaseType == "3.慢速烤燃试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-慢速烤燃试验.xlsx");
+			sheetName = "慢速烤燃试验";
+		}
+		else if (currentDataaseType == "4.枪击试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-枪击试验.xlsx");
+			sheetName = "枪击试验";
+		}
+		else if (currentDataaseType == "5.射流冲击试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-射流冲击试验.xlsx");
+			sheetName = "射流冲击试验";
+		}
+		else if (currentDataaseType == "6.破片撞击试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-破片撞击试验.xlsx");
+			sheetName = "破片撞击试验";
+		}
+		else if (currentDataaseType == "7.爆炸冲击波试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-爆炸冲击波试验.xlsx");
+			sheetName = "爆炸冲击波试验";
+		}
+		else if (currentDataaseType == "8.殉爆试验")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-殉爆试验.xlsx");
+			sheetName = "殉爆试验";
+		}
+		else if (currentDataaseType == "评判标准数据库")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/标准数据库.xlsx");
+			sheetName = "标准数据库";
+		}
 		else
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型.xlsx");
 			sheetName = "计算模型";
 		}
+		
 		int rowCount = tableWidget->rowCount();
 		int colCount = tableWidget->columnCount();
 		// 检查表格是否有数据
@@ -638,31 +699,31 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		}
 		else if (currentDataaseType == "2.快速烤燃试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-快速烤燃试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-快速烤燃试验.xlsx");
 		}
 		else if (currentDataaseType == "3.慢速烤燃试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-慢速烤燃试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-慢速烤燃试验.xlsx");
 		}
 		else if (currentDataaseType == "4.枪击试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-枪击试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-枪击试验.xlsx");
 		}
 		else if (currentDataaseType == "5.射流冲击试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-射流冲击试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-射流冲击试验.xlsx");
 		}
 		else if (currentDataaseType == "6.破片撞击试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-破片撞击试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-破片撞击试验.xlsx");
 		}
 		else if (currentDataaseType == "7.爆炸冲击波试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-爆炸冲击波试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-爆炸冲击波试验.xlsx");
 		}
 		else if (currentDataaseType == "8.殉爆试验")
 		{
-			privateFilePath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-殉爆试验.xlsx");
 		}
 
 		QFile file(privateFilePath);

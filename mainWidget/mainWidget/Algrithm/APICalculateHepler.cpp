@@ -215,6 +215,16 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
     return true;
 }
 
+bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+
+}
+
+bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+
+}
+
 bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -419,6 +429,11 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	ModelDataManager::GetInstance()->SetShootStrainResult(shootStrainResult);
 
 	return true;
+}
+
+bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+
 }
 
 bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
@@ -628,3 +643,12 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	return true;
 }
 
+bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+
+}
+
+bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
+{
+
+}
