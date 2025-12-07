@@ -52,6 +52,46 @@ const FallAnalysisResultInfo & ModelDataManager::GetFallAnalysisResultInfo() con
 	return m_FallAnalysisResultInfo;
 }
 
+void ModelDataManager::SetFastCombustionSettingInfo(const FastCombustionSettingInfo& info)
+{
+	m_FastCombustionSettingInfo = info;
+}
+
+const FastCombustionSettingInfo& ModelDataManager::GetFastCombustionSettingInfo() const
+{
+	return m_FastCombustionSettingInfo;
+}
+
+void ModelDataManager::SetFastCombustionAnalysisResultInfo(const FastCombustionAnalysisResultInfo& info)
+{
+	m_FastCombustionAnalysisResultInfo = info;
+}
+
+const FastCombustionAnalysisResultInfo& ModelDataManager::GetFastCombustionAnalysisResultInfo() const
+{
+	return m_FastCombustionAnalysisResultInfo;
+}
+
+void ModelDataManager::SetSlowCombustionSettingInfo(const SlowCombustionSettingInfo& info)
+{
+	m_SlowCombustionSettingInfo = info;
+}
+
+const SlowCombustionSettingInfo& ModelDataManager::GetSlowCombustionSettingInfo() const
+{
+	return m_SlowCombustionSettingInfo;
+}
+
+void ModelDataManager::SetSlowCombustionAnalysisResultInfo(const SlowCombustionAnalysisResultInfo& info)
+{
+	m_SlowCombustionAnalysisResultInfo = info;
+}
+
+const SlowCombustionAnalysisResultInfo& ModelDataManager::GetSlowCombustionAnalysisResultInfo() const
+{
+	return m_SlowCombustionAnalysisResultInfo;
+}
+
 void ModelDataManager::SetShootAnalysisResultInfo(const ShootAnalysisResultInfo& info)
 {
 	m_ShootAnalysisResultInfo = info;
@@ -62,6 +102,26 @@ const ShootAnalysisResultInfo& ModelDataManager::GetShootAnalysisResultInfo() co
 	return m_ShootAnalysisResultInfo;
 }
 
+void ModelDataManager::SetJetImpactSettingInfo(const JetImpactSettingInfo& info)
+{
+	m_JetImpactSettingInfo = info;
+}
+
+const JetImpactSettingInfo& ModelDataManager::GetJetImpactSettingInfo() const
+{
+	return m_JetImpactSettingInfo;
+}
+
+void ModelDataManager::SetJetImpactAnalysisResultInfo(const JetImpactAnalysisResultInfo& info)
+{
+	m_JetImpactAnalysisResultInfo = info;
+}
+
+const JetImpactAnalysisResultInfo& ModelDataManager::GetJetImpactAnalysisResultInfo() const
+{
+	return m_JetImpactAnalysisResultInfo;
+}
+
 void ModelDataManager::SetFragmentationAnalysisResultInfo(const FragmentationAnalysisResultInfo& info)
 {
 	m_FragmentationAnalysisResultInfo = info;
@@ -70,6 +130,46 @@ void ModelDataManager::SetFragmentationAnalysisResultInfo(const FragmentationAna
 const FragmentationAnalysisResultInfo& ModelDataManager::GetFragmentationAnalysisResultInfo() const
 {
 	return m_FragmentationAnalysisResultInfo;
+}
+
+void ModelDataManager::SetExplosiveBlastSettingInfo(const ExplosiveBlastSettingInfo& info)
+{
+	m_ExplosiveBlastSettingInfo = info;
+}
+
+const ExplosiveBlastSettingInfo& ModelDataManager::GetExplosiveBlastSettingInfo() const
+{
+	return m_ExplosiveBlastSettingInfo;
+}
+
+void ModelDataManager::SetExplosiveBlastAnalysisResultInfo(const ExplosiveBlastAnalysisResultInfo& info)
+{
+	m_ExplosiveBlastAnalysisResultInfo = info;
+}
+
+const ExplosiveBlastAnalysisResultInfo& ModelDataManager::GetExplosiveBlastAnalysisResultInfo() const
+{
+	return m_ExplosiveBlastAnalysisResultInfo;
+}
+
+void ModelDataManager::SetSacrificeExplosionSettingInfo(const SacrificeExplosionSettingInfo& info)
+{
+	m_SacrificeExplosionSettingInfo = info;
+}
+
+const SacrificeExplosionSettingInfo& ModelDataManager::GetSacrificeExplosionSettingInfo() const
+{
+	return m_SacrificeExplosionSettingInfo;
+}
+
+void ModelDataManager::SetSacrificeExplosionAnalysisResultInfo(const SacrificeExplosionAnalysisResultInfo& info)
+{
+	m_SacrificeExplosionAnalysisResultInfo = info;
+}
+
+const SacrificeExplosionAnalysisResultInfo& ModelDataManager::GetSacrificeExplosionAnalysisResultInfo() const
+{
+	return m_SacrificeExplosionAnalysisResultInfo;
 }
 
 

@@ -908,6 +908,16 @@ bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<do
 	return true;
 }
 
+bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetSlowCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
 bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -1240,6 +1250,26 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 	return true;
 }
 
+bool APISetNodeValue::SetJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
 bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -1569,4 +1599,44 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 
 	}
 	return true;
+}
+
+bool APISetNodeValue::SetExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
 }

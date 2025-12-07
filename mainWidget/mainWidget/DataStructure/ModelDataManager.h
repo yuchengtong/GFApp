@@ -44,7 +44,7 @@ struct ModelMeshInfo {
 	double z_max = 0.0;
 
 };
-
+//µøÂä
 struct FallSettingInfo {
 	double high = 20; // µøÂä¸ß¶È
 	int angle = 0; // µøÂä×ËÌ¬
@@ -64,7 +64,33 @@ struct FallAnalysisResultInfo {
 	double overpressureMinValue;
 };
 
+//¿ìËÙ¿¾È¼
+struct FastCombustionSettingInfo {
 
+};
+
+struct FastCombustionAnalysisResultInfo {
+	bool isChecked = false;
+
+	double temperatureMaxValue;
+	double temperatureMinValue;
+
+};
+
+//ÂýËÙ¿¾È¼
+struct SlowCombustionSettingInfo {
+
+};
+
+struct SlowCombustionAnalysisResultInfo {
+	bool isChecked = false;
+
+	double temperatureMaxValue;
+	double temperatureMinValue;
+
+};
+
+//Ç¹»÷ÊÔÑé
 struct ShootSettingInfo {
 	double speed = 300;
 	double radius = 12.7; // ×Óµ¯Ö±¾¶
@@ -83,6 +109,25 @@ struct ShootAnalysisResultInfo {
 	double overpressureMinValue;
 };
 
+//ÉäÁ÷³å»÷ÊÔÑé
+struct JetImpactSettingInfo {
+
+};
+
+struct JetImpactAnalysisResultInfo {
+	bool isChecked = false;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
+};
+
+//ÆÆÆ¬ÊÔÑé
 struct FragmentationSettingInfo {
 	double speed = 1000;
 	double radius = 14.3; // ×Óµ¯Ö±¾¶
@@ -101,7 +146,42 @@ struct FragmentationAnalysisResultInfo {
 	double overpressureMinValue;
 };
 
+//±¬Õ¨³å»÷²¨ÊÔÑé
+struct ExplosiveBlastSettingInfo {
 
+};
+
+struct ExplosiveBlastAnalysisResultInfo {
+	bool isChecked = false;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
+};
+
+
+// Ñ³±¬ÊÔÑé
+struct SacrificeExplosionSettingInfo {
+
+};
+
+struct SacrificeExplosionAnalysisResultInfo {
+	bool isChecked = false;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
+};
 
 // ¿ÇÌå²ÄÁÏ
 struct SteelPropertyInfo {
@@ -621,27 +701,58 @@ public:
 
 	void SetModelMeshInfo(const ModelMeshInfo& info);
 	const ModelMeshInfo& GetModelMeshInfo() const;
-
+	//µøÂä
 	void SetFallSettingInfo(const FallSettingInfo& info);
 	const FallSettingInfo& GetFallSettingInfo() const;
 
+	void SetFallAnalysisResultInfo(const FallAnalysisResultInfo& info);
+	const FallAnalysisResultInfo& GetFallAnalysisResultInfo() const;
+	//¿ìËÙ¿¾È¼
+	void SetFastCombustionSettingInfo(const FastCombustionSettingInfo& info);
+	const FastCombustionSettingInfo& GetFastCombustionSettingInfo() const;
+
+	void SetFastCombustionAnalysisResultInfo(const FastCombustionAnalysisResultInfo& info);
+	const FastCombustionAnalysisResultInfo& GetFastCombustionAnalysisResultInfo() const;
+	//ÂýËÙ¿¾È¼
+	void SetSlowCombustionSettingInfo(const SlowCombustionSettingInfo& info);
+	const SlowCombustionSettingInfo& GetSlowCombustionSettingInfo() const;
+
+	void SetSlowCombustionAnalysisResultInfo(const SlowCombustionAnalysisResultInfo& info);
+	const SlowCombustionAnalysisResultInfo& GetSlowCombustionAnalysisResultInfo() const;
+	
+	//Ç¹»÷ÊÔÑé
 	void SetShootSettingInfo(const ShootSettingInfo& info);
 	const ShootSettingInfo& GetShootSettingInfo() const;
 
+	void SetShootAnalysisResultInfo(const ShootAnalysisResultInfo& info);
+	const ShootAnalysisResultInfo& GetShootAnalysisResultInfo() const;
+	//ÉäÁ÷³å»÷ÊÔÑé
+	void SetJetImpactSettingInfo(const JetImpactSettingInfo& info);
+	const JetImpactSettingInfo& GetJetImpactSettingInfo() const;
+
+	void SetJetImpactAnalysisResultInfo(const JetImpactAnalysisResultInfo& info);
+	const JetImpactAnalysisResultInfo& GetJetImpactAnalysisResultInfo() const;
+	
+	//ÆÆÆ¬ÊÔÑé
 	void SetFragmentationSettingInfo(const FragmentationSettingInfo& info);
 	const FragmentationSettingInfo& GetFragmentationSettingInfo() const;
 
-	void SetFallAnalysisResultInfo(const FallAnalysisResultInfo& info);
-	const FallAnalysisResultInfo& GetFallAnalysisResultInfo() const;
-
-	void SetShootAnalysisResultInfo(const ShootAnalysisResultInfo& info);
-	const ShootAnalysisResultInfo& GetShootAnalysisResultInfo() const;
-
 	void SetFragmentationAnalysisResultInfo(const FragmentationAnalysisResultInfo& info);
 	const FragmentationAnalysisResultInfo& GetFragmentationAnalysisResultInfo() const;
+	//±¬Õ¨³å»÷²¨ÊÔÑé
+	void SetExplosiveBlastSettingInfo(const ExplosiveBlastSettingInfo& info);
+	const ExplosiveBlastSettingInfo& GetExplosiveBlastSettingInfo() const;
 
+	void SetExplosiveBlastAnalysisResultInfo(const ExplosiveBlastAnalysisResultInfo& info);
+	const ExplosiveBlastAnalysisResultInfo& GetExplosiveBlastAnalysisResultInfo() const;	
+	// Ñ³±¬ÊÔÑé
+	void SetSacrificeExplosionSettingInfo(const SacrificeExplosionSettingInfo& info);
+	const SacrificeExplosionSettingInfo& GetSacrificeExplosionSettingInfo() const;
 
-
+	void SetSacrificeExplosionAnalysisResultInfo(const SacrificeExplosionAnalysisResultInfo& info);
+	const SacrificeExplosionAnalysisResultInfo& GetSacrificeExplosionAnalysisResultInfo() const;
+	//
+	
 	void SetSteelPropertyInfo(const SteelPropertyInfo& info);
 	const SteelPropertyInfo& GetSteelPropertyInfo() const;
 
@@ -761,14 +872,31 @@ private:
 	ModelGeometryInfo m_ModelGeometryInfo; 
 	ModelMeshInfo m_ModelMeshInfo;
 
+	//µøÂä
 	FallSettingInfo m_FallSettingInfo;
-	ShootSettingInfo m_ShootSettingInfo;
-	FragmentationSettingInfo m_FragmentationSettingInfo;
-
 	FallAnalysisResultInfo m_FallAnalysisResultInfo;
+	//¿ìËÙ¿¾È¼
+	FastCombustionSettingInfo m_FastCombustionSettingInfo;
+	FastCombustionAnalysisResultInfo m_FastCombustionAnalysisResultInfo;
+	//ÂýËÙ¿¾È¼
+	SlowCombustionSettingInfo m_SlowCombustionSettingInfo;
+	SlowCombustionAnalysisResultInfo m_SlowCombustionAnalysisResultInfo;
+	//Ç¹»÷ÊÔÑé
+	ShootSettingInfo m_ShootSettingInfo;
 	ShootAnalysisResultInfo m_ShootAnalysisResultInfo;
+	//ÉäÁ÷³å»÷ÊÔÑé
+	JetImpactSettingInfo m_JetImpactSettingInfo;
+	JetImpactAnalysisResultInfo m_JetImpactAnalysisResultInfo;
+	//ÆÆÆ¬ÊÔÑé
+	FragmentationSettingInfo m_FragmentationSettingInfo;
 	FragmentationAnalysisResultInfo m_FragmentationAnalysisResultInfo;
-
+	//±¬Õ¨³å»÷²¨ÊÔÑé
+	ExplosiveBlastSettingInfo m_ExplosiveBlastSettingInfo;
+	ExplosiveBlastAnalysisResultInfo m_ExplosiveBlastAnalysisResultInfo;
+	// Ñ³±¬ÊÔÑé
+	SacrificeExplosionSettingInfo m_SacrificeExplosionSettingInfo;
+	SacrificeExplosionAnalysisResultInfo m_SacrificeExplosionAnalysisResultInfo;
+	
 
 	SteelPropertyInfo m_SteelPropertyInfo;
 	PropellantPropertyInfo m_PropellantPropertyInfo;
@@ -779,8 +907,6 @@ private:
 	OutheatPropertyInfo m_OutheatPropertyInfo;
 
 	UserInfo m_UserInfo;
-
-
 
 	// µøÂä¼ÆËã½á¹û
 	StressResult m_FallStressResult;

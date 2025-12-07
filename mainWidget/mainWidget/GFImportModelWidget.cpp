@@ -215,8 +215,8 @@ GFImportModelWidget::~GFImportModelWidget()
 
 void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 {
+	auto occView = GetOccView();
 	if (itemData == "Geometry") {
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
@@ -234,19 +234,16 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
 	else if (itemData == "Material") {
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_materialPropertyWidget);
 	}
 	else if (itemData == "Database") {
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_databasePropertyWidget);
 	}
 	else if (itemData == "Mesh") {
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
@@ -294,8 +291,8 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 		m_meshPropertyWidget->UpdataPropertyInfo();
 	}
-	else if (itemData == "Analysis") {
-		auto occView = GetOccView();
+	else if (itemData == "Analysis") 
+	{
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_settingPropertyWidget);
@@ -312,9 +309,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			occView->fitAll();
 		}
 	}
+	//跌落
 	else if (itemData == "FallAnalysis")
 	{
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fallPropertyWidget);
@@ -330,7 +327,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			context->Display(modelPresentation, false);
 			occView->fitAll();
 		}
-
 	}
 	else if (itemData == "StressResult")
 	{
@@ -383,7 +379,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "TemperatureResult")
 	{
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_temperatureResultWidget);
@@ -459,14 +454,51 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
+	//快速烤燃
 	else if (itemData == "FastCombustionAnalysis")
 	{
+		occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFastCombustionTemperatureResult(occView, nodeValues);
+
+
+		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+		auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = fallAnalysisResultInfo.temperatureMinValue;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("跌落试验\n温度分析\n单位:℃", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
+
+
 	}
 	else if (itemData == "FastCombustionTemperatureResult")
 	{
 		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionTemperatureResultWidget);
 	}
+	//慢速烤燃
 	else if (itemData == "SlowCombustionAnalysis") {
 		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
 	}
@@ -474,37 +506,37 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	{
 		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionTemperatureResultWidget);
 	}
-	else if (itemData == "Results") {
-		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
-	}
-	else if (itemData == "Steel") {
-		m_PropertyStackWidget->setCurrentWidget(m_steelPropertyWidgett);
-	}
-	else if (itemData == "Propellant") {
-		m_PropertyStackWidget->setCurrentWidget(m_propellantPropertyWidget);
-	}
-	else if (itemData == "Judgment") {
-		m_PropertyStackWidget->setCurrentWidget(m_judgmentPropertyWidget);
-	}
-	else if (itemData == "Calculation") {
-		m_PropertyStackWidget->setCurrentWidget(m_calculationPropertyWidget);
-	}
-	else if (itemData == "Project") {
-		m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
-	}
-	else if (itemData == "Insulatingheat") {
-		m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
-	}
-	else if (itemData == "Outheat") {
-		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
-	}
-	else if (itemData == "ShootAnalysis")	//枪击试验
+	//else if (itemData == "Results") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
+	//}
+	//else if (itemData == "Steel") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_steelPropertyWidgett);
+	//}
+	//else if (itemData == "Propellant") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_propellantPropertyWidget);
+	//}
+	//else if (itemData == "Judgment") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_judgmentPropertyWidget);
+	//}
+	//else if (itemData == "Calculation") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_calculationPropertyWidget);
+	//}
+	//else if (itemData == "Project") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
+	//}
+	//else if (itemData == "Insulatingheat") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
+	//}
+	//else if (itemData == "Outheat") {
+	//	m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
+	//}
+	
+	//枪击试验
+	else if (itemData == "ShootAnalysis")	
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(true);
+		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
-
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
@@ -519,11 +551,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootStressResult") //枪击试验应力分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_shootStressResultWidget);
-
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Yneg);
@@ -557,8 +587,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootStrainResult")  //枪击试验应变分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_shootStrainResultWidget);
 
@@ -568,11 +597,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootTemperatureResult") //枪击试验温度分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_shootTemperatureResultWidget);
-
 
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
@@ -607,8 +634,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "ShootOverpressureResult") //枪击试验超压分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_shootOverpressureResultWidge);
 
@@ -644,31 +670,35 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->Display(aColorScale, Standard_True);
 
 	}
-	else if (itemData == "JetImpactAnalysis") { //射流冲击试验
+	//射流冲击试验
+	else if (itemData == "JetImpactAnalysis") 
+	{
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
 	}
-	else if (itemData == "JetImpactStressResult") { //射流冲击应力分析
+	else if (itemData == "JetImpactStressResult") 
+	{ //射流冲击应力分析
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactStressResultWidget);
 	}
-	else if (itemData == "JetImpactStrainResult") { //射流冲击应变分析
+	else if (itemData == "JetImpactStrainResult") 
+	{ //射流冲击应变分析
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactStrainResultWidget);
 	}
-	else if (itemData == "JetImpactTemperatureResult") { //射流冲击温度分析
+	else if (itemData == "JetImpactTemperatureResult")
+	{ //射流冲击温度分析
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactTemperatureResultWidget);
 	}
 	else if (itemData == "JetImpactOverpressureResult") { //射流冲击超压分析
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactOverpressureResultWidge);
 	}
-	else if (itemData == "FragmentationImpactAnalysis")	//破片试验
+	//破片试验
+	else if (itemData == "FragmentationImpactAnalysis")	
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(true);
+		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
 		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
-			auto occView = GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
@@ -680,8 +710,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactStressResult") //破片试验应力分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStressResultWidget);
 
@@ -719,8 +748,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactStrainResult")  //破片试验应变分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStrainResultWidget);
 
@@ -730,8 +758,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactTemperatureResult") //破片试验温度分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactTemperatureResultWidget);
 
@@ -769,8 +796,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "FragmentationImpactOverpressureResult") //破片试验超压分析
 	{
-	auto occView = GetOccView();
-	occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactOverpressureResultWidge);
 
@@ -805,22 +831,30 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
-	else if (itemData == "ExplosiveBlastAnalysis") { //爆炸冲击波试验
+	//爆炸冲击波试验
+	else if (itemData == "ExplosiveBlastAnalysis")
+	{ 
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);
 	}
-	else if (itemData == "ExplosiveBlastStressResult") { //爆炸冲击波应力分析
+	else if (itemData == "ExplosiveBlastStressResult") 
+	{ //爆炸冲击波应力分析
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastStressResultWidget);
 	}
-	else if (itemData == "ExplosiveBlastStrainResult") { //爆炸冲击波应变分析
+	else if (itemData == "ExplosiveBlastStrainResult")
+	{ //爆炸冲击波应变分析
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastStrainResultWidget);
 	}
-	else if (itemData == "ExplosiveBlastTemperatureResult") { //爆炸冲击波温度分析
+	else if (itemData == "ExplosiveBlastTemperatureResult") 
+	{ //爆炸冲击波温度分析
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastTemperatureResultWidget);
 	}
-	else if (itemData == "ExplosiveBlastOverpressureResult") { //爆炸冲击波超压分析
+	else if (itemData == "ExplosiveBlastOverpressureResult") 
+	{ //爆炸冲击波超压分析
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastOverpressureResultWidge);
 	}
-	else if (itemData == "SacrificeExplosionAnalysis") { // 殉爆试验
+	// 殉爆试验
+	else if (itemData == "SacrificeExplosionAnalysis")
+	{ 
 		m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
 	}
 	else if (itemData == "SacrificeExplosioStressResult") { //殉爆应力分析
