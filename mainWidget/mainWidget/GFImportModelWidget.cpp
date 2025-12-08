@@ -468,13 +468,84 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		APISetNodeValue::SetFastCombustionTemperatureResult(occView, nodeValues);
 
 
-		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-		auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = fallAnalysisResultInfo.temperatureMinValue;
+		auto fastCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetFastCombustionAnalysisResultInfo();
+		auto max_value = fastCombustionAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = fastCombustionAnalysisResultInfo.temperatureMinValue;
 
 
 		// 颜色条显示（与原逻辑一致）
-		TCollection_ExtendedString tostr("跌落试验\n温度分析\n单位:℃", true);
+		TCollection_ExtendedString tostr("快速烤燃\n温度分析\n单位:℃", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
+	}
+	else if (itemData == "FastCombustionTemperatureResult")
+	{
+		occView->SetCameraRotationState(false);
+		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionTemperatureResultWidget);
+
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFastCombustionTemperatureResult(occView, nodeValues);
+
+		auto fastCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetFastCombustionAnalysisResultInfo();
+		auto max_value = fastCombustionAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = fastCombustionAnalysisResultInfo.temperatureMinValue;
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("快速烤燃\n温度分析\n单位:℃", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
+	}
+	//慢速烤燃
+	else if (itemData == "SlowCombustionAnalysis")
+	{
+		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
+
+		occView->SetCameraRotationState(false);
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetSlowCombustionTemperatureResult(occView, nodeValues);
+
+		auto slowCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSlowCombustionAnalysisResultInfo();
+		auto max_value = slowCombustionAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = slowCombustionAnalysisResultInfo.temperatureMinValue;
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("慢速烤燃\n温度分析\n单位:℃", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
 		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
 		aColorScale->SetSize(100, 400);
@@ -492,19 +563,41 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 
-
-	}
-	else if (itemData == "FastCombustionTemperatureResult")
-	{
-		m_PropertyStackWidget->setCurrentWidget(m_fastCombustionTemperatureResultWidget);
-	}
-	//慢速烤燃
-	else if (itemData == "SlowCombustionAnalysis") {
-		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionPropertyWidget);
 	}
 	else if (itemData == "SlowCombustionTemperatureResult")
 	{
 		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionTemperatureResultWidget);
+
+		occView->SetCameraRotationState(false);
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetSlowCombustionTemperatureResult(occView, nodeValues);
+
+		auto slowCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSlowCombustionAnalysisResultInfo();
+		auto max_value = slowCombustionAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = slowCombustionAnalysisResultInfo.temperatureMinValue;
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("慢速烤燃\n温度分析\n单位:℃", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	else if (itemData == "Results") {
 		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
