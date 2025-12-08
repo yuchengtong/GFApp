@@ -965,6 +965,10 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "快速烤燃试验")
 										{
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateFastCombustionAnalysisResult(occView, resultValue);
+
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 											if (success)
@@ -995,6 +999,11 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "慢速烤燃试验")
 										{
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateSlowCombustionAnalysisResult(occView, resultValue);
+
+
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 											if (success)
@@ -1093,6 +1102,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "射流冲击试验")
 										{
+
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateJetImpactingAnalysisResult(occView, resultValue);
+
+
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 											if (success)
@@ -1221,6 +1236,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "爆炸冲击波试验")
 										{
+
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateExplosiveBlastAnalysisResult(occView, resultValue);
+
+
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 											if (success)
@@ -1281,6 +1302,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "殉爆试验")
 										{
+											
+											std::vector<double> resultValue;
+											resultValue.reserve(8);
+											bool success = APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(occView, resultValue);
+
+
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 											if (success)

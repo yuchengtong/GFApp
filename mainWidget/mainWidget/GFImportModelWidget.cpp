@@ -506,30 +506,30 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	{
 		m_PropertyStackWidget->setCurrentWidget(m_slowCombustionTemperatureResultWidget);
 	}
-	//else if (itemData == "Results") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
-	//}
-	//else if (itemData == "Steel") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_steelPropertyWidgett);
-	//}
-	//else if (itemData == "Propellant") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_propellantPropertyWidget);
-	//}
-	//else if (itemData == "Judgment") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_judgmentPropertyWidget);
-	//}
-	//else if (itemData == "Calculation") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_calculationPropertyWidget);
-	//}
-	//else if (itemData == "Project") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
-	//}
-	//else if (itemData == "Insulatingheat") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
-	//}
-	//else if (itemData == "Outheat") {
-	//	m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
-	//}
+	else if (itemData == "Results") {
+		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
+	}
+	else if (itemData == "Steel") {
+		m_PropertyStackWidget->setCurrentWidget(m_steelPropertyWidgett);
+	}
+	else if (itemData == "Propellant") {
+		m_PropertyStackWidget->setCurrentWidget(m_propellantPropertyWidget);
+	}
+	else if (itemData == "Judgment") {
+		m_PropertyStackWidget->setCurrentWidget(m_judgmentPropertyWidget);
+	}
+	else if (itemData == "Calculation") {
+		m_PropertyStackWidget->setCurrentWidget(m_calculationPropertyWidget);
+	}
+	else if (itemData == "Project") {
+		m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
+	}
+	else if (itemData == "Insulatingheat") {
+		m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
+	}
+	else if (itemData == "Outheat") {
+		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
+	}
 	
 	//枪击试验
 	else if (itemData == "ShootAnalysis")	
