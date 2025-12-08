@@ -811,7 +811,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	auto J = modelGeomInfo.length;//³¤
 	auto K = modelGeomInfo.width;//¿í
 	auto L = 5;//ºñ
-	auto M = 200 * 1000;// ´ýÈ·ÈÏ
+	auto M = 60;// Extrude1.FD1
 
 	auto formulaCal = calInfo.jetImpactingCalculation;
 
