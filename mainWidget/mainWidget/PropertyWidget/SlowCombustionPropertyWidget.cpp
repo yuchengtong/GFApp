@@ -105,6 +105,9 @@ void SlowCombustionPropertyWidget::initWidget()
 	QTableWidgetItem* balanceMomentValueItem = new QTableWidgetItem("0");
 	balanceMomentValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	balanceMomentValueItem->setFlags(balanceMomentValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
+	QTableWidgetItem* rateValueItem = new QTableWidgetItem("33");
+	rateValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
+	rateValueItem->setFlags(rateValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
 
 
@@ -115,7 +118,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(5, 2, shockWaveValueItem);
 	m_tableWidget->setItem(6, 2, windSpeedValueItem);
 	m_tableWidget->setItem(7, 2, balanceMomentValueItem);
-	m_tableWidget->setItem(8, 2, new QTableWidgetItem("0"));
+	m_tableWidget->setItem(8, 2, rateValueItem);
 	m_tableWidget->setItem(9, 2, new QTableWidgetItem("0"));
 	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
 	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
@@ -154,5 +157,12 @@ void SlowCombustionPropertyWidget::initWidget()
 		}
 	}
 
-
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+		if (item->row() == 9 && item->column() == 2)
+		{
+			auto info = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo();
+			info.temperature = item->text().toDouble();
+			ModelDataManager::GetInstance()->SetSlowCombustionSettingInfo(info);
+		}
+		});
 }

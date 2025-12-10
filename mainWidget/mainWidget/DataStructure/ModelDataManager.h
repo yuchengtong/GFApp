@@ -30,6 +30,8 @@ struct ModelGeometryInfo {
 	double length = 0.0; 
 	double width = 0.0;
 	double height = 0.0;
+	double thickness = 0.0;
+	
 };
 
 struct ModelMeshInfo {
@@ -66,7 +68,7 @@ struct FallAnalysisResultInfo {
 
 //快速烤燃
 struct FastCombustionSettingInfo {
-
+	double temperature = 0.0; // 从达到550℃到弹药开始反应的平均温度
 };
 
 struct FastCombustionAnalysisResultInfo {
@@ -79,7 +81,7 @@ struct FastCombustionAnalysisResultInfo {
 
 //慢速烤燃
 struct SlowCombustionSettingInfo {
-
+	double temperature = 0.0; // 烘箱终止温度
 };
 
 struct SlowCombustionAnalysisResultInfo {
@@ -111,7 +113,7 @@ struct ShootAnalysisResultInfo {
 
 //射流冲击试验
 struct JetImpactSettingInfo {
-
+	double caliber = 50.0; // 聚能装药口径
 };
 
 struct JetImpactAnalysisResultInfo {
@@ -148,7 +150,7 @@ struct FragmentationAnalysisResultInfo {
 
 //爆炸冲击波试验
 struct ExplosiveBlastSettingInfo {
-
+	double tnt = 5.0;
 };
 
 struct ExplosiveBlastAnalysisResultInfo {
@@ -167,7 +169,7 @@ struct ExplosiveBlastAnalysisResultInfo {
 
 // 殉爆试验
 struct SacrificeExplosionSettingInfo {
-
+	double distance = 50.0;
 };
 
 struct SacrificeExplosionAnalysisResultInfo {

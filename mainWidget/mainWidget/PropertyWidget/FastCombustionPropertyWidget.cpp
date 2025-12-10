@@ -101,6 +101,9 @@ void FastCombustionPropertyWidget::initWidget()
 	QTableWidgetItem* flameTemperatureValueItem = new QTableWidgetItem("0");
 	flameTemperatureValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	flameTemperatureValueItem->setFlags(flameTemperatureValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
+	QTableWidgetItem* endTimeValueItem = new QTableWidgetItem("15");
+	endTimeValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
+	endTimeValueItem->setFlags(endTimeValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
 
 	m_tableWidget->setItem(1, 2, titeItem);
@@ -110,7 +113,7 @@ void FastCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(5, 2, shockWaveValueItem);
 	m_tableWidget->setItem(6, 2, windSpeedValueItem);
 	m_tableWidget->setItem(7, 2, flameTemperatureValueItem);
-	m_tableWidget->setItem(8, 2, new QTableWidgetItem("0"));
+	m_tableWidget->setItem(8, 2, endTimeValueItem);
 	m_tableWidget->setItem(9, 2, new QTableWidgetItem("0"));
 	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
 	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
@@ -149,4 +152,13 @@ void FastCombustionPropertyWidget::initWidget()
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
+
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+		if (item->row() == 9 && item->column() == 2)
+		{
+			auto info = ModelDataManager::GetInstance()->GetFastCombustionSettingInfo();
+			info.temperature = item->text().toDouble();
+			ModelDataManager::GetInstance()->SetFastCombustionSettingInfo(info);
+		}
+		});
 }

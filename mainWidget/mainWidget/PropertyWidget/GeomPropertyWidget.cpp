@@ -27,6 +27,9 @@ void GeomPropertyWidget::UpdataPropertyInfo()
 		height_item->setText(QString::number(modelInfo.height, 'f', 3));
 		thickness_item->setText(QString::number(3, 'f', 3));
 	}
+	// 更新厚度值
+	modelInfo.thickness = thickness_item->text().toDouble();
+	ModelDataManager::GetInstance()->SetModelGeometryInfo(modelInfo);
 }
 
 void GeomPropertyWidget::initWidget()

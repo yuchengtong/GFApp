@@ -1,6 +1,7 @@
 #pragma once
 #include <QWidget>
 #include "BasePropertyWidget.h"
+#include "ModelDataManager.h"
 
 class SacrificeExplosionPropertyWidget : public BasePropertyWidget
 {

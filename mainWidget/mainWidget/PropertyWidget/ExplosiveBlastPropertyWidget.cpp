@@ -64,7 +64,7 @@ void ExplosiveBlastPropertyWidget::initWidget()
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位
-	QStringList unitLabels = { " ", " ", "kg", "°", "个", "个", "m/s", "", "", "" };
+	QStringList unitLabels = { " ", " ", "g", "°", "个", "个", "m/s", "", "", "" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -157,4 +157,12 @@ void ExplosiveBlastPropertyWidget::initWidget()
 	}
 
 
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+		if (item->row() == 2 && item->column() == 2)
+		{
+			auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
+			explosiveBlastSettingInfo.tnt = item->text().toDouble();
+			ModelDataManager::GetInstance()->SetExplosiveBlastSettingInfo(explosiveBlastSettingInfo);
+		}
+	});
 }

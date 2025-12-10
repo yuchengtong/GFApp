@@ -160,6 +160,13 @@ void JetImpactPropertyWidget::initWidget()
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
-
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+		if (item->row() == 2 && item->column() == 2)
+		{
+			auto info = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
+			info.caliber = item->text().toDouble();
+			ModelDataManager::GetInstance()->SetJetImpactSettingInfo(info);
+		}
+		});
 
 }

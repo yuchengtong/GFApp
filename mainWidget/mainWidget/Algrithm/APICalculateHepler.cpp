@@ -6,6 +6,69 @@
 
 #include "ModelDataManager.h"
 
+double calculate(const QString& formula,
+	double B, double C, double D, double E,
+	double F, double G, double H, double I,
+	double J, double K, double L, double M, double A)
+{
+	QString processedFormula = formula;  // 复制到非const变量
+	processedFormula.remove(' ');
+	// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
+	const QMap<QString, double> varMap = {
+		{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
+		{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
+		{"K", K}, {"L", L}, {"M", M}
+	};
+
+	QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
+	regExp.setMinimal(false);
+
+	double result = 0.0;
+	int pos = 0;
+	int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
+
+	// 处理公式开头的第一项（可能无符号）
+	if (processedFormula[0] != '+' && processedFormula[0] != '-') {
+		processedFormula = "+" + processedFormula; // 补全正号，统一格式
+	}
+
+	while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
+		++matchCount;
+		QString signStr = regExp.cap(1);       // 符号（+/-）
+		QString coeffStr = regExp.cap(2);      // 系数
+		QString varName = regExp.cap(3);       // 变量
+
+		// 解析符号（默认正号）
+		double sign = (signStr == "-") ? -1.0 : 1.0;
+
+		// 解析系数（处理转换失败）
+		bool ok = false;
+		double coeff = coeffStr.toDouble(&ok);
+		if (!ok) {
+			throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
+		}
+
+		// 计算当前项的值
+		double term = sign * coeff;
+		if (!varName.isEmpty()) {
+			if (!varMap.contains(varName)) {
+				throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
+			}
+			term *= varMap[varName];  // 变量项：符号×系数×变量值
+		}
+
+		result += term;
+		pos += regExp.matchedLength();
+	}
+
+	// 校验公式是否完全解析（无残留无效字符）
+	if (matchCount == 0) {
+		throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
+	}
+
+	return result;
+}
+
 bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {  
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -41,74 +104,13 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 	auto formulaCal = calInfo.calculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -249,74 +251,13 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 
 	auto formulaCal = calInfo.fastCombustionCalculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -430,74 +371,13 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 
 	auto formulaCal = calInfo.slowCombustionCalculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -608,74 +488,13 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 
 	auto formulaCal = calInfo.shootCalculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -809,80 +628,19 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	auto I = propellantInfo.specificHeatCapacity;
 
 	auto J = modelGeomInfo.length;//长
-	auto K = modelGeomInfo.width;//宽
+	auto K = modelGeomInfo.width/2;//半径
 	auto L = 5;//厚
-	auto M = 60;// Extrude1.FD1
+	auto M = 60;// TNT
 
 	auto formulaCal = calInfo.jetImpactingCalculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -1021,74 +779,13 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 
 	auto formulaCal = calInfo.fragmentationImpactCalculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -1222,80 +919,17 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	auto I = propellantInfo.specificHeatCapacity;
 
 	auto J = modelGeomInfo.length;//长
-	auto K = modelGeomInfo.width;//宽
-	auto L = 5;//厚度
-	auto M = 0.0000178;//固体质量（吨）
+	auto K = modelGeomInfo.width / 2;//半径
+	auto L = modelGeomInfo.thickness;//厚
+	auto M = explosiveBlastSettingInfo.tnt;// TNT当量
 
 	auto formulaCal = calInfo.explosiveBlastCalculation;
-
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
@@ -1435,74 +1069,13 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 
 	auto formulaCal = calInfo.sacrificeExplosionCalculation;
 
-	auto calculateFormula = [](const QString& formula,
-		double B, double C, double D, double E,
-		double F, double G, double H, double I,
-		double J, double K, double L, double M, double A)
-	{
-		QString processedFormula = formula;  // 复制到非const变量
-		processedFormula.remove(' ');
-		// 变量映射：通过变量名获取对应值（使用map提高可读性和可维护性）
-		const QMap<QString, double> varMap = {
-			{"A", A}, {"B", B}, {"C", C}, {"D", D}, {"E", E},
-			{"F", F}, {"G", G}, {"H", H}, {"I", I}, {"J", J},
-			{"K", K}, {"L", L}, {"M", M}
-		};
-
-		QRegExp regExp("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\*([A-Z]))?");
-		regExp.setMinimal(false);
-
-		double result = 0.0;
-		int pos = 0;
-		int matchCount = 0; // 统计匹配到的项数，用于校验公式合法性
-
-		// 处理公式开头的第一项（可能无符号）
-		if (processedFormula[0] != '+' && processedFormula[0] != '-') {
-			processedFormula = "+" + processedFormula; // 补全正号，统一格式
-		}
-
-		while ((pos = regExp.indexIn(processedFormula, pos)) != -1) {
-			++matchCount;
-			QString signStr = regExp.cap(1);       // 符号（+/-）
-			QString coeffStr = regExp.cap(2);      // 系数
-			QString varName = regExp.cap(3);       // 变量
-
-			// 解析符号（默认正号）
-			double sign = (signStr == "-") ? -1.0 : 1.0;
-
-			// 解析系数（处理转换失败）
-			bool ok = false;
-			double coeff = coeffStr.toDouble(&ok);
-			if (!ok) {
-				throw std::invalid_argument(QString("无效系数: %1").arg(coeffStr).toStdString());
-			}
-
-			// 计算当前项的值
-			double term = sign * coeff;
-			if (!varName.isEmpty()) {
-				if (!varMap.contains(varName)) {
-					throw std::invalid_argument(QString("未知变量: %1").arg(varName).toStdString());
-				}
-				term *= varMap[varName];  // 变量项：符号×系数×变量值
-			}
-
-			result += term;
-			pos += regExp.matchedLength();
-		}
-
-		// 校验公式是否完全解析（无残留无效字符）
-		if (matchCount == 0) {
-			throw std::invalid_argument(QString("公式格式错误: %1").arg(formula).toStdString());
-		}
-
-		return result;
-	};
+	
 
 	std::vector<double> results;
 	results.reserve(formulaCal.size());
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
-		double res = calculateFormula(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
