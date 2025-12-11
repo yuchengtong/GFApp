@@ -913,13 +913,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 												auto oriShape = geomInfo.shape;
 
+												auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+												gfParent->GetStressResultWidget()->updateData(fallStressResult.metalsMaxStress, fallStressResult.metalsMinStress, fallStressResult.metalsAvgStress, fallStressResult.metalsStandardStress,
+													fallStressResult.propellantsMaxStress, fallStressResult.propellantsMinStress, fallStressResult.propellantsAvgStress, fallStressResult.propellantsStandardStress);
 
-												gfParent->GetStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-													resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
-
-												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-												gfParent->GetStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
+												auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
+												gfParent->GetStrainResultWidget()->updateData(fallStrainResult.metalsMaxStrain, fallStrainResult.metalsMinStrain, fallStrainResult.metalsAvgStrain, fallStrainResult.metalsStandardStrain,
+													fallStrainResult.propellantsMaxStrain, fallStrainResult.propellantsMinStrain, fallStrainResult.mpropellantsAvgStrain, fallStrainResult.propellantsStandardStrain);
 
 												auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
 												gfParent->GetTemperatureResultWidget()->updateData(fallTemperatureResult.metalsMaxTemperature, fallTemperatureResult.metalsMinTemperature, fallTemperatureResult.metalsAvgTemperature, fallTemperatureResult.metalsStandardTemperature,
@@ -1052,13 +1052,15 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 												auto oriShape = geomInfo.shape;
 
-												gfParent->GetShootStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-													resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+												
+												auto stressResult = ModelDataManager::GetInstance()->GetShootStressResult();
+												gfParent->GetShootStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
 
-												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-												gfParent->GetShootStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
-											
+												auto strainResult = ModelDataManager::GetInstance()->GetShootStrainResult();
+												gfParent->GetShootStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+
 												auto temperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
 												gfParent->GetShootTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
 													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
@@ -1186,13 +1188,14 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 												auto oriShape = geomInfo.shape;
 
-												gfParent->GetFragmentationImpactStressResultWidget()->updateData(resultValue[0], resultValue[1], resultValue[2], resultValue[3],
-													resultValue[4], resultValue[5], resultValue[6], resultValue[7]);
+												auto stressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+												gfParent->GetFragmentationImpactStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
 
-												auto steelInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-												gfParent->GetFragmentationImpactStrainResultWidget()->updateData(resultValue[0] * steelInfo.modulus, resultValue[1] * steelInfo.modulus, resultValue[2] * steelInfo.modulus, resultValue[3] * steelInfo.modulus,
-													resultValue[4] * steelInfo.modulus, resultValue[5] * steelInfo.modulus, resultValue[6] * steelInfo.modulus, resultValue[7] * steelInfo.modulus);
-											
+												auto strainResult = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
+												gfParent->GetFragmentationImpactStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+
 												auto temperatureResult = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
 												gfParent->GetFragmentationImpactTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
 													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);

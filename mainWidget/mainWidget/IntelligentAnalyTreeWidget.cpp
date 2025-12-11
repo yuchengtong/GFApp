@@ -222,7 +222,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto L = modelGeomInfo.width;//¿í
 										auto M = 5;//ºñ
 
-										auto formulaCal = calInfo.calculation;
+										auto formulaCal = calInfo.fallStressCalculation;
 
 
 
