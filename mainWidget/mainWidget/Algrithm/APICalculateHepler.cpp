@@ -115,7 +115,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	auto J = fallInfo.high * 1000;//跌落高度
 	auto K = modelGeomInfo.length;//长
 	auto L = modelGeomInfo.width;//宽
-	auto M = 5;//厚
+	auto M = modelGeomInfo.thickness;//厚
 
 
 	// 应力
@@ -370,11 +370,7 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
-		results[i] = results[i];
-		if (results[i] < 0)
-		{
-			results[i] = 0;
-		}
+		results[i] = results[i] + 800;
 	}
 
 	double min_value = *std::min_element(results.begin(), results.end());
@@ -490,11 +486,7 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 		results.push_back(res);
 	}
 	for (size_t i = 0; i < results.size(); ++i) {
-		results[i] = results[i];
-		if (results[i] < 0)
-		{
-			results[i] = 0;
-		}
+		results[i] = results[i] + 400;
 	}
 
 	double min_value = *std::min_element(results.begin(), results.end());
@@ -831,7 +823,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	auto J = modelGeomInfo.length;//长
 	auto K = modelGeomInfo.width/2;//半径
 	auto L = modelGeomInfo.thickness;//厚
-	auto M = jetImpactingInfo.caliber;// TNT
+	auto M = jetImpactingInfo.caliber;// 聚能装药口径
 
 	// 应力
 	auto stressCalculation = calInfo.jetImpactStressCalculation;

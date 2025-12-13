@@ -311,20 +311,10 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_FallStrainResult.metalsMinStrain,  m_FallStrainResult.propellantsMinStrain,  m_FallStrainResult.outheatMinStrain,  m_FallStrainResult.insulatingheatMinStrain, };
 	// 放大对应的值，以免数值太小显示不明显
 	for (double& val : datasets1[1]) {
-		val = val * 8;
-	}
-	for (double& val : datasets1[2]) {
-		val = val * 80;
+		val = val * 30;
 	}
 	for (double& val : datasets1[3]) {
-		if (val < 10)
-		{
-			val = val * 1000000;
-		}
-		else if (val > 1000)
-		{
-			val = val / 100000000000 * 0.8;
-		}
+		val = val / 1000000000000 * 5;
 		
 	}
 	m_polarChart1->updateDatasets(datasets1, labelGroups);
@@ -369,26 +359,16 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	datasets4[3] = { m_ShootStrainResult.metalsMaxStrain, m_ShootStrainResult.propellantsMaxStrain, m_ShootStrainResult.outheatMaxStrain, m_ShootStrainResult.insulatingheatMaxStrain,
 	 m_ShootStrainResult.metalsMinStrain,  m_ShootStrainResult.propellantsMinStrain,  m_ShootStrainResult.outheatMinStrain,  m_ShootStrainResult.insulatingheatMinStrain, };
 	for (double& val : datasets4[0]) {
-		if (val < 100)
-		{
-			val = val * 20;
-		}
+		val = val * 10;
 	}
 	for (double& val : datasets4[1]) {
-		val = val * 8;
+		val = val * 30;
 	}
 	for (double& val : datasets4[2]) {
-		val = val * 60;
+		val = val * 20;
 	}
 	for (double& val : datasets4[3]) {
-		if (val > 1000)
-		{
-			val = val / 10000000000;
-		}
-		else
-		{
-			val = val * 1000000;
-		}
+		val = val / 100000000000 * 4;
 	}
 	m_polarChart4->updateDatasets(datasets4, labelGroups);
 
@@ -407,14 +387,18 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_JetImpactOverpressureResult.metalsMinOverpressure,  m_JetImpactOverpressureResult.propellantsMinOverpressure,  m_JetImpactOverpressureResult.outheatMinOverpressure,  m_JetImpactOverpressureResult.insulatingheatMinOverpressure, };
 	datasets5[3] = { m_JetImpactStrainResult.metalsMaxStrain, m_JetImpactStrainResult.propellantsMaxStrain, m_JetImpactStrainResult.outheatMaxStrain, m_JetImpactStrainResult.insulatingheatMaxStrain,
 	 m_JetImpactStrainResult.metalsMinStrain,  m_JetImpactStrainResult.propellantsMinStrain,  m_JetImpactStrainResult.outheatMinStrain,  m_JetImpactStrainResult.insulatingheatMinStrain, };
+	for (double& val : datasets5[0]) {
+		val = val * 3;
+	}
 	for (double& val : datasets5[1]) {
-		val = val * 8;
+		val = val * 20;
 	}
 	for (double& val : datasets5[2]) {
-		val = val * 80;
+		val = val * 6;
 	}
 	for (double& val : datasets5[3]) {
-		val = val * 1000000;
+		val = val / 100000000000;
+
 	}
 	m_polarChart5->updateDatasets(datasets5, labelGroups);
 
@@ -434,19 +418,17 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	datasets6[3] = { m_FragmentationImpactStrainResult.metalsMaxStrain, m_FragmentationImpactStrainResult.propellantsMaxStrain, m_FragmentationImpactStrainResult.outheatMaxStrain, m_FragmentationImpactStrainResult.insulatingheatMaxStrain,
 	 m_FragmentationImpactStrainResult.metalsMinStrain,  m_FragmentationImpactStrainResult.propellantsMinStrain,  m_FragmentationImpactStrainResult.outheatMinStrain,  m_FragmentationImpactStrainResult.insulatingheatMinStrain, };
 	for (double& val : datasets6[0]) {
-		if (val < 100)
-		{
-			val = val * 20;
-		}
+		val = val * 3;
 	}
 	for (double& val : datasets6[1]) {
-		val = val * 8;
+		val = val * 30;
 	}
 	for (double& val : datasets6[2]) {
-		val = val * 80;
+		val = val * 3;
 	}
 	for (double& val : datasets6[3]) {
-		val = val * 1000000;
+		val = val / 100000000000 * 2;
+
 	}
 	m_polarChart6->updateDatasets(datasets6, labelGroups);
 
@@ -465,14 +447,18 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_ExplosiveBlastOverpressureResult.metalsMinOverpressure,  m_ExplosiveBlastOverpressureResult.propellantsMinOverpressure,  m_ExplosiveBlastOverpressureResult.outheatMinOverpressure,  m_ExplosiveBlastOverpressureResult.insulatingheatMinOverpressure, };
 	datasets7[3] = { m_ExplosiveBlastStrainResult.metalsMaxStrain, m_ExplosiveBlastStrainResult.propellantsMaxStrain, m_ExplosiveBlastStrainResult.outheatMaxStrain, m_ExplosiveBlastStrainResult.insulatingheatMaxStrain,
 	 m_ExplosiveBlastStrainResult.metalsMinStrain,  m_ExplosiveBlastStrainResult.propellantsMinStrain,  m_ExplosiveBlastStrainResult.outheatMinStrain,  m_ExplosiveBlastStrainResult.insulatingheatMinStrain, };
+	for (double& val : datasets7[0]) {
+		val = val * 0.5;
+	}
 	for (double& val : datasets7[1]) {
-		val = val * 8;
+		val = val * 10;
 	}
 	for (double& val : datasets7[2]) {
-		val = val * 80;
+		val = val * 0.2;
 	}
 	for (double& val : datasets7[3]) {
-		val = val * 1000000;
+		val = val / 1000000000000 * 3;
+
 	}
 	m_polarChart7->updateDatasets(datasets7, labelGroups);
 
@@ -491,14 +477,18 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_SacrificeExplosionOverpressureResult.metalsMinOverpressure,  m_SacrificeExplosionOverpressureResult.propellantsMinOverpressure,  m_SacrificeExplosionOverpressureResult.outheatMinOverpressure,  m_SacrificeExplosionOverpressureResult.insulatingheatMinOverpressure, };
 	datasets8[3] = { m_SacrificeExplosionStrainResult.metalsMaxStrain, m_SacrificeExplosionStrainResult.propellantsMaxStrain, m_SacrificeExplosionStrainResult.outheatMaxStrain, m_SacrificeExplosionStrainResult.insulatingheatMaxStrain,
 	 m_SacrificeExplosionStrainResult.metalsMinStrain,  m_SacrificeExplosionStrainResult.propellantsMinStrain,  m_SacrificeExplosionStrainResult.outheatMinStrain,  m_SacrificeExplosionStrainResult.insulatingheatMinStrain, };
+	for (double& val : datasets8[0]) {
+		val = val * 0.04;
+	}
 	for (double& val : datasets8[1]) {
-		val = val * 8;
+		val = val * 10;
 	}
 	for (double& val : datasets8[2]) {
-		val = val * 80;
+		val = val * 0.1;
 	}
 	for (double& val : datasets8[3]) {
-		val = val * 1000000;
+		val = val / 10000000000000 * 2;
+
 	}
 	m_polarChart8->updateDatasets(datasets8, labelGroups);
 
