@@ -68,6 +68,8 @@ struct FallAnalysisResultInfo {
 
 //快速烤燃
 struct FastCombustionSettingInfo {
+	bool isChecked = false;
+
 	double temperature = 0.0; // 从达到550℃到弹药开始反应的平均温度
 };
 
