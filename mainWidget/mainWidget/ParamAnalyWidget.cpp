@@ -787,7 +787,7 @@ void ParamAnalyWidget::exportWord(const QString& directory, const QString& text)
 	progressDialog->show();
 
 	// 创建工作线程和工作对象
-	WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/安全性分析与评估报告.docx").absolutePath(), directory + "/安全性分析与评估报告.docx", data, imagePaths, tableData);
+	WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/安全性分析与评估报告.doc").absolutePath(), directory + "/安全性分析与评估报告.doc", data, imagePaths, tableData);
 	QThread* wordExporterThread = new QThread();
 	wordExporterWorker->moveToThread(wordExporterThread);
 
