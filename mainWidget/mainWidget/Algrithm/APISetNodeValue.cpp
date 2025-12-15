@@ -1738,7 +1738,111 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 
 bool APISetNodeValue::SetExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues)
 {
-	return false;
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
+	auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
+
+
+	//auto high = fallSettingInfo.high;
+	//auto angle = fallSettingInfo.angle;
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
+
+	if (explosiveBlastAnalysisResultInfo.isChecked)
+	{
+		TColStd_PackedMapOfInteger allnode;
+		Handle(TColStd_HArray2OfReal) nodecoords;
+
+		auto max_value = explosiveBlastAnalysisResultInfo.stressMaxValue;
+		auto min_value = explosiveBlastAnalysisResultInfo.stressMinValue;
+
+		Handle(MeshVS_Mesh) aMesh = nullptr;
+
+		//点的坐标用0，渲染用90
+		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+
+		aMesh = new MeshVS_Mesh();
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
+
+		// --- 2. 根据矩形角点计算椭圆参数 ---
+
+		const double rect_length = x_max - x_min;
+		const double rect_width = z_max - z_min;
+
+		const double circle_center_x = (x_min + x_max) / 2.0; // 圆在 x 轴上的中心位置
+		const double circle_center_z = (z_min + z_max) / 2.0; // 圆在 z 轴上的中心位置
+
+		const std::vector<double> radius_factors = { 0.1, 0.2, 0.4, 0.6, 0.8 }; // 半径比例因子
+		const double base_radius = std::min(rect_length, rect_width) / 2.0; // 基础半径（即第一个圆的半径）
+
+		std::vector<double> thresholds;
+		for (auto factor : radius_factors)
+		{
+			thresholds.push_back(std::pow(base_radius * factor, 2)); // 预计算每个圆的阈值
+		}
+
+		const double tol = Precision::Confusion();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nodecoords->Value(nodeID, 1);
+			double z = nodecoords->Value(nodeID, 3);
+
+			double dx = x - circle_center_x;
+			double dz = z - circle_center_z;
+
+			// 判断节点所在的圆环区域
+			bool found = false;
+			for (size_t i = 0; i < thresholds.size(); ++i) {
+				double value = dx * dx + dz * dz; // 当前节点到圆心的距离平方
+
+				if (value <= thresholds[i] + tol) 
+				{
+					// 在第i个圆内或边界上
+					nodeValues.push_back(max_value - (max_value - min_value) * (i + 1) / thresholds.size());
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+			{
+				nodeValues.push_back(min_value);
+			}
+		}
+
+
+		// 设置颜色映射和显示（与原逻辑一致）
+		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nodal->SetColors(colormap);
+		aMesh->AddBuilder(nodal);
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		context->EraseAll(true);
+		context->Display(aMesh, Standard_True);
+		occView->fitAll();
+	}
+
+	return true;
 }
 
 bool APISetNodeValue::SetExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues)
@@ -1753,7 +1857,107 @@ bool APISetNodeValue::SetExplosiveBlastTemperatureResult(OccView* occView, std::
 
 bool APISetNodeValue::SetExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
 {
-	return false;
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
+	auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
+
+
+	//auto high = fallSettingInfo.high;
+	//auto angle = fallSettingInfo.angle;
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
+
+	if (explosiveBlastAnalysisResultInfo.isChecked)
+	{
+		TColStd_PackedMapOfInteger allnode;
+		Handle(TColStd_HArray2OfReal) nodecoords;
+
+		auto max_value = explosiveBlastAnalysisResultInfo.overpressureMaxValue;
+		auto min_value = explosiveBlastAnalysisResultInfo.overpressureMinValue;
+
+		Handle(MeshVS_Mesh) aMesh = nullptr;
+
+		//点的坐标用0，渲染用90
+		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+
+		aMesh = new MeshVS_Mesh();
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
+
+		// --- 2. 根据矩形角点计算椭圆参数 ---
+		const double rect_length = x_max - x_min;
+		const double rect_width = z_max - z_min;
+
+		const double circle_center_x = (x_min + x_max) / 2.0; // 圆在 x 轴上的中心位置
+		const double circle_center_z = (z_min + z_max) / 2.0; // 圆在 z 轴上的中心位置
+
+
+		const double base_radius = std::min(rect_length, rect_width) / 2.0 * 0.8;// 基础半径（即第一个圆的半径）
+		const double threshold = std::pow(base_radius, 2);
+
+		const double tol = Precision::Confusion();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nodecoords->Value(nodeID, 1);
+			double z = nodecoords->Value(nodeID, 3);
+
+			double dx = x - circle_center_x;
+			double dz = z - circle_center_z;
+
+			// 判断节点所在的圆环区域
+			double value = dx * dx + dz * dz; // 当前节点到圆心的距离平方
+
+			if (value <= threshold + tol)
+			{
+				if (z < 30)
+				{
+
+				}
+				else
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 10.0 / 17.0);
+				}
+			}
+			else
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 8.0 / 17.0);
+			}
+
+
+		}
+
+
+		// 设置颜色映射和显示（与原逻辑一致）
+		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nodal->SetColors(colormap);
+		aMesh->AddBuilder(nodal);
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		context->EraseAll(true);
+		context->Display(aMesh, Standard_True);
+		occView->fitAll();
+	}
+
+	return true;
 }
 
 bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues)

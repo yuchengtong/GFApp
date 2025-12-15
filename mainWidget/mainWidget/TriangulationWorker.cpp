@@ -9,6 +9,7 @@
 #include <gp_Pnt.hxx>
 #include <QThread>
 #include <cmath>
+#include <3rdParty/OpenCASCADE/opencascade-7.6.0/inc/StlAPI_Reader.hxx>
 
 void TriangulationWorker::DoWork()
 {
@@ -27,12 +28,12 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        if (!CheckGeometryValidity())
-        {
-            msg = "输入几何模型无效";
-            emit WorkFinished(false, msg, meshInfo);
-            return;  // 添加立即返回
-        }
+        //if (!CheckGeometryValidity())
+        //{
+        //    msg = "输入几何模型无效";
+        //    emit WorkFinished(false, msg, meshInfo);
+        //    return;  
+        //}
 
         // 检查中断
         if (m_interrupted)
@@ -51,7 +52,24 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        auto aDataSource = new TriangleStructure(m_originalShape, 0.5, &m_interrupted);
+
+
+        TriangleStructure* aDataSource = nullptr;
+        if (1)
+        {
+            const char* filename = "480-pou-daiyuantong.stl";
+            TopoDS_Shape shape;
+            StlAPI_Reader reader;
+            bool isOk = reader.Read(shape, filename);
+            if (isOk && !shape.IsNull())
+            {
+                aDataSource = new TriangleStructure(shape, 0.5, &m_interrupted);
+            }
+        }
+        else
+        {
+            aDataSource = new TriangleStructure(m_originalShape, 0.5, &m_interrupted);
+        }
 
         auto allNodes = aDataSource->GetAllNodes();
         auto nodeCoors = aDataSource->GetmyNodeCoords();
