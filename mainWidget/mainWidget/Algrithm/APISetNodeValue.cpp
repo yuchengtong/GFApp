@@ -1022,12 +1022,12 @@ bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::
 					// 不在椭圆1内部→ 进一步判断是否在黄线内
 					if (z > yellow_line_z_min || z < yellow_line_z_max)
 					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 16.0 / 20.0);
+						nodeValues.push_back(min_value + (max_value - min_value) * 16.0 / 9.0);
 					}
 					else
 					{
 						//绿色区域
-						nodeValues.push_back(min_value + (max_value - min_value) * 10.0 / 20.0);
+						nodeValues.push_back(min_value + (max_value - min_value) * 10.0 / 9.0);
 					}
 				}
 			}
@@ -1050,6 +1050,189 @@ bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::
 
 bool APISetNodeValue::SetSlowCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
 {
+
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+	auto slowCombustionSettingInfo = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo();
+	auto slowCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSlowCombustionAnalysisResultInfo();
+
+
+	//auto high = fallSettingInfo.high;
+	//auto angle = fallSettingInfo.angle;
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
+		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+	Point p1{ meshInfo.x_min, meshInfo.z_min };
+	Point p2{ meshInfo.x_max, meshInfo.z_min };
+	Point p3{ meshInfo.x_max, meshInfo.z_max };
+	Point p4{ meshInfo.x_min, meshInfo.z_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = meshInfo.x_min;
+	const double x_max = meshInfo.x_max;
+	const double z_min = meshInfo.z_min;
+	const double z_max = meshInfo.z_max;
+
+	if (slowCombustionAnalysisResultInfo.isChecked)
+	{
+		TColStd_PackedMapOfInteger allnode;
+		Handle(TColStd_HArray2OfReal) nodecoords;
+
+		auto max_value = slowCombustionAnalysisResultInfo.temperatureMaxValue;
+		auto min_value = slowCombustionAnalysisResultInfo.temperatureMinValue;
+
+
+		Handle(MeshVS_Mesh) aMesh = nullptr;
+
+
+		//点的坐标用0，渲染用90
+		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
+		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
+
+		aMesh = new MeshVS_Mesh();
+		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
+
+		// --- 2. 根据矩形角点计算椭圆参数 ---
+		const double rect_length = x_max - x_min;
+		const double rect_width = z_max - z_min;
+
+		const double ellipse_h = (x_min + x_max) / 2.0;		//椭圆在 x 轴上的中心位置
+		const double ellipse_k = (z_min + z_max) / 2.0;		//椭圆在 z 轴上的中心位置
+
+		const double ellipse_a_0 = rect_length / 2.0;			//椭圆在 x 方向的半轴长度
+		const double ellipse_b_0 = rect_width / 2.0 + 0.2 * (rect_width / 2);			//椭圆在 z 方向的半轴长度
+
+		const double scale_factor_a = 0.8;
+		const double scale_factor_b = 0.6;
+		const double ellipse_a_1 = ellipse_a_0 * scale_factor_a;
+		const double ellipse_b_1 = ellipse_b_0 * scale_factor_b;
+
+		// 预计算外椭圆（椭圆0）参数
+		const double a0 = ellipse_a_0;
+		const double b0 = ellipse_b_0;
+		const double a0_sq = a0 * a0;
+		const double b0_sq = b0 * b0;
+		const double threshold0 = a0_sq * b0_sq;
+
+		// 预计算内椭圆（椭圆1）参数
+		const double a1 = ellipse_a_1;
+		const double b1 = ellipse_b_1;
+		const double a1_sq = a1 * a1;
+		const double b1_sq = b1 * b1;
+		const double threshold1 = a1_sq * b1_sq;
+
+		//黄线
+		const double yellow_line_z_min = z_min + 30;
+		const double yellow_line_z_max = z_max - 30;
+
+		const double green_line_z_min = z_min + 60;
+		const double green_line_z_max = z_max - 60;
+
+		// 椭圆焦点生成2个圆，在圆内则为最小值
+		double c0 = 0.0;
+		double focus1_x = 0.0, focus1_z = 0.0;  // 焦点1坐标
+		double focus2_x = 0.0, focus2_z = 0.0;  // 焦点2坐标
+		if (a0 > b0) {
+			// 长轴在x轴上，焦点在x轴方向
+			c0 = sqrt(a0_sq - b0_sq);
+			focus1_x = ellipse_h + c0;
+			focus1_z = ellipse_k;
+			focus2_x = ellipse_h - c0;
+			focus2_z = ellipse_k;
+		}
+		else {
+			// 长轴在z轴上，焦点在z轴方向
+			c0 = sqrt(b0_sq - a0_sq);
+			focus1_x = ellipse_h;
+			focus1_z = ellipse_k + c0;
+			focus2_x = ellipse_h;
+			focus2_z = ellipse_k - c0;
+		}
+
+		// 定义焦点圆的半径（可根据业务需求调整）
+		const double focus_circle_radius = 50.0;
+		const double focus_circle_radius_sq = focus_circle_radius * focus_circle_radius;  // 预计算半径平方，避免开方
+
+
+		const double tol = Precision::Confusion();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
+			int nodeID = it.Key();
+			double x = nodecoords->Value(nodeID, 1);
+			double z = nodecoords->Value(nodeID, 3);
+
+			double dx = x - ellipse_h;
+			double dz = z - ellipse_k;
+
+			// 判断是否在椭圆0（外椭圆）内
+			double value0 = dx * dx * b0_sq + dz * dz * a0_sq;
+
+			if (value0 > threshold0 + tol)
+			{
+				// 在椭圆0外部 → 赋 max_value
+				nodeValues.push_back(max_value);
+			}
+			else
+			{
+				// 在焦点圆内部
+				// 计算节点到焦点1的距离平方
+				double dx1 = x - focus1_x;
+				double dz1 = z - focus1_z;
+				double dist1_sq = dx1 * dx1 + dz1 * dz1;
+
+				// 计算节点到焦点2的距离平方
+				double dx2 = x - focus2_x;
+				double dz2 = z - focus2_z;
+				double dist2_sq = dx2 * dx2 + dz2 * dz2;
+
+				if (dist1_sq <= focus_circle_radius_sq + tol || dist2_sq <= focus_circle_radius_sq + tol) {
+					// 在任意一个焦点圆内，赋最小值
+					nodeValues.push_back(min_value);
+				}
+				else
+				{
+					// 不在焦点圆内内部→ 进一步判断是否在黄线内
+					if (z < yellow_line_z_min  || z > yellow_line_z_max )
+					{
+						nodeValues.push_back(max_value);
+					}
+					else if ( (z > yellow_line_z_min && z < green_line_z_min) || (z < yellow_line_z_max && z > green_line_z_max))
+					{
+						nodeValues.push_back(min_value + (max_value - min_value) * 7 / 9.0);
+					}
+					else if ((z > green_line_z_min && z < (green_line_z_min + 30)) || (z < green_line_z_max && z > (green_line_z_max - 30) ))
+					{
+						nodeValues.push_back(min_value + (max_value - min_value) * 5 / 9.0);
+					}
+					else if ((z > (green_line_z_min + 30) && z < (green_line_z_min + 60)) || (z < (green_line_z_max - 30) && z >(green_line_z_max - 60)))
+					{
+						nodeValues.push_back(min_value + (max_value - min_value) * 4 / 9.0);
+					}
+					else
+					{
+						//其他淡绿色区域
+						nodeValues.push_back(min_value + (max_value - min_value) * 3 / 9.0);
+					}
+				}
+			}
+		}
+
+
+		// 设置颜色映射和显示（与原逻辑一致）
+		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nodal->SetColors(colormap);
+		aMesh->AddBuilder(nodal);
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		context->EraseAll(true);
+		context->Display(aMesh, Standard_True);
+		occView->fitAll();
+	}
 	return false;
 }
 
