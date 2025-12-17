@@ -216,7 +216,8 @@ GFImportModelWidget::~GFImportModelWidget()
 void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 {
 	auto occView = GetOccView();
-	if (itemData == "Geometry") {
+	if (itemData == "Geometry") 
+	{
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
@@ -233,17 +234,60 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		}
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
-	else if (itemData == "Material") {
+	else if (itemData == "Material") 
+	{
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_materialPropertyWidget);
 	}
-	else if (itemData == "Database") {
+	else if (itemData == "Results") 
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
+	}
+	else if (itemData == "Steel") 
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_steelPropertyWidgett);
+	}
+	else if (itemData == "Propellant")
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_propellantPropertyWidget);
+	}
+	else if (itemData == "Judgment")
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_judgmentPropertyWidget);
+	}
+	else if (itemData == "Calculation") 
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_calculationPropertyWidget);
+	}
+	else if (itemData == "Project") 
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
+	}
+	else if (itemData == "Insulatingheat") 
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
+	}
+	else if (itemData == "Outheat") 
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
+	}
+	else if (itemData == "Database") 
+	{
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_databasePropertyWidget);
 	}
-	else if (itemData == "Mesh") {
+	else if (itemData == "Mesh")
+	{
 		occView->SetCameraRotationState(true);
 
 		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
@@ -312,11 +356,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	//跌落
 	else if (itemData == "FallAnalysis")
 	{
-		occView->SetCameraRotationState(true);
+		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_fallPropertyWidget);
 
-		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+		/*auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		if (!modelInfo.shape.IsNull())
 		{
 			Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -326,11 +370,10 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
 			context->Display(modelPresentation, false);
 			occView->fitAll();
-		}
+		}*/
 	}
 	else if (itemData == "StressResult")
 	{
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
@@ -368,14 +411,39 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "StrainResult")
 	{
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_strainResultWidget);
 
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		context->EraseAll(true);
+		view->SetProj(V3d_Yneg);
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFallStrainResult(occView, nodeValues);
+
+		auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+		auto max_value = fallAnalysisResultInfo.strainMaxValue;
+		auto min_value = fallAnalysisResultInfo.strainMinValue;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("跌落试验\n应变分析\n", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	else if (itemData == "TemperatureResult")
 	{
@@ -417,7 +485,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "OverpressureResult")
 	{
-		auto occView = GetOccView();
 		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
@@ -598,49 +665,12 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
-	}
-	else if (itemData == "Results") {
-		m_PropertyStackWidget->setCurrentWidget(m_resultsPropertyWidget);
-	}
-	else if (itemData == "Steel") {
-		m_PropertyStackWidget->setCurrentWidget(m_steelPropertyWidgett);
-	}
-	else if (itemData == "Propellant") {
-		m_PropertyStackWidget->setCurrentWidget(m_propellantPropertyWidget);
-	}
-	else if (itemData == "Judgment") {
-		m_PropertyStackWidget->setCurrentWidget(m_judgmentPropertyWidget);
-	}
-	else if (itemData == "Calculation") {
-		m_PropertyStackWidget->setCurrentWidget(m_calculationPropertyWidget);
-	}
-	else if (itemData == "Project") {
-		m_PropertyStackWidget->setCurrentWidget(m_projectPropertyWidge);
-	}
-	else if (itemData == "Insulatingheat") {
-		m_PropertyStackWidget->setCurrentWidget(m_insulatingheatPropertyWidget);
-	}
-	else if (itemData == "Outheat") {
-		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
-	}
-	
+	}	
 	//枪击试验
 	else if (itemData == "ShootAnalysis")	
 	{
-		occView->SetCameraRotationState(true);
-
+		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
-		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-		if (!modelInfo.shape.IsNull())
-		{
-			Handle(AIS_InteractiveContext) context = occView->getContext();
-			context->EraseAll(true);
-			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
-			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
-			context->Display(modelPresentation, false);
-			occView->fitAll();
-		}
 	}
 	//枪击试验应力分析
 	else if (itemData == "ShootStressResult") 
@@ -685,10 +715,36 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_shootStrainResultWidget);
-
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		context->EraseAll(true);
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetShootStrainResult(occView, nodeValues);
+
+		auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
+		auto max_value = shootAnalysisResultInfo.strainMaxValue;
+		auto min_value = shootAnalysisResultInfo.strainMinValue;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("枪击试验\n应变分析\n", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	//枪击试验温度分析
 	else if (itemData == "ShootTemperatureResult") 
@@ -770,6 +826,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	//射流冲击试验
 	else if (itemData == "JetImpactAnalysis") 
 	{
+		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
 	}
 	//射流冲击应力分析
@@ -828,7 +885,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 
 		// 颜色条显示（与原逻辑一致）
-		TCollection_ExtendedString tostr("射流冲击试验\n应变分析\n单位:MPa", true);
+		TCollection_ExtendedString tostr("射流冲击试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
 		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
 		aColorScale->SetSize(100, 400);
@@ -924,20 +981,8 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	//破片试验
 	else if (itemData == "FragmentationImpactAnalysis")	
 	{
-		occView->SetCameraRotationState(true);
-
+		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
-		auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-		if (!modelInfo.shape.IsNull())
-		{
-			Handle(AIS_InteractiveContext) context = occView->getContext();
-			context->EraseAll(true);
-			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
-			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
-			context->Display(modelPresentation, false);
-			occView->fitAll();
-		}
 	}
 	//破片试验应力分析
 	else if (itemData == "FragmentationImpactStressResult") 
@@ -985,9 +1030,37 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 		m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactStrainResultWidget);
 
+
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		context->EraseAll(true);
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetFragmentationStrainResult(occView, nodeValues);
+
+		auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
+		auto max_value = fragmentationAnalysisResultInfo.strainMaxValue;
+		auto min_value = fragmentationAnalysisResultInfo.strainMinValue;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("破片试验\n应变分析\n", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	//破片试验温度分析
 	else if (itemData == "FragmentationImpactTemperatureResult") 
@@ -1069,6 +1142,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	//爆炸冲击波试验
 	else if (itemData == "ExplosiveBlastAnalysis")
 	{ 
+		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastPropertyWidget);
 	}
 	//爆炸冲击波应力分析
@@ -1112,7 +1186,39 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	//爆炸冲击波应变分析
 	else if (itemData == "ExplosiveBlastStrainResult")
 	{ 
+		occView->SetCameraRotationState(false);
+
 		m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastStrainResultWidget);
+
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetExplosiveBlastStrainResult(occView, nodeValues);
+
+		auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
+		auto max_value = explosiveBlastAnalysisResultInfo.strainMaxValue;
+		auto min_value = explosiveBlastAnalysisResultInfo.strainMinValue;
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("爆炸冲击波试验\n应变分析\n", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	//爆炸冲击波温度分析
 	else if (itemData == "ExplosiveBlastTemperatureResult") 
@@ -1190,12 +1296,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->Display(aColorScale, Standard_True);
 	}
 	// 殉爆试验
-	else if (itemData == "SacrificeExplosionAnalysis")
+	else if (itemData == "SacrificeExplosioAnalysis")
 	{ 
+		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
 	}
 	//殉爆应力分析
-	else if (itemData == "SacrificeExplosionStressResult") 
+	else if (itemData == "SacrificeExplosioStressResult") 
 	{ 
 		occView->SetCameraRotationState(false);
 
@@ -1233,12 +1340,43 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->Display(aColorScale, Standard_True);
 	}
 	//殉爆应变分析
-	else if (itemData == "SacrificeExplosionStrainResult")
+	else if (itemData == "SacrificeExplosioStrainResult")
 	{
+		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionStrainResultWidget);
+
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Yneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetSacrificeExplosionStrainResult(occView, nodeValues);
+
+		auto sacrificeExplosionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
+		auto max_value = sacrificeExplosionAnalysisResultInfo.strainMaxValue;
+		auto min_value = sacrificeExplosionAnalysisResultInfo.strainMinValue;
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("殉爆试验\n应变分析\n", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
 	}
 	//殉爆温度分析
-	else if (itemData == "SacrificeExplosionTemperatureResult") 
+	else if (itemData == "SacrificeExplosioTemperatureResult") 
 	{ 
 		occView->SetCameraRotationState(false);
 
@@ -1275,7 +1413,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->Display(aColorScale, Standard_True);
 	}
 	//殉爆超压分析
-	else if (itemData == "SacrificeExplosionOverpressureResult") 
+	else if (itemData == "SacrificeExplosioOverpressureResult") 
 	{ 
 		occView->SetCameraRotationState(false);
 
