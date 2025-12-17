@@ -157,9 +157,22 @@ void SlowCombustionPropertyWidget::initWidget()
 		}
 	}
 
-	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [this](QTableWidgetItem* item) {
 		if (item->row() == 9 && item->column() == 2)
 		{
+			auto text = item->text();
+			auto finalTemperature = text.toDouble();
+			if (finalTemperature >= 200 && finalTemperature <= 500)
+			{
+				m_finalTemperature = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_finalTemperature);
+				m_tableWidget->blockSignals(false);
+			}
+
 			auto info = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo();
 			info.temperature = item->text().toDouble();
 			ModelDataManager::GetInstance()->SetSlowCombustionSettingInfo(info);

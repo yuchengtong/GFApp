@@ -69,6 +69,16 @@ public:
 		double yMin,
 		double yMax);
 
+	// 更新图表数据
+	void updateChartData(QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle);
+
+	qreal calculateMaxValue(const QVector<QPointF>& series, bool isX);
+
+	qreal calculateMinValue(const QVector<QPointF>& series, bool isX);
+
+	void createChartDataGroup(QLineSeries*& lineSeries, QScatterSeries*& scatterSeries,
+		const QString& name, const QColor& color);
+
 
 private slots:
 	void onTreeItemClicked(const QString& itemData);
@@ -117,43 +127,35 @@ private:
 
 	QWidget* graphicWid = nullptr;
 
-	QComboBox* x_comboBox;
-	QComboBox* y_comboBox;
+	QComboBox* x_comboBox = nullptr;
+	QComboBox* y_comboBox = nullptr;
 	
 
-	QChartView* m_chartView;
-	QChart* m_chart;              // 图表核心
+	QChartView* m_chartView = nullptr;
+	QChart* m_chart = nullptr;              // 图表核心
 	// 每组数据：1条曲线 + 1个散点集（关键修改）
-	QLineSeries* m_lineSeries1;   // 第一组曲线
-	QScatterSeries* m_scatter1;   // 第一组圆点
-	QLineSeries* m_lineSeries2;   // 第二组曲线
-	QScatterSeries* m_scatter2;   // 第二组圆点
-	QLineSeries* m_lineSeries3;   // 第三组曲线
-	QScatterSeries* m_scatter3;   // 第三组圆点
-	QValueAxis* m_axisX;          // X轴
-	QValueAxis* m_axisY;
+	QLineSeries* m_lineSeries1 = nullptr;   // 第一组曲线
+	QScatterSeries* m_scatter1 = nullptr;   // 第一组圆点
+	QLineSeries* m_lineSeries2 = nullptr;   // 第二组曲线
+	QScatterSeries* m_scatter2 = nullptr;   // 第二组圆点
+	QLineSeries* m_lineSeries3 = nullptr;   // 第三组曲线
+	QScatterSeries* m_scatter3 = nullptr;   // 第三组圆点
+	QValueAxis* m_axisX = nullptr;          // X轴
+	QValueAxis* m_axisY = nullptr;
 
 
-	QChartView* chartView2;
+	QChartView* chartView2 = nullptr;
 
-	QComboBox* m_grapgicComboBox;
+	QComboBox* m_grapgicComboBox = nullptr;
 
-	GraphicWidget* m_3dGraphicWid;
+	GraphicWidget* m_3dGraphicWid = nullptr;
 
-	QHBoxLayout* graphicLayout;
-	QVBoxLayout* m_leftLayout;
+	QHBoxLayout* graphicLayout = nullptr;
+	QVBoxLayout* m_leftLayout = nullptr;
 
 	QMap<QString, QStringList> m_dataMap;
 
-	// 更新图表数据
-	void updateChartData(QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle);
 
-	qreal calculateMaxValue(const QVector<QPointF>& series, bool isX);
-
-	qreal calculateMinValue(const QVector<QPointF>& series, bool isX);
-
-	void createChartDataGroup(QLineSeries*& lineSeries, QScatterSeries*& scatterSeries,
-		const QString& name, const QColor& color);
 
 
 };

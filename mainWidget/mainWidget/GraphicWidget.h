@@ -96,14 +96,14 @@ private slots:
 
 
 private:
-    Q3DSurface* surface; //三维曲面图对象
-    QSurface3DSeries* series; // 数据
-    QAbstract3DGraph* m_graph;    // 图表容器指针
-    QSurfaceDataArray* m_array;  //数据集
+    Q3DSurface* surface = nullptr; //三维曲面图对象
+    QSurface3DSeries* series = nullptr; // 数据
+    QAbstract3DGraph* m_graph = nullptr;    // 图表容器指针
+    QSurfaceDataArray* m_array = nullptr;  //数据集
 
-    QValue3DAxis* m_axisX;  // 坐标轴
-    QValue3DAxis* m_axisY;
-    QValue3DAxis* m_axisZ;
+    QValue3DAxis* m_axisX = nullptr;  // 坐标轴
+    QValue3DAxis* m_axisY = nullptr;
+    QValue3DAxis* m_axisZ = nullptr;
 
 
 

@@ -16,5 +16,5 @@ private:
 
 private:
 	QTableWidget* m_tableWidget = nullptr;
-
+	QString m_finalTemperature = "200";
 };

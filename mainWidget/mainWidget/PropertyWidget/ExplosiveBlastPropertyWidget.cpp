@@ -157,9 +157,22 @@ void ExplosiveBlastPropertyWidget::initWidget()
 	}
 
 
-	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [this](QTableWidgetItem* item) {
 		if (item->row() == 2 && item->column() == 2)
 		{
+			auto text = item->text();
+			auto tntValue = text.toDouble();
+			if (tntValue >= 10 && tntValue <= 100)
+			{
+				m_tntValue = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_tntValue);
+				m_tableWidget->blockSignals(false);
+			}
+
 			auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
 			explosiveBlastSettingInfo.tnt = item->text().toDouble();
 			ModelDataManager::GetInstance()->SetExplosiveBlastSettingInfo(explosiveBlastSettingInfo);

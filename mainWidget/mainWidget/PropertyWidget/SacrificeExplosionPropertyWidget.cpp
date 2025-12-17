@@ -159,9 +159,22 @@ void SacrificeExplosionPropertyWidget::initWidget()
 		}
 	}
 
-	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [this](QTableWidgetItem* item) {
 		if (item->row() == 2 && item->column() == 2)
 		{
+			auto text = item->text();
+			auto distance = text.toDouble();
+			if (distance >= 10 && distance <= 100)
+			{
+				m_distance = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_distance);
+				m_tableWidget->blockSignals(false);
+			}
+
 			auto sacrificeExplosionSettingInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionSettingInfo();
 			sacrificeExplosionSettingInfo.distance = item->text().toDouble();
 			ModelDataManager::GetInstance()->SetSacrificeExplosionSettingInfo(sacrificeExplosionSettingInfo);

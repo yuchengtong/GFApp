@@ -160,9 +160,22 @@ void JetImpactPropertyWidget::initWidget()
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
-	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [this](QTableWidgetItem* item) {
 		if (item->row() == 2 && item->column() == 2)
 		{
+			auto text = item->text();
+			auto caliber = text.toDouble();
+			if (caliber >= 10 && caliber <= 80)
+			{
+				m_caliber = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_caliber);
+				m_tableWidget->blockSignals(false);
+			}
+
 			auto info = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
 			info.caliber = item->text().toDouble();
 			ModelDataManager::GetInstance()->SetJetImpactSettingInfo(info);

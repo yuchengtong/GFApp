@@ -153,9 +153,22 @@ void FastCombustionPropertyWidget::initWidget()
 		}
 	}
 
-	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [](QTableWidgetItem* item) {
+	QObject::connect(m_tableWidget, &QTableWidget::itemChanged, [this](QTableWidgetItem* item) {
 		if (item->row() == 9 && item->column() == 2)
 		{
+			auto text = item->text();
+			auto averageTemperature = text.toDouble();
+			if (averageTemperature >= 300 && averageTemperature <= 1000)
+			{
+				m_averageTemperature = text;
+			}
+			else
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_averageTemperature);
+				m_tableWidget->blockSignals(false);
+			}
+
 			auto info = ModelDataManager::GetInstance()->GetFastCombustionSettingInfo();
 			info.temperature = item->text().toDouble();
 			ModelDataManager::GetInstance()->SetFastCombustionSettingInfo(info);

@@ -1296,7 +1296,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->Display(aColorScale, Standard_True);
 	}
 	// 殉爆试验
-	else if (itemData == "SacrificeExplosioAnalysis")
+	else if (itemData == "SacrificeExplosionAnalysis")
 	{ 
 		occView->SetCameraRotationState(false);
 		m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionPropertyWidget);
