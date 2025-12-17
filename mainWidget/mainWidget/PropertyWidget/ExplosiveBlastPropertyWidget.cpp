@@ -88,7 +88,7 @@ void ExplosiveBlastPropertyWidget::initWidget()
 	QTableWidgetItem* titeItem = new QTableWidgetItem("爆炸冲击波试验");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
-	QTableWidgetItem* tntValueItem = new QTableWidgetItem("5");
+	QTableWidgetItem* tntValueItem = new QTableWidgetItem("50");
 	tntValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 
 	QTableWidgetItem* incidentAngleValueItem = new QTableWidgetItem("90");

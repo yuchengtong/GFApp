@@ -83,7 +83,7 @@ void OutheatPropertyWidget::initWidget()
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// µ¥Î»ÁÐ
-	QStringList unitLabels = { " "," ", "kg/m^3", "/K", "Pa"," ","MPa","MPa","W/m K","J/kg K" };
+	QStringList unitLabels = { " "," ", "kg/m^3", "/K", "GPa"," ","MPa","MPa","W/m K","J/kg K" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{

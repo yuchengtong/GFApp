@@ -314,7 +314,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 30;
 	}
 	for (double& val : datasets1[3]) {
-		val = val / 1000000000000 * 5;
+		val = val * 1000000;
 		
 	}
 	m_polarChart1->updateDatasets(datasets1, labelGroups);
@@ -368,7 +368,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 20;
 	}
 	for (double& val : datasets4[3]) {
-		val = val / 100000000000 * 4;
+		val = val * 1000000;
 	}
 	m_polarChart4->updateDatasets(datasets4, labelGroups);
 
@@ -397,7 +397,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 6;
 	}
 	for (double& val : datasets5[3]) {
-		val = val / 100000000000;
+		val = val * 1000000;
 
 	}
 	m_polarChart5->updateDatasets(datasets5, labelGroups);
@@ -427,7 +427,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 3;
 	}
 	for (double& val : datasets6[3]) {
-		val = val / 100000000000 * 2;
+		val = val * 1000000;
 
 	}
 	m_polarChart6->updateDatasets(datasets6, labelGroups);
@@ -457,7 +457,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 0.2;
 	}
 	for (double& val : datasets7[3]) {
-		val = val / 1000000000000 * 3;
+		val = val * 100000;
 
 	}
 	m_polarChart7->updateDatasets(datasets7, labelGroups);
@@ -487,7 +487,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 		val = val * 0.1;
 	}
 	for (double& val : datasets8[3]) {
-		val = val / 10000000000000 * 2;
+		val = val * 10000;
 
 	}
 	m_polarChart8->updateDatasets(datasets8, labelGroups);
