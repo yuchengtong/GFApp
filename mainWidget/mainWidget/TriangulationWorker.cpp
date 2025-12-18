@@ -28,12 +28,12 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        //if (!CheckGeometryValidity())
-        //{
-        //    msg = "输入几何模型无效";
-        //    emit WorkFinished(false, msg, meshInfo);
-        //    return;  
-        //}
+        if (!CheckGeometryValidity())
+        {
+            msg = "输入几何模型无效";
+            emit WorkFinished(false, msg, meshInfo);
+            return;  
+        }
 
         // 检查中断
         if (m_interrupted)
@@ -55,7 +55,7 @@ void TriangulationWorker::DoWork()
 
 
         TriangleStructure* aDataSource = nullptr;
-        if (1)
+        if (0)
         {
             const char* filename = "480-pou-daiyuantong.stl";
             TopoDS_Shape shape;

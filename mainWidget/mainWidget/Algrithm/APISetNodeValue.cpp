@@ -2407,7 +2407,7 @@ bool APISetNodeValue::SetJetImpactOverpressureResult(OccView* occView, std::vect
 		const double k1 = z_min - rect_height / 8.0;        // 下移 1/8
 		const double k2 = z_min - rect_height / 6.0;        // 下移 1/8
 		const double k3 = z_min - rect_height / 4.0;        // 下移 1/4
-		const double k4 = z_min - rect_height / 2.0;        // 下移 1/4
+		const double k4 = z_min - rect_height / 3.0;        // 下移 1/4
 
 		const double tol = Precision::Confusion();          // OpenCASCADE 容差
 
@@ -2455,7 +2455,7 @@ bool APISetNodeValue::SetJetImpactOverpressureResult(OccView* occView, std::vect
 				}
 				else
 				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 7.0/9.0);
+					nodeValues.push_back(min_value + (max_value - min_value) * 7.5/9.0);
 				}
 			}
 			else
