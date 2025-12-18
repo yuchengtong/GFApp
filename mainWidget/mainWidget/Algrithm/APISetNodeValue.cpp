@@ -1256,6 +1256,7 @@ bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::
 		const double yellow_line_z_max = z_max - 30;
 
 		const double tol = Precision::Confusion();
+		const double robustvalue = 15;
 
 		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
 			int nodeID = it.Key();
@@ -1270,8 +1271,12 @@ bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::
 
 			if (value0 > threshold0 + tol) 
 			{
-				// 在椭圆0外部 → 赋 max_value
+				// 在椭圆0外部 → 赋 max_value   //红色
 				nodeValues.push_back(max_value);
+			}
+			else if (value0 <= threshold0 + tol&& value0> threshold0- robustvalue* robustvalue)
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);//橙色
 			}
 			else 
 			{
@@ -1283,18 +1288,22 @@ bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::
 					// 在椭圆1内部（或边界）→ 赋 min_value
 					nodeValues.push_back(min_value);
 				}
+				else if (value1 > threshold1 && value1 <= threshold1 + robustvalue * robustvalue)
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+				}
 				else
 				{
 					// 不在椭圆1内部→ 进一步判断是否在黄线内
 					if (z < yellow_line_z_min || z > yellow_line_z_max)
 					{
 						//黄色区域
-						nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 10.0);
+						nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
 					}
 					else
 					{
 						//绿色区域
-						nodeValues.push_back(min_value + (max_value - min_value) * 5.0 / 10.0);
+						nodeValues.push_back(min_value + (max_value - min_value) * 5.0 / 9.0);
 					}
 				}
 			}

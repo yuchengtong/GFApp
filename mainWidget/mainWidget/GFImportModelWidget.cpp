@@ -429,7 +429,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		// 颜色条显示（与原逻辑一致）
 		TCollection_ExtendedString tostr("跌落试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetFormat(TCollection_AsciiString("%.6f"));
 		aColorScale->SetSize(100, 400);
 		aColorScale->SetRange(min_value, max_value);
 		aColorScale->SetNumberOfIntervals(9);
@@ -730,7 +730,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		// 颜色条显示（与原逻辑一致）
 		TCollection_ExtendedString tostr("枪击试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetFormat(TCollection_AsciiString("%.6f"));
 		aColorScale->SetSize(100, 400);
 		aColorScale->SetRange(min_value, max_value);
 		aColorScale->SetNumberOfIntervals(9);
@@ -887,7 +887,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		// 颜色条显示（与原逻辑一致）
 		TCollection_ExtendedString tostr("射流冲击试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetFormat(TCollection_AsciiString("%.6f"));
 		aColorScale->SetSize(100, 400);
 		aColorScale->SetRange(min_value, max_value);
 		aColorScale->SetNumberOfIntervals(9);
@@ -1046,7 +1046,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		// 颜色条显示（与原逻辑一致）
 		TCollection_ExtendedString tostr("破片试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetFormat(TCollection_AsciiString("%.6f"));
 		aColorScale->SetSize(100, 400);
 		aColorScale->SetRange(min_value, max_value);
 		aColorScale->SetNumberOfIntervals(9);
@@ -1204,7 +1204,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		// 颜色条显示（与原逻辑一致）
 		TCollection_ExtendedString tostr("爆炸冲击波试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetFormat(TCollection_AsciiString("%.6f"));
 		aColorScale->SetSize(100, 400);
 		aColorScale->SetRange(min_value, max_value);
 		aColorScale->SetNumberOfIntervals(9);
@@ -1359,7 +1359,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		// 颜色条显示（与原逻辑一致）
 		TCollection_ExtendedString tostr("殉爆试验\n应变分析\n", true);
 		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetFormat(TCollection_AsciiString("%.6f"));
 		aColorScale->SetSize(100, 400);
 		aColorScale->SetRange(min_value, max_value);
 		aColorScale->SetNumberOfIntervals(9);
