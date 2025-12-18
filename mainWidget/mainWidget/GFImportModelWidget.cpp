@@ -914,7 +914,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		view->SetProj(V3d_Yneg);
 
 		std::vector<double> nodeValues;
-		APISetNodeValue::SetJetImpactStrainResult(occView, nodeValues);
+		APISetNodeValue::SetJetImpactTemperatureResult(occView, nodeValues);
 
 		auto jetImpactAnalysisResultInfo = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
 		auto max_value = jetImpactAnalysisResultInfo.temperatureMaxValue;
