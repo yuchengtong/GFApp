@@ -113,6 +113,11 @@ void OccView::SetCameraRotationState(bool isRotation)
     b_IsRatotion = isRotation;
 }
 
+bool OccView::GetCameraRotationState()
+{
+    return b_IsRatotion;
+}
+
 /*!
 Get paint engine for the OpenGL viewer. [ virtual public ]
 */

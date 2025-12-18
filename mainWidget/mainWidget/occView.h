@@ -48,6 +48,7 @@ public:
 	TopoDS_Shape& GetShape() { return m_Shape; }
 
     void SetCameraRotationState(bool isRotation);
+    bool GetCameraRotationState();
 
 signals:
     void selectionChanged(void);

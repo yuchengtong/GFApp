@@ -548,6 +548,61 @@ mainWidget::mainWidget(QWidget *parent)
 	connect(ZoomBtn, &QPushButton::clicked, occView, &OccView::zoom);
 	connect(FitAllBtn, &QPushButton::clicked, occView, &OccView::fitAll);
 	connect(ResetBtn, &QPushButton::clicked, occView, &OccView::reset);
+
+	QObject::connect(XBtn, &QPushButton::clicked, [occView]() {		
+		auto state=occView->GetCameraRotationState();
+		if (state)
+		{
+			Handle(V3d_View) view = occView->getView();
+			view->SetProj(V3d_Xpos);
+			occView->fitAll();
+		}
+		});
+	QObject::connect(YBtn, &QPushButton::clicked, [occView]() {
+		auto state = occView->GetCameraRotationState();
+		if (state)
+		{
+			Handle(V3d_View) view = occView->getView();
+			view->SetProj(V3d_Ypos);
+			occView->fitAll();
+		}
+		});
+	QObject::connect(ZBtn, &QPushButton::clicked, [occView]() {
+		auto state = occView->GetCameraRotationState();
+		if (state)
+		{
+			Handle(V3d_View) view = occView->getView();
+			view->SetProj(V3d_Zpos);
+			occView->fitAll();
+		}
+		});
+	QObject::connect(_XBtn, &QPushButton::clicked, [occView]() {
+		auto state = occView->GetCameraRotationState();
+		if (state)
+		{
+			Handle(V3d_View) view = occView->getView();
+			view->SetProj(V3d_Xneg);
+			occView->fitAll();
+		}
+		});
+	QObject::connect(_YBtn, &QPushButton::clicked, [occView]() {
+		auto state = occView->GetCameraRotationState();
+		if (state)
+		{
+			Handle(V3d_View) view = occView->getView();
+			view->SetProj(V3d_Yneg);
+			occView->fitAll();
+		}
+		});
+	QObject::connect(_ZBtn, &QPushButton::clicked, [occView]() {
+		auto state = occView->GetCameraRotationState();
+		if (state)
+		{
+			Handle(V3d_View) view = occView->getView();
+			view->SetProj(V3d_Zneg);
+			occView->fitAll();
+		}
+		});
 }
 
 mainWidget::~mainWidget()
