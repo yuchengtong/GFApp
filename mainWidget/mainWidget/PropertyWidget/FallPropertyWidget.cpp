@@ -86,9 +86,9 @@ void FallPropertyWidget::initWidget()
 	QTableWidgetItem* heightValueItem = new QTableWidgetItem(m_highValue);
 	QTableWidgetItem* hardnessValueItem = new QTableWidgetItem("刚体");
 	hardnessValueItem->setFlags(hardnessValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* temperatureSensorValueItem = new QTableWidgetItem("40");
+	QTableWidgetItem* temperatureSensorValueItem = new QTableWidgetItem("120");
 	temperatureSensorValueItem->setFlags(temperatureSensorValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* overpressureSensorValueItem = new QTableWidgetItem("40");
+	QTableWidgetItem* overpressureSensorValueItem = new QTableWidgetItem("120");
 	overpressureSensorValueItem->setFlags(overpressureSensorValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* airVelocityValueItem = new QTableWidgetItem("0");
 	airVelocityValueItem->setFlags(airVelocityValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑

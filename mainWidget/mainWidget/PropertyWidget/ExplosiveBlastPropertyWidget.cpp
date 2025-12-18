@@ -95,11 +95,11 @@ void ExplosiveBlastPropertyWidget::initWidget()
 	incidentAngleValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	incidentAngleValueItem->setFlags(incidentAngleValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
-	QTableWidgetItem* temperatureNumValueItem = new QTableWidgetItem("40");
+	QTableWidgetItem* temperatureNumValueItem = new QTableWidgetItem("120");
 	temperatureNumValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	temperatureNumValueItem->setFlags(temperatureNumValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
-	QTableWidgetItem* overpressureNumValueItem = new QTableWidgetItem("40");
+	QTableWidgetItem* overpressureNumValueItem = new QTableWidgetItem("120");
 	overpressureNumValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	overpressureNumValueItem->setFlags(overpressureNumValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 

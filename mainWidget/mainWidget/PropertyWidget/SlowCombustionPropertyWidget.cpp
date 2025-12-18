@@ -93,10 +93,10 @@ void SlowCombustionPropertyWidget::initWidget()
 	QTableWidgetItem* ammunitionLocationValueItem = new QTableWidgetItem("正中");
 	ammunitionLocationValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	ammunitionLocationValueItem->setFlags(ammunitionLocationValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* temperatureNumValueItem = new QTableWidgetItem("40");
+	QTableWidgetItem* temperatureNumValueItem = new QTableWidgetItem("120");
 	temperatureNumValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	temperatureNumValueItem->setFlags(temperatureNumValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* shockWaveValueItem = new QTableWidgetItem("40");
+	QTableWidgetItem* shockWaveValueItem = new QTableWidgetItem("120");
 	shockWaveValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	shockWaveValueItem->setFlags(shockWaveValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* windSpeedValueItem = new QTableWidgetItem("0");
