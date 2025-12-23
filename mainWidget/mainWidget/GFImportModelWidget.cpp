@@ -13,12 +13,14 @@
 #include <StlAPI_Reader.hxx>
 #include <RWStl.hxx>
 #include <Quantity_ColorRGBA.hxx>
+#include <Quantity_NameOfColor.hxx>
 #include <MeshVS_Mesh.hxx>
 #include <MeshVS_Drawer.hxx>
 #include <MeshVS_DrawerAttribute.hxx>
 #include <MeshVS_MeshPrsBuilder.hxx>
 #include <MeshVS_NodalColorPrsBuilder.hxx>
 #include <MeshVS_NodalColorPrsBuilder.hxx>
+
 
 #include <QSplitter>
 #include <QHBoxLayout>
@@ -228,7 +230,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
 			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
+			context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
 			context->Display(modelPresentation, false);
 			occView->fitAll();
 		}
@@ -348,7 +350,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 			context->EraseAll(true);
 			Handle(AIS_Shape) modelPresentation = new AIS_Shape(modelInfo.shape);
 			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
+			context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
 			context->Display(modelPresentation, false);
 			occView->fitAll();
 		}

@@ -9,7 +9,7 @@
 #include <gp_Pnt.hxx>
 #include <QThread>
 #include <cmath>
-#include <3rdParty/OpenCASCADE/opencascade-7.6.0/inc/StlAPI_Reader.hxx>
+//#include <StlAPI_Reader.hxx>
 
 void TriangulationWorker::DoWork()
 {
@@ -28,12 +28,12 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        if (!CheckGeometryValidity())
-        {
-            msg = "输入几何模型无效";
-            emit WorkFinished(false, msg, meshInfo);
-            return;  
-        }
+        //if (!CheckGeometryValidity())
+        //{
+        //    msg = "输入几何模型无效";
+        //    emit WorkFinished(false, msg, meshInfo);
+        //    return;  
+        //}
 
         // 检查中断
         if (m_interrupted)
@@ -57,18 +57,18 @@ void TriangulationWorker::DoWork()
         TriangleStructure* aDataSource = nullptr;
         if (0)
         {
-            const char* filename = "480-pou-daiyuantong.stl";
-            TopoDS_Shape shape;
-            StlAPI_Reader reader;
-            bool isOk = reader.Read(shape, filename);
-            if (isOk && !shape.IsNull())
-            {
-                aDataSource = new TriangleStructure(shape, 0.5, &m_interrupted);
-            }
+            //const char* filename = "480-pou-daiyuantong.stl";
+            //TopoDS_Shape shape;
+            //StlAPI_Reader reader;
+            //bool isOk = reader.Read(shape, filename);
+            //if (isOk && !shape.IsNull())
+            //{
+            //    aDataSource = new TriangleStructure(shape, 0.5, &m_interrupted);
+            //}
         }
         else
         {
-            aDataSource = new TriangleStructure(m_originalShape, 0.5, &m_interrupted);
+            aDataSource = new TriangleStructure(m_originalShape, 5, &m_interrupted);
         }
 
         auto allNodes = aDataSource->GetAllNodes();

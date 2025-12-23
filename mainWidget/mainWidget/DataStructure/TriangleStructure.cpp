@@ -1,503 +1,325 @@
-#include "TriangleStructure.h"
-
+ï»¿#include "TriangleStructure.h"
 #include <Precision.hxx>
 #include <Standard_Type.hxx>
-#include <TColStd_DataMapOfIntegerReal.hxx>
-#include <BRepMesh_IncrementalMesh.hxx>
-#include <TopExp_Explorer.hxx>
 #include <BRep_Tool.hxx>
 #include <gp_Trsf.hxx>
 #include <TopoDS.hxx>
-
-#include <map>
+#include <gp_Vec.hxx>
+#include <cmath>
 #include <set>
-#include <utility> // for std::pair
-#include <TopTools_IndexedMapOfShape.hxx>
-#include <TopExp.hxx>
+#include <cassert>
+#include <iostream>
+#include <mutex>
+#include <BRepBuilderAPI_Copy.hxx>
 
-TriangleStructure::TriangleStructure()
-{
-	myNodeCoords = new TColStd_HArray2OfReal(0, 0, 1, 3);
-	myElemNodes = new TColStd_HArray2OfInteger(0, 0, 1, 3);
-	myElemNormals = new TColStd_HArray2OfReal(0, 0, 1, 3);
+namespace nglib {
+#include <nglib.h>
+}
+using namespace nglib;
+
+// çº¿ç¨‹å®‰å…¨çš„ Netgen åˆå§‹åŒ–
+void EnsureNgInit() {
+    static std::once_flag flag;
+    std::call_once(flag, []() {
+        Ng_Init();
+        });
 }
 
-TriangleStructure::TriangleStructure(const TopoDS_Shape& shape, const Standard_Real linearDeflection, volatile bool* interrupted)
-{
-    // ÕıÈ·³õÊ¼»¯¿ÕÊı×é
-    myNodeCoords = new TColStd_HArray2OfReal(0, 0, 1, 3);
-    myElemNodes = new TColStd_HArray2OfInteger(0, 0, 1, 3);
-    myElemNormals = new TColStd_HArray2OfReal(0, 0, 1, 3);
-
-    // ¼ì²éÖĞ¶Ï
-    if (CheckInterruption(interrupted)) 
-    {
-        return;
-    }
-
-    // Ê×ÏÈ¶ÔĞÎ×´½øĞĞÍø¸ñ»®·Ö
-    BRepMesh_IncrementalMesh mesher(shape, 0.08, Standard_False,0.2, Standard_False);
-    //BRepMesh_IncrementalMesh mesher(shape, 0.8, Standard_False, 0.8, Standard_False);
-    mesher.Perform();
-
-    if (CheckInterruption(interrupted))
-    {
-        return;
-    }
-
-    TopTools_IndexedMapOfShape faceMap;
-    TopExp::MapShapes(shape, TopAbs_FACE, faceMap);
-
-    // ±éÀúËùÓĞÃæ²¢ÌáÈ¡Èı½ÇÍø¸ñ
-    TopExp_Explorer explorer(shape, TopAbs_FACE);
-    int faceCount = 0;
-    int totalFaces = faceMap.Extent();
-    for (; explorer.More(); explorer.Next())
-    {
-        // Ã¿´¦Àí¼¸¸öÃæ¼ì²éÒ»´ÎÖĞ¶Ï
-        if (faceCount % 10 == 0 && CheckInterruption(interrupted)) 
-        {
-            return;
-        }
-
-        const TopoDS_Face& face = TopoDS::Face(explorer.Current());
-        TopLoc_Location loc;
-        Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation(face, loc);
-
-        if (!triangulation.IsNull())
-        {
-            AddTriangulation(triangulation, loc);
-
-            // ¼ì²éÖĞ¶Ï
-            if (CheckInterruption(interrupted)) 
-            {
-                return;
-            }
-        }
-
-        faceCount++;
-    }
-
-    if (CheckInterruption(interrupted))
-    {
-        return;
-    }
-
-	ExtractEdges();
- 
-}
-
-
-
-
-
-bool TriangleStructure::CheckInterruption(volatile bool* interrupted) const
-{
+// ä¸­æ–­æ£€æŸ¥è¾…åŠ©å‡½æ•°
+bool TriangleStructure::CheckInterruption(volatile bool* interrupted) const {
     return interrupted && *interrupted;
 }
 
-void TriangleStructure::AddTriangulation(const Handle(Poly_Triangulation)& triangulation, const TopLoc_Location& loc, volatile bool* interrupted)
+// é»˜è®¤æ„é€ å‡½æ•°
+TriangleStructure::TriangleStructure() {
+    myNodeCoords = new TColStd_HArray2OfReal(0, 0, 1, 3);
+    myElemNodes = new TColStd_HArray2OfInteger(0, 0, 1, 3);
+    myElemNormals = new TColStd_HArray2OfReal(0, 0, 1, 3);
+}
+
+// ä¸»æ„é€ å‡½æ•°ï¼ˆä¿®å¤ç‰ˆï¼‰
+TriangleStructure::TriangleStructure(TopoDS_Shape& shape,
+    const Standard_Real linearDeflection,
+    volatile bool* interrupted)
 {
-    if (triangulation.IsNull())
-        return;
-
-    // ¼ì²éÖĞ¶Ï
-    if (CheckInterruption(interrupted)) 
-    {
+    // === Step 1: æ·±æ‹·è´è¾“å…¥å‡ ä½•ï¼ˆå…³é”®ï¼ï¼‰===
+    BRepBuilderAPI_Copy copier(shape);
+    if (!copier.IsDone() || copier.Shape().IsNull()) {
+        std::cerr << "TriangleStructure: Failed to deep-copy input shape." << std::endl;
         return;
     }
+    m_shape = copier.Shape();
 
+    if (CheckInterruption(interrupted)) return;
 
-    const Standard_Integer nbNodes = triangulation->NbNodes();
-    const Standard_Integer nbTriangles = triangulation->NbTriangles();
+    // === Step 2: åˆå§‹åŒ– Netgen ===
+    EnsureNgInit();
 
-
-    // Ó¦ÓÃÎ»ÖÃ±ä»»
-    gp_Trsf transformation = loc.Transformation();
-    const Standard_Boolean isIdentity = loc.IsIdentity();
-
-    // --- ÓÅ»¯µã 1: Ô¤·ÖÅäÄÚ´æ ---
-    // ÎªĞÂµ¥ÔªÔ¤·ÖÅä¿Õ¼ä
-    Standard_Integer newElemCount = nbTriangles;
-    Standard_Integer startElemId = myElemNodes->UpperRow() + 1;
-    if (startElemId > 1)
-    { // Èç¹û²»ÊÇµÚÒ»¸öµ¥Ôª
-        myElemNodes->Resize(1, startElemId + newElemCount - 1, 1, 3, Standard_True);
-        myElemNormals->Resize(1, startElemId + newElemCount - 1, 1, 3, Standard_True);
-    }
-    else 
-    { // Èç¹ûÊÇµÚÒ»¸öµ¥Ôª
-        myElemNodes->Resize(1, newElemCount, 1, 3, Standard_True);
-        myElemNormals->Resize(1, newElemCount, 1, 3, Standard_True);
+    // === Step 3: åŠ è½½å‡ ä½• ===
+    assert(!m_shape.IsNull());
+    Ng_OCC_Geometry* occ_geom = Ng_OCC_Load_Shape(m_shape);
+    if (!occ_geom) {
+        std::cerr << "TriangleStructure: Failed to load shape into Netgen." << std::endl;
+        return;
     }
 
-    // ÓÃÓÚÓ³Éä¾Ö²¿½ÚµãIDµ½È«¾Ö½ÚµãIDµÄÁÙÊ±Êı×é
-    std::vector<Standard_Integer> localToGlobalNodeMap(nbNodes + 1); // 1-based indexing
-
-    // --- ÓÅ»¯µã 2: ÅúÁ¿´¦Àí½Úµã£¬²¢½¨Á¢¾Ö²¿µ½È«¾ÖµÄÓ³Éä ---
-    for (Standard_Integer i = 1; i <= nbNodes; ++i)
-    {
-        gp_Pnt p = triangulation->Node(i);
-        if (!isIdentity) {
-            p.Transform(transformation);
-        }
-        gp_XYZ p_xyz = p.XYZ(); // Ê¹ÓÃ gp_XYZ ½øĞĞ±È½ÏºÍ´æ´¢£¬Ğ§ÂÊ¸ü¸ß
-
-        // ¼ì²éÊÇ·ñÒÑÓĞÏàÍ¬×ø±êµÄ½Úµã´æÔÚ
-        auto it = myCoordToNodeMap.find(p_xyz);
-        if (it != myCoordToNodeMap.end()) {
-            // ÖØÓÃÒÑÓĞ½Úµã
-            localToGlobalNodeMap[i] = it->second;
-        }
-        else {
-            // ´´½¨ĞÂ½Úµã
-            Standard_Integer newNodeId = myNodeCoords->UpperRow() + 1;
-            myNodeCoords->Resize(1, newNodeId, 1, 3, Standard_True); // ResizeÒ»´Î
-
-            // ´æ´¢½Úµã×ø±ê
-            myNodeCoords->SetValue(newNodeId, 1, p.X());
-            myNodeCoords->SetValue(newNodeId, 2, p.Y());
-            myNodeCoords->SetValue(newNodeId, 3, p.Z());
-
-            myNodes.Add(newNodeId);
-            localToGlobalNodeMap[i] = newNodeId;
-            myCoordToNodeMap[p_xyz] = newNodeId;
-        }
+    // === Step 4: åˆ›å»ºç½‘æ ¼ ===
+    Ng_Mesh* mesh = Ng_NewMesh();
+    if (!mesh) {
+        std::cerr << "TriangleStructure: Ng_NewMesh failed." << std::endl;
+        return;
     }
 
-    // --- ÓÅ»¯µã 3: ÅúÁ¿´¦Àíµ¥ÔªºÍ·¨ÏòÁ¿£¬±ÜÃâÖØ¸´±ä»» ---
-    for (Standard_Integer j = 1; j <= nbTriangles; j++)
-    {
-        auto aTri = triangulation->Triangle(j);
-        Standard_Integer V[3];
-        aTri.Get(V[0], V[1], V[2]);
+    // === Step 5: è®¾ç½®å‚æ•°ï¼ˆé›¶åˆå§‹åŒ–ï¼ï¼‰===
+    Ng_Meshing_Parameters mp = {};
+    mp.uselocalh = 1;
+    mp.maxh = 5.0;
+    mp.minh = 0.1;
+    mp.elementsperedge = 3.0;
+    mp.elementspercurve = 4.0;
+    mp.grading = 0.25;
+    mp.closeedgeenable = 0;
+    mp.optsurfmeshenable = 1;
 
-        Standard_Integer globalElemId = startElemId + j - 1;
+    Ng_OCC_SetLocalMeshSize(occ_geom, mesh, &mp);
 
-        Standard_Integer n1 = localToGlobalNodeMap[V[0]];
-        Standard_Integer n2 = localToGlobalNodeMap[V[1]];
-        Standard_Integer n3 = localToGlobalNodeMap[V[2]];
+    // === Step 6: ç”Ÿæˆè¾¹ç½‘æ ¼ ===
+    Ng_Result res = Ng_OCC_GenerateEdgeMesh(occ_geom, mesh, &mp);
+    if (res != NG_OK || CheckInterruption(interrupted)) {
+        Ng_DeleteMesh(mesh);
+        return;
+    }
 
-        // ´æ´¢µ¥Ôª½ÚµãË÷Òı
-        myElemNodes->SetValue(globalElemId, 1, n1);
-        myElemNodes->SetValue(globalElemId, 2, n2);
-        myElemNodes->SetValue(globalElemId, 3, n3);
+    // === Step 7: ç”Ÿæˆé¢ç½‘æ ¼ ===
+    res = Ng_OCC_GenerateSurfaceMesh(occ_geom, mesh, &mp);
+    if (res != NG_OK || CheckInterruption(interrupted)) {
+        Ng_DeleteMesh(mesh);
+        return;
+    }
 
-        myElements.Add(globalElemId);
+    int np = Ng_GetNP(mesh);
+    int ne = Ng_GetNSE(mesh);
+    if (np <= 0 || ne <= 0) {
+        Ng_DeleteMesh(mesh);
+        return;
+    }
 
-        // --- ÓÅ»¯µã 3 (Ğø): Ö±½ÓÊ¹ÓÃÈ«¾Ö×ø±ê¼ÆËã·¨ÏòÁ¿ ---
+    // === Step 8: åˆ†é…æ•°ç»„ ===
+    myNodeCoords = new TColStd_HArray2OfReal(1, np, 1, 3);
+    myElemNodes = new TColStd_HArray2OfInteger(1, ne, 1, 3);
+    myElemNormals = new TColStd_HArray2OfReal(1, ne, 1, 3);
+
+    // === Step 9: åŠ è½½èŠ‚ç‚¹ ===
+    double pt[3];
+    for (int i = 1; i <= np; ++i) {
+        Ng_GetPoint(mesh, i, pt);
+        myNodeCoords->SetValue(i, 1, pt[0]);
+        myNodeCoords->SetValue(i, 2, pt[1]);
+        myNodeCoords->SetValue(i, 3, pt[2]);
+        myNodes.Add(i);
+        myCoordToNodeMap[gp_Pnt(pt[0], pt[1], pt[2])] = i;
+    }
+
+    // === Step 10: åŠ è½½å•å…ƒå¹¶è®¡ç®—æ³•å‘ ===
+    int tri[3];
+    for (int i = 1; i <= ne; ++i) {
+        Ng_GetSurfaceElement(mesh, i, tri);
+        Standard_Integer n1 = tri[0], n2 = tri[1], n3 = tri[2];
+        myElemNodes->SetValue(i, 1, n1);
+        myElemNodes->SetValue(i, 2, n2);
+        myElemNodes->SetValue(i, 3, n3);
+        myElements.Add(i);
+
         gp_Pnt p1(myNodeCoords->Value(n1, 1), myNodeCoords->Value(n1, 2), myNodeCoords->Value(n1, 3));
         gp_Pnt p2(myNodeCoords->Value(n2, 1), myNodeCoords->Value(n2, 2), myNodeCoords->Value(n2, 3));
         gp_Pnt p3(myNodeCoords->Value(n3, 1), myNodeCoords->Value(n3, 2), myNodeCoords->Value(n3, 3));
 
         gp_Vec v1(p1, p2);
-        gp_Vec v2(p1, p3); // Í¨³£´ÓµÚÒ»¸öµã³ö·¢£¬½á¹ûÒ»Ñù
+        gp_Vec v2(p1, p3);
         gp_Vec normal = v1.Crossed(v2);
-
-        if (normal.SquareMagnitude() > MY_PRECISION * MY_PRECISION)
-        {
+        if (normal.SquareMagnitude() > MY_PRECISION * MY_PRECISION) {
             normal.Normalize();
         }
+        myElemNormals->SetValue(i, 1, normal.X());
+        myElemNormals->SetValue(i, 2, normal.Y());
+        myElemNormals->SetValue(i, 3, normal.Z());
+    }
 
-        // ´æ´¢·¨ÏòÁ¿
-        myElemNormals->SetValue(globalElemId, 1, normal.X());
-        myElemNormals->SetValue(globalElemId, 2, normal.Y());
-        myElemNormals->SetValue(globalElemId, 3, normal.Z());
-    }  
+    Ng_DeleteMesh(mesh); // åªéœ€åˆ é™¤ mesh
+
+    if (CheckInterruption(interrupted)) return;
+
+    ExtractEdges(); // ä»ä¸‰è§’å½¢é‡å»ºè¾¹
 }
 
-void TriangleStructure::ExtractEdges()
-{
-	std::set<std::pair<Standard_Integer, Standard_Integer>> edgeSet;
+// ========== ä»¥ä¸‹ä¸ºåŸæœ‰åŠŸèƒ½ï¼ˆä¿æŒä¸å˜ï¼‰==========
 
-	Standard_Integer elemMin = myElemNodes->LowerRow();
-	Standard_Integer elemMax = myElemNodes->UpperRow();
-	for (Standard_Integer elemID = elemMin; elemID <= elemMax; ++elemID)
-	{
-		Standard_Integer n1 = myElemNodes->Value(elemID, 1);
-		Standard_Integer n2 = myElemNodes->Value(elemID, 2);
-		Standard_Integer n3 = myElemNodes->Value(elemID, 3);
-
-		// ¼ì²éÊÇ·ñÓĞÍË»¯µÄÈı½ÇĞÎ£¨Á½¸ö¶¥µãÏàÍ¬
-		if (n1 == n2 || n1 == n3 || n3 == n2)
-		{
-			continue;
-		}
-
-		// È·±£±ßÏßµÄ½Úµã ID °´ÉıĞòÅÅÁĞ
-		auto edge1 = std::make_pair(std::min(n1, n2), std::max(n1, n2));
-		auto edge2 = std::make_pair(std::min(n2, n3), std::max(n2, n3));
-		auto edge3 = std::make_pair(std::min(n3, n1), std::max(n3, n1));
-
-		edgeSet.insert(edge1);
-		edgeSet.insert(edge2);
-		edgeSet.insert(edge3);
-	}
-	myEdges.assign(edgeSet.begin(), edgeSet.end());
-
+void TriangleStructure::ExtractEdges() {
+    std::set<std::pair<Standard_Integer, Standard_Integer>> edgeSet;
+    Standard_Integer elemMin = myElemNodes->LowerRow();
+    Standard_Integer elemMax = myElemNodes->UpperRow();
+    for (Standard_Integer elemID = elemMin; elemID <= elemMax; ++elemID) {
+        Standard_Integer n1 = myElemNodes->Value(elemID, 1);
+        Standard_Integer n2 = myElemNodes->Value(elemID, 2);
+        Standard_Integer n3 = myElemNodes->Value(elemID, 3);
+        if (n1 == n2 || n1 == n3 || n2 == n3) continue;
+        auto edge1 = std::make_pair(std::min(n1, n2), std::max(n1, n2));
+        auto edge2 = std::make_pair(std::min(n2, n3), std::max(n2, n3));
+        auto edge3 = std::make_pair(std::min(n3, n1), std::max(n3, n1));
+        edgeSet.insert(edge1);
+        edgeSet.insert(edge2);
+        edgeSet.insert(edge3);
+    }
+    myEdges.assign(edgeSet.begin(), edgeSet.end());
 }
 
-Handle(TriangleStructure) TriangleStructure::RotateXZ(const Standard_Real angleDeg, const Standard_Real x0, const Standard_Real z0) const
-{
-    // ´´½¨ĞÂµÄTriangleStructure¶ÔÏó
+Handle(TriangleStructure) TriangleStructure::RotateXZ(const Standard_Real angleDeg,
+    const Standard_Real x0,
+    const Standard_Real z0) const {
     Handle(TriangleStructure) rotatedStructure = new TriangleStructure();
-
-    // ½«½Ç¶È×ª»»Îª»¡¶È
     Standard_Real angleRad = angleDeg * M_PI / 180.0;
     Standard_Real cosAngle = cos(angleRad);
     Standard_Real sinAngle = sin(angleRad);
-
-    // ¸´ÖÆ½Úµã×ø±ê²¢Ó¦ÓÃĞı×ª
-    Standard_Integer nodeCount = myNodeCoords->UpperRow() - myNodeCoords->LowerRow() + 1;
+    Standard_Integer nodeCount = myNodeCoords->UpperRow();
     rotatedStructure->myNodeCoords = new TColStd_HArray2OfReal(1, nodeCount, 1, 3);
-
-    for (Standard_Integer i = 1; i <= nodeCount; ++i)
-    {
+    for (Standard_Integer i = 1; i <= nodeCount; ++i) {
         Standard_Real x = myNodeCoords->Value(i, 1);
         Standard_Real y = myNodeCoords->Value(i, 2);
         Standard_Real z = myNodeCoords->Value(i, 3);
-
-        // Æ½ÒÆµ½Ğı×ªÖĞĞÄ
-        Standard_Real translatedX = x - x0;
-        Standard_Real translatedZ = z - z0;
-
-        // Ó¦ÓÃĞı×ª¾ØÕó£¨ÈÆYÖáĞı×ª£¬ÔÚXOZÆ½Ãæ£©
-        Standard_Real rotatedX = translatedX * cosAngle + translatedZ * sinAngle;
-        Standard_Real rotatedZ = -translatedX * sinAngle + translatedZ * cosAngle;
-
-        // Æ½ÒÆ»ØÔ­Î»ÖÃ
-        rotatedX += x0;
-        rotatedZ += z0;
-
-        // ÉèÖÃĞı×ªºóµÄ×ø±ê
-        rotatedStructure->myNodeCoords->SetValue(i, 1, rotatedX);
-        rotatedStructure->myNodeCoords->SetValue(i, 2, y);  // Y×ø±ê²»±ä
-        rotatedStructure->myNodeCoords->SetValue(i, 3, rotatedZ);
-
-        // Ìí¼Óµ½½Úµã¼¯ºÏ
+        Standard_Real tx = x - x0;
+        Standard_Real tz = z - z0;
+        Standard_Real rx = tx * cosAngle + tz * sinAngle + x0;
+        Standard_Real rz = -tx * sinAngle + tz * cosAngle + z0;
+        rotatedStructure->myNodeCoords->SetValue(i, 1, rx);
+        rotatedStructure->myNodeCoords->SetValue(i, 2, y);
+        rotatedStructure->myNodeCoords->SetValue(i, 3, rz);
         rotatedStructure->myNodes.Add(i);
     }
-
-    // ¸´ÖÆµ¥ÔªÁ¬½Ó¹ØÏµ£¨²»±ä£©
-    Standard_Integer elemCount = myElemNodes->UpperRow() - myElemNodes->LowerRow() + 1;
+    Standard_Integer elemCount = myElemNodes->UpperRow();
     rotatedStructure->myElemNodes = new TColStd_HArray2OfInteger(1, elemCount, 1, 3);
-
-    for (Standard_Integer i = 1; i <= elemCount; ++i)
-    {
+    for (Standard_Integer i = 1; i <= elemCount; ++i) {
         rotatedStructure->myElemNodes->SetValue(i, 1, myElemNodes->Value(i, 1));
         rotatedStructure->myElemNodes->SetValue(i, 2, myElemNodes->Value(i, 2));
         rotatedStructure->myElemNodes->SetValue(i, 3, myElemNodes->Value(i, 3));
         rotatedStructure->myElements.Add(i);
     }
-
-    // ÖØĞÂ¼ÆËã·¨ÏòÁ¿£¨ÒòÎªĞı×ªºó·¨ÏòÁ¿Ò²¸Ä±äÁË£©
     rotatedStructure->myElemNormals = new TColStd_HArray2OfReal(1, elemCount, 1, 3);
-
-    for (Standard_Integer i = 1; i <= elemCount; ++i)
-    {
+    for (Standard_Integer i = 1; i <= elemCount; ++i) {
         Standard_Integer n1 = rotatedStructure->myElemNodes->Value(i, 1);
         Standard_Integer n2 = rotatedStructure->myElemNodes->Value(i, 2);
         Standard_Integer n3 = rotatedStructure->myElemNodes->Value(i, 3);
-
-        // »ñÈ¡Ğı×ªºóµÄ½Úµã×ø±ê
-        gp_Pnt p1(
-            rotatedStructure->myNodeCoords->Value(n1, 1),
+        gp_Pnt p1(rotatedStructure->myNodeCoords->Value(n1, 1),
             rotatedStructure->myNodeCoords->Value(n1, 2),
-            rotatedStructure->myNodeCoords->Value(n1, 3)
-        );
-        gp_Pnt p2(
-            rotatedStructure->myNodeCoords->Value(n2, 1),
+            rotatedStructure->myNodeCoords->Value(n1, 3));
+        gp_Pnt p2(rotatedStructure->myNodeCoords->Value(n2, 1),
             rotatedStructure->myNodeCoords->Value(n2, 2),
-            rotatedStructure->myNodeCoords->Value(n2, 3)
-        );
-        gp_Pnt p3(
-            rotatedStructure->myNodeCoords->Value(n3, 1),
+            rotatedStructure->myNodeCoords->Value(n2, 3));
+        gp_Pnt p3(rotatedStructure->myNodeCoords->Value(n3, 1),
             rotatedStructure->myNodeCoords->Value(n3, 2),
-            rotatedStructure->myNodeCoords->Value(n3, 3)
-        );
-
-        // ¼ÆËãĞÂµÄ·¨ÏòÁ¿
+            rotatedStructure->myNodeCoords->Value(n3, 3));
         gp_Vec v1(p1, p2);
         gp_Vec v2(p1, p3);
         gp_Vec normal = v1.Crossed(v2);
-
-        if (normal.SquareMagnitude() > MY_PRECISION * MY_PRECISION)
-        {
+        if (normal.SquareMagnitude() > MY_PRECISION * MY_PRECISION) {
             normal.Normalize();
         }
-
-        // ´æ´¢ĞÂµÄ·¨ÏòÁ¿
         rotatedStructure->myElemNormals->SetValue(i, 1, normal.X());
         rotatedStructure->myElemNormals->SetValue(i, 2, normal.Y());
         rotatedStructure->myElemNormals->SetValue(i, 3, normal.Z());
     }
-
-    // ÖØĞÂ¹¹½¨×ø±êµ½½ÚµãµÄÓ³Éä
-    for (Standard_Integer i = 1; i <= nodeCount; ++i)
-    {
-        gp_Pnt p(
-            rotatedStructure->myNodeCoords->Value(i, 1),
+    for (Standard_Integer i = 1; i <= nodeCount; ++i) {
+        gp_Pnt p(rotatedStructure->myNodeCoords->Value(i, 1),
             rotatedStructure->myNodeCoords->Value(i, 2),
-            rotatedStructure->myNodeCoords->Value(i, 3)
-        );
+            rotatedStructure->myNodeCoords->Value(i, 3));
         rotatedStructure->myCoordToNodeMap[p] = i;
     }
-
-    // ÖØĞÂÌáÈ¡±ßĞÅÏ¢
     rotatedStructure->ExtractEdges();
-
     return rotatedStructure;
 }
 
-std::vector<std::pair<Standard_Integer, Standard_Integer>> TriangleStructure::GetMyEdge()
-{
-	return myEdges;
+std::vector<std::pair<Standard_Integer, Standard_Integer>> TriangleStructure::GetMyEdge() {
+    return myEdges;
 }
 
-Handle(TColStd_HArray2OfReal) TriangleStructure::GetmyNodeCoords()
-{
-	return myNodeCoords;
+Handle(TColStd_HArray2OfReal) TriangleStructure::GetmyNodeCoords() {
+    return myNodeCoords;
 }
 
-
-//================================================================
-// Function : GetGeom
-// Purpose  :
-//================================================================
-Standard_Boolean TriangleStructure::GetGeom
-    ( const Standard_Integer ID, const Standard_Boolean IsElement,
-     TColStd_Array1OfReal& Coords, Standard_Integer& NbNodes,
-     MeshVS_EntityType& Type ) const
-{
-    // if( myMesh.IsNull() )
-    //     return Standard_False;
-
-    if( IsElement )
-    {
-        if( ID>=1 && ID<=myElements.Extent() )
-        {
+// --- MeshVS_DataSource implementations ---
+Standard_Boolean TriangleStructure::GetGeom(const Standard_Integer ID,
+    const Standard_Boolean IsElement,
+    TColStd_Array1OfReal& Coords,
+    Standard_Integer& NbNodes,
+    MeshVS_EntityType& Type) const {
+    if (IsElement) {
+        if (ID >= 1 && ID <= myElements.Extent()) {
             Type = MeshVS_ET_Face;
             NbNodes = 3;
-
-            for( Standard_Integer i = 1, k = 1; i <= 3; i++ )
-            {
-                Standard_Integer IdxNode = myElemNodes->Value(ID, i);
-                for(Standard_Integer j = 1; j <= 3; j++, k++ )
-                    Coords(k) = myNodeCoords->Value(IdxNode, j);
+            for (Standard_Integer i = 1, k = 1; i <= 3; ++i) {
+                Standard_Integer nodeID = myElemNodes->Value(ID, i);
+                for (Standard_Integer j = 1; j <= 3; ++j, ++k) {
+                    Coords(k) = myNodeCoords->Value(nodeID, j);
+                }
             }
-
             return Standard_True;
         }
-        else
-            return Standard_False;
     }
-    else
-        if( ID>=1 && ID<=myNodes.Extent() )
-        {
+    else {
+        if (ID >= 1 && ID <= myNodes.Extent()) {
             Type = MeshVS_ET_Node;
             NbNodes = 1;
-
-            Coords( 1 ) = myNodeCoords->Value(ID, 1);
-            Coords( 2 ) = myNodeCoords->Value(ID, 2);
-            Coords( 3 ) = myNodeCoords->Value(ID, 3);
+            Coords(1) = myNodeCoords->Value(ID, 1);
+            Coords(2) = myNodeCoords->Value(ID, 2);
+            Coords(3) = myNodeCoords->Value(ID, 3);
             return Standard_True;
         }
-        else
-            return Standard_False;
-}
-
-//================================================================
-// Function : GetGeomType
-// Purpose  :
-//================================================================
-Standard_Boolean TriangleStructure::GetGeomType
-    ( const Standard_Integer,
-     const Standard_Boolean IsElement,
-     MeshVS_EntityType& Type ) const
-{
-    if( IsElement )
-    {
-        Type = MeshVS_ET_Face;
-        return Standard_True;
     }
-    else
-    {
-        Type = MeshVS_ET_Node;
-        return Standard_True;
-    }
+    return Standard_False;
 }
 
-//================================================================
-// Function : GetAddr
-// Purpose  :
-//================================================================
-Standard_Address TriangleStructure::GetAddr
-    ( const Standard_Integer, const Standard_Boolean ) const
-{
-    return NULL;
+Standard_Boolean TriangleStructure::GetGeomType(const Standard_Integer,
+    const Standard_Boolean IsElement,
+    MeshVS_EntityType& Type) const {
+    Type = IsElement ? MeshVS_ET_Face : MeshVS_ET_Node;
+    return Standard_True;
 }
 
-//================================================================
-// Function : GetNodesByElement
-// Purpose  :
-//================================================================
-Standard_Boolean TriangleStructure::GetNodesByElement
-    ( const Standard_Integer ID,
-     TColStd_Array1OfInteger& theNodeIDs,
-     Standard_Integer& /*theNbNodes*/ ) const
-{
-    // if( myMesh.IsNull() )
-    //     return Standard_False;
+Standard_Address TriangleStructure::GetAddr(const Standard_Integer,
+    const Standard_Boolean) const {
+    return nullptr;
+}
 
-    if( ID>=1 && ID<=myElements.Extent() && theNodeIDs.Length() >= 3 )
-    {
+Standard_Boolean TriangleStructure::GetNodesByElement(const Standard_Integer ID,
+    TColStd_Array1OfInteger& theNodeIDs,
+    Standard_Integer& /*theNbNodes*/) const {
+    if (ID >= 1 && ID <= myElements.Extent() && theNodeIDs.Length() >= 3) {
         Standard_Integer aLow = theNodeIDs.Lower();
-        theNodeIDs (aLow)     = myElemNodes->Value(ID, 1 );
-        theNodeIDs (aLow + 1) = myElemNodes->Value(ID, 2 );
-        theNodeIDs (aLow + 2) = myElemNodes->Value(ID, 3 );
+        theNodeIDs(aLow) = myElemNodes->Value(ID, 1);
+        theNodeIDs(aLow + 1) = myElemNodes->Value(ID, 2);
+        theNodeIDs(aLow + 2) = myElemNodes->Value(ID, 3);
         return Standard_True;
     }
     return Standard_False;
 }
 
-//================================================================
-// Function : GetAllNodes
-// Purpose  :
-//================================================================
-const TColStd_PackedMapOfInteger& TriangleStructure::GetAllNodes() const
-{
+const TColStd_PackedMapOfInteger& TriangleStructure::GetAllNodes() const {
     return myNodes;
 }
 
-//================================================================
-// Function : GetAllElements
-// Purpose  :
-//================================================================
-const TColStd_PackedMapOfInteger& TriangleStructure::GetAllElements() const
-{
+const TColStd_PackedMapOfInteger& TriangleStructure::GetAllElements() const {
     return myElements;
 }
 
-//================================================================
-// Function : GetNormal
-// Purpose  :
-//================================================================
-Standard_Boolean TriangleStructure::GetNormal
-    ( const Standard_Integer Id, const Standard_Integer Max,
-     Standard_Real& nx, Standard_Real& ny,Standard_Real& nz ) const
-{
-    // if( myMesh.IsNull() )
-    //     return Standard_False;
-
-    if( Id>=1 && Id<=myElements.Extent() && Max>=3 )
-    {
+Standard_Boolean TriangleStructure::GetNormal(const Standard_Integer Id,
+    const Standard_Integer Max,
+    Standard_Real& nx,
+    Standard_Real& ny,
+    Standard_Real& nz) const {
+    if (Id >= 1 && Id <= myElements.Extent() && Max >= 3) {
         nx = myElemNormals->Value(Id, 1);
         ny = myElemNormals->Value(Id, 2);
         nz = myElemNormals->Value(Id, 3);
         return Standard_True;
     }
-    else
-        return Standard_False;
+    return Standard_False;
 }
-
-

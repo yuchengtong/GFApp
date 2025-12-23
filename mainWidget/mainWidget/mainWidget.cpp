@@ -520,7 +520,7 @@ mainWidget::mainWidget(QWidget *parent)
 
 			// 设置模型显示属性
 			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-			context->SetColor(modelPresentation, Quantity_NOC_CYAN, true);
+			context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
 			context->Display(modelPresentation, false);
 
 					

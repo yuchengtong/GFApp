@@ -96,7 +96,7 @@ void OccView::init()
     myViewer->SetLightOn();
 	Quantity_Color a(45.0/255, 86.0/255, 126.0/255, Quantity_TOC_RGB);
 	Quantity_Color b(159.0/255, 160.0/255, 162.0/255, Quantity_TOC_RGB);
-    myView->SetBgGradientColors(a,b, Aspect_GradientFillMethod_Vertical);
+    myView->SetBgGradientColors(a,b, Aspect_GradientFillMethod::Aspect_GFM_VER);
     myView->MustBeResized();
     myView->TriedronDisplay(Aspect_TOTP_LEFT_LOWER, Quantity_NOC_GOLD, 0.08, V3d_ZBUFFER);
 
