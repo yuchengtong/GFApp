@@ -77,7 +77,7 @@ private:
     QAxObject* wordApp = nullptr;
     QAxObject* activeDocument = nullptr;
 
-  
+    QString msg = "";
 };
 
 #endif // WORD_EXPORTER_WORKER_H

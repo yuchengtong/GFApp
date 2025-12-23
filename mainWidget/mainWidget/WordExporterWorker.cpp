@@ -1,8 +1,11 @@
 #pragma execution_character_set("utf-8")
 #include "WordExporterWorker.h"
+#include "windows.h"
 
 #include <QDebug>
 #include <QDir>
+#include <QCoreApplication>
+#include <QEventLoop>
 
 void WordExporterWorker::DoWork()
 {
@@ -38,15 +41,17 @@ void WordExporterWorker::DoWork()
             success = false;
             return;
         }
+        
         if (m_interrupted)
         {
             emit WorkFinished(false, "导出已取消");
             return;
         }
-
+        emit StatusUpdated("创建Word应用程序对象");
+        emit ProgressUpdated(40);
         // 获取文档集合
         QAxObject* documents = wordApp->querySubObject("Documents");
-        if (documents->isNull()) {
+        if (!documents) {
             msg = "无法获取Documents对象";
             success = false;
             return;
@@ -57,13 +62,27 @@ void WordExporterWorker::DoWork()
             emit WorkFinished(false, "导出已取消");
             return;
         }
-
+        emit StatusUpdated("创建Word应用程序对象");
+        emit ProgressUpdated(45);
         // 打开模板文档
-        QVariant varTemplate(m_templateFilePath);
-        activeDocument = documents->querySubObject("Open(QVariant)", varTemplate);
-        documents->deleteLater();
+        /*QVariant varTemplate(m_templateFilePath);
+        activeDocument = documents->querySubObject("Open(QVariant)", varTemplate);*/
 
-        if (activeDocument->isNull()) {
+        activeDocument = documents->querySubObject("Add(const QString&)", m_templateFilePath);
+        // 激活文档窗口
+        if (activeDocument) {
+            QAxObject* docWindow = activeDocument->querySubObject("ActiveWindow");
+            if (docWindow) {
+                docWindow->dynamicCall("Activate()");
+                delete docWindow;
+            }
+            // 解除文档保护（如果模板本身有保护）
+            activeDocument->dynamicCall("Unprotect()");
+            // 处理时序延迟
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+        }
+        //documents->deleteLater();
+        if (!activeDocument) {
             msg = "无法打开模板文档";
             success = false;
             return;
@@ -160,15 +179,30 @@ void WordExporterWorker::DoWork()
 bool WordExporterWorker::initializeWord()
 {
 	try {
+        CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
 		// 创建Word应用程序对象
 		wordApp = new QAxObject("Word.Application", this);
-		if (wordApp->isNull()) {
-			qDebug() << "无法创建Word应用程序对象";
+		if (!wordApp) {
+            msg = "无法创建Word应用程序对象";
 			return false;
 		}
+        QString version = wordApp->property("Version").toString();
+        emit StatusUpdated("创建Word应用程序对象,版本" + version);
+        emit ProgressUpdated(35);
 
 		// 设置Word不可见（后台操作）
 		wordApp->setProperty("Visible", false);
+        // 显示所有弹窗
+        wordApp->setProperty("DisplayAlerts", true);
+
+        // 禁用受保护的视图
+        QAxObject* options = wordApp->querySubObject("Options");
+        if (options) {
+            options->setProperty("ProtectedViewEnableInternetFiles", false);
+            options->setProperty("ProtectedViewEnableLocalMachineFiles", false);
+            delete options;
+        }
 		return true;
 	}
 	catch (...) {
