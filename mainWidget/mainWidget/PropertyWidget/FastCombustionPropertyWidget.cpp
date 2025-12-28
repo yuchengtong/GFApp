@@ -61,7 +61,7 @@ void FastCombustionPropertyWidget::initWidget()
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " ", " "," ", " ", " ", " "," "," ","min","min", ""};
+	QStringList unitLabels = { " ", " "," ", " ", " ", " "," "," ","min","¡æ", ""};
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -114,7 +114,7 @@ void FastCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(6, 2, windSpeedValueItem);
 	m_tableWidget->setItem(7, 2, flameTemperatureValueItem);
 	m_tableWidget->setItem(8, 2, endTimeValueItem);
-	m_tableWidget->setItem(9, 2, new QTableWidgetItem("0"));
+	m_tableWidget->setItem(9, 2, new QTableWidgetItem("800"));
 	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
 	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
 	

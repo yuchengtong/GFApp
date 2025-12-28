@@ -4,6 +4,7 @@
 class APICalculateHepler
 {
 public:
+
 	static bool CalculateFallAnalysisResult(OccView* occView,std::vector<double>& propertyValue);
 
 	static bool CalculateFastCombustionAnalysisResult(OccView* occView, std::vector<double>& propertyValue);

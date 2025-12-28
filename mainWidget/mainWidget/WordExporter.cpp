@@ -23,7 +23,7 @@ bool WordExporter::initializeWord()
 {
 	try {
 		// 创建Word应用程序对象
-		wordApp = new QAxObject("Word.Application", this);
+		wordApp = new QAxObject("Word.Application.14", this);
 		if (wordApp->isNull()) {
 			qDebug() << "无法创建Word应用程序对象";
 			return false;

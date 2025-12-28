@@ -105,7 +105,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	QTableWidgetItem* balanceMomentValueItem = new QTableWidgetItem("0");
 	balanceMomentValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	balanceMomentValueItem->setFlags(balanceMomentValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-	QTableWidgetItem* rateValueItem = new QTableWidgetItem("33");
+	QTableWidgetItem* rateValueItem = new QTableWidgetItem("3.3");
 	rateValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	rateValueItem->setFlags(rateValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
@@ -119,7 +119,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(6, 2, windSpeedValueItem);
 	m_tableWidget->setItem(7, 2, balanceMomentValueItem);
 	m_tableWidget->setItem(8, 2, rateValueItem);
-	m_tableWidget->setItem(9, 2, new QTableWidgetItem("0"));
+	m_tableWidget->setItem(9, 2, new QTableWidgetItem("345"));
 	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
 	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
 
