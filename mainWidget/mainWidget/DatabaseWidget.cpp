@@ -39,7 +39,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	QTableWidget* tableWidget = ui.tableWidget;
 	tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
 	tableWidget->setColumnWidth(0, 3);
-	tableWidget->horizontalHeader()->setDefaultSectionSize(200); // 设置默认列宽
+	tableWidget->horizontalHeader()->setDefaultSectionSize(250); // 设置默认列宽
 	tableWidget->verticalHeader()->setDefaultSectionSize(25); // 设置默认行高
 
 	tableWidget->horizontalHeader()->setStretchLastSection(true);
@@ -69,11 +69,16 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	QTreeWidgetItem* insulatingheat = new QTreeWidgetItem();
 	insulatingheat->setText(0, "防隔热材料");
 	insulatingheat->setIcon(0, QIcon(":/src/data_insulatingheat.svg"));
+	QTreeWidgetItem* carbonfiber = new QTreeWidgetItem();
+	carbonfiber->setText(0, "碳纤维壳体材料");
+	carbonfiber->setIcon(0, QIcon(":/src/data_metals.svg"));
+
 
 	material->addChild(metals);
 	material->addChild(propellants);
 	material->addChild(outheat);
 	material->addChild(insulatingheat);
+	material->addChild(carbonfiber);
 
 	QTreeWidgetItem* judgment = new QTreeWidgetItem(treeWidget);
 	judgment->setText(0, "评判标准数据库");
@@ -362,6 +367,11 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/外防热材料.xlsx");
 			sheetName = "外防热材料";
 		}
+		else if (currentDataaseType == "碳纤维壳体材料")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/碳纤维壳体材料.xlsx");
+			sheetName = "碳纤维壳体材料";
+		}
 		else if (currentDataaseType == "用户数据库")
 		{
 			filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
@@ -531,6 +541,11 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		filepath = dir.absoluteFilePath("src/database/防隔热材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
+	else if (currentDataaseType == "碳纤维壳体材料")
+	{
+		filepath = dir.absoluteFilePath("src/database/碳纤维壳体材料.xlsx");
+		ui.queryTitle->setText("材料牌号");
+	}
 	else if (currentDataaseType == "用户数据库")
 	{
 		filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
@@ -680,6 +695,10 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		else if (currentDataaseType == "防隔热材料")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/防隔热材料.xlsx");
+		}
+		else if (currentDataaseType == "碳纤维壳体材料")
+		{
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/碳纤维壳体材料.xlsx");
 		}
 		else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
 		{

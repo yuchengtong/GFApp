@@ -62,7 +62,7 @@ void IntelligentExplosiveBlastPropertyWidget::initWidget()
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " ","单位","mm", "mm", "等级", "kg","kg","等级" };
+	QStringList unitLabels = { " ","单位","mm", "mm", "等级", "g","g","等级" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -73,7 +73,7 @@ void IntelligentExplosiveBlastPropertyWidget::initWidget()
 
 	}
 
-	QStringList valueLabels = { " ","殉爆试验","1", "3", "3", "5","5","3" };
+	QStringList valueLabels = { " ","殉爆试验","1", "3", "3", "30","50","3" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{

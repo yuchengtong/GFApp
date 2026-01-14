@@ -871,7 +871,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
 							if (success)
 							{
-								auto yieldStrength = ModelDataManager::GetInstance()->GetSteelPropertyInfo().yieldStrength;	// 壳体屈服强度
+								auto tensileStrength = ModelDataManager::GetInstance()->GetSteelPropertyInfo().tensileStrength;	// 壳体抗拉强度
 								auto ignitionTemperature = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().ignitionTemperature; // 推进剂发火温度
 								auto fireOverpressure = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().fireOverpressure; // 推进剂发火超压
 								for (int i = 0; i < item->childCount(); ++i) {
@@ -931,9 +931,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFallPropertyWidget()->GetQTableWidget();
-												if (resultValue[0]> yieldStrength)
+												if (resultValue[0]> tensileStrength)
 												{
-													tableWidget->item(8, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+													tableWidget->item(8, 2)->setText("应力超过壳体最大抗拉强度，有燃爆风险");
 												}
 												else
 												{
@@ -1071,9 +1071,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetShootPropertyWidget()->GetQTableWidget();
-												if (resultValue[0] > yieldStrength)
+												if (resultValue[0] > tensileStrength)
 												{
-													tableWidget->item(10, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+													tableWidget->item(10, 2)->setText("应力超过壳体最大抗拉强度，有燃爆风险");
 												}
 												else
 												{
@@ -1137,9 +1137,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetJetImpactPropertyWidget()->GetQTableWidget();
-												if (stressResult.metalsMaxStress > yieldStrength)
+												if (stressResult.metalsMaxStress > tensileStrength)
 												{
-													tableWidget->item(8, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+													tableWidget->item(8, 2)->setText("应力超过壳体最大抗拉强度，有燃爆风险");
 												}
 												else
 												{
@@ -1206,9 +1206,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFragmentationImpactPropertyWidget()->GetQTableWidget();
-												if (resultValue[0] > yieldStrength)
+												if (resultValue[0] > tensileStrength)
 												{
-													tableWidget->item(11, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+													tableWidget->item(11, 2)->setText("应力超过壳体最大抗拉强度，有燃爆风险");
 												}
 												else
 												{
@@ -1272,9 +1272,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetExplosiveBlastPropertyWidget()->GetQTableWidget();
-												if (stressResult.metalsMaxStress > yieldStrength)
+												if (stressResult.metalsMaxStress > tensileStrength)
 												{
-													tableWidget->item(7, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+													tableWidget->item(7, 2)->setText("应力超过壳体最大抗拉强度，有燃爆风险");
 												}
 												else
 												{
@@ -1338,9 +1338,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetSacrificeExplosionPropertyWidget()->GetQTableWidget();
-												if (stressResult.metalsMaxStress > yieldStrength)
+												if (stressResult.metalsMaxStress > tensileStrength)
 												{
-													tableWidget->item(8, 2)->setText("应力超过壳体最大屈服强度，有燃爆风险");
+													tableWidget->item(8, 2)->setText("应力超过壳体最大抗拉强度，有燃爆风险");
 												}
 												else
 												{

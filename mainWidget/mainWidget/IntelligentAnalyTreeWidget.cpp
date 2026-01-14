@@ -305,12 +305,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 									{
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 										auto J = fallInfo.high * 1000;//µøÂä¸ß¶È
@@ -340,6 +340,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res * 0.5;
 												if (!m_array.contains(i + 1))
 												{
 													propellantStressResults.push_back(res);
@@ -487,12 +488,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -541,12 +542,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -597,12 +598,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -633,6 +634,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res * 0.5;
 												if (!m_array.contains(i + 1))
 												{
 													propellantStressResults.push_back(res);
@@ -682,12 +684,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -715,6 +717,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res * 0.5;
 												if (!m_array.contains(i + 1))
 												{
 													propellantStressResults.push_back(res);
@@ -763,12 +766,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -797,6 +800,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res * 0.5;
 												if (!m_array.contains(i + 1))
 												{
 													propellantStressResults.push_back(res);
@@ -848,12 +852,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -881,6 +885,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res * 0.1;
 												if (!m_array.contains(i + 1))
 												{
 													propellantStressResults.push_back(res);
@@ -913,12 +918,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = 0;
+										auto C = steelInfo.modulus / 1000000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = 0;
+										auto G = propellantInfo.modulus / 1000000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -947,6 +952,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res * 0.1;
 												if (!m_array.contains(i + 1))
 												{
 													propellantStressResults.push_back(res);

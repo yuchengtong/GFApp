@@ -16,15 +16,15 @@ void GeomPropertyWidget::UpdataPropertyInfo()
 	QTableWidgetItem* path_item = m_tableWidget->item(2, 2);
 	QTableWidgetItem* length_item = m_tableWidget->item(3, 2);
 	QTableWidgetItem* width_item = m_tableWidget->item(4, 2);
-	QTableWidgetItem* height_item = m_tableWidget->item(5, 2);
-	QTableWidgetItem* thickness_item = m_tableWidget->item(6, 2);
+	//QTableWidgetItem* height_item = m_tableWidget->item(5, 2);
+	QTableWidgetItem* thickness_item = m_tableWidget->item(5, 2);
 
-	if (path_item && length_item && width_item && height_item)
+	if (path_item && length_item && width_item )
 	{
 		path_item->setText(modelInfo.path);
 		length_item->setText(QString::number(modelInfo.length, 'f', 3));
 		width_item->setText(QString::number(modelInfo.width, 'f', 3));
-		height_item->setText(QString::number(modelInfo.height, 'f', 3));
+		//height_item->setText(QString::number(modelInfo.height, 'f', 3));
 		thickness_item->setText(QString::number(3, 'f', 3));
 	}
 	// 更新厚度值
@@ -39,7 +39,7 @@ void GeomPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 	// 设置行列数，这里固定 5 行 4 列
-	m_tableWidget->setRowCount(7);
+	m_tableWidget->setRowCount(6);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -64,7 +64,7 @@ void GeomPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "几何模型","发动机型号","来源","长","宽", "高度","壳体厚度" };
+	QStringList labels = { "几何模型","发动机型号","来源","长","直径", "壳体厚度" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -79,7 +79,7 @@ void GeomPropertyWidget::initWidget()
 	}
 
 	//第2列用空Label
-	QStringList emptyLabels = { " "," ","", "", "", "", "" };
+	QStringList emptyLabels = { " "," ","", "", "", "" };
 	for (int row = 0; row < emptyLabels.size(); ++row) {
 		if (row == 1)
 		{
@@ -96,7 +96,7 @@ void GeomPropertyWidget::initWidget()
 	QTableWidgetItem* labelItem = new QTableWidgetItem("");
 	m_tableWidget->setItem(6, 2, labelItem);
 
-	QStringList unitLabels = { " "," ","", "mm", "mm", "mm","mm" };
+	QStringList unitLabels = { " "," ","", "mm", "mm", "mm" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{

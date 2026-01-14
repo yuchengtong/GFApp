@@ -149,12 +149,12 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000; //训练模型是Pa*e-9
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 	auto J = fallInfo.high * 1000;//跌落高度
@@ -178,6 +178,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		{
 			res = 0;
 		}
+		res = res * 0.5;
 		if (!m_steelArray.contains(i+1))
 		{
 			propellantStressResults.push_back(res);
@@ -421,12 +422,12 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -537,12 +538,12 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -650,12 +651,12 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -679,6 +680,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 		{
 			res = 0;
 		}
+		res = res * 0.5;
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantStressResults.push_back(res);
@@ -918,12 +920,12 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -947,6 +949,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 		{
 			res = 0;
 		}
+		res = res * 0.5;
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantStressResults.push_back(res);
@@ -1186,12 +1189,12 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -1215,6 +1218,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 		{
 			res = 0;
 		}
+		res = res * 0.5;
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantStressResults.push_back(res);
@@ -1452,12 +1456,12 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus / 1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -1482,6 +1486,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		{
 			res = 0;
 		}
+		res = res * 0.1;
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantStressResults.push_back(res);
@@ -1661,12 +1666,12 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = 0;
+	auto C = steelInfo.modulus/1000000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = 0;
+	auto G = propellantInfo.modulus / 1000000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 	
@@ -1690,6 +1695,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 		{
 			res = 0;
 		}
+		res = res * 0.1;
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantStressResults.push_back(res);

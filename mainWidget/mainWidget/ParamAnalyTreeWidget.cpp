@@ -447,10 +447,10 @@ void ParamAnalyTreeWidget::calculate()
 					u1EvaluationMatrixTableWidget->resizeColumnsToContents();
 					// U2权重向量A1与一致性Rc1计算
 
-					// 壳体应力
-					double one_yieldStrengthe = ins->GetSteelPropertyInfo().yieldStrength * 0.7;
-					double two_yieldStrength = ins->GetSteelPropertyInfo().yieldStrength * 0.8;
-					double three_yieldStrength = ins->GetSteelPropertyInfo().yieldStrength * 0.9;
+					// 壳体应力--抗拉强度
+					double one_yieldStrengthe = ins->GetSteelPropertyInfo().tensileStrength * 0.7;
+					double two_yieldStrength = ins->GetSteelPropertyInfo().tensileStrength * 0.8;
+					double three_yieldStrength = ins->GetSteelPropertyInfo().tensileStrength * 0.9;
 					auto u2EvaluationMatrixTableWidget = paParent->getU2EvaluationMatrixTableWidget();
 					u2EvaluationMatrixTableWidget->item(1, 1)->setText(QString::number(m_FallStressResult.propellantsMaxStress) + "MPa");
 					vector<double> fallStressMembership = getMembership(m_FallStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
@@ -480,7 +480,7 @@ void ParamAnalyTreeWidget::calculate()
 
 
 
-					double yieldStrength = ins->GetSteelPropertyInfo().yieldStrength; // 壳体应力
+					double yieldStrength = ins->GetSteelPropertyInfo().tensileStrength; // 壳体应力--抗拉强度
 					double ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature; //推进剂温度
 					double fireOverpressure = ins->GetPropellantPropertyInfo().fireOverpressure; //推进剂超压
 
