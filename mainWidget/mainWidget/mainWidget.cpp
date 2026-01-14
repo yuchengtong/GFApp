@@ -257,7 +257,7 @@ mainWidget::mainWidget(QWidget *parent)
 	viewWidget->setLayout(vLayout_v);
 
 
-	auto SettingBtn = new QPushButton();
+	/*auto SettingBtn = new QPushButton();
 	SettingBtn->setFixedSize(67, 67);
 	SettingBtn->setIcon(QIcon(":/src/Setting.svg"));
 	SettingBtn->setIconSize(QSize(50, 50));
@@ -274,7 +274,7 @@ mainWidget::mainWidget(QWidget *parent)
 	vLayout_s->addWidget(SettingBtn);
 	vLayout_s->addLayout(hLayout_s);
 	vLayout_s->setContentsMargins(0, 0, 0, 0);
-	settingWidget->setLayout(vLayout_s);
+	settingWidget->setLayout(vLayout_s);*/
 
 	ui->mainToolBar->addWidget(geomWidget);
 	ui->mainToolBar->addSeparator();
@@ -282,8 +282,8 @@ mainWidget::mainWidget(QWidget *parent)
 	ui->mainToolBar->addSeparator();
 	ui->mainToolBar->addWidget(viewWidget);
 	ui->mainToolBar->addSeparator();
-	ui->mainToolBar->addWidget(settingWidget);
-	ui->mainToolBar->addSeparator();
+	//ui->mainToolBar->addWidget(settingWidget);
+	//ui->mainToolBar->addSeparator();
 
 
 	m_TabWidget = new QTabWidget(this);
