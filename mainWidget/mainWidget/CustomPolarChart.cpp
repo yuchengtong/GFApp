@@ -6,11 +6,13 @@
 #include <QtGui/QBrush>
 #include <QtWidgets/QGraphicsScene>
 #include <QtCore/QDebug>
+#include <QtMath>
 
 static constexpr int SECTORS = 8;
 
 CustomPolarChart::CustomPolarChart(const QVector<QVector<double>>& datasets,
 	const QVector<QStringList>& labelGroups,
+	const QVector<double>& standardValues,
 	const QStringList& legendNames,
 	QGraphicsItem* parent)
 	: QPolarChart(parent),
@@ -23,6 +25,7 @@ CustomPolarChart::CustomPolarChart(const QVector<QVector<double>>& datasets,
 	setupChart();
 	buildSeries();
 	drawOctagonOverlay();
+	drawStandardCircle();
 	setActiveDataset(0);
 }
 
@@ -56,6 +59,7 @@ void CustomPolarChart::setupChart()
 	// 保证八边形在绘图区域变化时重绘（包含窗口/大小变化/坐标变换）
 	connect(this, &QChart::plotAreaChanged, this, [this](const QRectF&) {
 		drawOctagonOverlay();
+		drawStandardCircle();
 		});
 }
 
@@ -101,9 +105,11 @@ void CustomPolarChart::buildSeries()
 		m_lineSeries.append(ls);
 		m_areaSeries.append(area);
 
-		applySeriesStyle(ls, m_colors[g % m_colors.size()], (g == m_activeIndex) ? 1.0 : 0.25);
-		QColor fill = m_colors[g % m_colors.size()]; fill.setAlpha(80);
+		applySeriesStyle(ls, m_colors[g % m_colors.size()], (g == m_activeIndex) ? 1.0 : 0.0);
+		QColor fill = m_colors[g % m_colors.size()];
+		fill.setAlpha((g == m_activeIndex) ? 110 : 0);
 		area->setBrush(QBrush(fill, Qt::SolidPattern));
+		area->setVisible(g == m_activeIndex);
 	}
 
 	for (QLegendMarker* marker : this->legend()->markers(baseline)) marker->setVisible(false);
@@ -144,13 +150,14 @@ void CustomPolarChart::setActiveDataset(int idx)
 		QColor c = m_colors[i % m_colors.size()];
 		if (i == idx) {
 			applySeriesStyle(m_lineSeries[i], c, 1.0);
-			QColor fill = c; fill.setAlpha(110);
+			QColor fill = c; 
+			fill.setAlpha(110);
 			m_areaSeries[i]->setBrush(QBrush(fill, Qt::SolidPattern));
+			m_areaSeries[i]->setVisible(true);
 		}
 		else {
-			applySeriesStyle(m_lineSeries[i], c, 0.1);
-			QColor fill = c; fill.setAlpha(20);
-			m_areaSeries[i]->setBrush(QBrush(fill, Qt::SolidPattern));
+			applySeriesStyle(m_lineSeries[i], c, 0.0);
+			m_areaSeries[i]->setVisible(false);
 		}
 	}
 	// 图例全部显示，不隐藏任何 marker
@@ -160,6 +167,9 @@ void CustomPolarChart::setActiveDataset(int idx)
 			marker->setProperty("datasetIndex", i);
 		}
 	}
+	updateRadialAxisRange(idx);
+	// 更新标准值圈（切换数据集时更新为对应标准值）
+	drawStandardCircle();
 	updateAngleLabels(idx);
 }
 
@@ -245,17 +255,54 @@ void CustomPolarChart::drawOctagonOverlay()
 	scene()->addItem(m_octagonItem);
 }
 
+void CustomPolarChart::drawStandardCircle()
+{
+	if (!scene()) return;
+	// 移除旧的标准值圈
+	if (m_standardCircleItem) {
+		scene()->removeItem(m_standardCircleItem);
+		delete m_standardCircleItem;
+		m_standardCircleItem = nullptr;
+	}
+
+	// 获取当前激活数据集的标准值
+	double standardValue = (m_activeIndex < m_standardValues.size()) ? m_standardValues[m_activeIndex] : 50.0;
+	if (standardValue < 0) standardValue = 0;
+
+	// 计算标准值圈的位置和大小
+	QPointF center = this->mapToPosition(QPointF(0, 0), nullptr);
+	QPointF edge = this->mapToPosition(QPointF(0, standardValue), nullptr);
+	qreal radius = qSqrt(qPow(edge.x() - center.x(), 2) + qPow(edge.y() - center.y(), 2));
+
+	// 创建圆形
+	m_standardCircleItem = new QGraphicsEllipseItem(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+	QPen pen(Qt::yellow, 2);  // 黄色标准值圈，宽度2
+	pen.setStyle(Qt::DashLine);  // 虚线样式
+	m_standardCircleItem->setPen(pen);
+	m_standardCircleItem->setBrush(Qt::NoBrush);
+	m_standardCircleItem->setZValue(1);  // 层级高于八边形，低于数据系列
+	scene()->addItem(m_standardCircleItem);
+}
+
 void CustomPolarChart::updateDatasets(const QVector<QVector<double>>& datasets,
-	const QVector<QStringList>& labelGroups)
+	const QVector<QStringList>& labelGroups,
+	const QVector<double>& standardValues)
 {
 	m_datasets = datasets;
 	m_labelGroups = labelGroups;
+	m_standardValues = standardValues;
 
-	double globalMax = 1.0; for (const auto& grp : m_datasets) for (double v : grp) globalMax = qMax(globalMax, v);
+	double globalMax = 1.0; 
+	for (const auto& grp : m_datasets) 
+		for (double v : grp) 
+			globalMax = qMax(globalMax, v);
+	for (double sv : m_standardValues)
+		globalMax = qMax(globalMax, sv);
 	if (m_radialAxis) m_radialAxis->setMax(globalMax * 1.1);
 
 	for (int g = 0; g < m_lineSeries.size() && g < m_datasets.size(); ++g) {
-		QLineSeries* ls = m_lineSeries[g]; ls->clear();
+		QLineSeries* ls = m_lineSeries[g]; 
+		ls->clear();
 		const QVector<double>& data = m_datasets[g];
 		for (int i = 0; i < SECTORS; ++i) {
 			qreal angle = (360.0 / SECTORS) * i;
@@ -266,6 +313,8 @@ void CustomPolarChart::updateDatasets(const QVector<QVector<double>>& datasets,
 		ls->append(360.0, firstRadius);
 	}
 	drawOctagonOverlay();
+	drawStandardCircle();
+	updateRadialAxisRange(m_activeIndex);
 	updateAngleLabels(m_activeIndex);
 }
 
@@ -291,4 +340,41 @@ void CustomPolarChart::renameLegend(int index, const QString& newName)
 			break;
 		}
 	}
+}
+
+void CustomPolarChart::setStandardValue(int idx, double value)
+{
+	if (idx < 0 || idx >= m_standardValues.size()) return;
+	m_standardValues[idx] = value;
+	if (idx == m_activeIndex) {
+		drawStandardCircle();
+		updateRadialAxisRange(idx); // 修改标准值后也同步更新坐标轴
+	}
+}
+
+void CustomPolarChart::updateRadialAxisRange(int idx)
+{
+	if (idx < 0 || idx >= m_datasets.size() || m_radialAxis == nullptr) return;
+
+	// 获取当前选中数据集的所有数据
+	const QVector<double>& currentData = m_datasets[idx];
+	if (currentData.isEmpty())
+	{
+		m_radialAxis->setRange(0, 100);
+		return;
+	}
+
+	// 计算当前数据集的最大值
+	double dataMax = 0.0;
+	for (double val : currentData)
+	{
+		if (val > dataMax) dataMax = val;
+	}
+
+	// 取【数据最大值】和【当前数据集标准值】的较大值，保证标准圈一定在坐标轴内
+	double standardVal = (idx < m_standardValues.size()) ? m_standardValues[idx] : 0.0;
+	double finalMax = qMax(dataMax, standardVal);
+
+	// 乘以1.1倍，给图表留边距，避免数据点贴到图表边缘
+	m_radialAxis->setRange(0, finalMax * 1.1);
 }

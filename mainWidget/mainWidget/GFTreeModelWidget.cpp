@@ -937,7 +937,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(8, 2)->setText("应力未超过壳体最大屈服强度");
+													tableWidget->item(8, 2)->setText("应力未超过壳体最大抗拉强度");
 												}
 												if (fallTemperatureResult.metalsMaxTemperature > ignitionTemperature)
 												{
@@ -953,7 +953,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火超压");
+													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压");
 												}
 
 											}
@@ -1077,7 +1077,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(10, 2)->setText("应力未超过壳体最大屈服强度");
+													tableWidget->item(10, 2)->setText("应力未超过壳体最大抗拉强度");
 												}
 												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
 												{
@@ -1093,7 +1093,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(12, 2)->setText("温度超过推进剂最大发火超压");
+													tableWidget->item(12, 2)->setText("超压超过推进剂最大发火超压");
 												}
 }
 											else
@@ -1143,7 +1143,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(8, 2)->setText("应力未超过壳体最大屈服强度");
+													tableWidget->item(8, 2)->setText("应力未超过壳体最大抗拉强度");
 												}
 												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
 												{
@@ -1159,7 +1159,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火超压");
+													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压");
 												}
 											}
 											else
@@ -1212,7 +1212,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(11, 2)->setText("应力未超过壳体最大屈服强度");
+													tableWidget->item(11, 2)->setText("应力未超过壳体最大抗拉强度");
 												}
 												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
 												{
@@ -1228,7 +1228,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(13, 2)->setText("温度超过推进剂最大发火超压");
+													tableWidget->item(13, 2)->setText("超压超过推进剂最大发火超压");
 												}
 											}
 											else
@@ -1278,7 +1278,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(7, 2)->setText("应力未超过壳体最大屈服强度");
+													tableWidget->item(7, 2)->setText("应力未超过壳体最大抗拉强度");
 												}
 												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
 												{
@@ -1294,7 +1294,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(9, 2)->setText("温度超过推进剂最大发火超压");
+													tableWidget->item(9, 2)->setText("超压超过推进剂最大发火超压");
 												}
 											}
 											else
@@ -1344,7 +1344,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(8, 2)->setText("应力未超过壳体最大屈服强度");
+													tableWidget->item(8, 2)->setText("应力未超过壳体最大抗拉强度");
 												}
 												if (temperatureResult.metalsMaxTemperature > ignitionTemperature)
 												{
@@ -1360,7 +1360,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												}
 												else
 												{
-													tableWidget->item(10, 2)->setText("温度超过推进剂最大发火超压");
+													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压");
 												}
 											}
 											else
