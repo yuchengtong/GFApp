@@ -96,7 +96,7 @@ struct SlowCombustionAnalysisResultInfo {
 
 //枪击试验
 struct ShootSettingInfo {
-	double speed = 300;
+	double speed = 820;
 	double radius = 12.7; // 子弹直径
 };
 
@@ -133,7 +133,7 @@ struct JetImpactAnalysisResultInfo {
 
 //破片试验
 struct FragmentationSettingInfo {
-	double speed = 1000;
+	double speed = 1830;
 	double radius = 14.3; // 子弹直径
 };
 
@@ -171,7 +171,7 @@ struct ExplosiveBlastAnalysisResultInfo {
 
 // 殉爆试验
 struct SacrificeExplosionSettingInfo {
-	double distance = 50.0;
+	double distance = 100.0;
 };
 
 struct SacrificeExplosionAnalysisResultInfo {
@@ -192,7 +192,8 @@ struct SteelPropertyInfo {
 	QString materialGrade = ""; // 材料牌号
 	double density = 0.0; // 密度
 	double thermalExpansion = 0.0;// 热膨胀系数
-	double modulus = 0.0;// 杨氏模量
+	double modulus = 0.0;// 弹性模量
+	double tangentModulus = 0.0;// 切线模量
 	double poisonby = 0.0;// 泊松比
 	double yieldStrength = 0.0;// 屈服强度
 	double tensileStrength = 0.0;// 抗拉强度
@@ -205,10 +206,12 @@ struct PropellantPropertyInfo {
 	QString materialGrade = ""; // 材料牌号
 	double density = 0.0; // 密度
 	double thermalExpansion = 0.0;// 热膨胀系数
-	double modulus = 0.0;// 杨氏模量
+	double modulus = 0.0;// 弹性模量
+	double tangentModulus = 0.0;// 切线模量
 	double poisonby = 0.0;// 泊松比
 	double ignitionTemperature = 0.0;// 发火温度
 	double fireOverpressure = 0.0;// 发火超压
+	double frictionSensitivity = 0.0;// 10^-5发火概率摩擦感度
 	double thermalConductivity = 0.0;// 热导率
 	double specificHeatCapacity = 0.0;// 比热容
 	double i = 0.0;
@@ -231,7 +234,8 @@ struct InsulatingheatPropertyInfo {
 	QString materialGrade = ""; // 材料牌号
 	double density = 0.0; // 密度
 	double thermalExpansion = 0.0;// 热膨胀系数
-	double modulus = 0.0;// 杨氏模量
+	double modulus = 0.0;// 弹性模量
+	double tangentModulus = 0.0;// 切线模量
 	double poisonby = 0.0;// 泊松比
 	double yieldStrength = 0.0;// 屈服强度
 	double tensileStrength = 0.0;// 抗拉强度
@@ -245,7 +249,8 @@ struct OutheatPropertyInfo {
 	QString materialGrade = ""; // 材料牌号
 	double density = 0.0; // 密度
 	double thermalExpansion = 0.0;// 热膨胀系数
-	double modulus = 0.0;// 杨氏模量
+	double modulus = 0.0;// 弹性模量
+	double tangentModulus = 0.0;// 切线模量
 	double poisonby = 0.0;// 泊松比
 	double yieldStrength = 0.0;// 屈服强度
 	double tensileStrength = 0.0;// 抗拉强度
@@ -1118,22 +1123,22 @@ struct StrainResult {
 // 温度分析结果
 struct TemperatureResult {
 	double metalsMaxTemperature = QRandomGenerator::securelySeeded().bounded(75, 101); //发动机壳体最高温度
-	double metalsMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 75); //发动机壳体最低温度
+	double metalsMinTemperature = 25; //发动机壳体最低温度
 	double metalsAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //发动机壳体平均温度
 	double metalsStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //发动机壳体温度标准差
 
 	double propellantsMaxTemperature = QRandomGenerator::securelySeeded().bounded(75, 101); //推进剂最高温度
-	double propellantsMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 75); //推进剂最低温度
+	double propellantsMinTemperature = 25; //推进剂最低温度
 	double mpropellantsAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //推进剂平均温度
 	double propellantsStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //推进剂温度标准差
 
 	double outheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(75, 101); //外防热最高温度
-	double outheatMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 75); //外防热最低温度
+	double outheatMinTemperature = 25; //外防热最低温度
 	double outheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //外防热平均温度
 	double outheatStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //外防热温度标准差
 
 	double insulatingheatMaxTemperature = QRandomGenerator::securelySeeded().bounded(75, 101); //防隔热最高温度
-	double insulatingheatMinTemperature = QRandomGenerator::securelySeeded().bounded(50, 75); //防隔热最低温度
+	double insulatingheatMinTemperature = 25; //防隔热最低温度
 	double insulatingheatAvgTemperature = QRandomGenerator::securelySeeded().bounded(50, 101); //防隔热平均温度
 	double insulatingheatStandardTemperature = 0.0 + (3.0 - 0.0) * QRandomGenerator::securelySeeded().generateDouble(); //防隔热温度标准差
 

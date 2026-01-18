@@ -14,11 +14,13 @@ CustomPolarChart::CustomPolarChart(const QVector<QVector<double>>& datasets,
 	const QVector<QStringList>& labelGroups,
 	const QVector<double>& standardValues,
 	const QStringList& legendNames,
+	const QStringList& unitList,
 	QGraphicsItem* parent)
 	: QPolarChart(parent),
 	m_datasets(datasets),
 	m_labelGroups(labelGroups),
-	m_legendNames(legendNames)
+	m_legendNames(legendNames),
+	m_unitList(unitList)
 {
 	m_colors = { QColor(0, 122, 255), QColor(255, 80, 80), QColor(34, 255, 76), QColor(255, 255, 0) };
 
@@ -56,10 +58,22 @@ void CustomPolarChart::setupChart()
 	this->setTitle("跌落试验");
 	this->setTitleBrush(Qt::white);
 
+	updateChartTitle();
+
+	// 初始化右上角单位文本控件
+	m_unitTextItem = new QGraphicsTextItem(this);
+	QFont unitFont = m_unitTextItem->font();
+	unitFont.setPointSize(9);    // 字号适中
+	unitFont.setBold(true);      // 加粗突出
+	m_unitTextItem->setFont(unitFont);
+	m_unitTextItem->setDefaultTextColor(Qt::white); // 白色和图表配色一致
+	m_unitTextItem->setZValue(99); // 置顶层级，永远不被遮挡
+
 	// 保证八边形在绘图区域变化时重绘（包含窗口/大小变化/坐标变换）
 	connect(this, &QChart::plotAreaChanged, this, [this](const QRectF&) {
 		drawOctagonOverlay();
 		drawStandardCircle();
+		updateUnitText();
 		});
 }
 
@@ -171,6 +185,9 @@ void CustomPolarChart::setActiveDataset(int idx)
 	// 更新标准值圈（切换数据集时更新为对应标准值）
 	drawStandardCircle();
 	updateAngleLabels(idx);
+
+	updateChartTitle();
+	updateUnitText();
 }
 
 void CustomPolarChart::setActiveDatasetVisible(int idx)
@@ -210,6 +227,8 @@ void CustomPolarChart::setActiveDatasetVisible(int idx)
 		}
 	}
 	updateAngleLabels(idx);
+	updateChartTitle();
+	updateUnitText();
 }
 
 void CustomPolarChart::updateAngleLabels(int datasetIndex)
@@ -221,9 +240,15 @@ void CustomPolarChart::updateAngleLabels(int datasetIndex)
 	m_angleAxis->setRange(0, 360);
 
 	const QStringList labels = (datasetIndex < m_labelGroups.size()) ? m_labelGroups[datasetIndex] : QStringList();
+	// 获取当前激活数据集的数值
+	const QVector<double>& currentData = (datasetIndex < m_datasets.size()) ? m_datasets[datasetIndex] : QVector<double>();
+
 	for (int i = 0; i < SECTORS; ++i) {
 		qreal angle = (360.0 / SECTORS) * i;
 		QString lab = (i < labels.size()) ? labels[i] : QString("%1").arg(i);
+		// 获取当前角度对应的数值，无数据时显示0
+        double value = (i < currentData.size()) ? currentData[i] : 0.0;
+		lab = lab + ":" + QString::number(value);
 		m_angleAxis->append(lab, angle);
 		m_angleAxis->setLabelsColor(Qt::white);
 	}
@@ -286,11 +311,13 @@ void CustomPolarChart::drawStandardCircle()
 
 void CustomPolarChart::updateDatasets(const QVector<QVector<double>>& datasets,
 	const QVector<QStringList>& labelGroups,
-	const QVector<double>& standardValues)
+	const QVector<double>& standardValues,
+	const QStringList& unitList)
 {
 	m_datasets = datasets;
 	m_labelGroups = labelGroups;
 	m_standardValues = standardValues;
+	m_unitList = unitList;
 
 	double globalMax = 1.0; 
 	for (const auto& grp : m_datasets) 
@@ -316,6 +343,8 @@ void CustomPolarChart::updateDatasets(const QVector<QVector<double>>& datasets,
 	drawStandardCircle();
 	updateRadialAxisRange(m_activeIndex);
 	updateAngleLabels(m_activeIndex);
+	updateChartTitle();
+	updateUnitText();
 }
 
 void CustomPolarChart::renameLegend(int index, const QString& newName)
@@ -349,6 +378,8 @@ void CustomPolarChart::setStandardValue(int idx, double value)
 	if (idx == m_activeIndex) {
 		drawStandardCircle();
 		updateRadialAxisRange(idx); // 修改标准值后也同步更新坐标轴
+		updateChartTitle();
+		updateUnitText();
 	}
 }
 
@@ -377,4 +408,47 @@ void CustomPolarChart::updateRadialAxisRange(int idx)
 
 	// 乘以1.1倍，给图表留边距，避免数据点贴到图表边缘
 	m_radialAxis->setRange(0, finalMax * 1.1);
+}
+
+// 更新图表标题（包含标准值）
+void CustomPolarChart::updateChartTitle()
+{
+	// 获取当前激活数据集的标准值
+	double standardValue = (m_activeIndex < m_standardValues.size()) ? m_standardValues[m_activeIndex] : 0.0;
+	if (standardValue > 0.0)
+	{
+		
+		// 拼接标题文本（格式可自定义，例如：跌落试验 - 标准值：85.0）
+		QString title = QString(this->title() + " - 阈值：") + QString::number(standardValue);
+		this->setTitle(title);
+		this->setTitleBrush(Qt::white); // 保持标题颜色为白色
+	}
+	
+}
+
+// 更新右上角单位文本（位置+内容）
+void CustomPolarChart::updateUnitText()
+{
+	if (!m_unitTextItem) return;
+	// 1. 获取当前激活数据集对应的单位，无单位则显示空字符串
+	QString currUnit = (m_activeIndex < m_unitList.size()) ? m_unitList[m_activeIndex] : "no";
+	if (currUnit == "no")
+	{
+		currUnit = " ";
+		
+	}
+	else
+	{
+		currUnit = "单位：" + currUnit;
+	}
+	m_unitTextItem->setPlainText(currUnit);
+	// 3. 计算图表右上角的精准坐标：固定在绘图区右上角，向右偏移10px，向上偏移10px
+	QRectF plotArea = this->plotArea();
+	QPointF rightTopPoint = plotArea.topRight();
+	// 文本左对齐，所以x坐标要减去文本宽度，保证贴紧右侧、不溢出
+	QRectF textRect = m_unitTextItem->boundingRect();
+	qreal x = rightTopPoint.x() - textRect.width() + 200 ;
+	qreal y = rightTopPoint.y() - 60;
+	m_unitTextItem->setPos(x, y);
+	m_unitTextItem->setDefaultTextColor(Qt::white);
 }

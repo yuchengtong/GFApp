@@ -179,7 +179,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	outheat->setIcon(0, error_icon);
 
 	QTreeWidgetItem* insulatingheat = new QTreeWidgetItem();
-	insulatingheat->setText(0, "防隔热材料");
+	insulatingheat->setText(0, "绝热层材料");
 	insulatingheat->setData(0, Qt::UserRole, "Insulatingheat");
 	insulatingheat->setIcon(0, error_icon);
 
@@ -701,7 +701,7 @@ void GFTreeModelWidget::updataIcon()
 									clChild_child->child(n)->setIcon(0, checked_icon);
 								}
 							}
-							if (clChild_child->child(n)->text(0).contains("防隔热材料"))
+							if (clChild_child->child(n)->text(0).contains("绝热层材料"))
 							{
 								if (!insulatingheatPropertyInfo.isChecked)
 								{
@@ -762,7 +762,7 @@ void GFTreeModelWidget::updataIcon()
 							clChild->child(m)->setIcon(0, checked_icon);
 						}
 					}
-					if (clChild->child(m)->text(0).contains("防隔热材料"))
+					if (clChild->child(m)->text(0).contains("绝热层材料"))
 					{
 						if (!insulatingheatPropertyInfo.isChecked)
 						{
@@ -915,19 +915,27 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
 												gfParent->GetStressResultWidget()->updateData(fallStressResult.metalsMaxStress, fallStressResult.metalsMinStress, fallStressResult.metalsAvgStress, fallStressResult.metalsStandardStress,
-													fallStressResult.propellantsMaxStress, fallStressResult.propellantsMinStress, fallStressResult.propellantsAvgStress, fallStressResult.propellantsStandardStress);
+													fallStressResult.propellantsMaxStress, fallStressResult.propellantsMinStress, fallStressResult.propellantsAvgStress, fallStressResult.propellantsStandardStress,
+													fallStressResult.outheatMaxStress, fallStressResult.outheatMinStress, fallStressResult.outheatAvgStress, fallStressResult.outheatStandardStress,
+													fallStressResult.insulatingheatMaxStress, fallStressResult.insulatingheatMinStress, fallStressResult.insulatingheatAvgStress, fallStressResult.insulatingheatStandardStress);
 
 												auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
 												gfParent->GetStrainResultWidget()->updateData(fallStrainResult.metalsMaxStrain, fallStrainResult.metalsMinStrain, fallStrainResult.metalsAvgStrain, fallStrainResult.metalsStandardStrain,
-													fallStrainResult.propellantsMaxStrain, fallStrainResult.propellantsMinStrain, fallStrainResult.mpropellantsAvgStrain, fallStrainResult.propellantsStandardStrain);
+													fallStrainResult.propellantsMaxStrain, fallStrainResult.propellantsMinStrain, fallStrainResult.mpropellantsAvgStrain, fallStrainResult.propellantsStandardStrain,
+													fallStrainResult.outheatMaxStrain, fallStrainResult.outheatMinStrain, fallStrainResult.outheatAvgStrain, fallStrainResult.outheatStandardStrain,
+													fallStrainResult.insulatingheatMaxStrain, fallStrainResult.insulatingheatMinStrain, fallStrainResult.insulatingheatAvgStrain, fallStrainResult.insulatingheatStandardStrain);
 
 												auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
 												gfParent->GetTemperatureResultWidget()->updateData(fallTemperatureResult.metalsMaxTemperature, fallTemperatureResult.metalsMinTemperature, fallTemperatureResult.metalsAvgTemperature, fallTemperatureResult.metalsStandardTemperature,
-													fallTemperatureResult.propellantsMaxTemperature, fallTemperatureResult.propellantsMinTemperature, fallTemperatureResult.mpropellantsAvgTemperature, fallTemperatureResult.propellantsStandardTemperature);
+													fallTemperatureResult.propellantsMaxTemperature, fallTemperatureResult.propellantsMinTemperature, fallTemperatureResult.mpropellantsAvgTemperature, fallTemperatureResult.propellantsStandardTemperature,
+													fallTemperatureResult.outheatMaxTemperature, fallTemperatureResult.outheatMinTemperature, fallTemperatureResult.outheatAvgTemperature, fallTemperatureResult.outheatStandardTemperature,
+													fallTemperatureResult.insulatingheatMaxTemperature, fallTemperatureResult.insulatingheatMinTemperature, fallTemperatureResult.insulatingheatAvgTemperature, fallTemperatureResult.insulatingheatStandardTemperature);
 
 												auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
 												gfParent->GetOverpressureResultWidget()->updateData(fallOverpressureResult.metalsMaxOverpressure, fallOverpressureResult.metalsMinOverpressure, fallOverpressureResult.metalsAvgOverpressure, fallOverpressureResult.metalsStandardOverpressure,
-													fallOverpressureResult.propellantsMaxOverpressure, fallOverpressureResult.propellantsMinOverpressure, fallOverpressureResult.mpropellantsAvgOverpressure, fallOverpressureResult.propellantsStandardOverpressure);
+													fallOverpressureResult.propellantsMaxOverpressure, fallOverpressureResult.propellantsMinOverpressure, fallOverpressureResult.mpropellantsAvgOverpressure, fallOverpressureResult.propellantsStandardOverpressure,
+													fallOverpressureResult.outheatMaxOverpressure, fallOverpressureResult.outheatMinOverpressure, fallOverpressureResult.outheatAvgOverpressure, fallOverpressureResult.outheatStandardOverpressure,
+													fallOverpressureResult.insulatingheatMaxOverpressure, fallOverpressureResult.insulatingheatMinOverpressure, fallOverpressureResult.insulatingheatAvgOverpressure, fallOverpressureResult.insulatingheatStandardOverpressure);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFallPropertyWidget()->GetQTableWidget();
@@ -978,7 +986,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
 												gfParent->GetFastCombustionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFastCombustionPropertyWidget()->GetQTableWidget();
@@ -1013,7 +1023,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
 												gfParent->GetSlowCombustionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetSlowCombustionPropertyWidget()->GetQTableWidget();
@@ -1055,19 +1067,27 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												
 												auto stressResult = ModelDataManager::GetInstance()->GetShootStressResult();
 												gfParent->GetShootStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
-													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
+													stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
+													stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
 
 												auto strainResult = ModelDataManager::GetInstance()->GetShootStrainResult();
 												gfParent->GetShootStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
-													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain,
+													strainResult.outheatMaxStrain, strainResult.outheatMinStrain, strainResult.outheatAvgStrain, strainResult.outheatStandardStrain,
+													strainResult.insulatingheatMaxStrain, strainResult.insulatingheatMinStrain, strainResult.insulatingheatAvgStrain, strainResult.insulatingheatStandardStrain);
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
 												gfParent->GetShootTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												auto overpressureResult = ModelDataManager::GetInstance()->GetShootOverpressureResult();
 												gfParent->GetShootOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
-													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
+													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
+													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetShootPropertyWidget()->GetQTableWidget();
@@ -1121,19 +1141,27 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto stressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
 												gfParent->GetJetImpactStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
-													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
+													stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
+													stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
 
 												auto strainResult = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
 												gfParent->GetJetImpactStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
-													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain,
+													strainResult.outheatMaxStrain, strainResult.outheatMinStrain, strainResult.outheatAvgStrain, strainResult.outheatStandardStrain,
+													strainResult.insulatingheatMaxStrain, strainResult.insulatingheatMinStrain, strainResult.insulatingheatAvgStrain, strainResult.insulatingheatStandardStrain);
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
 												gfParent->GetJetImpactTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												auto overpressureResult = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
 												gfParent->GetJetImpactOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
-													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
+													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
+													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetJetImpactPropertyWidget()->GetQTableWidget();
@@ -1190,19 +1218,27 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto stressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
 												gfParent->GetFragmentationImpactStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
-													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
+													stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
+													stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
 
 												auto strainResult = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
 												gfParent->GetFragmentationImpactStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
-													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain,
+													strainResult.outheatMaxStrain, strainResult.outheatMinStrain, strainResult.outheatAvgStrain, strainResult.outheatStandardStrain,
+													strainResult.insulatingheatMaxStrain, strainResult.insulatingheatMinStrain, strainResult.insulatingheatAvgStrain, strainResult.insulatingheatStandardStrain);
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
 												gfParent->GetFragmentationImpactTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												auto overpressureResult = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
 												gfParent->GetFragmentationImpactOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
-													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
+													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
+													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFragmentationImpactPropertyWidget()->GetQTableWidget();
@@ -1256,19 +1292,27 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto stressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
 												gfParent->GetExplosiveBlastStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
-													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
+													stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
+													stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
 
 												auto strainResult = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
 												gfParent->GetExplosiveBlastStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
-													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain,
+													strainResult.outheatMaxStrain, strainResult.outheatMinStrain, strainResult.outheatAvgStrain, strainResult.outheatStandardStrain,
+													strainResult.insulatingheatMaxStrain, strainResult.insulatingheatMinStrain, strainResult.insulatingheatAvgStrain, strainResult.insulatingheatStandardStrain);
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
 												gfParent->GetExplosiveBlastTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												auto overpressureResult = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
 												gfParent->GetExplosiveBlastOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
-													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
+													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
+													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetExplosiveBlastPropertyWidget()->GetQTableWidget();
@@ -1322,19 +1366,27 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 												auto stressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
 												gfParent->GetSacrificeExplosionStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
-													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress);
+													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
+													stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
+													stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
 
 												auto strainResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
 												gfParent->GetSacrificeExplosionStrainResultWidget()->updateData(strainResult.metalsMaxStrain, strainResult.metalsMinStrain, strainResult.metalsAvgStrain, strainResult.metalsStandardStrain,
-													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain);
+													strainResult.propellantsMaxStrain, strainResult.propellantsMinStrain, strainResult.mpropellantsAvgStrain, strainResult.propellantsStandardStrain,
+													strainResult.outheatMaxStrain, strainResult.outheatMinStrain, strainResult.outheatAvgStrain, strainResult.outheatStandardStrain,
+													strainResult.insulatingheatMaxStrain, strainResult.insulatingheatMinStrain, strainResult.insulatingheatAvgStrain, strainResult.insulatingheatStandardStrain);
 
 												auto temperatureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
 												gfParent->GetSacrificeExplosionTemperatureResultWidget()->updateData(temperatureResult.metalsMaxTemperature, temperatureResult.metalsMinTemperature, temperatureResult.metalsAvgTemperature, temperatureResult.metalsStandardTemperature,
-													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature);
+													temperatureResult.propellantsMaxTemperature, temperatureResult.propellantsMinTemperature, temperatureResult.mpropellantsAvgTemperature, temperatureResult.propellantsStandardTemperature,
+													temperatureResult.outheatMaxTemperature, temperatureResult.outheatMinTemperature, temperatureResult.outheatAvgTemperature, temperatureResult.outheatStandardTemperature,
+													temperatureResult.insulatingheatMaxTemperature, temperatureResult.insulatingheatMinTemperature, temperatureResult.insulatingheatAvgTemperature, temperatureResult.insulatingheatStandardTemperature);
 
 												auto overpressureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
 												gfParent->GetSacrificeExplosionOverpressureResultWidget()->updateData(overpressureResult.metalsMaxOverpressure, overpressureResult.metalsMinOverpressure, overpressureResult.metalsAvgOverpressure, overpressureResult.metalsStandardOverpressure,
-													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure);
+													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
+													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
+													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetSacrificeExplosionPropertyWidget()->GetQTableWidget();
@@ -2569,7 +2621,7 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	data.insert("工程时间", m_projectTableWid->item(3, 2)->text());
 	data.insert("测试标准", m_databaseTableWid->item(1, 2)->text());
 	data.insert("壳体材料", m_materialTableWid->item(1, 2)->text());
-	data.insert("防隔热材料", m_materialTableWid->item(2, 2)->text());
+	data.insert("绝热层材料", m_materialTableWid->item(2, 2)->text());
 	data.insert("外防热材料", m_materialTableWid->item(3, 2)->text());
 	data.insert("推进剂材料", m_materialTableWid->item(4, 2)->text());
 

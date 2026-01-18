@@ -17,11 +17,13 @@ public:
         const QVector<QStringList>& labelGroups,
         const QVector<double>& standardValues,// 每个数据集的标准值
         const QStringList& legendNames = { "应力","温度","超压","应变" },
+        const QStringList& unitList = { "MPa", "℃", "MPa", " " },
         QGraphicsItem* parent = nullptr);
 
     void updateDatasets(const QVector<QVector<double>>& datasets,
         const QVector<QStringList>& labelGroups,
-        const QVector<double>& standardValues);
+        const QVector<double>& standardValues,
+        const QStringList& unitList);
 
     void setActiveDatasetVisible(int idx);
 
@@ -46,11 +48,14 @@ private:
     void updateAngleLabels(int datasetIndex);
     void drawStandardCircle();  // 绘制标准值参考圈
     void updateRadialAxisRange(int idx); //更新坐标轴范围
+    void updateChartTitle();// 修改标题添加标准值
+    void updateUnitText();//修改单位显示
 
     QVector<QVector<double>> m_datasets;
     QVector<QStringList> m_labelGroups;
     QStringList m_legendNames;
     QVector<double> m_standardValues;  // 存储每个数据集的标准值
+    QStringList m_unitList;//单位集合
 
     QVector<QLineSeries*> m_lineSeries;
     QVector<QAreaSeries*> m_areaSeries;
@@ -61,5 +66,6 @@ private:
 
     QGraphicsPolygonItem* m_octagonItem = nullptr;
     QGraphicsEllipseItem* m_standardCircleItem = nullptr;  // 标准值参考圈
+    QGraphicsTextItem* m_unitTextItem; // 右上角单位文本控件
     int m_activeIndex = 0;
 };

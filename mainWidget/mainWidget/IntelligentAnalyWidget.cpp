@@ -302,7 +302,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_dataMap["跌落高度"] = QStringList() << "10" << "20" << "30";
 	m_dataMap["快烤平均温度"] = QStringList() << "600" << "700" << "800";
 	m_dataMap["慢烤平均温度"] = QStringList() << "315" << "330" << "345";
-	m_dataMap["子弹撞击速度"] = QStringList() << "620" << "720" << "820";
+	m_dataMap["枪击速度"] = QStringList() << "620" << "720" << "820";
 	m_dataMap["破片撞击速度"] = QStringList() << "1630" << "1730" << "1830";
 	m_dataMap["聚能装药口径"] = QStringList() << "30" << "40" << "50";
 	m_dataMap["TNT当量"] = QStringList() << "3" << "4" << "5";
@@ -530,7 +530,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_propertyStackWidget->setCurrentWidget(m_shootPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_shootTableWidget);
 		m_tableWidget = m_shootTableWidget;
-		x_comboBox->setItemText(1, "子弹撞击速度");
+		x_comboBox->setItemText(1, "枪击速度");
 	}
 	else if (itemData == "JetImpactIntelligentAnaly")
 	{

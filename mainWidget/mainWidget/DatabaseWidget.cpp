@@ -60,6 +60,19 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	QTreeWidgetItem* metals = new QTreeWidgetItem();
 	metals->setText(0, "壳体材料");
 	metals->setIcon(0, QIcon(":/src/data_metals.svg"));
+
+	QTreeWidgetItem* metal = new QTreeWidgetItem();
+	metal->setText(0, "金属材料");
+	metal->setIcon(0, QIcon(":/src/data_metals.svg"));
+	QTreeWidgetItem* nonmetallic = new QTreeWidgetItem();
+	nonmetallic->setText(0, "非金属材料");
+	nonmetallic->setIcon(0, QIcon(":/src/data_metals.svg"));
+	metals->addChild(metal);
+	metals->addChild(nonmetallic);
+
+
+	
+
 	QTreeWidgetItem* propellants = new QTreeWidgetItem();
 	propellants->setText(0, "推进剂材料");
 	propellants->setIcon(0, QIcon(":/src/data_propellants.svg"));
@@ -67,18 +80,15 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	outheat->setText(0, "外防热材料");
 	outheat->setIcon(0, QIcon(":/src/data_outheat.svg"));
 	QTreeWidgetItem* insulatingheat = new QTreeWidgetItem();
-	insulatingheat->setText(0, "防隔热材料");
+	insulatingheat->setText(0, "绝热层材料");
 	insulatingheat->setIcon(0, QIcon(":/src/data_insulatingheat.svg"));
-	QTreeWidgetItem* carbonfiber = new QTreeWidgetItem();
-	carbonfiber->setText(0, "碳纤维壳体材料");
-	carbonfiber->setIcon(0, QIcon(":/src/data_metals.svg"));
+	
 
 
 	material->addChild(metals);
 	material->addChild(propellants);
 	material->addChild(outheat);
 	material->addChild(insulatingheat);
-	material->addChild(carbonfiber);
 
 	QTreeWidgetItem* judgment = new QTreeWidgetItem(treeWidget);
 	judgment->setText(0, "评判标准数据库");
@@ -347,20 +357,25 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 		QString sheetName = nullptr;
 		QDir dir;
 
-		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库")
+		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库" || currentDataaseType == "金属材料")
 		{
-			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体材料.xlsx");
-			sheetName = "壳体材料";
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体金属材料.xlsx");
+			sheetName = "壳体金属材料";
+		}
+		else if (currentDataaseType == "非金属材料")
+		{
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体非金属材料.xlsx");
+			sheetName = "壳体非金属材料";
 		}
 		else if (currentDataaseType == "推进剂材料")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/推进剂材料.xlsx");
 			sheetName = "推进剂材料";
 		}
-		else if (currentDataaseType == "防隔热材料")
+		else if (currentDataaseType == "绝热层材料")
 		{
-			filepath = dir.absoluteFilePath(m_privateDirPath + "/防隔热材料.xlsx");
-			sheetName = "防隔热材料";
+			filepath = dir.absoluteFilePath(m_privateDirPath + "/绝热层材料.xlsx");
+			sheetName = "绝热层材料";
 		}
 		else if (currentDataaseType == "外防热材料")
 		{
@@ -521,9 +536,14 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 	QDir dir;
 	currentDataaseType = item->text(0);
 	//QMessageBox::information(nullptr, "信息", currentDataaseType);
-	if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库")
+	if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库" || currentDataaseType == "金属材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/壳体材料.xlsx");
+		filepath = dir.absoluteFilePath("src/database/壳体金属材料.xlsx");
+		ui.queryTitle->setText("材料牌号");
+	}
+	else if (currentDataaseType == "非金属材料")
+	{
+		filepath = dir.absoluteFilePath("src/database/壳体非金属材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "推进剂材料")
@@ -536,9 +556,9 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		filepath = dir.absoluteFilePath("src/database/外防热材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "防隔热材料")
+	else if (currentDataaseType == "绝热层材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/防隔热材料.xlsx");
+		filepath = dir.absoluteFilePath("src/database/绝热层材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "碳纤维壳体材料")
@@ -680,9 +700,13 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		}
 		QString privateFilePath = "";
 
-		if (currentDataaseType == "壳体材料")
+		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库" || currentDataaseType == "金属材料")
 		{
-			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/壳体材料.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/壳体金属材料.xlsx");
+		}
+		else if (currentDataaseType == "非金属材料")
+		{
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/壳体非金属材料.xlsx");
 		}
 		else if (currentDataaseType == "推进剂材料")
 		{
@@ -692,9 +716,9 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/外防热材料.xlsx");
 		}
-		else if (currentDataaseType == "防隔热材料")
+		else if (currentDataaseType == "绝热层材料")
 		{
-			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/防隔热材料.xlsx");
+			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/绝热层材料.xlsx");
 		}
 		else if (currentDataaseType == "碳纤维壳体材料")
 		{

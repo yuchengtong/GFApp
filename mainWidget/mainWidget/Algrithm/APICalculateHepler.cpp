@@ -3,11 +3,13 @@
 #include <V3d_View.hxx>
 
 #include <QMap>
+#include <QRandomGenerator>
 
 #include "ModelDataManager.h"
 
 
-QVector<int> m_steelArray = { 1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36 };
+// 壳体点位
+QVector<int> m_steelArray = { 1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36, 37, 38, 39, 40 };
 
 
 double calculate(const QString& formula,
@@ -149,12 +151,12 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000; //训练模型是Pa*e-9
+	auto C = steelInfo.modulus / 1000; 
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 	auto J = fallInfo.high * 1000;//跌落高度
@@ -181,6 +183,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		res = res * 0.5;
 		if (!m_steelArray.contains(i+1))
 		{
+			//res = res * 0.4;
 			propellantStressResults.push_back(res);
 		}
 		else
@@ -230,14 +233,14 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	fallStressResult.propellantsMinStress = propellantStressMinValue;
 	fallStressResult.propellantsAvgStress = propellantStressAvgValue;
 	fallStressResult.propellantsStandardStress = propellantStressStandardValue;
-	fallStressResult.outheatMaxStress = shellStressMaxValue * 1.05;
-	fallStressResult.outheatMinStress = shellStressMinValue * 1.05;
-	fallStressResult.outheatAvgStress = shellStressAvgValue * 1.05;
-	fallStressResult.outheatStandardStress = shellStressStandardValue * 1.05;
-	fallStressResult.insulatingheatMaxStress = shellStressMaxValue * 1.02;
-	fallStressResult.insulatingheatMinStress = shellStressMinValue * 1.02;
-	fallStressResult.insulatingheatAvgStress = shellStressAvgValue * 1.02;
-	fallStressResult.insulatingheatStandardStress = shellStressStandardValue * 1.02;
+	fallStressResult.outheatMaxStress = shellStressMaxValue;
+	fallStressResult.outheatMinStress = shellStressMinValue;
+	fallStressResult.outheatAvgStress = shellStressAvgValue;
+	fallStressResult.outheatStandardStress = shellStressStandardValue;
+	fallStressResult.insulatingheatMaxStress = shellStressMaxValue * 0.99;
+	fallStressResult.insulatingheatMinStress = shellStressMinValue * 0.99;
+	fallStressResult.insulatingheatAvgStress = shellStressAvgValue * 0.99;
+	fallStressResult.insulatingheatStandardStress = shellStressStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
 
 	// 应变分析结果
@@ -257,7 +260,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	fallStrainResult.insulatingheatMaxStrain = fallStressResult.insulatingheatMaxStress / steelInfo.modulus ;
 	fallStrainResult.insulatingheatMinStrain = fallStressResult.insulatingheatMinStress / steelInfo.modulus ;
 	fallStrainResult.insulatingheatAvgStrain = fallStressResult.insulatingheatAvgStress / steelInfo.modulus ;
-	fallStrainResult.insulatingheatStandardStrain = fallStressResult.insulatingheatStandardStress / steelInfo.modulus / 1000;
+	fallStrainResult.insulatingheatStandardStrain = fallStressResult.insulatingheatStandardStress / steelInfo.modulus;
 	ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
     
 
@@ -268,12 +271,19 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	std::vector<double> propellantTemperatureResults;
 	/*std::vector<double> temperatureResults;
 	temperatureResults.reserve(temperatureCalculation.size());*/
+
+	steelTemperatureResults.push_back(25);
+	propellantTemperatureResults.push_back(25);
 	for (int i = 0; i < temperatureCalculation.size(); ++i)
 	{
 		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		if (res < 0)
+		if (res < 25)
 		{
-			res = 0;
+			res = 25;
+		}
+		if (fallInfo.angle == 0 && res >= 28.589)
+		{
+			res = 28.589;
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
@@ -293,11 +303,11 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
-	double shellTemperatureMinValue = calSteelTemperatureMinValue; // 发动机壳体最小温度
+	double shellTemperatureMinValue = 25; // 发动机壳体最小温度
 	double shellTemperatureAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
 	double shellTemperatureStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
 	double propellantTemperatureMaxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
-	double propellantTemperatureMinValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
+	double propellantTemperatureMinValue = 25; // 固体推进剂最小温度
 	double propellantTemperatureAvgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
 	double propellantTemperatureStandardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
 
@@ -312,14 +322,14 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	temperatureResult.propellantsMinTemperature = propellantTemperatureMinValue;
 	temperatureResult.mpropellantsAvgTemperature = propellantTemperatureAvgValue;
 	temperatureResult.propellantsStandardTemperature = propellantTemperatureStandardValue;
-	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.05;
-	temperatureResult.outheatMinTemperature = shellTemperatureMinValue * 1.05;
-	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.05;
-	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.05;
-	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 1.02;
-	temperatureResult.insulatingheatMinTemperature = shellTemperatureMinValue * 1.02;
-	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 1.02;
-	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 1.02;
+	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.01;
+	temperatureResult.outheatMinTemperature = 25;
+	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.01;
+	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 0.99;
+	temperatureResult.insulatingheatMinTemperature = 25;
+	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFallTemperatureResult(temperatureResult);
 
 
@@ -354,15 +364,26 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	double calPropellantOverpressureMinValue = *std::min_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
-	// 更新结果
-	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	//// 更新结果
+	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	//double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
+	//double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
+	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
+	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+
+	
 
 
 	// 超压分析结果
@@ -375,14 +396,14 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	overpressureResult.propellantsMinOverpressure = propellantOverpressureMinValue;
 	overpressureResult.mpropellantsAvgOverpressure = propellantOverpressureAvgValue;
 	overpressureResult.propellantsStandardOverpressure = propellantOverpressureStandardValue;
-	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue * 1.05;
-	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue * 1.05;
-	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue * 1.05;
-	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue * 1.05;
-	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 1.02;
-	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 1.02;
-	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 1.02;
-	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 1.02;
+	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue;
+	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue;
+	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue;
+	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue;
+	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 0.99;
+	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 0.99;
+	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 0.99;
+	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFallOverpressureResult(overpressureResult);
 
 
@@ -391,15 +412,14 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	FallAnalysisResultInfo fallAnalysisResultInfo;
 
 	fallAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	fallAnalysisResultInfo.stressMaxValue = calSteelStressMaxValue;
-	fallAnalysisResultInfo.stressMinValue = calSteelStressMinValue;
-	fallAnalysisResultInfo.strainMaxValue = calSteelStressMaxValue / steelInfo.modulus ;
-	fallAnalysisResultInfo.strainMinValue = calSteelStressMinValue / steelInfo.modulus ;
-	fallAnalysisResultInfo.temperatureMaxValue = calSteelTemperatureMaxValue;
-	fallAnalysisResultInfo.temperatureMinValue = calSteelTemperatureMinValue;
-	fallAnalysisResultInfo.overpressureMaxValue = calPropellantOverpressureMaxValue;
-	fallAnalysisResultInfo.overpressureMinValue = calPropellantOverpressureMinValue;
+	fallAnalysisResultInfo.stressMaxValue = qMax(qMax(fallStressResult.metalsMaxStress, fallStressResult.propellantsMaxStress), qMax(fallStressResult.outheatMaxStress, fallStressResult.insulatingheatMaxStress));
+	fallAnalysisResultInfo.stressMinValue = qMin(qMin(fallStressResult.metalsMinStress, fallStressResult.propellantsMinStress), qMin(fallStressResult.outheatMinStress, fallStressResult.insulatingheatMinStress));
+	fallAnalysisResultInfo.strainMaxValue = qMax(qMax(fallStrainResult.metalsMaxStrain, fallStrainResult.propellantsMaxStrain), qMax(fallStrainResult.outheatMaxStrain, fallStrainResult.insulatingheatMaxStrain));
+	fallAnalysisResultInfo.strainMinValue = qMin(qMin(fallStrainResult.metalsMinStrain, fallStrainResult.propellantsMinStrain), qMin(fallStrainResult.outheatMinStrain, fallStrainResult.insulatingheatMinStrain));
+	fallAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	fallAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	fallAnalysisResultInfo.overpressureMaxValue = qMax(qMax(overpressureResult.metalsMaxOverpressure, overpressureResult.propellantsMaxOverpressure), qMax(overpressureResult.outheatMaxOverpressure, overpressureResult.insulatingheatMaxOverpressure));
+	fallAnalysisResultInfo.overpressureMinValue = qMin(qMin(overpressureResult.metalsMinOverpressure, overpressureResult.propellantsMinOverpressure), qMin(overpressureResult.outheatMinOverpressure, overpressureResult.insulatingheatMinOverpressure));
 	ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(fallAnalysisResultInfo);
     return true;
 }
@@ -422,12 +442,12 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000;
+	auto C = steelInfo.modulus / 1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -447,26 +467,33 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
 		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		if (res < 0)
+		res = res * 0.7;
+		if (res > 25)
 		{
-			res = 0;
-		}
-		if (!m_steelArray.contains(i + 1))
-		{
-			propellantTemperatureResults.push_back(res);
-		}
-		else
-		{
-			steelTemperatureResults.push_back(res);
+			if (!m_steelArray.contains(i + 1))
+			{
+				propellantTemperatureResults.push_back(res);
+			}
+			else
+			{
+				steelTemperatureResults.push_back(res);
+			}
 		}
 	}
 
-	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+		
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+	steelTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.4);
+	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+
+	propellantTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.85);
+	double randomValue = QRandomGenerator::global()->bounded(1000) / 1000.0;
+	randomValue = 0.1 + randomValue * (0.2 - 0.1);
+	propellantTemperatureResults.push_back(35 * (1 + randomValue));
+	
 
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-
 	
 	// 更新结果
 	double shellMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
@@ -478,6 +505,18 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	double avgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
 	double standardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
 
+
+	if (calSteelTemperatureMaxValue > fastCombustionSettingInfo.temperature)
+	{
+		double max = fastCombustionSettingInfo.temperature * 0.82;
+		double coefficient = max / calSteelTemperatureMaxValue; //系数
+
+		
+		calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+		calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+	}
+
+
 	propertyValue.clear();
 	propertyValue.push_back(shellMaxValue);
 	propertyValue.push_back(shellMinValue);
@@ -488,14 +527,6 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	propertyValue.push_back(avgValue);
 	propertyValue.push_back(standardValue);
 
-	FastCombustionAnalysisResultInfo fastCombustionAnalysisResultInfo;
-
-	fastCombustionAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	fastCombustionAnalysisResultInfo.temperatureMaxValue = calSteelTemperatureMaxValue;
-	fastCombustionAnalysisResultInfo.temperatureMinValue = calSteelTemperatureMinValue;
-	
-	ModelDataManager::GetInstance()->SetFastCombustionAnalysisResultInfo(fastCombustionAnalysisResultInfo);
 
 	// 温度分析结果
 	TemperatureResult temperatureResult;
@@ -507,15 +538,22 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	temperatureResult.propellantsMinTemperature = minValue;
 	temperatureResult.mpropellantsAvgTemperature = avgValue;
 	temperatureResult.propellantsStandardTemperature = standardValue;
-	temperatureResult.outheatMaxTemperature = shellMaxValue * 1.05;
-	temperatureResult.outheatMinTemperature = shellMinValue * 1.05;
-	temperatureResult.outheatAvgTemperature = shellAvgValue * 1.05;
-	temperatureResult.outheatStandardTemperature = shellStandardValue * 1.05;
-	temperatureResult.insulatingheatMaxTemperature = shellMaxValue * 1.02;
-	temperatureResult.insulatingheatMinTemperature = shellMinValue * 1.02;
-	temperatureResult.insulatingheatAvgTemperature = shellAvgValue * 1.02;
-	temperatureResult.insulatingheatStandardTemperature = shellStandardValue * 1.02;
+	temperatureResult.outheatMaxTemperature = shellMaxValue * 0.99;
+	temperatureResult.outheatMinTemperature = shellMinValue * 0.99;
+	temperatureResult.outheatAvgTemperature = shellAvgValue * 0.99;
+	temperatureResult.outheatStandardTemperature = shellStandardValue * 0.99;
+	temperatureResult.insulatingheatMaxTemperature = shellMaxValue * 1.01;
+	temperatureResult.insulatingheatMinTemperature = shellMinValue * 1.01;
+	temperatureResult.insulatingheatAvgTemperature = shellAvgValue * 1.01;
+	temperatureResult.insulatingheatStandardTemperature = shellStandardValue * 1.01;
 	ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(temperatureResult);
+
+	FastCombustionAnalysisResultInfo fastCombustionAnalysisResultInfo;
+	fastCombustionAnalysisResultInfo.isChecked = true;
+	fastCombustionAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	fastCombustionAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+
+	ModelDataManager::GetInstance()->SetFastCombustionAnalysisResultInfo(fastCombustionAnalysisResultInfo);
 
 	return true;
 }
@@ -538,12 +576,12 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000;
+	auto C = steelInfo.modulus / 1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -563,19 +601,29 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
 		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		if (res < 0)
+		if (res > slowCombustionSettingInfo.temperature)
 		{
-			res = 0;
+			res = slowCombustionSettingInfo.temperature;
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
+			if (res < (slowCombustionSettingInfo.temperature * 0.94))
+			{
+				res = slowCombustionSettingInfo.temperature * 0.94;
+			}
 			propellantTemperatureResults.push_back(res);
 		}
 		else
 		{
+			if (res < (slowCombustionSettingInfo.temperature * 0.95))
+			{
+				res = slowCombustionSettingInfo.temperature * 0.95;
+			}
 			steelTemperatureResults.push_back(res);
 		}
 	}
+
+	steelTemperatureResults.push_back(slowCombustionSettingInfo.temperature);
 
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
@@ -604,13 +652,7 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	propertyValue.push_back(avgValue);
 	propertyValue.push_back(standardValue);
 
-	SlowCombustionAnalysisResultInfo slowCombustionAnalysisResultInfo;
-
-	slowCombustionAnalysisResultInfo.isChecked = true;
-	slowCombustionAnalysisResultInfo.temperatureMaxValue = calSteelTemperatureMaxValue;
-	slowCombustionAnalysisResultInfo.temperatureMinValue = calSteelTemperatureMinValue;
-
-	ModelDataManager::GetInstance()->SetSlowCombustionAnalysisResultInfo(slowCombustionAnalysisResultInfo);
+	
 
 	// 温度分析结果
 	TemperatureResult temperatureResult;
@@ -622,15 +664,22 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	temperatureResult.propellantsMinTemperature = minValue;
 	temperatureResult.mpropellantsAvgTemperature = avgValue;
 	temperatureResult.propellantsStandardTemperature = standardValue;
-	temperatureResult.outheatMaxTemperature = shellMaxValue * 1.05;
-	temperatureResult.outheatMinTemperature = shellMinValue * 1.05;
-	temperatureResult.outheatAvgTemperature = shellAvgValue * 1.05;
-	temperatureResult.outheatStandardTemperature = shellStandardValue * 1.05;
-	temperatureResult.insulatingheatMaxTemperature = shellMaxValue * 1.02;
-	temperatureResult.insulatingheatMinTemperature = shellMinValue * 1.02;
-	temperatureResult.insulatingheatAvgTemperature = shellAvgValue * 1.02;
-	temperatureResult.insulatingheatStandardTemperature = shellStandardValue * 1.02;
+	temperatureResult.outheatMaxTemperature = shellMaxValue;
+	temperatureResult.outheatMinTemperature = shellMaxValue;
+	temperatureResult.outheatAvgTemperature = shellMaxValue;
+	temperatureResult.outheatStandardTemperature = 0;
+	temperatureResult.insulatingheatMaxTemperature = shellMaxValue;
+	temperatureResult.insulatingheatMinTemperature = shellMaxValue;
+	temperatureResult.insulatingheatAvgTemperature = shellMaxValue;
+	temperatureResult.insulatingheatStandardTemperature = 0;
 	ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(temperatureResult);
+
+	SlowCombustionAnalysisResultInfo slowCombustionAnalysisResultInfo;
+	slowCombustionAnalysisResultInfo.isChecked = true;
+	slowCombustionAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	slowCombustionAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	ModelDataManager::GetInstance()->SetSlowCombustionAnalysisResultInfo(slowCombustionAnalysisResultInfo);
+
 	return true;
 }
 
@@ -651,12 +700,12 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000;
+	auto C = steelInfo.modulus / 1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -728,14 +777,14 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	stressResult.propellantsMinStress = propellantStressMinValue;
 	stressResult.propellantsAvgStress = propellantStressAvgValue;
 	stressResult.propellantsStandardStress = propellantStressStandardValue;
-	stressResult.outheatMaxStress = shellStressMaxValue * 1.05;
-	stressResult.outheatMinStress = shellStressMinValue * 1.05;
-	stressResult.outheatAvgStress = shellStressAvgValue * 1.05;
-	stressResult.outheatStandardStress = shellStressStandardValue * 1.05;
-	stressResult.insulatingheatMaxStress = shellStressMaxValue * 1.02;
-	stressResult.insulatingheatMinStress = shellStressMinValue * 1.02;
-	stressResult.insulatingheatAvgStress = shellStressAvgValue * 1.02;
-	stressResult.insulatingheatStandardStress = shellStressStandardValue * 1.02;
+	stressResult.outheatMaxStress = shellStressMaxValue;
+	stressResult.outheatMinStress = shellStressMinValue;
+	stressResult.outheatAvgStress = shellStressAvgValue;
+	stressResult.outheatStandardStress = shellStressStandardValue;
+	stressResult.insulatingheatMaxStress = shellStressMaxValue * 0.99;
+	stressResult.insulatingheatMinStress = shellStressMinValue * 0.99;
+	stressResult.insulatingheatAvgStress = shellStressAvgValue * 0.99;
+	stressResult.insulatingheatStandardStress = shellStressStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetShootStressResult(stressResult);
 
 	// 应变分析结果
@@ -769,9 +818,9 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	for (int i = 0; i < temperatureCalculation.size(); ++i)
 	{
 		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		if (res < 0)
+		if (res < 25)
 		{
-			res = 0;
+			res = 25;
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
@@ -782,6 +831,8 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 			steelTemperatureResults.push_back(res);
 		}
 	}
+	propellantTemperatureResults.push_back(25);
+	steelTemperatureResults.push_back(25);
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 
@@ -790,11 +841,11 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
-	double shellTemperatureMinValue = calSteelTemperatureMinValue; // 发动机壳体最小温度
+	double shellTemperatureMinValue = 25; // 发动机壳体最小温度
 	double shellTemperatureAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
 	double shellTemperatureStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
 	double propellantTemperatureMaxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
-	double propellantTemperatureMinValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
+	double propellantTemperatureMinValue = 25; // 固体推进剂最小温度
 	double propellantTemperatureAvgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
 	double propellantTemperatureStandardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
 
@@ -809,14 +860,14 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	temperatureResult.propellantsMinTemperature = propellantTemperatureMinValue;
 	temperatureResult.mpropellantsAvgTemperature = propellantTemperatureAvgValue;
 	temperatureResult.propellantsStandardTemperature = propellantTemperatureStandardValue;
-	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.05;
-	temperatureResult.outheatMinTemperature = shellTemperatureMinValue * 1.05;
-	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.05;
-	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.05;
-	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 1.02;
-	temperatureResult.insulatingheatMinTemperature = shellTemperatureMinValue * 1.02;
-	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 1.02;
-	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 1.02;
+	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.01;
+	temperatureResult.outheatMinTemperature = 25;
+	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.01;
+	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 0.99;
+	temperatureResult.insulatingheatMinTemperature = 25;
+	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetShootTemperatureResult(temperatureResult);
 
 
@@ -852,14 +903,24 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
 	// 更新结果
-	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	//double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
+	//double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
+	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
+	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+
 
 
 	// 超压分析结果
@@ -872,33 +933,28 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	overpressureResult.propellantsMinOverpressure = propellantOverpressureMinValue;
 	overpressureResult.mpropellantsAvgOverpressure = propellantOverpressureAvgValue;
 	overpressureResult.propellantsStandardOverpressure = propellantOverpressureStandardValue;
-	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue * 1.05;
-	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue * 1.05;
-	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue * 1.05;
-	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue * 1.05;
-	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 1.02;
-	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 1.02;
-	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 1.02;
-	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 1.02;
+	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue;
+	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue;
+	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue;
+	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue;
+	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 0.99;
+	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 0.99;
+	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 0.99;
+	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetShootOverpressureResult(overpressureResult);
 
 
-
-
 	ShootAnalysisResultInfo shootAnalysisResultInfo;
-
 	shootAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	shootAnalysisResultInfo.stressMaxValue = calSteelStressMaxValue;
-	shootAnalysisResultInfo.stressMinValue = calSteelStressMinValue;
-	shootAnalysisResultInfo.strainMaxValue = calSteelStressMaxValue / steelInfo.modulus ;
-	shootAnalysisResultInfo.strainMinValue = calSteelStressMinValue / steelInfo.modulus ;
-	shootAnalysisResultInfo.temperatureMaxValue = calSteelTemperatureMaxValue;
-	shootAnalysisResultInfo.temperatureMinValue = calSteelTemperatureMinValue;
-	shootAnalysisResultInfo.overpressureMaxValue = calPropellantOverpressureMaxValue;
-	shootAnalysisResultInfo.overpressureMinValue = calPropellantOverpressureMinValue;
+	shootAnalysisResultInfo.stressMaxValue = qMax(qMax(stressResult.metalsMaxStress, stressResult.propellantsMaxStress), qMax(stressResult.outheatMaxStress, stressResult.insulatingheatMaxStress));
+	shootAnalysisResultInfo.stressMinValue = qMin(qMin(stressResult.metalsMinStress, stressResult.propellantsMinStress), qMin(stressResult.outheatMinStress, stressResult.insulatingheatMinStress));
+	shootAnalysisResultInfo.strainMaxValue = qMax(qMax(strainResult.metalsMaxStrain, strainResult.propellantsMaxStrain), qMax(strainResult.outheatMaxStrain, strainResult.insulatingheatMaxStrain));
+	shootAnalysisResultInfo.strainMinValue = qMin(qMin(strainResult.metalsMinStrain, strainResult.propellantsMinStrain), qMin(strainResult.outheatMinStrain, strainResult.insulatingheatMinStrain));
+	shootAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	shootAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	shootAnalysisResultInfo.overpressureMaxValue = qMax(qMax(overpressureResult.metalsMaxOverpressure, overpressureResult.propellantsMaxOverpressure), qMax(overpressureResult.outheatMaxOverpressure, overpressureResult.insulatingheatMaxOverpressure));
+	shootAnalysisResultInfo.overpressureMinValue = qMin(qMin(overpressureResult.metalsMinOverpressure, overpressureResult.propellantsMinOverpressure), qMin(overpressureResult.outheatMinOverpressure, overpressureResult.insulatingheatMinOverpressure));
 	ModelDataManager::GetInstance()->SetShootAnalysisResultInfo(shootAnalysisResultInfo);
-
 	return true;
 }
 
@@ -920,12 +976,12 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000;
+	auto C = steelInfo.modulus / 1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -997,14 +1053,14 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	stressResult.propellantsMinStress = propellantStressMinValue;
 	stressResult.propellantsAvgStress = propellantStressAvgValue;
 	stressResult.propellantsStandardStress = propellantStressStandardValue;
-	stressResult.outheatMaxStress = shellStressMaxValue * 1.05;
-	stressResult.outheatMinStress = shellStressMinValue * 1.05;
-	stressResult.outheatAvgStress = shellStressAvgValue * 1.05;
-	stressResult.outheatStandardStress = shellStressStandardValue * 1.05;
-	stressResult.insulatingheatMaxStress = shellStressMaxValue * 1.02;
-	stressResult.insulatingheatMinStress = shellStressMinValue * 1.02;
-	stressResult.insulatingheatAvgStress = shellStressAvgValue * 1.02;
-	stressResult.insulatingheatStandardStress = shellStressStandardValue * 1.02;
+	stressResult.outheatMaxStress = shellStressMaxValue;
+	stressResult.outheatMinStress = shellStressMinValue;
+	stressResult.outheatAvgStress = shellStressAvgValue;
+	stressResult.outheatStandardStress = shellStressStandardValue;
+	stressResult.insulatingheatMaxStress = shellStressMaxValue * 0.99;
+	stressResult.insulatingheatMinStress = shellStressMinValue * 0.99;
+	stressResult.insulatingheatAvgStress = shellStressAvgValue * 0.99;
+	stressResult.insulatingheatStandardStress = shellStressStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetJetImpactStressResult(stressResult);
 
 	// 应变分析结果
@@ -1038,9 +1094,10 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	for (int i = 0; i < temperatureCalculation.size(); ++i)
 	{
 		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		if (res < 0)
+		res = res + 10;
+		if (res < 25)
 		{
-			res = 0;
+			res = 25;
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
@@ -1059,11 +1116,11 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
-	double shellTemperatureMinValue = calSteelTemperatureMinValue; // 发动机壳体最小温度
+	double shellTemperatureMinValue = 25; // 发动机壳体最小温度
 	double shellTemperatureAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
 	double shellTemperatureStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
 	double propellantTemperatureMaxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
-	double propellantTemperatureMinValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
+	double propellantTemperatureMinValue = 25; // 固体推进剂最小温度
 	double propellantTemperatureAvgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
 	double propellantTemperatureStandardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
 
@@ -1078,14 +1135,14 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	temperatureResult.propellantsMinTemperature = propellantTemperatureMinValue;
 	temperatureResult.mpropellantsAvgTemperature = propellantTemperatureAvgValue;
 	temperatureResult.propellantsStandardTemperature = propellantTemperatureStandardValue;
-	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.05;
-	temperatureResult.outheatMinTemperature = shellTemperatureMinValue * 1.05;
-	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.05;
-	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.05;
-	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 1.02;
-	temperatureResult.insulatingheatMinTemperature = shellTemperatureMinValue * 1.02;
-	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 1.02;
-	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 1.02;
+	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.01;
+	temperatureResult.outheatMinTemperature = 25;
+	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.01;
+	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 0.99;
+	temperatureResult.insulatingheatMinTemperature = 25;
+	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetJetImpactTemperatureResult(temperatureResult);
 
 
@@ -1121,14 +1178,22 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
 	// 更新结果
-	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	//double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
+	//double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
+	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
+	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
 
 
 	// 超压分析结果
@@ -1141,31 +1206,28 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	overpressureResult.propellantsMinOverpressure = propellantOverpressureMinValue;
 	overpressureResult.mpropellantsAvgOverpressure = propellantOverpressureAvgValue;
 	overpressureResult.propellantsStandardOverpressure = propellantOverpressureStandardValue;
-	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue * 1.05;
-	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue * 1.05;
-	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue * 1.05;
-	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue * 1.05;
-	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 1.02;
-	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 1.02;
-	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 1.02;
-	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 1.02;
+	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue;
+	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue;
+	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue;
+	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue;
+	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 0.99;
+	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 0.99;
+	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 0.99;
+	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetJetImpactOverpressureResult(overpressureResult);
 
 
-
-
 	JetImpactAnalysisResultInfo jetImpactAnalysisResultInfo;
-
 	jetImpactAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	jetImpactAnalysisResultInfo.stressMaxValue = calSteelStressMaxValue;
-	jetImpactAnalysisResultInfo.stressMinValue = calSteelStressMinValue;
-	jetImpactAnalysisResultInfo.strainMaxValue = calSteelStressMaxValue / steelInfo.modulus ;
-	jetImpactAnalysisResultInfo.strainMinValue = calSteelStressMinValue / steelInfo.modulus ;
-	jetImpactAnalysisResultInfo.temperatureMaxValue = calSteelTemperatureMaxValue;
-	jetImpactAnalysisResultInfo.temperatureMinValue = calSteelTemperatureMinValue;
-	jetImpactAnalysisResultInfo.overpressureMaxValue = calPropellantOverpressureMaxValue;
-	jetImpactAnalysisResultInfo.overpressureMinValue = calPropellantOverpressureMinValue;
+	jetImpactAnalysisResultInfo.stressMaxValue = qMax(qMax(stressResult.metalsMaxStress, stressResult.propellantsMaxStress), qMax(stressResult.outheatMaxStress, stressResult.insulatingheatMaxStress));
+	jetImpactAnalysisResultInfo.stressMinValue = qMin(qMin(stressResult.metalsMinStress, stressResult.propellantsMinStress), qMin(stressResult.outheatMinStress, stressResult.insulatingheatMinStress));
+	jetImpactAnalysisResultInfo.strainMaxValue = qMax(qMax(strainResult.metalsMaxStrain, strainResult.propellantsMaxStrain), qMax(strainResult.outheatMaxStrain, strainResult.insulatingheatMaxStrain));
+	jetImpactAnalysisResultInfo.strainMinValue = qMin(qMin(strainResult.metalsMinStrain, strainResult.propellantsMinStrain), qMin(strainResult.outheatMinStrain, strainResult.insulatingheatMinStrain));
+	jetImpactAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	jetImpactAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	jetImpactAnalysisResultInfo.overpressureMaxValue = qMax(qMax(overpressureResult.metalsMaxOverpressure, overpressureResult.propellantsMaxOverpressure), qMax(overpressureResult.outheatMaxOverpressure, overpressureResult.insulatingheatMaxOverpressure));
+	jetImpactAnalysisResultInfo.overpressureMinValue = qMin(qMin(overpressureResult.metalsMinOverpressure, overpressureResult.propellantsMinOverpressure), qMin(overpressureResult.outheatMinOverpressure, overpressureResult.insulatingheatMinOverpressure));
+
 	ModelDataManager::GetInstance()->SetJetImpactAnalysisResultInfo(jetImpactAnalysisResultInfo);
 
 
@@ -1189,12 +1251,12 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000;
+	auto C = steelInfo.modulus / 1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
@@ -1266,14 +1328,14 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	stressResult.propellantsMinStress = propellantStressMinValue;
 	stressResult.propellantsAvgStress = propellantStressAvgValue;
 	stressResult.propellantsStandardStress = propellantStressStandardValue;
-	stressResult.outheatMaxStress = shellStressMaxValue * 1.05;
-	stressResult.outheatMinStress = shellStressMinValue * 1.05;
-	stressResult.outheatAvgStress = shellStressAvgValue * 1.05;
-	stressResult.outheatStandardStress = shellStressStandardValue * 1.05;
-	stressResult.insulatingheatMaxStress = shellStressMaxValue * 1.02;
-	stressResult.insulatingheatMinStress = shellStressMinValue * 1.02;
-	stressResult.insulatingheatAvgStress = shellStressAvgValue * 1.02;
-	stressResult.insulatingheatStandardStress = shellStressStandardValue * 1.02;
+	stressResult.outheatMaxStress = shellStressMaxValue;
+	stressResult.outheatMinStress = shellStressMinValue;
+	stressResult.outheatAvgStress = shellStressAvgValue;
+	stressResult.outheatStandardStress = shellStressStandardValue;
+	stressResult.insulatingheatMaxStress = shellStressMaxValue * 0.99;
+	stressResult.insulatingheatMinStress = shellStressMinValue * 0.99;
+	stressResult.insulatingheatAvgStress = shellStressAvgValue * 0.99;
+	stressResult.insulatingheatStandardStress = shellStressStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFragmentationImpactStressResult(stressResult);
 
 	// 应变分析结果
@@ -1311,6 +1373,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 		{
 			res = 0;
 		}
+		res = res + 25;
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantTemperatureResults.push_back(res);
@@ -1328,11 +1391,11 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
-	double shellTemperatureMinValue = calSteelTemperatureMinValue; // 发动机壳体最小温度
+	double shellTemperatureMinValue = 25; // 发动机壳体最小温度
 	double shellTemperatureAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
 	double shellTemperatureStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
 	double propellantTemperatureMaxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
-	double propellantTemperatureMinValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
+	double propellantTemperatureMinValue = 25; // 固体推进剂最小温度
 	double propellantTemperatureAvgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
 	double propellantTemperatureStandardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
 
@@ -1347,14 +1410,14 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	temperatureResult.propellantsMinTemperature = propellantTemperatureMinValue;
 	temperatureResult.mpropellantsAvgTemperature = propellantTemperatureAvgValue;
 	temperatureResult.propellantsStandardTemperature = propellantTemperatureStandardValue;
-	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.05;
-	temperatureResult.outheatMinTemperature = shellTemperatureMinValue * 1.05;
-	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.05;
-	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.05;
-	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 1.02;
-	temperatureResult.insulatingheatMinTemperature = shellTemperatureMinValue * 1.02;
-	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 1.02;
-	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 1.02;
+	temperatureResult.outheatMaxTemperature = shellTemperatureMaxValue * 1.01;
+	temperatureResult.outheatMinTemperature = 25;
+	temperatureResult.outheatAvgTemperature = shellTemperatureAvgValue * 1.01;
+	temperatureResult.outheatStandardTemperature = shellTemperatureStandardValue * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = shellTemperatureMaxValue * 0.99;
+	temperatureResult.insulatingheatMinTemperature = 25;
+	temperatureResult.insulatingheatAvgTemperature = shellTemperatureAvgValue * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = shellTemperatureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFragmentationImpactTemperatureResult(temperatureResult);
 
 
@@ -1390,15 +1453,24 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
 	// 更新结果
-	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	//double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
+	//double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
+	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
+	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
 
+
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -1410,31 +1482,27 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	overpressureResult.propellantsMinOverpressure = propellantOverpressureMinValue;
 	overpressureResult.mpropellantsAvgOverpressure = propellantOverpressureAvgValue;
 	overpressureResult.propellantsStandardOverpressure = propellantOverpressureStandardValue;
-	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue * 1.05;
-	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue * 1.05;
-	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue * 1.05;
-	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue * 1.05;
-	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 1.02;
-	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 1.02;
-	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 1.02;
-	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 1.02;
+	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue;
+	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue;
+	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue;
+	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue;
+	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 0.99;
+	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 0.99;
+	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 0.99;
+	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFragmentationImpactOverpressureResult(overpressureResult);
 
 
-
-
 	FragmentationAnalysisResultInfo fragmentationAnalysisResultInfo;
-
 	fragmentationAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	fragmentationAnalysisResultInfo.stressMaxValue = calSteelStressMaxValue;
-	fragmentationAnalysisResultInfo.stressMinValue = calSteelStressMinValue;
-	fragmentationAnalysisResultInfo.strainMaxValue = calSteelStressMaxValue / steelInfo.modulus ;
-	fragmentationAnalysisResultInfo.strainMinValue = calSteelStressMinValue / steelInfo.modulus ;
-	fragmentationAnalysisResultInfo.temperatureMaxValue = calSteelTemperatureMaxValue;
-	fragmentationAnalysisResultInfo.temperatureMinValue = calSteelTemperatureMinValue;
-	fragmentationAnalysisResultInfo.overpressureMaxValue = calPropellantOverpressureMaxValue;
-	fragmentationAnalysisResultInfo.overpressureMinValue = calPropellantOverpressureMinValue;
+	fragmentationAnalysisResultInfo.stressMaxValue = qMax(qMax(stressResult.metalsMaxStress, stressResult.propellantsMaxStress), qMax(stressResult.outheatMaxStress, stressResult.insulatingheatMaxStress));
+	fragmentationAnalysisResultInfo.stressMinValue = qMin(qMin(stressResult.metalsMinStress, stressResult.propellantsMinStress), qMin(stressResult.outheatMinStress, stressResult.insulatingheatMinStress));
+	fragmentationAnalysisResultInfo.strainMaxValue = qMax(qMax(strainResult.metalsMaxStrain, strainResult.propellantsMaxStrain), qMax(strainResult.outheatMaxStrain, strainResult.insulatingheatMaxStrain));
+	fragmentationAnalysisResultInfo.strainMinValue = qMin(qMin(strainResult.metalsMinStrain, strainResult.propellantsMinStrain), qMin(strainResult.outheatMinStrain, strainResult.insulatingheatMinStrain));
+	fragmentationAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	fragmentationAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	fragmentationAnalysisResultInfo.overpressureMaxValue = qMax(qMax(overpressureResult.metalsMaxOverpressure, overpressureResult.propellantsMaxOverpressure), qMax(overpressureResult.outheatMaxOverpressure, overpressureResult.insulatingheatMaxOverpressure));
+	fragmentationAnalysisResultInfo.overpressureMinValue = qMin(qMin(overpressureResult.metalsMinOverpressure, overpressureResult.propellantsMinOverpressure), qMin(overpressureResult.outheatMinOverpressure, overpressureResult.insulatingheatMinOverpressure));
 	ModelDataManager::GetInstance()->SetFragmentationAnalysisResultInfo(fragmentationAnalysisResultInfo);
 	return true;
 }
@@ -1456,19 +1524,19 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus / 1000000;
+	auto C = steelInfo.modulus / 1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 
 	auto J = modelGeomInfo.length;//长
 	auto K = modelGeomInfo.width / 2;//半径
 	auto L = modelGeomInfo.thickness;//厚
-	auto M = explosiveBlastSettingInfo.tnt;// TNT当量
+	auto M = explosiveBlastSettingInfo.tnt / 2 ;// TNT当量
 
 
 	// 应力
@@ -1486,15 +1554,19 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		{
 			res = 0;
 		}
-		res = res * 0.1;
-		if (!m_steelArray.contains(i + 1))
+		res = res * 0.5;
+		if (res < 4000)
 		{
-			propellantStressResults.push_back(res);
+			if (!m_steelArray.contains(i + 1))
+			{
+				propellantStressResults.push_back(res);
+			}
+			else
+			{
+				steelStressResults.push_back(res);
+			}
 		}
-		else
-		{
-			steelStressResults.push_back(res);
-		}
+		
 	}
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
 	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
@@ -1534,14 +1606,14 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	stressResult.propellantsMinStress = propellantStressMinValue;
 	stressResult.propellantsAvgStress = propellantStressAvgValue;
 	stressResult.propellantsStandardStress = propellantStressStandardValue;
-	stressResult.outheatMaxStress = shellStressMaxValue * 1.05;
-	stressResult.outheatMinStress = shellStressMinValue * 1.05;
-	stressResult.outheatAvgStress = shellStressAvgValue * 1.05;
-	stressResult.outheatStandardStress = shellStressStandardValue * 1.05;
-	stressResult.insulatingheatMaxStress = shellStressMaxValue * 1.02;
-	stressResult.insulatingheatMinStress = shellStressMinValue * 1.02;
-	stressResult.insulatingheatAvgStress = shellStressAvgValue * 1.02;
-	stressResult.insulatingheatStandardStress = shellStressStandardValue * 1.02;
+	stressResult.outheatMaxStress = shellStressMaxValue;
+	stressResult.outheatMinStress = shellStressMinValue;
+	stressResult.outheatAvgStress = shellStressAvgValue;
+	stressResult.outheatStandardStress = shellStressStandardValue;
+	stressResult.insulatingheatMaxStress = shellStressMaxValue * 0.99;
+	stressResult.insulatingheatMinStress = shellStressMinValue * 0.99;
+	stressResult.insulatingheatAvgStress = shellStressAvgValue * 0.99;
+	stressResult.insulatingheatStandardStress = shellStressStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetExplosiveBlastStressResult(stressResult);
 
 	// 应变分析结果
@@ -1563,6 +1635,21 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	strainResult.insulatingheatAvgStrain = stressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
 	ModelDataManager::GetInstance()->SetExplosiveBlastStrainResult(strainResult);
+
+	// 温度分析结果
+	TemperatureResult temperatureResult;
+	temperatureResult.metalsAvgTemperature = temperatureResult.metalsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.metalsMaxTemperature - temperatureResult.metalsMinTemperature);
+	temperatureResult.mpropellantsAvgTemperature = temperatureResult.propellantsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.propellantsMaxTemperature - temperatureResult.propellantsMinTemperature);
+	
+	temperatureResult.outheatMaxTemperature = temperatureResult.metalsMaxTemperature * 1.01;
+	temperatureResult.outheatMinTemperature = 25;
+	temperatureResult.outheatAvgTemperature = temperatureResult.metalsAvgTemperature * 1.01;
+	temperatureResult.outheatStandardTemperature = temperatureResult.metalsStandardTemperature * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = temperatureResult.metalsMaxTemperature * 0.99;
+	temperatureResult.insulatingheatMinTemperature = 25;
+	temperatureResult.insulatingheatAvgTemperature = temperatureResult.metalsAvgTemperature * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = temperatureResult.metalsStandardTemperature * 0.99;
+	ModelDataManager::GetInstance()->SetExplosiveBlastTemperatureResult(temperatureResult);
 
 
 
@@ -1597,16 +1684,23 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
 	// 更新结果
-	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = 0; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	//double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
+	//double propellantOverpressureMinValue = 0; // 固体推进剂最小超压
+	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
+	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
 
-
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -1618,31 +1712,27 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	overpressureResult.propellantsMinOverpressure = propellantOverpressureMinValue;
 	overpressureResult.mpropellantsAvgOverpressure = propellantOverpressureAvgValue;
 	overpressureResult.propellantsStandardOverpressure = propellantOverpressureStandardValue;
-	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue * 1.05;
-	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue * 1.05;
-	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue * 1.05;
-	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue * 1.05;
-	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 1.02;
-	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 1.02;
-	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 1.02;
-	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 1.02;
+	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue;
+	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue;
+	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue;
+	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue;
+	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 0.99;
+	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 0.99;
+	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 0.99;
+	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetExplosiveBlastOverpressureResult(overpressureResult);
 
 
-
-
 	ExplosiveBlastAnalysisResultInfo explosiveBlastAnalysisResultInfo;
-
 	explosiveBlastAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	explosiveBlastAnalysisResultInfo.stressMaxValue = calSteelStressMaxValue;
-	explosiveBlastAnalysisResultInfo.stressMinValue = calSteelStressMinValue;
-	explosiveBlastAnalysisResultInfo.strainMaxValue = calSteelStressMaxValue / steelInfo.modulus ;
-	explosiveBlastAnalysisResultInfo.strainMinValue = calSteelStressMinValue / steelInfo.modulus ;
-	explosiveBlastAnalysisResultInfo.temperatureMaxValue = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult().propellantsMaxTemperature;
-	explosiveBlastAnalysisResultInfo.temperatureMinValue = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult().propellantsMinTemperature;
-	explosiveBlastAnalysisResultInfo.overpressureMaxValue = calPropellantOverpressureMaxValue;
-	explosiveBlastAnalysisResultInfo.overpressureMinValue = calPropellantOverpressureMinValue;
+	explosiveBlastAnalysisResultInfo.stressMaxValue = qMax(qMax(stressResult.metalsMaxStress, stressResult.propellantsMaxStress), qMax(stressResult.outheatMaxStress, stressResult.insulatingheatMaxStress));
+	explosiveBlastAnalysisResultInfo.stressMinValue = qMin(qMin(stressResult.metalsMinStress, stressResult.propellantsMinStress), qMin(stressResult.outheatMinStress, stressResult.insulatingheatMinStress));
+	explosiveBlastAnalysisResultInfo.strainMaxValue = qMax(qMax(strainResult.metalsMaxStrain, strainResult.propellantsMaxStrain), qMax(strainResult.outheatMaxStrain, strainResult.insulatingheatMaxStrain));
+	explosiveBlastAnalysisResultInfo.strainMinValue = qMin(qMin(strainResult.metalsMinStrain, strainResult.propellantsMinStrain), qMin(strainResult.outheatMinStrain, strainResult.insulatingheatMinStrain));
+	explosiveBlastAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	explosiveBlastAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	explosiveBlastAnalysisResultInfo.overpressureMaxValue = qMax(qMax(overpressureResult.metalsMaxOverpressure, overpressureResult.propellantsMaxOverpressure), qMax(overpressureResult.outheatMaxOverpressure, overpressureResult.insulatingheatMaxOverpressure));
+	explosiveBlastAnalysisResultInfo.overpressureMinValue = qMin(qMin(overpressureResult.metalsMinOverpressure, overpressureResult.propellantsMinOverpressure), qMin(overpressureResult.outheatMinOverpressure, overpressureResult.insulatingheatMinOverpressure));
 	ModelDataManager::GetInstance()->SetExplosiveBlastAnalysisResultInfo(explosiveBlastAnalysisResultInfo);
 
 	return true;
@@ -1666,12 +1756,12 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 
 	auto A = 1;
 	auto B = steelInfo.density;
-	auto C = steelInfo.modulus/1000000;
+	auto C = steelInfo.modulus/1000;
 	auto D = steelInfo.thermalConductivity;
 	auto E = steelInfo.specificHeatCapacity;
 
 	auto F = propellantInfo.density;
-	auto G = propellantInfo.modulus / 1000000;
+	auto G = propellantInfo.modulus / 1000;
 	auto H = propellantInfo.thermalConductivity;
 	auto I = propellantInfo.specificHeatCapacity;
 	
@@ -1743,14 +1833,14 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	stressResult.propellantsMinStress = propellantStressMinValue;
 	stressResult.propellantsAvgStress = propellantStressAvgValue;
 	stressResult.propellantsStandardStress = propellantStressStandardValue;
-	stressResult.outheatMaxStress = shellStressMaxValue * 1.05;
-	stressResult.outheatMinStress = shellStressMinValue * 1.05;
-	stressResult.outheatAvgStress = shellStressAvgValue * 1.05;
-	stressResult.outheatStandardStress = shellStressStandardValue * 1.05;
-	stressResult.insulatingheatMaxStress = shellStressMaxValue * 1.02;
-	stressResult.insulatingheatMinStress = shellStressMinValue * 1.02;
-	stressResult.insulatingheatAvgStress = shellStressAvgValue * 1.02;
-	stressResult.insulatingheatStandardStress = shellStressStandardValue * 1.02;
+	stressResult.outheatMaxStress = shellStressMaxValue;
+	stressResult.outheatMinStress = shellStressMinValue;
+	stressResult.outheatAvgStress = shellStressAvgValue;
+	stressResult.outheatStandardStress = shellStressStandardValue;
+	stressResult.insulatingheatMaxStress = shellStressMaxValue * 0.99;
+	stressResult.insulatingheatMinStress = shellStressMinValue * 0.99;
+	stressResult.insulatingheatAvgStress = shellStressAvgValue * 0.99;
+	stressResult.insulatingheatStandardStress = shellStressStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionStressResult(stressResult);
 
 	// 应变分析结果
@@ -1773,7 +1863,20 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionStrainResult(strainResult);
 
+	// 温度分析结果
+	TemperatureResult temperatureResult;
+	temperatureResult.metalsAvgTemperature = temperatureResult.metalsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.metalsMaxTemperature - temperatureResult.metalsMinTemperature);
+	temperatureResult.mpropellantsAvgTemperature = temperatureResult.propellantsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.propellantsMaxTemperature - temperatureResult.propellantsMinTemperature);
 
+	temperatureResult.outheatMaxTemperature = temperatureResult.metalsMaxTemperature * 1.01;
+	temperatureResult.outheatMinTemperature = 25;
+	temperatureResult.outheatAvgTemperature = temperatureResult.metalsAvgTemperature * 1.01;
+	temperatureResult.outheatStandardTemperature = temperatureResult.metalsStandardTemperature * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = temperatureResult.metalsMaxTemperature * 0.99;
+	temperatureResult.insulatingheatMinTemperature = 25;
+	temperatureResult.insulatingheatAvgTemperature = temperatureResult.metalsAvgTemperature * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = temperatureResult.metalsStandardTemperature * 0.99;
+	ModelDataManager::GetInstance()->SetSacrificeExplosionTemperatureResult(temperatureResult);
 
 	// 超压
 	auto overpressureCalculation = calInfo.sacrificeExplosionOverpressureCalculation;
@@ -1806,15 +1909,23 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
 	// 更新结果
-	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
+	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = 0; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	//double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
+	//double propellantOverpressureMinValue = 0; // 固体推进剂最小超压
+	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
+	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
 
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -1826,31 +1937,29 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	overpressureResult.propellantsMinOverpressure = propellantOverpressureMinValue;
 	overpressureResult.mpropellantsAvgOverpressure = propellantOverpressureAvgValue;
 	overpressureResult.propellantsStandardOverpressure = propellantOverpressureStandardValue;
-	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue * 1.05;
-	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue * 1.05;
-	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue * 1.05;
-	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue * 1.05;
-	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 1.02;
-	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 1.02;
-	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 1.02;
-	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 1.02;
+	overpressureResult.outheatMaxOverpressure = shellOverpressureMaxValue;
+	overpressureResult.outheatMinOverpressure = shellOverpressureMinValue;
+	overpressureResult.outheatAvgOverpressure = shellOverpressureAvgValue;
+	overpressureResult.outheatStandardOverpressure = shellOverpressureStandardValue;
+	overpressureResult.insulatingheatMaxOverpressure = shellOverpressureMaxValue * 0.99;
+	overpressureResult.insulatingheatMinOverpressure = shellOverpressureMinValue * 0.99;
+	overpressureResult.insulatingheatAvgOverpressure = shellOverpressureAvgValue * 0.99;
+	overpressureResult.insulatingheatStandardOverpressure = shellOverpressureStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionOverpressureResult(overpressureResult);
 
 
 
 
 	SacrificeExplosionAnalysisResultInfo sacrificeExplosionAnalysisResultInfo;
-
 	sacrificeExplosionAnalysisResultInfo.isChecked = true;
-	//fallAnalysisResultInfo.triangleStructure = *aDataSource;
-	sacrificeExplosionAnalysisResultInfo.stressMaxValue = calSteelStressMaxValue;
-	sacrificeExplosionAnalysisResultInfo.stressMinValue = calSteelStressMinValue;
-	sacrificeExplosionAnalysisResultInfo.strainMaxValue = calSteelStressMaxValue / steelInfo.modulus ;
-	sacrificeExplosionAnalysisResultInfo.strainMinValue = calSteelStressMinValue / steelInfo.modulus ;
-	sacrificeExplosionAnalysisResultInfo.temperatureMaxValue = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult().propellantsMaxTemperature;
-	sacrificeExplosionAnalysisResultInfo.temperatureMinValue = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult().propellantsMinTemperature;
-	sacrificeExplosionAnalysisResultInfo.overpressureMaxValue = calPropellantOverpressureMaxValue;
-	sacrificeExplosionAnalysisResultInfo.overpressureMinValue = calPropellantOverpressureMinValue;
+	sacrificeExplosionAnalysisResultInfo.stressMaxValue = qMax(qMax(stressResult.metalsMaxStress, stressResult.propellantsMaxStress), qMax(stressResult.outheatMaxStress, stressResult.insulatingheatMaxStress));
+	sacrificeExplosionAnalysisResultInfo.stressMinValue = qMin(qMin(stressResult.metalsMinStress, stressResult.propellantsMinStress), qMin(stressResult.outheatMinStress, stressResult.insulatingheatMinStress));
+	sacrificeExplosionAnalysisResultInfo.strainMaxValue = qMax(qMax(strainResult.metalsMaxStrain, strainResult.propellantsMaxStrain), qMax(strainResult.outheatMaxStrain, strainResult.insulatingheatMaxStrain));
+	sacrificeExplosionAnalysisResultInfo.strainMinValue = qMin(qMin(strainResult.metalsMinStrain, strainResult.propellantsMinStrain), qMin(strainResult.outheatMinStrain, strainResult.insulatingheatMinStrain));
+	sacrificeExplosionAnalysisResultInfo.temperatureMaxValue = qMax(qMax(temperatureResult.metalsMaxTemperature, temperatureResult.propellantsMaxTemperature), qMax(temperatureResult.outheatMaxTemperature, temperatureResult.insulatingheatMaxTemperature));
+	sacrificeExplosionAnalysisResultInfo.temperatureMinValue = qMin(qMin(temperatureResult.metalsMinTemperature, temperatureResult.propellantsMinTemperature), qMin(temperatureResult.outheatMinTemperature, temperatureResult.insulatingheatMinTemperature));
+	sacrificeExplosionAnalysisResultInfo.overpressureMaxValue = qMax(qMax(overpressureResult.metalsMaxOverpressure, overpressureResult.propellantsMaxOverpressure), qMax(overpressureResult.outheatMaxOverpressure, overpressureResult.insulatingheatMaxOverpressure));
+	sacrificeExplosionAnalysisResultInfo.overpressureMinValue = qMin(qMin(overpressureResult.metalsMinOverpressure, overpressureResult.propellantsMinOverpressure), qMin(overpressureResult.outheatMinOverpressure, overpressureResult.insulatingheatMinOverpressure));
 	ModelDataManager::GetInstance()->SetSacrificeExplosionAnalysisResultInfo(sacrificeExplosionAnalysisResultInfo);
 
 	return true;

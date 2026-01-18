@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #pragma execution_character_set("utf-8")
 #include "OutheatPropertyWidget.h"
 #include <QTableWidget>
@@ -30,13 +30,13 @@ void OutheatPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(10);
+	m_tableWidget->setRowCount(11);
 	m_tableWidget->setColumnCount(4);
-	// Òş²Ø±íÍ·£¨Èç¹û²»ĞèÒªÏÔÊ¾±íÍ·ÎÄ×Ö£¬¿É¸ù¾İĞèÇó¾ö¶¨ÊÇ·ñÒş²Ø£©
+	// éšè—è¡¨å¤´ï¼ˆå¦‚æœä¸éœ€è¦æ˜¾ç¤ºè¡¨å¤´æ–‡å­—ï¼Œå¯æ ¹æ®éœ€æ±‚å†³å®šæ˜¯å¦éšè—ï¼‰
 	m_tableWidget->horizontalHeader()->setVisible(false);
 	m_tableWidget->verticalHeader()->setVisible(false);
 
-	// ÉèÖÃµÚÒ»ÁĞ¹Ì¶¨¿í¶È£¨ÀıÈç100ÏñËØ£©
+	// è®¾ç½®ç¬¬ä¸€åˆ—å›ºå®šå®½åº¦ï¼ˆä¾‹å¦‚100åƒç´ ï¼‰
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->resizeSection(0, 5);
@@ -44,57 +44,61 @@ void OutheatPropertyWidget::initWidget()
 	m_tableWidget->horizontalHeader()->resizeSection(3, 80);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
-	// ÈÃ±í¸ñ³äÂú²¼¾Ö£¬×Ô¶¯µ÷ÕûĞĞÁĞ´óĞ¡
+	// è®©è¡¨æ ¼å……æ»¡å¸ƒå±€ï¼Œè‡ªåŠ¨è°ƒæ•´è¡Œåˆ—å¤§å°
 	m_tableWidget->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 	m_tableWidget->setColumnWidth(0, 5);
-	// ºÏ²¢µÚÒ»ĞĞµÄµÚÒ»ºÍµÚ¶şÁĞ
+	// åˆå¹¶ç¬¬ä¸€è¡Œçš„ç¬¬ä¸€å’Œç¬¬äºŒåˆ—
 	m_tableWidget->setSpan(0, 0, 1, 2);
 
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "²ÄÁÏÊôĞÔ","²ÄÁÏÅÆºÅ", "ÃÜ¶È", "ÈÈÅòÕÍÏµÊı", "ÑîÊÏÄ£Á¿","²´ËÉ±È","Çü·şÇ¿¶È","¿¹À­Ç¿¶È","ÈÈµ¼ÂÊ","±ÈÈÈÈİ" };
+	QStringList labels = { "ææ–™å±æ€§","ææ–™ç‰Œå·", "å¯†åº¦", "çƒ­è†¨èƒ€ç³»æ•°", "å¼¹æ€§æ¨¡é‡","åˆ‡çº¿æ¨¡é‡","æ³Šæ¾æ¯”","å±ˆæœå¼ºåº¦","æŠ—æ‹‰å¼ºåº¦","çƒ­å¯¼ç‡","æ¯”çƒ­å®¹" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
-			serialItem = new QTableWidgetItem("²ÄÁÏÊôĞÔ");
+			serialItem = new QTableWidgetItem("ææ–™å±æ€§");
 		}
-		serialItem->setFlags(serialItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+		serialItem->setFlags(serialItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 		m_tableWidget->setItem(row, 0, serialItem);
 
 		QTableWidgetItem* labelItem = new QTableWidgetItem(labels[row]);
-		labelItem->setTextAlignment(Qt::AlignCenter); // ÎÄ±¾¾ÓÖĞ
-		labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+		labelItem->setTextAlignment(Qt::AlignCenter); // æ–‡æœ¬å±…ä¸­
+		labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 		m_tableWidget->setItem(row, 1, labelItem);
 
 		if (row != 0)
 		{
 			QTableWidgetItem* valueItem = new QTableWidgetItem("");
-			valueItem->setTextAlignment(Qt::AlignCenter); // ÎÄ±¾¾ÓÖĞ
-			valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+			valueItem->setTextAlignment(Qt::AlignCenter); // æ–‡æœ¬å±…ä¸­
+			valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 			m_tableWidget->setItem(row, 2, valueItem);
 		}
 
 	}
 
-	// ÉèÖÃÁĞ¿í¶È
+	// è®¾ç½®åˆ—å®½åº¦
 	QTableWidgetItem* colimnItem = m_tableWidget->item(3, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	// µ¥Î»ÁĞ
-	QStringList unitLabels = { " "," ", "kg/m^3", "/K", "MPa"," ","MPa","MPa","W/m K","J/kg K" };
+	// å•ä½åˆ—
+	QStringList unitLabels = { " "," ", "kg/m^3", "/â„ƒ", "MPa", "MPa"," ","MPa","MPa","W/(mâˆ™â„ƒ)","J/(kgâˆ™â„ƒ)" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
 			QTableWidgetItem* labelItem = new QTableWidgetItem(unitLabels[row]);
-			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 			m_tableWidget->setItem(row, 3, labelItem);
 		}
 
 	}
 
-	// ½«µÚ0ĞĞ0ÁĞµÄµ¥Ôª¸ñÎÄ±¾×ÖÌå¼Ó´Ö
+	QTableWidgetItem* unitColimnItem = m_tableWidget->item(10, 3);
+	int unitItemWidth = QFontMetrics(m_tableWidget->font()).width(unitColimnItem->text());
+	m_tableWidget->setColumnWidth(3, unitItemWidth + m_tableWidget->verticalHeader()->width());
+
+	// å°†ç¬¬0è¡Œ0åˆ—çš„å•å…ƒæ ¼æ–‡æœ¬å­—ä½“åŠ ç²—
 	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
@@ -102,9 +106,9 @@ void OutheatPropertyWidget::initWidget()
 		headerItem->setFont(font);
 	}
 
-	// µ¼Èë°´Å¥
+	// å¯¼å…¥æŒ‰é’®
 	QWidget* importWidget = new QWidget();
-	QPushButton* importButton = new QPushButton("µ¼Èë");
+	QPushButton* importButton = new QPushButton("å¯¼å…¥");
 	importButton->setFixedSize(100, 50);
 	importButton->setMinimumHeight(30);
 	importButton->setStyleSheet("QPushButton {"
@@ -121,16 +125,16 @@ void OutheatPropertyWidget::initWidget()
 		"}");
 	QVBoxLayout* importLayout = new QVBoxLayout(importWidget);
 	importLayout->addWidget(importButton);
-	importLayout->setAlignment(Qt::AlignCenter); // °´Å¥¾ÓÖĞÏÔÊ¾
+	importLayout->setAlignment(Qt::AlignCenter); // æŒ‰é’®å±…ä¸­æ˜¾ç¤º
 	importLayout->setMargin(0);
 	importWidget->setLayout(importLayout);
 	m_tableWidget->setCellWidget(0, 2, importWidget);
 
 	connect(importButton, &QPushButton::clicked, this, &OutheatPropertyWidget::showTableDialog);
-	// ºÏ²¢µÚÒ»ĞĞµÄµÚÈıºÍµÚËÄÁĞ
+	// åˆå¹¶ç¬¬ä¸€è¡Œçš„ç¬¬ä¸‰å’Œç¬¬å››åˆ—
 	m_tableWidget->setSpan(0, 2, 1, 2);
 
-	//ÎÄ±¾×ó¶ÔÆë
+	//æ–‡æœ¬å·¦å¯¹é½
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
 		for (int col = 0; col < m_tableWidget->columnCount(); ++col) {
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
@@ -148,9 +152,9 @@ void OutheatPropertyWidget::initWidget()
 		}
 	}
 
-	// ±éÀúµÚ2ÁĞ£¨Ë÷ÒıÎª1£©£¬½«²»¿É±à¼­µ¥Ôª¸ñ±³¾°ÉèÖÃÎªÇ³»ÒÉ«
+	// éå†ç¬¬2åˆ—ï¼ˆç´¢å¼•ä¸º1ï¼‰ï¼Œå°†ä¸å¯ç¼–è¾‘å•å…ƒæ ¼èƒŒæ™¯è®¾ç½®ä¸ºæµ…ç°è‰²
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
-		// ±éÀúĞĞ£¬ÉèÖÃĞĞ¸ß
+		// éå†è¡Œï¼Œè®¾ç½®è¡Œé«˜
 		m_tableWidget->setRowHeight(row, 10);
 		QTableWidgetItem* item = m_tableWidget->item(row, 2);
 		if (item && !(item->flags() & Qt::ItemIsEditable))
@@ -170,23 +174,23 @@ void OutheatPropertyWidget::showTableDialog() {
 
 
 	QDialog* dialog = new QDialog();
-	dialog->setWindowTitle("Íâ·ÀÈÈ²ÄÁÏ");
+	dialog->setWindowTitle("å¤–é˜²çƒ­ææ–™");
 	dialog->resize(1000, 500);
 	QVBoxLayout* layout = new QVBoxLayout(this);
 
 	QTableWidget* diaTableWidget = new QTableWidget();
-	// Òş²ØĞĞºÅ
+	// éšè—è¡Œå·
 	diaTableWidget->verticalHeader()->setVisible(false);
-	// Òş²ØÁĞºÅ
+	// éšè—åˆ—å·
 	diaTableWidget->horizontalHeader()->setVisible(false);
 	QDir dir;
-	QString filepath = dir.absoluteFilePath("src/database/Íâ·ÀÈÈ²ÄÁÏ.xlsx");
+	QString filepath = dir.absoluteFilePath("src/database/å¤–é˜²çƒ­ææ–™.xlsx");
 	int m_rowCount = 0;
 
 	if (!filepath.isEmpty()) {
 		QXlsx::Document xlsx(filepath);
-		int rowcount = xlsx.dimension().lastRow(); // »ñÈ¡×ÜĞĞÊı
-		int colcount = xlsx.dimension().lastColumn(); // »ñÈ¡×ÜÁĞÊı
+		int rowcount = xlsx.dimension().lastRow(); // è·å–æ€»è¡Œæ•°
+		int colcount = xlsx.dimension().lastColumn(); // è·å–æ€»åˆ—æ•°
 		m_rowCount = rowcount;
 
 		diaTableWidget->setRowCount(rowcount);
@@ -195,24 +199,24 @@ void OutheatPropertyWidget::showTableDialog() {
 		for (int row = 1; row <= rowcount; ++row) {
 			for (int col = 1; col <= colcount; ++col) {
 				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 				diaTableWidget->setItem(row - 1, col - 1, item);
 			}
 		}
 	}
 
-	// Ë½ÓĞ¿â
+	// ç§æœ‰åº“
 	auto ins = ModelDataManager::GetInstance();
 	UserInfo info = ins->GetUserInfo();
-	QString privateFilePath = dir.absoluteFilePath("src/database/" + info.username + "/Íâ·ÀÈÈ²ÄÁÏ.xlsx");
+	QString privateFilePath = dir.absoluteFilePath("src/database/" + info.username + "/å¤–é˜²çƒ­ææ–™.xlsx");
 
 
 	QFile file(privateFilePath);
 
 	if (!privateFilePath.isEmpty() && file.exists()) {
 		QXlsx::Document xlsx(privateFilePath);
-		int rowcount = xlsx.dimension().lastRow(); // »ñÈ¡×ÜĞĞÊı
-		int colcount = xlsx.dimension().lastColumn(); // »ñÈ¡×ÜÁĞÊı
+		int rowcount = xlsx.dimension().lastRow(); // è·å–æ€»è¡Œæ•°
+		int colcount = xlsx.dimension().lastColumn(); // è·å–æ€»åˆ—æ•°
 
 		diaTableWidget->setRowCount(m_rowCount + rowcount - 1);
 
@@ -226,7 +230,7 @@ void OutheatPropertyWidget::showTableDialog() {
 		}
 	}
 
-	//ÉèÖÃµã»÷ÊÂ¼ş£¬Ë«»÷µ¥Ôª¸ñ
+	//è®¾ç½®ç‚¹å‡»äº‹ä»¶ï¼ŒåŒå‡»å•å…ƒæ ¼
 	connect(diaTableWidget, &QTableWidget::cellDoubleClicked, this, [this, dialog, diaTableWidget](int row, int column) {
 		if (row != 0)
 		{
@@ -241,7 +245,7 @@ void OutheatPropertyWidget::showTableDialog() {
 				}
 				QTableWidgetItem* valueItem = new QTableWidgetItem(content);
 				valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-				valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+				valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 				valueItem->setBackground(QBrush(QColor(230, 230, 230)));
 				m_tableWidget->setItem(col, 2, valueItem);
 			}
@@ -252,37 +256,38 @@ void OutheatPropertyWidget::showTableDialog() {
 			info.density = m_tableWidget->item(2, 2)->text().toDouble();
 			info.thermalExpansion = m_tableWidget->item(3, 2)->text().toDouble();
 			info.modulus = m_tableWidget->item(4, 2)->text().toDouble();
-			info.poisonby = m_tableWidget->item(5, 2)->text().toDouble();
-			info.yieldStrength = m_tableWidget->item(6, 2)->text().toDouble();
-			info.tensileStrength = m_tableWidget->item(7, 2)->text().toDouble();
-			info.thermalConductivity = m_tableWidget->item(8, 2)->text().toDouble();
-			info.specificHeatCapacity = m_tableWidget->item(9, 2)->text().toDouble();
+			info.tangentModulus = m_tableWidget->item(5, 2)->text().toDouble();
+			info.poisonby = m_tableWidget->item(6, 2)->text().toDouble();
+			info.yieldStrength = m_tableWidget->item(7, 2)->text().toDouble();
+			info.tensileStrength = m_tableWidget->item(8, 2)->text().toDouble();
+			info.thermalConductivity = m_tableWidget->item(9, 2)->text().toDouble();
+			info.specificHeatCapacity = m_tableWidget->item(10, 2)->text().toDouble();
 			info.isChecked = true;
 			ins->SetOutheatPropertyInfo(info);
 
-			// ¸üĞÂicon
+			// æ›´æ–°icon
 			QWidget* parent = parentWidget();
 			while (parent) {
 				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 				if (gfParent)
 				{
 					gfParent->GetGFTreeModelWidget()->updataIcon();
-					// Ğ´ÈëÈÕÖ¾
+					// å†™å…¥æ—¥å¿—
 					QDateTime currentTime = QDateTime::currentDateTime();
 					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 					auto logWidget = gfParent->GetLogWidget();
 					auto textEdit = logWidget->GetTextEdit();
-					QString text = timeStr + "[ĞÅÏ¢]>¿ªÊ¼µ¼ÈëÍâ·ÀÈÈ²ÄÁÏÊı¾İ";
+					QString text = timeStr + "[ä¿¡æ¯]>å¼€å§‹å¯¼å…¥å¤–é˜²çƒ­ææ–™æ•°æ®";
 					textEdit->appendPlainText(text);
 					logWidget->update();
 
-					// ¹Ø¼ü£ºÇ¿ÖÆË¢ĞÂUI£¬È·±£ÈÕÖ¾Á¢¼´ÏÔÊ¾
+					// å…³é”®ï¼šå¼ºåˆ¶åˆ·æ–°UIï¼Œç¡®ä¿æ—¥å¿—ç«‹å³æ˜¾ç¤º
 					QApplication::processEvents();
-					// Ğ´ÈëÊı¾İ¿âÄ£¿é
+					// å†™å…¥æ•°æ®åº“æ¨¡å—
 					MaterialPropertyWidget* m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
 					QTableWidget* materialTableWid = m_materialPropertyWidget->GetQTableWidget();
 					QTableWidgetItem* valueItem = new QTableWidgetItem(value);
-					valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+					valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
 					valueItem->setBackground(QBrush(QColor(230, 230, 230)));
 					materialTableWid->setItem(3, 2, valueItem);
 					break;
@@ -296,13 +301,13 @@ void OutheatPropertyWidget::showTableDialog() {
 		dialog->close();
 
 		});
-	//Ë«»÷µ¥Ôª¸ñÑ¡ÖĞÒ»ĞĞ
-	 //ÉèÖÃÑ¡ÖĞÕûĞĞ
+	//åŒå‡»å•å…ƒæ ¼é€‰ä¸­ä¸€è¡Œ
+	 //è®¾ç½®é€‰ä¸­æ•´è¡Œ
 	diaTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
 	diaTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
 	layout->addWidget(diaTableWidget);
 	dialog->setLayout(layout);
-	dialog->setAttribute(Qt::WA_DeleteOnClose); // ¹Ø±ÕÊ±×Ô¶¯É¾³ı
+	dialog->setAttribute(Qt::WA_DeleteOnClose); // å…³é—­æ—¶è‡ªåŠ¨åˆ é™¤
 	dialog->exec();
 }

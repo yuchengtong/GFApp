@@ -33,11 +33,10 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 
 	qreal ad6 = (angularMax - angularMin) / 8;
 
-	// 设置标签
-	QStringList labels = {
-		"发动机壳体最大应力", "固体推进剂最大应力", "隔绝热最大应力", "外防热最大应力",
-		"发动机壳体最小应力", "固体推进剂最小应力", "固体推进剂最小应力", "隔绝热最小应力"
-	};
+	QStringList legendNames = { "应力","温度","超压","应变" };
+	QStringList unitList = { "MPa", "℃", "MPa", "no" };
+	QStringList tempUnitList = { "℃", "℃", "℃", "℃" };
+	QStringList scoreUunitList = { "no", "no", "no", "no" };
 
 	// 设置区域颜色和透明度
 	QColor stressColor(255, 0, 0, 50); // 红色
@@ -55,20 +54,20 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 	QVector<QStringList> labelGroups(4);
 
 	QStringList stressLabels;
-	stressLabels << "发动机壳体最大应力" << "固体推进剂最大应力" << "隔绝热最大应力" << "外防热最大应力"
-		<< "发动机壳体最小应力" << "固体推进剂最小应力" << "隔绝热最小应力" << "外防热最小应力";
+	stressLabels << "发动机壳体最大应力" << "固体推进剂最大应力" << "绝热层最大应力" << "外防热最大应力"
+		<< "发动机壳体最小应力" << "固体推进剂最小应力" << "绝热层最小应力" << "外防热最小应力";
 
 	QStringList tempLabels;
-	tempLabels << "发动机壳体最大温度" << "固体推进剂最大温度" << "隔绝热最大温度" << "外防热最大温度"
-		<< "发动机壳体最小温度" << "固体推进剂最小温度" << "隔绝热最小温度" << "外防热最小温度";
+	tempLabels << "发动机壳体最大温度" << "固体推进剂最大温度" << "绝热层最大温度" << "外防热最大温度"
+		<< "发动机壳体最小温度" << "固体推进剂最小温度" << "绝热层最小温度" << "外防热最小温度";
 
 	QStringList pressureLabels;
-	pressureLabels << "发动机壳体最大超压" << "固体推进剂最大超压" << "隔绝热最大超压" << "外防热最大超压"
-		<< "发动机壳体最小超压" << "固体推进剂最小超压" << "隔绝热最小超压" << "外防热最小超压";
+	pressureLabels << "发动机壳体最大超压" << "固体推进剂最大超压" << "绝热层最大超压" << "外防热最大超压"
+		<< "发动机壳体最小超压" << "固体推进剂最小超压" << "绝热层最小超压" << "外防热最小超压";
 
 	QStringList strainLabels;
-	strainLabels << "发动机壳体最大应变" << "固体推进剂最大应变" << "隔绝热最大应变" << "外防热最大应变"
-		<< "发动机壳体最小应变" << "固体推进剂最小应变" << "隔绝热最小应变" << "外防热最小应变";
+	strainLabels << "发动机壳体最大应变" << "固体推进剂最大应变" << "绝热层最大应变" << "外防热最大应变"
+		<< "发动机壳体最小应变" << "固体推进剂最小应变" << "绝热层最小应变" << "外防热最小应变";
 
 	labelGroups[0] = stressLabels;
 	labelGroups[1] = tempLabels;
@@ -77,7 +76,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 
 	QVector<double> standardValues = { 85, 65, 45, 80 };
 
-	m_polarChart1 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart1 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, unitList);
 	m_polarChart1->setTitle("跌落试验");
 	m_polarChart1->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	QChartView *chartView_1 = new QChartView(ui.graphicsView_1);
@@ -93,7 +92,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 	ui.graphicsView_1->setLayout(hLayout_1);
 
 	
-	m_polarChart2 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart2 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, tempUnitList);
 	m_polarChart2->setTitle("快速烤燃试验");
 	m_polarChart2->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	m_polarChart2->setActiveDatasetVisible(1);
@@ -110,7 +109,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 	ui.graphicsView_2->setLayout(hLayout_2);
 
 
-	m_polarChart3 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart3 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, tempUnitList);
 	m_polarChart3->setTitle("慢速烤燃试验");
 	m_polarChart3->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	m_polarChart3->setActiveDatasetVisible(1);
@@ -128,7 +127,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 
 
 	// 创建雷达图
-	m_polarChart4 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart4 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, unitList);
 	m_polarChart4->setTitle("枪击试验");
 	m_polarChart4->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	QChartView *chartView_4 = new QChartView(ui.graphicsView_4);
@@ -143,7 +142,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 	ui.graphicsView_4->setLayout(hLayout_4);
 
 	// 创建雷达图
-	m_polarChart5 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart5 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, unitList);
 	m_polarChart5->setTitle("射流冲击试验");
 	m_polarChart5->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	QChartView *chartView_5 = new QChartView(ui.graphicsView_5);
@@ -159,7 +158,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 
 	
 	// 创建雷达图
-	m_polarChart6 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart6 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, unitList);
 	m_polarChart6->setTitle("破片撞击试验");
 	m_polarChart6->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	QChartView *chartView_6 = new QChartView(ui.graphicsView_6);
@@ -175,7 +174,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 
 	
 	// 创建雷达图
-	m_polarChart7 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart7 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, unitList);
 	m_polarChart7->setTitle("爆炸冲击波试验");
 	m_polarChart7->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	QChartView *chartView_7 = new QChartView(ui.graphicsView_7);
@@ -190,7 +189,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 	ui.graphicsView_7->setLayout(hLayout_7);
 
 	// 创建雷达图
-	m_polarChart8 = new CustomPolarChart(datasets, labelGroups, standardValues);
+	m_polarChart8 = new CustomPolarChart(datasets, labelGroups, standardValues, legendNames, unitList);
 	m_polarChart8->setTitle("殉爆试验");
 	m_polarChart8->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	QChartView *chartView_8 = new QChartView(ui.graphicsView_8);
@@ -229,7 +228,7 @@ AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)
 
 	
 	labelGroups[0] = resultLabels;
-	m_resultchart = new CustomPolarChart(resultdatasets, labelGroups, standardValues);
+	m_resultchart = new CustomPolarChart(resultdatasets, labelGroups, standardValues, legendNames, scoreUunitList);
 	m_resultchart->setTitle("评分结果");
 	m_resultchart->setAnimationOptions(QChart::SeriesAnimations); // 添加动画效果
 	m_resultchart->renameLegend(0, "评分结果");
@@ -278,24 +277,28 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	auto ignitionTemperature = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().ignitionTemperature; // 推进剂发火温度
 	auto fireOverpressure = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().fireOverpressure; // 推进剂发火超压
 
+	QStringList unitList = { "MPa", "℃", "MPa", "no" };
+	QStringList tempUnitList = { "℃", "℃", "℃", "℃" };
+	QStringList scoreUunitList = { "no", "no", "no", "no" };
+
 	// 四组标签
 	QVector<QStringList> labelGroups(4);
 
 	QStringList stressLabels;
-	stressLabels << "发动机壳体最大应力" << "固体推进剂最大应力" << "隔绝热最大应力" << "外防热最大应力"
-		<< "发动机壳体最小应力" << "固体推进剂最小应力" << "隔绝热最小应力" << "外防热最小应力";
+	stressLabels << "发动机壳体最大应力" << "固体推进剂最大应力" << "绝热层最大应力" << "外防热最大应力"
+		<< "发动机壳体最小应力" << "固体推进剂最小应力" << "绝热层最小应力" << "外防热最小应力";
 
 	QStringList tempLabels;
-	tempLabels << "发动机壳体最大温度" << "固体推进剂最大温度" << "隔绝热最大温度" << "外防热最大温度"
-		<< "发动机壳体最小温度" << "固体推进剂最小温度" << "隔绝热最小温度" << "外防热最小温度";
+	tempLabels << "发动机壳体最大温度" << "固体推进剂最大温度" << "绝热层最大温度" << "外防热最大温度"
+		<< "发动机壳体最小温度" << "固体推进剂最小温度" << "绝热层最小温度" << "外防热最小温度";
 
 	QStringList pressureLabels;
-	pressureLabels << "发动机壳体最大超压" << "固体推进剂最大超压" << "隔绝热最大超压" << "外防热最大超压"
-		<< "发动机壳体最小超压" << "固体推进剂最小超压" << "隔绝热最小超压" << "外防热最小超压";
+	pressureLabels << "发动机壳体最大超压" << "固体推进剂最大超压" << "绝热层最大超压" << "外防热最大超压"
+		<< "发动机壳体最小超压" << "固体推进剂最小超压" << "绝热层最小超压" << "外防热最小超压";
 
 	QStringList strainLabels;
-	strainLabels << "发动机壳体最大应变" << "固体推进剂最大应变" << "隔绝热最大应变" << "外防热最大应变"
-		<< "发动机壳体最小应变" << "固体推进剂最小应变" << "隔绝热最小应变" << "外防热最小应变";
+	strainLabels << "发动机壳体最大应变" << "固体推进剂最大应变" << "绝热层最大应变" << "外防热最大应变"
+		<< "发动机壳体最小应变" << "固体推进剂最小应变" << "绝热层最小应变" << "外防热最小应变";
 
 	labelGroups[0] = stressLabels;
 	labelGroups[1] = tempLabels;
@@ -319,7 +322,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_FallStrainResult.metalsMinStrain,  m_FallStrainResult.propellantsMinStrain,  m_FallStrainResult.outheatMinStrain,  m_FallStrainResult.insulatingheatMinStrain, };
 	
 	QVector<double> m_fallStandardValues = { tensileStrength, ignitionTemperature, fireOverpressure, tensileStrength/ modulus };
-	m_polarChart1->updateDatasets(datasets1, labelGroups, m_fallStandardValues);
+	m_polarChart1->updateDatasets(datasets1, labelGroups, m_fallStandardValues, unitList);
 
 	
 
@@ -333,7 +336,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	datasets2[2] = datasets2[0];
 	datasets2[3] = datasets2[0];
 	QVector<double> m_FastCombustionTemperatureStandardValues = { ignitionTemperature, ignitionTemperature, ignitionTemperature, ignitionTemperature };
-	m_polarChart2->updateDatasets(datasets2, labelGroups, m_FastCombustionTemperatureStandardValues);
+	m_polarChart2->updateDatasets(datasets2, labelGroups, m_FastCombustionTemperatureStandardValues, tempUnitList);
 
 	// 慢烤计算结果
 	TemperatureResult m_SlowCombustionTemperatureResult = ins->GetSlowCombustionTemperatureResult();
@@ -345,7 +348,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	datasets3[2] = datasets3[0];
 	datasets3[3] = datasets3[0];
 	QVector<double>  m_SlowCombustionTemperatureStandardValues = { ignitionTemperature, ignitionTemperature, ignitionTemperature, ignitionTemperature };
-	m_polarChart3->updateDatasets(datasets3, labelGroups, m_SlowCombustionTemperatureStandardValues);
+	m_polarChart3->updateDatasets(datasets3, labelGroups, m_SlowCombustionTemperatureStandardValues, tempUnitList);
 
 	// 枪击计算结果
 	StressResult m_ShootStressResult = ins->GetShootStressResult();
@@ -364,7 +367,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_ShootStrainResult.metalsMinStrain,  m_ShootStrainResult.propellantsMinStrain,  m_ShootStrainResult.outheatMinStrain,  m_ShootStrainResult.insulatingheatMinStrain, };
 	
 	QVector<double> m_ShootStandardValues = { tensileStrength, ignitionTemperature, fireOverpressure, tensileStrength / modulus };
-	m_polarChart4->updateDatasets(datasets4, labelGroups, m_ShootStandardValues);
+	m_polarChart4->updateDatasets(datasets4, labelGroups, m_ShootStandardValues, unitList);
 
 	// 射流冲击计算结果
 	StressResult m_JetImpactStressResult = ins->GetJetImpactStressResult();
@@ -383,7 +386,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_JetImpactStrainResult.metalsMinStrain,  m_JetImpactStrainResult.propellantsMinStrain,  m_JetImpactStrainResult.outheatMinStrain,  m_JetImpactStrainResult.insulatingheatMinStrain, };
 	
 	QVector<double> m_JetImpactStandardValues = { tensileStrength, ignitionTemperature, fireOverpressure, tensileStrength / modulus };
-	m_polarChart5->updateDatasets(datasets5, labelGroups, m_JetImpactStandardValues);
+	m_polarChart5->updateDatasets(datasets5, labelGroups, m_JetImpactStandardValues, unitList);
 
 	// 破片撞击计算结果
 	StressResult m_FragmentationImpactStressResult = ins->GetFragmentationImpactStressResult();
@@ -402,7 +405,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_FragmentationImpactStrainResult.metalsMinStrain,  m_FragmentationImpactStrainResult.propellantsMinStrain,  m_FragmentationImpactStrainResult.outheatMinStrain,  m_FragmentationImpactStrainResult.insulatingheatMinStrain, };
 	
 	QVector<double> m_FragmentationImpactStandardValues = { tensileStrength, ignitionTemperature, fireOverpressure, tensileStrength / modulus };
-	m_polarChart6->updateDatasets(datasets6, labelGroups, m_FragmentationImpactStandardValues);
+	m_polarChart6->updateDatasets(datasets6, labelGroups, m_FragmentationImpactStandardValues, unitList);
 
 	// 爆炸冲击波计算结果
 	StressResult m_ExplosiveBlastStressResult = ins->GetExplosiveBlastStressResult();
@@ -421,7 +424,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_ExplosiveBlastStrainResult.metalsMinStrain,  m_ExplosiveBlastStrainResult.propellantsMinStrain,  m_ExplosiveBlastStrainResult.outheatMinStrain,  m_ExplosiveBlastStrainResult.insulatingheatMinStrain, };
 	
 	QVector<double> m_ExplosiveBlastStandardValues = { tensileStrength, ignitionTemperature, fireOverpressure, tensileStrength / modulus };
-	m_polarChart7->updateDatasets(datasets7, labelGroups, m_ExplosiveBlastStandardValues);
+	m_polarChart7->updateDatasets(datasets7, labelGroups, m_ExplosiveBlastStandardValues, unitList);
 
 	// 殉爆计算结果
 	StressResult m_SacrificeExplosionStressResult = ins->GetSacrificeExplosionStressResult();
@@ -440,21 +443,30 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	 m_SacrificeExplosionStrainResult.metalsMinStrain,  m_SacrificeExplosionStrainResult.propellantsMinStrain,  m_SacrificeExplosionStrainResult.outheatMinStrain,  m_SacrificeExplosionStrainResult.insulatingheatMinStrain, };
 	
 	QVector<double> m_SacrificeExplosionStandardValues = { tensileStrength, ignitionTemperature, fireOverpressure, tensileStrength / modulus };
-	m_polarChart8->updateDatasets(datasets8, labelGroups, m_SacrificeExplosionStandardValues);
+	m_polarChart8->updateDatasets(datasets8, labelGroups, m_SacrificeExplosionStandardValues, unitList);
 
 
 	// 评分结果
 	auto pointResult = ins->GetPointResult();
 	QStringList resultLabels;
 
-	resultLabels << "跌落试验：" + QString::number(pointResult.fallPoint);
+	/*resultLabels << "跌落试验：" + QString::number(pointResult.fallPoint);
 	resultLabels << "快速烤燃试验：" + QString::number(pointResult.fastCombustionPoint);
 	resultLabels << "慢速烤燃试验：" + QString::number(pointResult.slowCombustionPoint);
 	resultLabels << "枪击试验：" + QString::number(pointResult.shootPoint);
 	resultLabels << "射流冲击试验：" + QString::number(pointResult.jetImpactPoint);
 	resultLabels << "破片撞击试验：" + QString::number(pointResult.fragmentationImpactPoint);
 	resultLabels << "爆炸冲击波试验：" + QString::number(pointResult.explosiveBlastPoint);
-	resultLabels << "殉爆试验：" + QString::number(pointResult.sacrificeExplosionPoint);
+	resultLabels << "殉爆试验：" + QString::number(pointResult.sacrificeExplosionPoint);*/
+
+	resultLabels << "跌落试验";
+	resultLabels << "快速烤燃试验";
+	resultLabels << "慢速烤燃试验";
+	resultLabels << "枪击试验";
+	resultLabels << "射流冲击试验";
+	resultLabels << "破片撞击试验";
+	resultLabels << "爆炸冲击波试验";
+	resultLabels << "殉爆试验";
 
 	QVector<QStringList> resultLabelGroups;
 	resultLabelGroups.append(resultLabels);
@@ -467,7 +479,7 @@ void AuxiliaryAnalysisWidget::updateAllData()
 	resultdatasets[3] = resultdatasets[0];
 
 	QVector<double> standardValues = { 0, 0, 0, 0 };
-	m_resultchart->updateDatasets(resultdatasets, resultLabelGroups, standardValues);
+	m_resultchart->updateDatasets(resultdatasets, resultLabelGroups, standardValues, scoreUunitList);
 
 
 

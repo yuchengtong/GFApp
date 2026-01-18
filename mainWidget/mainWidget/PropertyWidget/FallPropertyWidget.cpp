@@ -43,7 +43,7 @@ void FallPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","跌落高度", "跌落姿态", "跌落钢板硬度", "温度传感器数量","冲击波超压传感器数量","风速","壳体破损判断","推进剂发火温度判断","推进剂发火压力判断" };
+	QStringList labels = { "属性","测试项目","跌落高度", "跌落姿态", "跌落钢板硬度", "温度观测点数量","应力观测点数量","风速","壳体破损判断","推进剂发火温度判断","推进剂发火压力判断" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {

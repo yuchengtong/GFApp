@@ -43,7 +43,7 @@ void StressResultWidget::initWidget()
 	setLayout(vlayout);
 
 	QStringList labels = { "计算结果", "发动机壳体最大应力", "发动机壳体最小应力", "发动机壳体平均应力", "发动机壳体应力标准差","固体推进剂最大应力","固体推进剂最小应力","固体推进剂平均应力","固体推进剂应力标准差" ,
-									  "隔绝热最大应力", "隔绝热最小应力", "隔绝热平均应力", "隔绝热应力标准差","外防热最大应力","外防热最小应力","外防热平均应力","外防热应力标准差" };
+									  "绝热层最大应力", "绝热层最小应力", "绝热层平均应力", "绝热层应力标准差","外防热最大应力","外防热最小应力","外防热平均应力","外防热应力标准差" };
 	for (int row = 0; row < labels.size(); ++row) {
 
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
@@ -120,7 +120,8 @@ void StressResultWidget::initWidget()
 
 }
 
-void StressResultWidget::updateData(double shellMaxValue, double shellMinValue, double shellAvgValue, double shellStandardValue, double maxValue, double minValue, double avgValue, double standardValue)
+void StressResultWidget::updateData(double shellMaxValue, double shellMinValue, double shellAvgValue, double shellStandardValue, double maxValue, double minValue, double avgValue, double standardValue,
+	double outheatMaxValue, double outheatMinValue, double outheatAvgValue, double outheatStandardValue, double insulatingheatMaxValue, double insulatingheatMinValue, double insulatingheatAvgValue, double insulatingheatStandardValue)
 {
 	QTableWidgetItem* shellMaxValueItem = new QTableWidgetItem(QString::number(shellMaxValue));
 	shellMaxValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
@@ -171,49 +172,49 @@ void StressResultWidget::updateData(double shellMaxValue, double shellMinValue, 
 	m_tableWidget->setItem(8, 2, standardValueItem);
 
 
-	QTableWidgetItem* outheatMaxValueItem = new QTableWidgetItem(QString::number(shellMaxValue * 1.05));
+	QTableWidgetItem* outheatMaxValueItem = new QTableWidgetItem(QString::number(insulatingheatMaxValue));
 	outheatMaxValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	outheatMaxValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	outheatMaxValueItem->setFlags(outheatMaxValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(9, 2, outheatMaxValueItem);
 
-	QTableWidgetItem* outheatMinValueItem = new QTableWidgetItem(QString::number(shellMinValue * 1.05));
+	QTableWidgetItem* outheatMinValueItem = new QTableWidgetItem(QString::number(insulatingheatMinValue));
 	outheatMinValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	outheatMinValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	outheatMinValueItem->setFlags(outheatMinValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(10, 2, outheatMinValueItem);
 
-	QTableWidgetItem* outheatAvgValueItem = new QTableWidgetItem(QString::number(shellAvgValue * 1.05));
+	QTableWidgetItem* outheatAvgValueItem = new QTableWidgetItem(QString::number(insulatingheatAvgValue));
 	outheatAvgValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	outheatAvgValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	outheatAvgValueItem->setFlags(outheatAvgValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(11, 2, outheatAvgValueItem);
 
-	QTableWidgetItem* outheatStandardValueItem = new QTableWidgetItem(QString::number(shellStandardValue * 1.05));
+	QTableWidgetItem* outheatStandardValueItem = new QTableWidgetItem(QString::number(insulatingheatStandardValue));
 	outheatStandardValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	outheatStandardValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	outheatStandardValueItem->setFlags(outheatStandardValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(12, 2, outheatStandardValueItem);
 
-	QTableWidgetItem* insulatingheatMaxValueItem = new QTableWidgetItem(QString::number(shellMaxValue * 1.02));
+	QTableWidgetItem* insulatingheatMaxValueItem = new QTableWidgetItem(QString::number(outheatMaxValue));
 	insulatingheatMaxValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	insulatingheatMaxValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	insulatingheatMaxValueItem->setFlags(insulatingheatMaxValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(13, 2, insulatingheatMaxValueItem);
 
-	QTableWidgetItem* insulatingheatMinValueItem = new QTableWidgetItem(QString::number(shellMinValue * 1.02));
+	QTableWidgetItem* insulatingheatMinValueItem = new QTableWidgetItem(QString::number(outheatMinValue));
 	insulatingheatMinValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	insulatingheatMinValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	insulatingheatMinValueItem->setFlags(insulatingheatMinValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(14, 2, insulatingheatMinValueItem);
 
-	QTableWidgetItem* insulatingheatAvgValueItem = new QTableWidgetItem(QString::number(shellAvgValue * 1.02));
+	QTableWidgetItem* insulatingheatAvgValueItem = new QTableWidgetItem(QString::number(outheatAvgValue));
 	insulatingheatAvgValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	insulatingheatAvgValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	insulatingheatAvgValueItem->setFlags(insulatingheatAvgValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	m_tableWidget->setItem(15, 2, insulatingheatAvgValueItem);
 
-	QTableWidgetItem* insulatingheatStandardValueItem = new QTableWidgetItem(QString::number(shellStandardValue * 1.02));
+	QTableWidgetItem* insulatingheatStandardValueItem = new QTableWidgetItem(QString::number(outheatStandardValue));
 	insulatingheatStandardValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 	insulatingheatStandardValueItem->setBackground(QBrush(QColor(230, 230, 230)));
 	insulatingheatStandardValueItem->setFlags(insulatingheatStandardValueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑

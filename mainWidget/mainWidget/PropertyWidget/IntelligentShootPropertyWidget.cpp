@@ -43,7 +43,7 @@ void IntelligentShootPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","智能分析对象","发动机壳体厚度最小值", "发动机壳体厚度最大值", "发动机壳体厚度设计水平", "撞击速度最小值","撞击速度最大值","撞击速度设计水平" };
+	QStringList labels = { "属性","智能分析对象","发动机壳体厚度最小值", "发动机壳体厚度最大值", "发动机壳体厚度设计水平", "枪击速度最小值","枪击速度最大值","枪击速度设计水平" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
