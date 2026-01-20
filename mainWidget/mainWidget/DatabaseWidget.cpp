@@ -54,7 +54,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	treeWidget->clear();
 
 	QTreeWidgetItem* material = new QTreeWidgetItem(treeWidget);
-	material->setText(0, "材料库");
+	material->setText(0, "材料数据库");
 	material->setIcon(0, QIcon(":/src/data_metals.svg"));
 
 	QTreeWidgetItem* metals = new QTreeWidgetItem();
@@ -74,7 +74,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	
 
 	QTreeWidgetItem* propellants = new QTreeWidgetItem();
-	propellants->setText(0, "推进剂材料");
+	propellants->setText(0, "含能材料");
 	propellants->setIcon(0, QIcon(":/src/data_propellants.svg"));
 	QTreeWidgetItem* outheat = new QTreeWidgetItem();
 	outheat->setText(0, "外防热材料");
@@ -91,7 +91,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	material->addChild(insulatingheat);
 
 	QTreeWidgetItem* judgment = new QTreeWidgetItem(treeWidget);
-	judgment->setText(0, "评判标准数据库");
+	judgment->setText(0, "标准数据库");
 	judgment->setIcon(0, QIcon(":/src/data_judgment.svg"));
 	//QTreeWidgetItem* standard = new QTreeWidgetItem();
 	//standard->setText(0, "国军标数据库");
@@ -105,7 +105,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	calculation->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* fallAnalysisData = new QTreeWidgetItem();
-	fallAnalysisData->setText(0, "1.跌落试验");
+	fallAnalysisData->setText(0, "1.跌落模型");
 	fallAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* zero = new QTreeWidgetItem();
@@ -124,31 +124,31 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 
 
 	QTreeWidgetItem* fastCombustionAnalysisData = new QTreeWidgetItem();
-	fastCombustionAnalysisData->setText(0, "2.快速烤燃试验");
+	fastCombustionAnalysisData->setText(0, "2.快速烤燃模型");
 	fastCombustionAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* slowCombustionAnalysisData = new QTreeWidgetItem();
-	slowCombustionAnalysisData->setText(0, "3.慢速烤燃试验");
+	slowCombustionAnalysisData->setText(0, "3.慢速烤燃模型");
 	slowCombustionAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* shootAnalysisData = new QTreeWidgetItem();
-	shootAnalysisData->setText(0, "4.枪击试验");
+	shootAnalysisData->setText(0, "4.枪击模型");
 	shootAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* jetImpactAnalysisData = new QTreeWidgetItem();
-	jetImpactAnalysisData->setText(0, "5.射流冲击试验");
+	jetImpactAnalysisData->setText(0, "5.射流冲击模型");
 	jetImpactAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* fragmentationImpactAnalysisData = new QTreeWidgetItem();
-	fragmentationImpactAnalysisData->setText(0, "6.破片撞击试验");
+	fragmentationImpactAnalysisData->setText(0, "6.破片撞击模型");
 	fragmentationImpactAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* explosiveBlastAnalysisData = new QTreeWidgetItem();
-	explosiveBlastAnalysisData->setText(0, "7.爆炸冲击波试验");
+	explosiveBlastAnalysisData->setText(0, "7.爆炸冲击波模型");
 	explosiveBlastAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	QTreeWidgetItem* sacrificeExplosionAnalysisData = new QTreeWidgetItem();
-	sacrificeExplosionAnalysisData->setText(0, "8.殉爆试验");
+	sacrificeExplosionAnalysisData->setText(0, "8.殉爆模型");
 	sacrificeExplosionAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
 	calculation->addChild(fallAnalysisData);
@@ -357,7 +357,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 		QString sheetName = nullptr;
 		QDir dir;
 
-		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库" || currentDataaseType == "金属材料")
+		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料数据库" || currentDataaseType == "金属材料")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体金属材料.xlsx");
 			sheetName = "壳体金属材料";
@@ -367,7 +367,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体非金属材料.xlsx");
 			sheetName = "壳体非金属材料";
 		}
-		else if (currentDataaseType == "推进剂材料")
+		else if (currentDataaseType == "含能材料")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/推进剂材料.xlsx");
 			sheetName = "推进剂材料";
@@ -392,7 +392,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 			filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
 			sheetName = "用户数据库";
 		}
-		else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
+		else if (currentDataaseType == "1.跌落模型" || currentDataaseType == "计算模型数据库")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-0.xlsx");
 			sheetName = "跌落试验-0";
@@ -412,42 +412,42 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-90.xlsx");
 			sheetName = "跌落试验-90";
 		}
-		else if (currentDataaseType == "2.快速烤燃试验")
+		else if (currentDataaseType == "2.快速烤燃模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-快速烤燃试验.xlsx");
 			sheetName = "快速烤燃试验";
 		}
-		else if (currentDataaseType == "3.慢速烤燃试验")
+		else if (currentDataaseType == "3.慢速烤燃模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-慢速烤燃试验.xlsx");
 			sheetName = "慢速烤燃试验";
 		}
-		else if (currentDataaseType == "4.枪击试验")
+		else if (currentDataaseType == "4.枪击模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-枪击试验.xlsx");
 			sheetName = "枪击试验";
 		}
-		else if (currentDataaseType == "5.射流冲击试验")
+		else if (currentDataaseType == "5.射流冲击模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-射流冲击试验.xlsx");
 			sheetName = "射流冲击试验";
 		}
-		else if (currentDataaseType == "6.破片撞击试验")
+		else if (currentDataaseType == "6.破片撞击模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-破片撞击试验.xlsx");
 			sheetName = "破片撞击试验";
 		}
-		else if (currentDataaseType == "7.爆炸冲击波试验")
+		else if (currentDataaseType == "7.爆炸冲击波模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-爆炸冲击波试验.xlsx");
 			sheetName = "爆炸冲击波试验";
 		}
-		else if (currentDataaseType == "8.殉爆试验")
+		else if (currentDataaseType == "8.殉爆模型")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-殉爆试验.xlsx");
 			sheetName = "殉爆试验";
 		}
-		else if (currentDataaseType == "评判标准数据库")
+		else if (currentDataaseType == "标准数据库")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/标准数据库.xlsx");
 			sheetName = "标准数据库";
@@ -536,7 +536,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 	QDir dir;
 	currentDataaseType = item->text(0);
 	//QMessageBox::information(nullptr, "信息", currentDataaseType);
-	if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库" || currentDataaseType == "金属材料")
+	if (currentDataaseType == "壳体材料" || currentDataaseType == "材料数据库" || currentDataaseType == "金属材料")
 	{
 		filepath = dir.absoluteFilePath("src/database/壳体金属材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
@@ -546,7 +546,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		filepath = dir.absoluteFilePath("src/database/壳体非金属材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "推进剂材料")
+	else if (currentDataaseType == "含能材料")
 	{
 		filepath = dir.absoluteFilePath("src/database/推进剂材料.xlsx");
 		ui.queryTitle->setText("材料牌号");
@@ -571,7 +571,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
 		ui.queryTitle->setText("账号");
 	}
-	else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
+	else if (currentDataaseType == "1.跌落模型" || currentDataaseType == "计算模型数据库")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
 		ui.queryTitle->setText("材料牌号");
@@ -591,42 +591,42 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-90.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "2.快速烤燃试验")
+	else if (currentDataaseType == "2.快速烤燃模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-快速烤燃试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "3.慢速烤燃试验")
+	else if (currentDataaseType == "3.慢速烤燃模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-慢速烤燃试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "4.枪击试验")
+	else if (currentDataaseType == "4.枪击模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-枪击试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "5.射流冲击试验")
+	else if (currentDataaseType == "5.射流冲击模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-射流冲击试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "6.破片撞击试验")
+	else if (currentDataaseType == "6.破片撞击模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-破片撞击试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "7.爆炸冲击波试验")
+	else if (currentDataaseType == "7.爆炸冲击波模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-爆炸冲击波试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "8.殉爆试验")
+	else if (currentDataaseType == "8.殉爆模型")
 	{
 		filepath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "评判标准数据库")
+	else if (currentDataaseType == "标准数据库")
 	{
 		filepath = dir.absoluteFilePath("src/database/标准数据库.xlsx");
 		ui.queryTitle->setText("材料牌号");
@@ -684,7 +684,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 			}
 		}
 	}
-	if (currentDataaseType != "用户数据库" || currentDataaseType != "评判标准数据库")
+	if (currentDataaseType != "用户数据库" || currentDataaseType != "标准数据库")
 	{
 		// 私有库
 		auto ins = ModelDataManager::GetInstance();
@@ -700,7 +700,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		}
 		QString privateFilePath = "";
 
-		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料库" || currentDataaseType == "金属材料")
+		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料数据库" || currentDataaseType == "金属材料")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/壳体金属材料.xlsx");
 		}
@@ -708,7 +708,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/壳体非金属材料.xlsx");
 		}
-		else if (currentDataaseType == "推进剂材料")
+		else if (currentDataaseType == "含能材料")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/推进剂材料.xlsx");
 		}
@@ -724,7 +724,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/碳纤维壳体材料.xlsx");
 		}
-		else if (currentDataaseType == "1.跌落试验" || currentDataaseType == "计算模型数据库")
+		else if (currentDataaseType == "1.跌落模型" || currentDataaseType == "计算模型数据库")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-0.xlsx");
 		}
@@ -740,31 +740,31 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-跌落试验-90.xlsx");
 		}
-		else if (currentDataaseType == "2.快速烤燃试验")
+		else if (currentDataaseType == "2.快速烤燃模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-快速烤燃试验.xlsx");
 		}
-		else if (currentDataaseType == "3.慢速烤燃试验")
+		else if (currentDataaseType == "3.慢速烤燃模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-慢速烤燃试验.xlsx");
 		}
-		else if (currentDataaseType == "4.枪击试验")
+		else if (currentDataaseType == "4.枪击模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-枪击试验.xlsx");
 		}
-		else if (currentDataaseType == "5.射流冲击试验")
+		else if (currentDataaseType == "5.射流冲击模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-射流冲击试验.xlsx");
 		}
-		else if (currentDataaseType == "6.破片撞击试验")
+		else if (currentDataaseType == "6.破片撞击模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-破片撞击试验.xlsx");
 		}
-		else if (currentDataaseType == "7.爆炸冲击波试验")
+		else if (currentDataaseType == "7.爆炸冲击波模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-爆炸冲击波试验.xlsx");
 		}
-		else if (currentDataaseType == "8.殉爆试验")
+		else if (currentDataaseType == "8.殉爆模型")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/计算模型-殉爆试验.xlsx");
 		}

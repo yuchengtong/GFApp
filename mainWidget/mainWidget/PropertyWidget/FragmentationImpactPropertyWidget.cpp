@@ -86,7 +86,7 @@ void FragmentationImpactPropertyWidget::initWidget()
 
 
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("ÆÆÆ¬×²»÷ÊÔÑé");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("ÆÆÆ¬×²»÷°²È«ÐÔ·ÖÎö");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 
 	QTableWidgetItem* impactVelocityValueItem = new QTableWidgetItem(m_impactVelocityValue);

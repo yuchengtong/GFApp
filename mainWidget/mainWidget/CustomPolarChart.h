@@ -1,11 +1,16 @@
 #pragma once
 
+#include <QChart>
 #include <QtCharts/QPolarChart>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QCategoryAxis>
 #include <QtCharts/QValueAxis>
-#include <QtWidgets/QGraphicsPolygonItem>
+#include <QGraphicsPolygonItem>
+#include <QPushButton>  
+#include <QGraphicsProxyWidget> 
+#include <QFileDialog>
+
 
 using namespace QtCharts;
 
@@ -33,11 +38,20 @@ public:
     // 修改图例名称
     void renameLegend(int index, const QString& newName);
 
+    void checkTitleAndShowExportBtn();
+    void initExportButton(); // 初始化导出按钮
+    void updateExportBtnPos(); // 更新导出按钮位置
+
+    // 导出报告
+    void exportWord();
+
 signals:
     void datasetChanged(int index);
 
 private slots:
     void handleLegendClicked();
+
+    void onExportBtnClicked(); // 导出按钮点击事件
 
 private:
     void setupChart();
@@ -68,4 +82,7 @@ private:
     QGraphicsEllipseItem* m_standardCircleItem = nullptr;  // 标准值参考圈
     QGraphicsTextItem* m_unitTextItem; // 右上角单位文本控件
     int m_activeIndex = 0;
+
+    QPushButton* m_exportBtn = nullptr; // 导出按钮
+    QGraphicsProxyWidget* m_exportBtnProxy = nullptr; // 图表中嵌入按钮的代理控件
 };

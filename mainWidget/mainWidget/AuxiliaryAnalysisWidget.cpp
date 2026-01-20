@@ -10,6 +10,8 @@
 #include <QHBoxLayout>
 #include <QGraphicsView>
 #include <QLegend>
+#include "WordExporter.h"
+#include "WordExporterWorker.h"
 
 
 AuxiliaryAnalysisWidget::AuxiliaryAnalysisWidget(QWidget *parent)

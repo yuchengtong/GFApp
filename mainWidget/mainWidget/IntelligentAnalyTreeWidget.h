@@ -36,10 +36,18 @@ private slots:
 
 	qreal calculateMinValue(const QVector<QPointF>& series, bool isX);
 
+	void exportWord(const QString& directory,
+		const QMap<QString, QVariant>& textData,
+		const QMap<QString, QString>& imageWidgets,
+		const QMap<QString, QVector<QVector<QVariant>>>& tableData);
+
+
 
 private:
 	QMenu* contextMenu; // ÓÒ¼ü²Ëµ¥¶ÔÏó
 
 	GFTreeWidget* treeWidget = nullptr;
+
+	//WordExporter* wordExporter = nullptr;
 };
 

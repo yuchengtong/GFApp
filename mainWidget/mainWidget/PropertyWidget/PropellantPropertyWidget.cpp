@@ -170,7 +170,7 @@ void PropellantPropertyWidget::initWidget()
 void PropellantPropertyWidget::showTableDialog() 
 {
 	QDialog *dialog = new QDialog();
-	dialog->setWindowTitle("推进剂材料");
+	dialog->setWindowTitle("含能材料");
 	dialog->resize(1000, 500);
 	QVBoxLayout *layout = new QVBoxLayout(this);
 
@@ -283,7 +283,7 @@ void PropellantPropertyWidget::showTableDialog()
 					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 					auto logWidget = gfParent->GetLogWidget();
 					auto textEdit = logWidget->GetTextEdit();
-					QString text = timeStr + "[信息]>开始导入推进剂材料数据";
+					QString text = timeStr + "[信息]>开始导入含能材料数据";
 					textEdit->appendPlainText(text);
 					logWidget->update();
 

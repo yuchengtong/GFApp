@@ -18,9 +18,46 @@
 #include "ModelDataManager.h"
 #include "ProgressDialog.h"
 #include "ParamAnalyCalculateWorker.h"
+#include "WordExporter.h"
+#include "WordExporterWorker.h"
+
+QVector<QVector<QVariant>> tableWidToVariantVector(QTableWidget* tableWidget)
+{
+	QVector<QVector<QVariant>> result;
+	if (!tableWidget || tableWidget->rowCount() == 0) {
+		return result; // 空表格直接返回
+	}
+
+	int rowCount = tableWidget->rowCount();
+	int colCount = tableWidget->columnCount();
+
+	// 2. 遍历数据行和列，填充表格数据
+	for (int row = 0; row < rowCount; ++row) {
+		QVector<QVariant> dataRow;
+		for (int col = 0; col < colCount; ++col) {
+			// 获取单元格项，为空时用空QVariant填充（避免空指针）
+			QTableWidgetItem* cellItem = tableWidget->item(row, col);
+			if (cellItem) {
+				// 优先获取单元格的原始数据（如果设置过setData），没有则用文本
+				if (cellItem->data(Qt::DisplayRole).isValid()) {
+					dataRow.append(cellItem->data(Qt::DisplayRole));
+				}
+				else {
+					dataRow.append(cellItem->text());
+				}
+			}
+			else {
+				dataRow.append(QVariant("")); // 空单元格填充空字符串，避免数据缺失
+			}
+		}
+		result.append(dataRow);
+	}
+
+	return result;
+}
 
 // 壳体点位
-QVector<int> m_array = { 1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36 };
+QVector<int> m_array = { 1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36, 37, 38, 39, 40 };
 
 double calculateForm(const QString& formula,
 	double B, double C, double D, double E,
@@ -120,6 +157,8 @@ double calculateForm(const QString& formula,
 IntelligentAnalyTreeWidget::IntelligentAnalyTreeWidget(QWidget* parent)
 	:QWidget(parent)
 {
+	//wordExporter = new WordExporter(this);
+
 	QIcon error_icon(":/src/Error.svg");
 	QIcon checked_icon(":/src/Checked.svg");
 	QIcon icon(":/src/data_calculation.svg");
@@ -140,49 +179,49 @@ IntelligentAnalyTreeWidget::IntelligentAnalyTreeWidget(QWidget* parent)
 	rootItem->setIcon(0, icon);
 
 	QTreeWidgetItem* fallNode = new QTreeWidgetItem(rootItem);
-	fallNode->setText(0, "跌落试验智能分析");
+	fallNode->setText(0, "跌落安全性智能分析");
 	fallNode->setData(0, Qt::UserRole, "FallIntelligentAnaly");
 	fallNode->setCheckState(0, Qt::Unchecked);
 	fallNode->setIcon(0, icon);
 
 	QTreeWidgetItem* fastCombustionNode = new QTreeWidgetItem(rootItem);
-	fastCombustionNode->setText(0, "快速烤燃试验试验智能分析");
+	fastCombustionNode->setText(0, "快速烤燃安全性智能分析");
 	fastCombustionNode->setData(0, Qt::UserRole, "FastCombustionIntelligentAnaly");
 	fastCombustionNode->setCheckState(0, Qt::Unchecked);
 	fastCombustionNode->setIcon(0, icon);
 
 	QTreeWidgetItem* slowCombustionNode = new QTreeWidgetItem(rootItem);
-	slowCombustionNode->setText(0, "慢速烤燃试验智能分析");
+	slowCombustionNode->setText(0, "慢速烤燃安全性智能分析");
 	slowCombustionNode->setData(0, Qt::UserRole, "SlowCombustionIntelligentAnaly");
 	slowCombustionNode->setCheckState(0, Qt::Unchecked);
 	slowCombustionNode->setIcon(0, icon);
 
 	QTreeWidgetItem* shootNode = new QTreeWidgetItem(rootItem);
-	shootNode->setText(0, "枪击试验智能分析");
+	shootNode->setText(0, "枪击安全性智能分析");
 	shootNode->setData(0, Qt::UserRole, "ShootIntelligentAnaly");
 	shootNode->setCheckState(0, Qt::Unchecked);
 	shootNode->setIcon(0, icon);
 
 	QTreeWidgetItem* jetImpactNode = new QTreeWidgetItem(rootItem);
-	jetImpactNode->setText(0, "射流冲击试验智能分析");
+	jetImpactNode->setText(0, "射流冲击安全性智能分析");
 	jetImpactNode->setData(0, Qt::UserRole, "JetImpactIntelligentAnaly");
 	jetImpactNode->setCheckState(0, Qt::Unchecked);
 	jetImpactNode->setIcon(0, icon);
 
 	QTreeWidgetItem* fragmentationImpactNode = new QTreeWidgetItem(rootItem);
-	fragmentationImpactNode->setText(0, "破片撞击试验智能分析");
+	fragmentationImpactNode->setText(0, "破片撞击安全性智能分析");
 	fragmentationImpactNode->setData(0, Qt::UserRole, "FragmentationImpactIntelligentAnaly");
 	fragmentationImpactNode->setCheckState(0, Qt::Unchecked);
 	fragmentationImpactNode->setIcon(0, icon);
 
 	QTreeWidgetItem* explosiveBlastNode = new QTreeWidgetItem(rootItem);
-	explosiveBlastNode->setText(0, "爆炸冲击波试验智能分析");
+	explosiveBlastNode->setText(0, "爆炸冲击波安全性智能分析");
 	explosiveBlastNode->setData(0, Qt::UserRole, "ExplosiveBlastIntelligentAnaly");
 	explosiveBlastNode->setCheckState(0, Qt::Unchecked);
 	explosiveBlastNode->setIcon(0, icon);
 
 	QTreeWidgetItem* sacrificeExplosionNode = new QTreeWidgetItem(rootItem);
-	sacrificeExplosionNode->setText(0, "殉爆试验智能分析");
+	sacrificeExplosionNode->setText(0, "殉爆安全性智能分析");
 	sacrificeExplosionNode->setData(0, Qt::UserRole, "SacrificeExplosionIntelligentAnaly");
 	sacrificeExplosionNode->setCheckState(0, Qt::Unchecked);
 	sacrificeExplosionNode->setIcon(0, icon);
@@ -244,6 +283,8 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 		contextMenu = new QMenu(this);
 		QAction* calAction = new QAction("计算", this);
 
+		QAction* exportAction = new QAction("导出", this);
+
 		int childCount = item->childCount();
 		QList<QTreeWidgetItem*> checkedChildItems;
 		for (int i = 0; i < childCount; ++i) {
@@ -259,8 +300,8 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 				IntelligentAnalyWidget* paParent = dynamic_cast<IntelligentAnalyWidget*>(parent);
 				if (paParent)
 				{
-					
-					
+
+
 
 
 					// 创建进度对话框
@@ -305,12 +346,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 									{
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 										auto J = fallInfo.high * 1000;//跌落高度
@@ -363,9 +404,13 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
+												if (res < 25)
 												{
-													res = 0;
+													res = 25;
+												}
+												if (fallInfo.angle == 0 && res > 30)
+												{
+													res = 28.589;
 												}
 												if (!m_array.contains(i + 1))
 												{
@@ -488,12 +533,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -503,7 +548,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto M = fastCombustionSettingInfo.temperature;//环境温度
 
 										auto temperatureCalculation = calInfo.fastCombustionCalculation;
-										
+
 										for (size_t i = 1; i < 10; i++)
 										{
 											// 更新计算数值
@@ -514,9 +559,10 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
+												res = res * 0.7;
+												if (res <= 25)
 												{
-													res = 0;
+													res = 25;
 												}
 												if (!m_array.contains(i + 1))
 												{
@@ -527,8 +573,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													steelTemperatureResults.push_back(res);
 												}
 											}
-
+											
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+											propellantTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.85);
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
 											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
@@ -542,12 +589,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -563,23 +610,25 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
 											M = tableWidget->item(i, 2)->text().toDouble();//环境温度
-											
+
 											std::vector<double> steelTemperatureResults;
 											std::vector<double> propellantTemperatureResults;
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
+												if (res > M)
 												{
-													res = 0;
+													res = M;
 												}
 												if (!m_array.contains(i + 1))
 												{
-													propellantTemperatureResults.push_back(res);
+													
+													propellantTemperatureResults.push_back(M);
 												}
 												else
 												{
-													steelTemperatureResults.push_back(res);
+													
+													steelTemperatureResults.push_back(M);
 												}
 											}
 
@@ -598,12 +647,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -656,9 +705,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
+												if (res < 25)
 												{
-													res = 0;
+													res = 25;
 												}
 												if (!m_array.contains(i + 1))
 												{
@@ -684,12 +733,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -739,9 +788,10 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
+												res = res + 10;
+												if (res < 25)
 												{
-													res = 0;
+													res = 25;
 												}
 												if (!m_array.contains(i + 1))
 												{
@@ -766,12 +816,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -826,6 +876,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
+												res = res + 25;
 												if (!m_array.contains(i + 1))
 												{
 													propellantTemperatureResults.push_back(res);
@@ -852,19 +903,19 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
 										auto J = modelGeomInfo.length;//长
 										auto K = modelGeomInfo.width / 2;//半径
 										auto L = modelGeomInfo.thickness;//厚
-										auto M = explosiveBlastSettingInfo.tnt;// TNT当量
+										auto M = explosiveBlastSettingInfo.tnt / 2;// TNT当量
 
 										// 应力
 										auto stressCalculation = calInfo.explosiveBlastStressCalculation;
@@ -885,14 +936,17 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 0;
 												}
-												res = res * 0.1;
-												if (!m_array.contains(i + 1))
+												res = res * 0.5;
+												if (res < 4000)
 												{
-													propellantStressResults.push_back(res);
-												}
-												else
-												{
-													steelStressResults.push_back(res);
+													if (!m_array.contains(i + 1))
+													{
+														propellantStressResults.push_back(res);
+													}
+													else
+													{
+														steelStressResults.push_back(res);
+													}
 												}
 											}
 											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
@@ -900,7 +954,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
 											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
-											
+
 											// 温度
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
 											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
@@ -918,12 +972,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto A = 1;
 										auto B = steelInfo.density;
-										auto C = steelInfo.modulus / 1000000;
+										auto C = steelInfo.modulus / 1000;
 										auto D = steelInfo.thermalConductivity;
 										auto E = steelInfo.specificHeatCapacity;
 
 										auto F = propellantInfo.density;
-										auto G = propellantInfo.modulus / 1000000;
+										auto G = propellantInfo.modulus / 1000;
 										auto H = propellantInfo.thermalConductivity;
 										auto I = propellantInfo.specificHeatCapacity;
 
@@ -971,15 +1025,15 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											// 温度
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
 											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
-											
+
 										}
 									}
 								}
 							}
-							
+
 							auto m_tableStackWidget = paParent->getStackedWidget();
 							m_tableStackWidget->setCurrentWidget(fallTableWidget);
-							
+
 							if (!success)
 							{
 								QMessageBox::warning(this, "计算失败", msg);
@@ -1005,8 +1059,50 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 					parent = parent->parentWidget();
 				}
 			}
-		});
+			});
+
+		connect(exportAction, &QAction::triggered, this, [item, this]() {
+			QWidget* parent = parentWidget();
+			while (parent)
+			{
+				IntelligentAnalyWidget* paParent = dynamic_cast<IntelligentAnalyWidget*>(parent);
+				if (paParent)
+				{
+					WordExporter* wordExporter = new WordExporter();
+
+
+					QString directory = QFileDialog::getExistingDirectory(nullptr,
+						tr("选择文件夹"),
+						"/home", // 默认的起始目录
+						QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks); // 选项
+					if (!directory.isEmpty()) {
+
+						// 截图结果云图
+						QString chartPath = "src/template/IntelligentAnaly-chart.png";
+						QDir chartDir(chartPath);
+						wordExporter->captureWidgetToFile(paParent->getChartView(), chartPath);
+
+						QMap<QString, QString> imagePaths;
+						imagePaths.insert("chart", QDir(chartPath).absolutePath());
+						// 表格
+						QMap<QString, QVector<QVector<QVariant>>> tableData;
+						QVector<QVector<QVariant>> fallTable = tableWidToVariantVector(paParent->getFallTableWidget());
+						tableData["falldata"] = fallTable;
+
+						QMap<QString, QVariant> datatext;
+
+						exportWord(directory, datatext, imagePaths, tableData); // 直接在Lambda中传递参数
+					}
+					break;
+				}
+				else
+				{
+					parent = parent->parentWidget();
+				}
+			}
+			});
 		contextMenu->addAction(calAction); // 将动作添加到菜单中
+		contextMenu->addAction(exportAction); // 将动作添加到菜单中
 		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
 	}
 }
@@ -1058,8 +1154,8 @@ void IntelligentAnalyTreeWidget::updateChartData(QChartView* chartView, QChart* 
 	qreal maxY = calculateMaxValue(data, false);
 	qreal minX = calculateMinValue(data, true);
 	qreal minY = calculateMinValue(data, false);
-	m_axisX->setRange(minX*0.9, maxX*1.1);
-	m_axisY->setRange(minY*0.9, maxY*1.1);
+	m_axisX->setRange(minX * 0.9, maxX * 1.1);
+	m_axisY->setRange(minY * 0.9, maxY * 1.1);
 	m_axisX->setTickCount(4);
 	m_axisY->setTickCount(4);
 
@@ -1099,4 +1195,51 @@ qreal IntelligentAnalyTreeWidget::calculateMinValue(const QVector<QPointF>& seri
 
 	// 确保最小值不小于0
 	return qMax(minVal, 0.0);
+}
+
+
+void IntelligentAnalyTreeWidget::exportWord(const QString& directory,
+	const QMap<QString, QVariant>& textData,
+	const QMap<QString, QString>& imageWidgets,
+	const QMap<QString, QVector<QVector<QVariant>>>& tableData)
+{
+	// 创建进度对话框
+	ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", this);
+	progressDialog->show();
+
+	// 创建工作线程和工作对象
+	WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/数据智能分析报告.docx").absolutePath(), directory + "/数据智能分析报告.docx", textData, imageWidgets, tableData);
+	QThread* wordExporterThread = new QThread();
+	wordExporterWorker->moveToThread(wordExporterThread);
+
+	// 连接信号槽
+	connect(wordExporterThread, &QThread::started, wordExporterWorker, &WordExporterWorker::DoWork);
+	connect(wordExporterWorker, &WordExporterWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
+	connect(wordExporterWorker, &WordExporterWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
+	connect(progressDialog, &ProgressDialog::Canceled, wordExporterWorker, &WordExporterWorker::RequestInterruption);
+
+	// 处理导入结果
+	connect(wordExporterWorker, &WordExporterWorker::WorkFinished, this,
+		[=](bool success, const QString& msg) {
+
+
+			if (success)
+			{
+			}
+			else if (!success)
+			{
+				QMessageBox::warning(this, "导出失败", msg);
+			}
+			// 清理资源
+			progressDialog->close();
+			wordExporterThread->quit();
+			wordExporterThread->wait();
+			wordExporterWorker->deleteLater();
+			wordExporterThread->deleteLater();
+			progressDialog->deleteLater();
+		});
+
+	// 启动线程
+	wordExporterThread->start();
+
 }

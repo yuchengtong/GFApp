@@ -26,8 +26,8 @@ void GFTreeWidgetItemDelegate::paint(QPainter* painter, const QStyleOptionViewIt
 
 
 	QString text = index.data(Qt::DisplayRole).toString();
-	if (index.column() == 0&&(text== "工况设置"|| text =="1.跌落试验"|| text == "2.快速烤燃试验" || text == "3.慢速烤燃试验" || 
-		text == "4.枪击试验"|| text == "5.射流冲击试验"|| text == "6.破片撞击试验" || text == "7.爆炸冲击波试验" || text == "8.殉爆试验"))
+	if (index.column() == 0&&(text== "安全特性参数分析"|| text =="1.跌落安全性分析"|| text == "2.快速烤燃安全性分析" || text == "3.慢速烤燃安全性分析" || 
+		text == "4.枪击安全性分析"|| text == "5.射流冲击安全性分析"|| text == "6.破片撞击安全性分析" || text == "7.爆炸冲击波安全性分析" || text == "8.殉爆安全性分析"))
 	{ // 只对第一列进行自定义绘制
 		painter->save();
 
@@ -95,8 +95,8 @@ bool GFTreeWidgetItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mo
 			return false;
 		}
 		QString text = index.data(Qt::DisplayRole).toString();
-		if (text == "工况设置" || text == "1.跌落试验" || text == "2.快速烤燃试验" || text == "3.慢速烤燃试验" ||
-			text == "4.枪击试验" || text == "5.射流冲击试验" || text == "6.破片撞击试验" || text == "7.爆炸冲击波试验" || text == "8.殉爆试验")
+		if (text == "安全特性参数分析" || text == "1.跌落安全性分析" || text == "2.快速烤燃安全性分析" || text == "3.慢速烤燃安全性分析" ||
+			text == "4.枪击安全性分析" || text == "5.射流冲击安全性分析" || text == "6.破片撞击安全性分析" || text == "7.爆炸冲击波安全性分析" || text == "8.殉爆安全性分析")
 		{
 			int checkboxSize = 20;
 			int margin = 4;;

@@ -167,12 +167,12 @@ ParamAnalyTreeWidget::ParamAnalyTreeWidget(QWidget* parent)
 	evaluationMatrixNode->setIcon(0, icon);
 
 	QTreeWidgetItem* u1EvaluationMatrix = new QTreeWidgetItem();
-	u1EvaluationMatrix->setText(0, "U1权重向量A1与一致性Rc1计算");
+	u1EvaluationMatrix->setText(0, "U1权重向量矩阵计算");
 	u1EvaluationMatrix->setData(0, Qt::UserRole, "U1EvaluationMatrix");
 	u1EvaluationMatrix->setIcon(0, icon);
 
 	QTreeWidgetItem* u2EvaluationMatrix = new QTreeWidgetItem();
-	u2EvaluationMatrix->setText(0, "U2权重向量A2与一致性Rc2计算");
+	u2EvaluationMatrix->setText(0, "U2权重向量矩阵计算");
 	u2EvaluationMatrix->setData(0, Qt::UserRole, "U2EvaluationMatrix");
 	u2EvaluationMatrix->setIcon(0, icon);
 
@@ -181,7 +181,7 @@ ParamAnalyTreeWidget::ParamAnalyTreeWidget(QWidget* parent)
 
 
 	QTreeWidgetItem* matrixOperationNode = new QTreeWidgetItem(rootItem);
-	matrixOperationNode->setText(0, "模糊矩阵运算");
+	matrixOperationNode->setText(0, "故障危害度分析");
 	matrixOperationNode->setData(0, Qt::UserRole, "MatrixOperation");
 	matrixOperationNode->setIcon(0, icon);
 
@@ -199,7 +199,7 @@ ParamAnalyTreeWidget::ParamAnalyTreeWidget(QWidget* parent)
 	matrixOperationNode->addChild(target);
 
 	QTreeWidgetItem* levelReportNode = new QTreeWidgetItem(rootItem);
-	levelReportNode->setText(0, "安全等级判定与报告");
+	levelReportNode->setText(0, "失效条件分析");
 	levelReportNode->setData(0, Qt::UserRole, "LevelReport");
 	levelReportNode->setIcon(0, icon);
 
@@ -213,16 +213,14 @@ ParamAnalyTreeWidget::ParamAnalyTreeWidget(QWidget* parent)
 	score->setData(0, Qt::UserRole, "Score");
 	score->setIcon(0, icon);
 
-	QTreeWidgetItem* report = new QTreeWidgetItem();
-	report->setText(0, "安全性分析与评价报告");
-	report->setData(0, Qt::UserRole, "Report");
-	report->setIcon(0, icon);
 
 	levelReportNode->addChild(level);
 	levelReportNode->addChild(score);
-	levelReportNode->addChild(report);
 
-
+	QTreeWidgetItem* report = new QTreeWidgetItem(rootItem);
+	report->setText(0, "安全性后处理及报告生成");
+	report->setData(0, Qt::UserRole, "Report");
+	report->setIcon(0, icon);
 
 	QVBoxLayout* layout = new QVBoxLayout();
 	layout->addWidget(treeWidget);

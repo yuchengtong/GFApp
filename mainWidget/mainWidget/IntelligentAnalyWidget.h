@@ -48,6 +48,10 @@ public:
 
 	QStackedWidget* getStackedWidget() { return  m_tableStackWidget; } 
 
+	GraphicWidget* get3dGraphicWid() {return m_3dGraphicWid;}
+
+	
+
 	QChartView* getChartView() { return m_chartView; }
 	QChart* getChart() { return m_chart; }
 	QValueAxis* getAxisX() { return m_axisX; }

@@ -7,6 +7,12 @@
 #include <QtWidgets/QGraphicsScene>
 #include <QtCore/QDebug>
 #include <QtMath>
+#include <QMessageBox>
+
+#include "WordExporter.h"
+#include "WordExporterWorker.h"
+#include "AuxiliaryAnalysisWidget.h"
+#include "ProgressDialog.h"
 
 static constexpr int SECTORS = 8;
 
@@ -69,11 +75,14 @@ void CustomPolarChart::setupChart()
 	m_unitTextItem->setDefaultTextColor(Qt::white); // 白色和图表配色一致
 	m_unitTextItem->setZValue(99); // 置顶层级，永远不被遮挡
 
-	// 保证八边形在绘图区域变化时重绘（包含窗口/大小变化/坐标变换）
+	checkTitleAndShowExportBtn();
+
+		// 保证八边形在绘图区域变化时重绘（包含窗口/大小变化/坐标变换）
 	connect(this, &QChart::plotAreaChanged, this, [this](const QRectF&) {
 		drawOctagonOverlay();
 		drawStandardCircle();
 		updateUnitText();
+		updateExportBtnPos();
 		});
 }
 
@@ -188,6 +197,7 @@ void CustomPolarChart::setActiveDataset(int idx)
 
 	updateChartTitle();
 	updateUnitText();
+	updateExportBtnPos();
 }
 
 void CustomPolarChart::setActiveDatasetVisible(int idx)
@@ -229,6 +239,7 @@ void CustomPolarChart::setActiveDatasetVisible(int idx)
 	updateAngleLabels(idx);
 	updateChartTitle();
 	updateUnitText();
+	updateExportBtnPos();
 }
 
 void CustomPolarChart::updateAngleLabels(int datasetIndex)
@@ -345,6 +356,7 @@ void CustomPolarChart::updateDatasets(const QVector<QVector<double>>& datasets,
 	updateAngleLabels(m_activeIndex);
 	updateChartTitle();
 	updateUnitText();
+	updateExportBtnPos();
 }
 
 void CustomPolarChart::renameLegend(int index, const QString& newName)
@@ -380,6 +392,7 @@ void CustomPolarChart::setStandardValue(int idx, double value)
 		updateRadialAxisRange(idx); // 修改标准值后也同步更新坐标轴
 		updateChartTitle();
 		updateUnitText();
+		updateExportBtnPos();
 	}
 }
 
@@ -417,13 +430,15 @@ void CustomPolarChart::updateChartTitle()
 	double standardValue = (m_activeIndex < m_standardValues.size()) ? m_standardValues[m_activeIndex] : 0.0;
 	if (standardValue > 0.0)
 	{
-		
+		QString title = this->title();
+		int index = title.indexOf(' ');
+		title = title.mid(0, index);
 		// 拼接标题文本（格式可自定义，例如：跌落试验 - 标准值：85.0）
-		QString title = QString(this->title() + " - 阈值：") + QString::number(standardValue);
-		this->setTitle(title);
+		QString newTitle = QString(title + " - 阈值：") + QString::number(standardValue);
+		this->setTitle(newTitle);
 		this->setTitleBrush(Qt::white); // 保持标题颜色为白色
 	}
-	
+	checkTitleAndShowExportBtn();
 }
 
 // 更新右上角单位文本（位置+内容）
@@ -451,4 +466,140 @@ void CustomPolarChart::updateUnitText()
 	qreal y = rightTopPoint.y() - 60;
 	m_unitTextItem->setPos(x, y);
 	m_unitTextItem->setDefaultTextColor(Qt::white);
+}
+
+void CustomPolarChart::initExportButton()
+{
+	if (m_exportBtn && !m_exportBtnProxy && scene())
+	{
+		m_exportBtnProxy = this->scene()->addWidget(m_exportBtn);
+		m_exportBtnProxy->setZValue(100); // 置顶层级，不被遮挡
+		updateExportBtnPos(); // 初始化按钮位置
+	}
+}
+
+void CustomPolarChart::updateExportBtnPos()
+{
+	if (!m_exportBtnProxy) return;
+	QRectF plotArea = this->plotArea();
+	QPointF leftTopPoint = plotArea.topLeft();
+	// 按钮位置：绘图区左上角 向右偏移10px，向下偏移10px（避免贴边）
+	m_exportBtnProxy->setPos(leftTopPoint.x() - 240, leftTopPoint.y() - 60);
+}
+
+// 导出按钮点击事件 
+void CustomPolarChart::onExportBtnClicked()
+{
+	exportWord();
+
+	
+}
+
+void CustomPolarChart::checkTitleAndShowExportBtn()
+{
+	// 检测标题是否包含“跌落”关键词
+	bool isContainDrop = this->title().contains(u8"跌落");
+
+	if (isContainDrop) {
+		// 标题含“跌落”：初始化并显示导出按钮
+		if (!m_exportBtn) {
+			// 创建导出按钮（仅首次创建）
+			m_exportBtn = new QPushButton(u8"导出");
+			m_exportBtn->setStyleSheet(
+				"QPushButton{background-color:#2C3E50;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:8pt;}"
+				"QPushButton:hover{background-color:#34495E;}"
+				"QPushButton:pressed{background-color:#1A252F;}"
+			);
+			m_exportBtn->setFixedSize(80, 26);
+			connect(m_exportBtn, &QPushButton::clicked, this, &CustomPolarChart::onExportBtnClicked);
+		}
+		// 初始化按钮代理（嵌入图表）
+		initExportButton();
+		// 显示按钮
+		if (m_exportBtnProxy) {
+			m_exportBtnProxy->setVisible(true);
+			m_exportBtn->setVisible(true);
+		}
+	}
+	else {
+		// 标题不含“跌落”：隐藏按钮
+		if (m_exportBtnProxy) {
+			m_exportBtnProxy->setVisible(false);
+		}
+		if (m_exportBtn) {
+			m_exportBtn->setVisible(false);
+		}
+	}
+}
+
+void CustomPolarChart::exportWord()
+{
+	AuxiliaryAnalysisWidget* topParent = nullptr;
+	QList<QWidget*> allWidgets = QApplication::allWidgets();
+	for (QWidget* w : allWidgets) {
+		topParent = qobject_cast<AuxiliaryAnalysisWidget*>(w);
+		if (topParent != nullptr) {
+
+			WordExporter* wordExporter = new WordExporter();
+			QString directory = QFileDialog::getExistingDirectory(nullptr,
+				tr("选择文件夹"),
+				"/home", // 默认的起始目录
+				QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks); // 选项
+			if (!directory.isEmpty()) {
+				// 截图
+				QString chartPath = "src/template/AuxiliaryAnalysis.png";
+				QDir chartDir(chartPath);
+				wordExporter->captureWidgetToFile(topParent, chartPath);
+
+				QMap<QString, QString> imagePaths;
+				imagePaths.insert("chart", QDir(chartPath).absolutePath());
+
+				QMap<QString, QVector<QVector<QVariant>>> tableData;
+				QMap<QString, QVariant> textData;
+
+
+				// 创建进度对话框
+				ProgressDialog* progressDialog = new ProgressDialog("导出报告进度", new QWidget());
+				progressDialog->show();
+
+				// 创建工作线程和工作对象
+				WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/安全性指标辅助分析报告.docx").absolutePath(), directory + "/安全性指标辅助分析报告.docx", textData, imagePaths, tableData);
+				QThread* wordExporterThread = new QThread();
+				wordExporterWorker->moveToThread(wordExporterThread);
+
+				// 连接信号槽
+				connect(wordExporterThread, &QThread::started, wordExporterWorker, &WordExporterWorker::DoWork);
+				connect(wordExporterWorker, &WordExporterWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
+				connect(wordExporterWorker, &WordExporterWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
+				connect(progressDialog, &ProgressDialog::Canceled, wordExporterWorker, &WordExporterWorker::RequestInterruption);
+
+				// 处理导入结果
+				connect(wordExporterWorker, &WordExporterWorker::WorkFinished, this,
+					[=](bool success, const QString& msg) {
+
+
+						if (success)
+						{
+						}
+						else if (!success)
+						{
+							QMessageBox::warning(topParent, "导出失败", msg);
+						}
+						// 清理资源
+						progressDialog->close();
+						wordExporterThread->quit();
+						wordExporterThread->wait();
+						wordExporterWorker->deleteLater();
+						wordExporterThread->deleteLater();
+						progressDialog->deleteLater();
+					});
+
+				// 启动线程
+				wordExporterThread->start();
+
+			}
+			break; // 找到目标，退出循环
+		}
+	}
+
 }

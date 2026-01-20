@@ -86,7 +86,7 @@ void ShootPropertyWidget::initWidget()
 
 
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("枪击试验");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("枪击安全性分析");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
 	QTableWidgetItem* impactVelocityValueItem = new QTableWidgetItem(m_impactVelocityValue);

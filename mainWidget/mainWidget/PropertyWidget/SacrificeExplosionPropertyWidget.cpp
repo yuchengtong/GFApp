@@ -85,7 +85,7 @@ void SacrificeExplosionPropertyWidget::initWidget()
 
 
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("殉爆试验");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("殉爆安全性分析");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
 	QTableWidgetItem* distanceValueItem = new QTableWidgetItem("100");

@@ -81,7 +81,7 @@ void FallPropertyWidget::initWidget()
 		headerItem->setFont(font);
 	}
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("跌落试验");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("跌落安全性分析");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* heightValueItem = new QTableWidgetItem(m_highValue);
 	QTableWidgetItem* hardnessValueItem = new QTableWidgetItem("刚体");

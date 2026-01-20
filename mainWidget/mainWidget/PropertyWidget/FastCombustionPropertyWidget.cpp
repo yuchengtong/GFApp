@@ -81,7 +81,7 @@ void FastCombustionPropertyWidget::initWidget()
 	}
 
 	
-	QTableWidgetItem* titeItem = new QTableWidgetItem("快速烤燃试验");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("快速烤燃安全性分析");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* keroseneValueItem = new QTableWidgetItem("航空煤油");
 	keroseneValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中

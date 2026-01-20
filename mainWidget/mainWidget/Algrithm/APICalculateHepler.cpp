@@ -281,7 +281,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		{
 			res = 25;
 		}
-		if (fallInfo.angle == 0 && res >= 28.589)
+		if (fallInfo.angle == 0 && res >= 30)
 		{
 			res = 28.589;
 		}

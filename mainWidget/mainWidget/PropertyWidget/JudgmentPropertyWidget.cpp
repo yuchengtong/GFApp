@@ -53,11 +53,11 @@ void JudgmentPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "评判标准数据库","标准号","标准名称", "跌落试验", "快速烤燃试验", "慢速烤燃试验","枪击试验","射流冲击试验","破片撞击试验","爆炸冲击波试验","殉爆试验" };
+	QStringList labels = { "标准数据库","标准号","标准名称", "跌落安全性分析", "快速烤燃安全性分析", "慢速烤燃安全性分析","枪击安全性分析","射流冲击安全性分析","破片撞击安全性分析","爆炸冲击波安全性分析","殉爆安全性分析" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
-			serialItem = new QTableWidgetItem("评判标准数据库");
+			serialItem = new QTableWidgetItem("标准数据库");
 		}
 		serialItem->setFlags(serialItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 		m_tableWidget->setItem(row, 0, serialItem);
@@ -82,7 +82,7 @@ void JudgmentPropertyWidget::initWidget()
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " ", " "," ","m", "℃", "℃", "m/s","mm","m/s","kg","mm" };
+	QStringList unitLabels = { " ", " "," ","m", "℃", "℃", "m/s","mm","m/s","g","mm" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -239,7 +239,7 @@ void JudgmentPropertyWidget::showTableDialog() {
 					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 					auto logWidget = gfParent->GetLogWidget();
 					auto textEdit = logWidget->GetTextEdit();
-					QString text = timeStr + "[信息]>选择评判标准数据";
+					QString text = timeStr + "[信息]>选择标准数据";
 					textEdit->appendPlainText(text);
 					logWidget->update();
 

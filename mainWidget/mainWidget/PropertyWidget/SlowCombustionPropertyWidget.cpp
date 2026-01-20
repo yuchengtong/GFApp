@@ -85,7 +85,7 @@ void SlowCombustionPropertyWidget::initWidget()
 
 
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("慢速烤燃试验");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("慢速烤燃安全性分析");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 	QTableWidgetItem* heatingTypeValueItem = new QTableWidgetItem("烘箱加热");
 	heatingTypeValueItem->setTextAlignment(Qt::AlignCenter); // 文本居中

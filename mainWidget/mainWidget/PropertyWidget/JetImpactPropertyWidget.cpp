@@ -85,7 +85,7 @@ void JetImpactPropertyWidget::initWidget()
 
 
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("射流冲击试验");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("射流冲击安全性分析");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 
 	QTableWidgetItem* caliberValueItem = new QTableWidgetItem("50");

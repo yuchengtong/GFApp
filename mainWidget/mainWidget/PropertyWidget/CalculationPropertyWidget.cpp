@@ -42,7 +42,7 @@ void CalculationPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "计算模型数据库", "跌落试验", "快速烤燃试验", "慢速烤燃试验", "枪击试验","射流冲击试验","破片撞击试验","爆炸冲击波试验","殉爆试验" };
+	QStringList labels = { "计算模型数据库", "跌落模型", "快速烤燃模型", "慢速烤燃模型", "枪击模型","射流冲击模型","破片撞击模型","爆炸冲击波模型","殉爆模型" };
 	for (int row = 0; row < labels.size(); ++row) {
 
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));

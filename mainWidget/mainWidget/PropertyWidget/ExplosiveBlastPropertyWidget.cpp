@@ -85,7 +85,7 @@ void ExplosiveBlastPropertyWidget::initWidget()
 
 
 
-	QTableWidgetItem* titeItem = new QTableWidgetItem("±¬Õ¨³å»÷²¨ÊÔÑé");
+	QTableWidgetItem* titeItem = new QTableWidgetItem("±¬Õ¨³å»÷²¨°²È«ÐÔ·ÖÎö");
 	titeItem->setFlags(titeItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 
 	QTableWidgetItem* tntValueItem = new QTableWidgetItem("50");
