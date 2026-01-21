@@ -413,7 +413,7 @@ mainWidget::mainWidget(QWidget *parent)
 		if (m_TabWidget->currentIndex() == 0) {
 			// 打开文件对话框
 			QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(),
-				"STEP Files (*.stp *.step);;IGES Files (*.iges *.igs);;All Files (*.*)");
+				"STEP Files (*.stp *.step);;IGES Files (*.iges *.igs);;VTK Files (*.vtk);;X_T Files (*.x_t);;All Files (*.*)");
 
 			if (filePath.isEmpty()) 
 				return;
@@ -501,37 +501,107 @@ mainWidget::mainWidget(QWidget *parent)
 					loadSuccess = true;
 				}
 			}
+		//	else if (filePath.endsWith(".vtk", Qt::CaseInsensitive)) {
+		//		vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+		//		reader->SetFileName(filePath.toStdString().c_str());
+		//		reader->Update();
+
+		//		vtkPolyData* polyData = reader->GetOutput();
+		//		if (!polyData || polyData->GetNumberOfPoints() == 0) {
+		//			QMessageBox::warning(this, "Error", "Failed to read VTK file or empty data.");
+		//			return;
+		//		}
+
+		//		aShape = VtkPolyDataToOCCShape(polyData);
+		//		if (aShape.IsNull()) {
+		//			QMessageBox::warning(this, "Error", "Failed to convert VTK to OCC shape.");
+		//			return;
+		//		}
+
+		//		// 计算包围盒等（同前）
+		//		Bnd_Box bbox;
+		//		BRepBndLib::Add(aShape, bbox);
+		//		bbox.SetGap(0.0);
+		//		Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
+		//		bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax);
+
+		//		info.shape = aShape;
+		//		info.path = filePath;
+		//		info.theXmin = theXmin; info.theYmin = theYmin; info.theZmin = theZmin;
+		//		info.theXmax = theXmax; info.theYmax = theYmax; info.theZmax = theZmax;
+		//		info.length = theXmax - theXmin;
+		//		info.width = theYmax - theYmin;
+		//		info.height = theZmax - theZmin;
+
+		//		ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
+		//		importModelWid->GetGFTreeModelWidget()->updataIcon();
+		//		loadSuccess = true;
+		//	}
+		//	else if (filePath.endsWith(".x_t", Qt::CaseInsensitive)) {
+		//	XSControl_Reader aReader_XT;
+		//	// 设置为 Parasolid 模式（关键！）
+		//	aReader_XT.SetMode("XSTEP"); // 或尝试 "DEFAULT"
+
+		//	IFSelect_ReturnStatus status = aReader_XT.ReadFile(filePath.toStdString().c_str());
+		//	if (status == IFSelect_RetDone) {
+		//		aReader_XT.PrintCheckLoad(Standard_False, IFSelect_ItemsByEntity);
+		//		Standard_Integer nbRoots = aReader_XT.NbRootsForTransfer();
+		//		if (nbRoots > 0) {
+		//			aReader_XT.TransferRoots();
+		//			aShape = aReader_XT.OneShape();
+
+		//			if (!aShape.IsNull()) {
+		//				// 计算包围盒
+		//				Bnd_Box bbox;
+		//				BRepBndLib::Add(aShape, bbox);
+		//				bbox.SetGap(0.0);
+
+		//				Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
+		//				bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax);
+
+		//				info.shape = aShape;
+		//				info.path = filePath;
+		//				info.theXmin = theXmin; info.theYmin = theYmin; info.theZmin = theZmin;
+		//				info.theXmax = theXmax; info.theYmax = theYmax; info.theZmax = theZmax;
+		//				info.length = double(theXmax - theXmin);
+		//				info.width = double(theYmax - theYmin);
+		//				info.height = double(theZmax - theZmin);
+
+		//				ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
+		//				importModelWid->GetGFTreeModelWidget()->updataIcon();
+		//				loadSuccess = true;
+		//			}
+		//		}
+		//	}
+		//	if (!loadSuccess || aShape.IsNull()) {
+		//		QMessageBox::warning(this, "Error", "Failed to load model");
+		//		return;
+		//	}
+
+		//	// 获取OCC视图和上下文
+		//	auto occView = importModelWid->GetOccView();
+		//	Handle(AIS_InteractiveContext) context = occView->getContext();
+
+		//	// 清除之前的显示
+		//	context->EraseAll(true);
+
+		//	// 创建模型的AIS表示
+		//	Handle(AIS_Shape) modelPresentation = new AIS_Shape(aShape);
+
+		//	// 设置模型显示属性
+		//	context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
+		//	context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
+		//	context->Display(modelPresentation, false);
+
+		//			
+		//	// 调整视图以适应模型
+		//	occView->fitAll();
 
 
-			if (!loadSuccess || aShape.IsNull()) {
-				QMessageBox::warning(this, "Error", "Failed to load model");
-				return;
-			}
-
-			// 获取OCC视图和上下文
-			auto occView = importModelWid->GetOccView();
-			Handle(AIS_InteractiveContext) context = occView->getContext();
-
-			// 清除之前的显示
-			context->EraseAll(true);
-
-			// 创建模型的AIS表示
-			Handle(AIS_Shape) modelPresentation = new AIS_Shape(aShape);
-
-			// 设置模型显示属性
-			context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-			context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
-			context->Display(modelPresentation, false);
-
-					
-			// 调整视图以适应模型
-			occView->fitAll();
-
-
-			currentTime = QDateTime::currentDateTime();
-			timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-			QString text = timeStr + "[信息]>导入几何模型,路径为：" + filePath;
-			textEdit->appendPlainText(text);
+		//	currentTime = QDateTime::currentDateTime();
+		//	timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+		//	QString text = timeStr + "[信息]>导入几何模型,路径为：" + filePath;
+		//	textEdit->appendPlainText(text);
 		}
 		else if (m_TabWidget->currentIndex() == 1)
 		{

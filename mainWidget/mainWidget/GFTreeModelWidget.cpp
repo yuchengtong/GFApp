@@ -1475,7 +1475,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				if (gfParent)
 				{
 					QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(),
-						"STEP Files (*.stp *.step);;STL Files (*.stl);;IGES Files (*.iges *.igs);;All Files (*.*)");
+						"STEP Files (*.stp *.step);;IGES Files (*.iges *.igs);;VTK Files (*.vtk);;X_T Files (*.x_t);;All Files (*.*)");
 
 					if (filePath.isEmpty())
 					{
