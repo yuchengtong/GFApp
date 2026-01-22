@@ -1231,108 +1231,82 @@ bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::
 		const double rect_length = x_max - x_min;
 		const double rect_width = z_max - z_min;
 
-		const double ellipse_h = (x_min + x_max) / 2.0;		//椭圆在 x 轴上的中心位置
-		const double ellipse_k = (z_min + z_max) / 2.0;		//椭圆在 z 轴上的中心位置
+		const double h = (x_min + x_max) / 2.0;     // 椭圆中心 X
+		const double k = (z_min + z_max) / 2.0;     // 椭圆中心 Z
 
-		const double ellipse_a_0 = rect_length / 2.0;			//椭圆在 x 方向的半轴长度
-		const double ellipse_b_0 = rect_width / 2.0+ 0.2 * (rect_width / 2);			//椭圆在 z 方向的半轴长度
+		// 主椭圆半轴（注意：b 被放大了 20%）
+		const double a_main = rect_length / 2.0;
+		const double b_main = (rect_width / 2.0) * 1.1;
 
-		const double ellipse_a_1 = rect_length / 2.0;			//椭圆在 x 方向的半轴长度
-		const double ellipse_b_1 = rect_width / 2.0 + 0.3 * (rect_width / 2);			//椭圆在 z 方向的半轴长度
-
-		// 预计算外椭圆（椭圆0）参数
-		const double a0 = ellipse_a_0;
-		const double b0 = ellipse_b_0;
-		const double a0_sq = a0 * a0;
-		const double b0_sq = b0 * b0;
-		const double threshold0 = a0_sq * b0_sq;
-
-		const double a1 = ellipse_a_1;
-		const double b1 = ellipse_b_1;
-		const double a1_sq = a1 * a1;
-		const double b1_sq = b1 * b1;
-		const double threshold1 = a1_sq * b1_sq;
-
-
-		const double scale_factor_a = 0.8;
-		const double scale_factor_b = 0.6;
-		const double ellipse_a_2 = ellipse_a_0 * scale_factor_a;
-		const double ellipse_b_2 = ellipse_b_0 * scale_factor_b;
-
-		const double ellipse_a_3 = ellipse_a_0 * scale_factor_a*1.1;
-		const double ellipse_b_3 = ellipse_b_0 * scale_factor_b*1.1;
-
-		// 预计算内椭圆（椭圆1）参数
-		const double a2 = ellipse_a_2;
-		const double b2 = ellipse_b_2;
-		const double a1_sq2 = a2 * a2;
-		const double b1_sq2 = b2 * b2;
-		const double threshold2 = a1_sq2 * b1_sq2;
-
-		const double a3 = ellipse_a_3;
-		const double b3 = ellipse_b_3;
-		const double a1_sq3 = a3 * a3;
-		const double b1_sq3 = b3 * b3;
-		const double threshold3 = a1_sq3 * b1_sq3;
-
-
+		std::vector<std::pair<double, double>> ellipses = {
+					{a_main * 0.8, b_main * 0.6},
+					{a_main * 0.82, b_main * 0.62},
+					{a_main * 0.85, b_main * 0.65},
+					{a_main * 0.9, b_main * 0.7},
+					{a_main * 0.95, b_main * 0.75},
+					{a_main * 0.98, b_main * 0.78},
+					{a_main * 1.0, b_main * 0.8},
+					{a_main * 1.0, b_main * 1.0}
+		};
 
 		//黄线
 		const double yellow_line_z_min = z_min + 30;
 		const double yellow_line_z_max = z_max - 30;
 
-		const double tol = Precision::Confusion();
-		const double robustvalue = 15;
+		// cx    // 椭圆中心 x
+		// cz    // 椭圆中心 z
+		// a     // 椭圆长半轴
+		// b     // 椭圆短半轴
+		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+			double dx = x - cx;
+			double dz = z - cz;
+			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+			return value <= 1.0 + 1e-9; // 容差处理
+		};
 
 		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
 			int nodeID = it.Key();
 			double x = nodecoords->Value(nodeID, 1);
 			double z = nodecoords->Value(nodeID, 3);
 
-			double dx = x - ellipse_h;
-			double dz = z - ellipse_k;
-
-			// 判断是否在椭圆0（外椭圆）内
-			double value0 = dx * dx * b0_sq + dz * dz * a0_sq;
-
-			if (value0 > threshold1 + tol) 
+			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
 			{
-				// 在椭圆0外部 → 赋 max_value   //红色
+				nodeValues.push_back(min_value);			
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+			}
+			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+			}
+			else
+			{		
 				nodeValues.push_back(max_value);
 			}
-			else if (value0 > threshold0 + tol)
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);//橙色
-			}
-			else 
-			{
-				// 在椭圆0内部 → 进一步判断是否在椭圆1（内椭圆）内
-				double value1 = dx * dx * b1_sq + dz * dz * a1_sq;
-
-				if (value1 <= threshold2 + tol)
-				{
-					// 在椭圆1内部（或边界）→ 赋 min_value
-					nodeValues.push_back(min_value);
-				}
-				else if (value1 <= threshold3 + tol)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-				}
-				else
-				{
-					// 不在椭圆1内部→ 进一步判断是否在黄线内
-					if (z < yellow_line_z_min || z > yellow_line_z_max)
-					{
-						//黄色区域
-						nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-					}
-					else
-					{
-						//绿色区域
-						nodeValues.push_back(min_value + (max_value - min_value) * 5.0 / 9.0);
-					}
-				}
-			}
+			
 		}
 
 
@@ -1569,14 +1543,14 @@ bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.9}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.5},
+			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
+			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
+			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
 		};
 
 		// cx    // 椭圆中心 x
@@ -1706,14 +1680,14 @@ bool APISetNodeValue::SetShootStrainResult(OccView* occView, std::vector<double>
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.9}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.5},
+			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
+			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
+			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
 		};
 
 		// cx    // 椭圆中心 x
@@ -1847,13 +1821,13 @@ bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<do
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
 			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.35},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.75},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.8}
+			{semi_minor_x_1 * 0.25,semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.35},
+			{semi_minor_x_1 * 0.35,semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.4,  semi_major_z_1 * 0.55},
+			{semi_minor_x_1 * 0.45,semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.5,  semi_major_z_1 * 0.75},
+			{semi_minor_x_1 * 0.55,semi_major_z_1 * 0.8}
 		};
 
 		// cx    // 椭圆中心 x
@@ -1984,11 +1958,11 @@ bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<d
 			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
 			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.25},
 			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.85}
+			{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.55},
+			{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.5,  semi_major_z_1 * 0.7},
+			{semi_minor_x_1 * 0.55,semi_major_z_1 * 0.85}
 		};
 
 		// cx    // 椭圆中心 x
@@ -2112,8 +2086,8 @@ bool APISetNodeValue::SetJetImpactStressResult(OccView* occView, std::vector<dou
 
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min)*0.6;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 ;    // 最大椭圆的 a
+		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
+		const double semi_minor_x_1 = semi_major_z_1/3.0 ;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
@@ -2250,8 +2224,8 @@ bool APISetNodeValue::SetJetImpactStrainResult(OccView* occView, std::vector<dou
 
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min) * 0.6;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1;    // 最大椭圆的 a
+		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
+		const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
@@ -2385,19 +2359,19 @@ bool APISetNodeValue::SetJetImpactTemperatureResult(OccView* occView, std::vecto
 
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min) * 0.6;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1;    // 最大椭圆的 a
+		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
+		const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.1, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.45},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.85},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.9}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.35},
+			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.55},
+			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.75},
+			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.8}
 		};
 
 		// cx    // 椭圆中心 x
@@ -2520,19 +2494,19 @@ bool APISetNodeValue::SetJetImpactOverpressureResult(OccView* occView, std::vect
 
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min) * 0.6;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1;    // 最大椭圆的 a
+		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
+		const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.1, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.35},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.95}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.25},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.55},
+			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.7},
+			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.85}
 		};
 
 		// cx    // 椭圆中心 x
@@ -2656,18 +2630,18 @@ bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
 		const double semi_major_z_1 = (z_max - z_min)*0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1*1.5;    // 最大椭圆的 a
+		const double semi_minor_x_1 = semi_major_z_1*2.5;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.9}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.5},
+			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.7},
+			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
+			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.9},
+			{semi_minor_x_1 * 0.9, semi_major_z_1 * 1.0}
 		};
 
 		// cx    // 椭圆中心 x
@@ -2794,19 +2768,20 @@ bool APISetNodeValue::SetFragmentationStrainResult(OccView* occView, std::vector
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
 		const double semi_major_z_1 = (z_max - z_min) * 0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 * 1.5;    // 最大椭圆的 a
+		const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.9}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.5},
+			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.7},
+			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
+			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.9},
+			{semi_minor_x_1 * 0.9, semi_major_z_1 * 1.0}
 		};
+
 
 		// cx    // 椭圆中心 x
 		// cz    // 椭圆中心 z
@@ -2933,18 +2908,18 @@ bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::v
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
 		const double semi_major_z_1 = (z_max - z_min) * 0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 * 1.5;    // 最大椭圆的 a
+		const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.15, semi_major_z_1 * 0.25},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.45},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.85},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.9}
+			{semi_minor_x_1 * 0.15, semi_major_z_1 * 0.35},
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
+			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
+			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
+			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.95},
+			{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
 		};
 
 		// cx    // 椭圆中心 x
@@ -3067,18 +3042,18 @@ bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::
 		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 		const double k = z_min;                          // 椭圆中心 Z（底边）
 		const double semi_major_z_1 = (z_max - z_min) * 0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 * 1.5;    // 最大椭圆的 a
+		const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
 
 		std::vector<std::pair<double, double>> ellipses = {
 			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.25},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.35},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.95}
+			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.35},
+			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
+			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
+			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
+			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
+			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.8},
+			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
+			{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
 		};
 
 		// cx    // 椭圆中心 x
