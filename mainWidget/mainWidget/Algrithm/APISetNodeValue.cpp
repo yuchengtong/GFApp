@@ -3151,7 +3151,7 @@ bool APISetNodeValue::SetExplosiveBlastStressResult(OccView* occView, std::vecto
 
 	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+			(meshInfo.z_min + meshInfo.z_max) / 2.0 };
 	Point p1{ meshInfo.x_min, meshInfo.z_min };
 	Point p2{ meshInfo.x_max, meshInfo.z_min };
 	Point p3{ meshInfo.x_max, meshInfo.z_max };
@@ -3180,20 +3180,28 @@ bool APISetNodeValue::SetExplosiveBlastStressResult(OccView* occView, std::vecto
 		aMesh = new MeshVS_Mesh();
 		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
-		// --- 椭圆参数 ---
-		const double ellipse_center_x = (x_min + x_max) / 2.0;
-		const double ellipse_center_z = z_min;
-		const double a = (x_max - x_min) / 2.0 * 0.8;   // 半长轴（x方向）
-		const double b = (z_max - z_min) / 2.0 ;   // 半短轴（z方向）
+		// 椭圆公共中心（底边中点）
+		const double cx = (x_min + x_max) / 2.0;
+		const double cz = z_min;
 
-		// 预计算平方项，避免重复计算
-		const double a2 = a * a;
-		const double b2 = b * b;
+		// 椭圆尺寸
+		const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
+		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
 
-		//离底边线的距离
-		const double linedis = 10;
+		// 短轴缩放比例（从大到小）
+		std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
 
-		const double tol = Precision::Confusion(); // 容差值，用于浮点数比较
+		// 预计算 1/a²（a 不变）
+		const double inv_a2 = 1.0 / (a * a);
+
+		// 椭圆判断 lambda
+		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+			if (b <= gp::Resolution()) return false;
+			double dx = x - cx;
+			double dz = z - cz;
+			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+			return value <= 1.0 + 1e-9;
+		};
 
 		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 		{
@@ -3201,43 +3209,33 @@ bool APISetNodeValue::SetExplosiveBlastStressResult(OccView* occView, std::vecto
 			double x = nodecoords->Value(nodeID, 1);
 			double z = nodecoords->Value(nodeID, 3);
 
-			// 计算相对偏移
-			double dx = x - ellipse_center_x;
-			double dz = z - ellipse_center_z;
-
-			// 判断是否在椭圆内（使用乘法形式避免除法，更稳定）
-			if (dx * dx * b2 + dz * dz * a2 <= a2 * b2 + tol)
+			bool found = false;
+			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 			{
-				if (z< z_min+ linedis)
+				double b = b_full * b_scales[i];
+				if (isInEllipse(x, z, cx, cz, inv_a2, b))
 				{
-					if (abs(ellipse_center_x - x) < a*0.3)
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 10.0);
+					double ratio;
+					switch (i) {
+					case 6: ratio = 8.5 / 9.0; break;
+					case 5: ratio = 7.5 / 9.0; break;
+					case 4: ratio = 6.5 / 9.0; break;
+					case 3: ratio = 5.5 / 9.0; break;
+					case 2: ratio = 4.5 / 9.0; break;
+					case 1: ratio = 3.5 / 9.0; break;
+					case 0: ratio = 2.5 / 9.0; break;
+					default: ratio = 0.0;
 					}
-					else if (abs(ellipse_center_x - x) >= a * 0.3 && abs(ellipse_center_x - x) < a * 0.5)
-					{
-						nodeValues.push_back(max_value);
-					}
-					else if (abs(ellipse_center_x - x) >= a * 0.5 && abs(ellipse_center_x - x) < a * 0.8)
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-					}
-					else if (abs(ellipse_center_x - x) >= a * 0.8 && abs(ellipse_center_x - x) < a )
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 10.0);
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-				else
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+
+					double val = min_value + (max_value - min_value) * ratio;
+					nodeValues.push_back(val);
+					found = true;
+					break;
 				}
 			}
-			else
-			{
+
+			if (!found) {
 				nodeValues.push_back(min_value);
 			}
 		}
@@ -3647,7 +3645,7 @@ bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::v
 
 	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
+			(meshInfo.z_min + meshInfo.z_max) / 2.0 };
 	Point p1{ meshInfo.x_min, meshInfo.z_min };
 	Point p2{ meshInfo.x_max, meshInfo.z_min };
 	Point p3{ meshInfo.x_max, meshInfo.z_max };
@@ -3676,39 +3674,24 @@ bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::v
 		aMesh = new MeshVS_Mesh();
 		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
 
-		// --- 2. 根据矩形角点计算椭圆参数 ---
+		// 椭圆尺寸（固定）
+		const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;      // 半长轴
+		const double b = (z_max - z_min) / 2.0;      // 半短轴
+		const double cx = (x_min + x_max) / 2.0;     // 所有椭圆共享 x 中心
 
-		const double rect_length = x_max - x_min;
-		const double rect_width = z_max - z_min;
+		std::vector<double> shifts = { 0, -10, -25, -40, -50, -60, -70 };
 
-		const double circle_center_x = (x_min + x_max) / 2.0; // 圆在 x 轴上的中心位置
-		const double circle_center_z = (z_min + z_max) / 2.0; // 圆在 z 轴上的中心位置
-
-	
-		// 第一个椭圆参数
-		const double a1 = rect_length / 2.0;
-		const double b1 = rect_width / 2.0;
-		const double h1 = (x_min + x_max) / 2.0; // 中心x坐标
-		const double k1 = (z_min + z_max) / 2.0; // 中心z坐标
-
-		// 第二个椭圆（底边中点的椭圆）参数
-		const double a2 = rect_length / 2.0;
-		const double b2 = rect_width / 2.0;
-		const double h2 = (x_min + x_max) / 2.0; // 底边中点x坐标
-		const double k2 = z_min;                // 底边中点z坐标
-
-		// 第三个椭圆（向上移动30的椭圆）参数
-		const double third_ellipse_z_shift = 30; // 向上移动的距离
-		const double a3 = rect_length / 2.0;
-		const double b3 = rect_width / 2.0;
-		const double h3 = (x_min + x_max) / 2.0; // 同第二个椭圆的x坐标
-		const double k3 = (z_min + z_max) / 2.0 - third_ellipse_z_shift; // 在第二个椭圆基础上向上移动
-
-		//底线的距离
-		const double linedis = 20;
-
-		//红色点的位置离中点的距离
-		const double redPoint = rect_length / 2.0 * 3.0 / 4.0;
+		// cx    // 椭圆中心 x
+		// cz    // 椭圆中心 z
+		// a     // 椭圆长半轴
+		// b     // 椭圆短半轴
+		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+			double dx = x - cx;
+			double dz = z - cz;
+			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+			return value <= 1.0 + 1e-9; // 容差处理
+		};
 
 		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 		{
@@ -3716,58 +3699,37 @@ bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::v
 			double x = nodecoords->Value(nodeID, 1);
 			double z = nodecoords->Value(nodeID, 3);
 
-			// 判断点是否在第一个椭圆内
-			bool inEllipse1 = pow((x - h1), 2) / pow(a1, 2) + pow((z - k1), 2) / pow(b1, 2) <= 1;
+			bool found = false;
+			for (size_t i = shifts.size(); i-- > 0;)
+			{
+				double cz = z_min + shifts[i];
 
-			// 判断点是否在第二个椭圆内
-			bool inEllipse2 = pow((x - h2), 2) / pow(a2, 2) + pow((z - k2), 2) / pow(b2, 2) <= 1;
+				if (isInEllipse(x, z, cx, cz, a, b))
+				{
+					double ratio;
+					switch (i) {
+					case 0: ratio = 8.5 / 9.0; break;
+					case 1: ratio = 7.5 / 9.0; break;
+					case 2: ratio = 6.5 / 9.0; break;
+					case 3: ratio = 5.5 / 9.0; break;
+					case 4: ratio = 4.5 / 9.0; break;
+					case 5: ratio = 3.5 / 9.0; break;
+					case 6: ratio = 2.5 / 9.0; break;
+					default: ratio = 0.0;
+					}
+					double val = min_value + (max_value - min_value) * ratio;
+					nodeValues.push_back(val);
+					found = true;
+					break;
+				}
+			}
 
-			// 判断点是否在第三个椭圆内
-			bool inEllipse3 = pow((x - h3), 2) / pow(a3, 2) + pow((z - k3), 2) / pow(b3, 2) <= 1;
-
-
-			if (inEllipse1)
+			if (!found)
 			{
 				nodeValues.push_back(min_value);
 			}
-			else if (inEllipse3)
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);//浅蓝色区域
-			}
-			else
-			{
-				if (inEllipse2)
-				{
-					if (z - z_min <= linedis)
-					{
-						if (abs(x - h1) > redPoint - 30 && abs(x - h1) < redPoint + 30)
-						{
-							nodeValues.push_back(max_value);//红色区域
-						}
-						else if (abs(x - h1) > redPoint - 60 && abs(x - h1) < redPoint + 60)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);//橙色区域
-						}
-						else if (abs(x - h1) > redPoint - 90 && abs(x - h1) < redPoint + 90)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);//黄色区域
-						}
-						else
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);//绿色区域
-						}
-					}
-					else
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 10.0);
-					}
-				}
-				else
-				{
-					nodeValues.push_back(min_value);//蓝色区域
-				}
-			}			
 		}
+
 
 		// 设置颜色映射和显示（与原逻辑一致）
 		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
@@ -3782,7 +3744,6 @@ bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::v
 
 	return true;
 }
-
 bool APISetNodeValue::SetSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
