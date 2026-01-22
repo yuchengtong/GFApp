@@ -909,11 +909,18 @@ void DatabaseWidget::exportData()
 				sheet->write(1, col + 1, item->text());
 			}
 		}
-
 		// 写入表格数据
+		auto ins = ModelDataManager::GetInstance();
+		UserInfo info = ins->GetUserInfo();
 		int realRow = 0;
+		int tempPublicRowCount = m_publicRowCount;
+		if (info.username == "admin")
+		{
+			tempPublicRowCount = 1;
+		}
+		
 		for (int row = 0; row < rowCount; row++) {
-			if (row == 0 || row >= m_publicRowCount)
+			if (row == 0 || row >= tempPublicRowCount)
 			{
 				for (int col = 0; col < colCount; col++) {
 					if (col == 0 && row > 0)

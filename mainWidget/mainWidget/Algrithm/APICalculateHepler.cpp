@@ -538,14 +538,14 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	temperatureResult.propellantsMinTemperature = minValue;
 	temperatureResult.mpropellantsAvgTemperature = avgValue;
 	temperatureResult.propellantsStandardTemperature = standardValue;
-	temperatureResult.outheatMaxTemperature = shellMaxValue * 0.99;
-	temperatureResult.outheatMinTemperature = shellMinValue * 0.99;
-	temperatureResult.outheatAvgTemperature = shellAvgValue * 0.99;
-	temperatureResult.outheatStandardTemperature = shellStandardValue * 0.99;
-	temperatureResult.insulatingheatMaxTemperature = shellMaxValue * 1.01;
-	temperatureResult.insulatingheatMinTemperature = shellMinValue * 1.01;
-	temperatureResult.insulatingheatAvgTemperature = shellAvgValue * 1.01;
-	temperatureResult.insulatingheatStandardTemperature = shellStandardValue * 1.01;
+	temperatureResult.outheatMaxTemperature = shellMaxValue * 1.01;
+	temperatureResult.outheatMinTemperature = shellMinValue * 1.01;
+	temperatureResult.outheatAvgTemperature = shellAvgValue * 1.01;
+	temperatureResult.outheatStandardTemperature = shellStandardValue * 1.01;
+	temperatureResult.insulatingheatMaxTemperature = shellMaxValue * 0.99;
+	temperatureResult.insulatingheatMinTemperature = shellMinValue * 0.99;
+	temperatureResult.insulatingheatAvgTemperature = shellAvgValue * 0.99;
+	temperatureResult.insulatingheatStandardTemperature = shellStandardValue * 0.99;
 	ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(temperatureResult);
 
 	FastCombustionAnalysisResultInfo fastCombustionAnalysisResultInfo;

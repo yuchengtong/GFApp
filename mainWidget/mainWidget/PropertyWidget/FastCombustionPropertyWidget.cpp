@@ -41,7 +41,7 @@ void FastCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","燃油类型", "弹药位置", "温度观测点数量", "应力观测点传感器数量","风速","火焰温度达到550℃时间","结束时间","从达到550℃到弹药开始反应的平均温度","推进剂发火温度判断" };
+	QStringList labels = { "属性","测试项目","燃油类型", "弹药位置", "温度观测点数量", "应力观测点数量","风速","火焰温度达到550℃时间","结束时间","从达到550℃到弹药开始反应的平均温度","推进剂发火温度判断" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
