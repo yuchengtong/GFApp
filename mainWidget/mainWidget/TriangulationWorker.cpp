@@ -17,6 +17,8 @@ void TriangulationWorker::DoWork()
     bool success = false;
     QString msg;
 
+    std::unique_ptr<TriangleStructure> aDataSource;
+
     try
     {
         emit StatusUpdated("开始网格划分准备...");
@@ -28,82 +30,47 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        //if (!CheckGeometryValidity())
-        //{
-        //    msg = "输入几何模型无效";
-        //    emit WorkFinished(false, msg, meshInfo);
-        //    return;  
-        //}
-
-        // 检查中断
-        if (m_interrupted)
-        {
-            emit WorkFinished(false, "网格划分已取消", meshInfo);
-            return;
-        }
-
         emit StatusUpdated("三角化网格划分");
         emit ProgressUpdated(30);
 
-        // 检查中断
         if (m_interrupted)
         {
             emit WorkFinished(false, "网格划分已取消", meshInfo);
             return;
         }
 
+        aDataSource.reset(new TriangleStructure(m_originalShape, 10.0, &m_interrupted));
 
-
-        TriangleStructure* aDataSource = nullptr;
-        if (0)
+        if (!aDataSource || aDataSource->GetAllNodes().IsEmpty())
         {
-            //const char* filename = "480-pou-daiyuantong.stl";
-            //TopoDS_Shape shape;
-            //StlAPI_Reader reader;
-            //bool isOk = reader.Read(shape, filename);
-            //if (isOk && !shape.IsNull())
-            //{
-            //    aDataSource = new TriangleStructure(shape, 0.5, &m_interrupted);
-            //}
+            emit WorkFinished(false, "网格生成失败：未产生有效节点", meshInfo);
+            return;
         }
-        else
+
+        if (m_interrupted)
         {
-            aDataSource = new TriangleStructure(m_originalShape, 5, &m_interrupted);
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
         }
 
         auto allNodes = aDataSource->GetAllNodes();
         auto nodeCoors = aDataSource->GetmyNodeCoords();
-        //记录x，z的最值
-        double x_min = DBL_MAX;
-        double x_max = -DBL_MAX;
-        double z_min = DBL_MAX;
-        double z_max = -DBL_MAX;
+
+        double x_min = DBL_MAX, x_max = -DBL_MAX;
+        double z_min = DBL_MAX, z_max = -DBL_MAX;
 
         if (!allNodes.IsEmpty())
         {
             for (TColStd_PackedMapOfInteger::Iterator it(allNodes); it.More(); it.Next())
             {
                 int nodeID = it.Key();
-                double x = nodeCoors->Value(nodeID, 1); // 节点x坐标
-                double z = nodeCoors->Value(nodeID, 3); // 节点z坐标
+                double x = nodeCoors->Value(nodeID, 1);
+                double z = nodeCoors->Value(nodeID, 3);
 
-                if (x < x_min)
-                {
-                    x_min = x;
-                }
-                if (x > x_max)
-                {
-                    x_max = x;
-                }
-
-                if (z < z_min)
-                {
-                    z_min = z;
-                }
-                if (z > z_max)
-                {
-                    z_max = z;
-                }
+                x_min = std::min(x_min, x);
+                x_max = std::max(x_max, x);
+                z_min = std::min(z_min, z);
+                z_max = std::max(z_max, z);
             }
         }
 
@@ -112,50 +79,20 @@ void TriangulationWorker::DoWork()
         meshInfo.z_min = z_min;
         meshInfo.z_max = z_max;
 
-        // 在设置结果前检查中断
         if (m_interrupted)
         {
-            delete aDataSource;  // 清理资源
             emit WorkFinished(false, "网格划分已取消", meshInfo);
             return;
         }
 
         meshInfo.isChecked = true;
+
         meshInfo.triangleStructure = *aDataSource;
-
-        //创建旋转网格
-        auto modelGeometryInfo= ModelDataManager::GetInstance()->GetModelGeometryInfo();
-        auto meshData45=aDataSource->RotateXZ(45,(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax)/2.0, 
-            (modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0);
-        auto meshData90 = aDataSource->RotateXZ(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-            (modelGeometryInfo.theZmin + modelGeometryInfo.theZmax) / 2.0);
-        meshInfo.triangleStructure45 = *meshData45;
-        meshInfo.triangleStructure90 = *meshData90;
-
-        //delete aDataSource;  // 清理资源
-
-        // 检查中断
-        if (m_interrupted)
-        {
-            emit WorkFinished(false, "网格划分已取消", meshInfo);
-            return;
-        }
+        aDataSource.reset();  // 拷贝完成后立即释放
 
         emit StatusUpdated("计算网格统计信息");
         emit ProgressUpdated(85);
 
-        // 模拟耗时操作，但需要检查中断
-        for (int i = 0; i < 50; ++i)
-        {
-            if (m_interrupted)
-            {
-                emit WorkFinished(false, "网格划分已取消", meshInfo);
-                return;
-            }
-            QThread::msleep(10);
-        }
-
-        // 最终检查中断
         if (m_interrupted)
         {
             emit WorkFinished(false, "网格划分已取消", meshInfo);
@@ -171,13 +108,18 @@ void TriangulationWorker::DoWork()
         msg = QString("网格划分错误: %1").arg(e.GetMessageString());
         success = false;
     }
+    catch (const std::exception& e)
+    {
+        msg = QString("网格划分错误: %1").arg(e.what());
+        success = false;
+    }
     catch (...)
     {
         msg = "网格划分时发生未知错误";
         success = false;
     }
 
-    // 最终检查：如果在中途被取消，覆盖之前的成功状态
+    // 最终检查：如果中途被取消，覆盖成功状态
     if (m_interrupted)
     {
         emit WorkFinished(false, "网格划分已取消", meshInfo);

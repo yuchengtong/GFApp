@@ -4,6 +4,10 @@
 #include <QObject>
 #include <TopoDS_Shape.hxx>
 #include <QString>
+#include <TDocStd_Document.hxx>
+#include <TDF_Label.hxx>
+#include <TCollection_ExtendedString.hxx>
+#include <TopLoc_Location.hxx>
 #include "ModelDataManager.h"
 
 class GeometryImportWorker : public QObject
@@ -37,6 +41,12 @@ private:
     bool ImportIGES(ModelGeometryInfo& info);
     // 计算边界盒
     void CalculateBoundingBox(ModelGeometryInfo& info);
+
+
+    void AnalyzeNozzleConnection(ModelGeometryInfo& info);
+    bool FindConnectionCircle(const TopoDS_Shape& shape, gp_Pnt& center, double& radius);
+    void FindBottomEndPoint(ModelGeometryInfo& info);  // 新增
+
 };
 
 #endif // GEOMETRY_IMPORT_WORKER_H

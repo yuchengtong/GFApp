@@ -43,6 +43,7 @@ public:
 
     Standard_EXPORT bool CheckInterruption(volatile bool* interrupted) const;
     Standard_EXPORT void ExtractEdges();
+    Handle(TriangleStructure) RotateXY(const Standard_Real angleDeg, const Standard_Real x0, const Standard_Real y0) const;
     Standard_EXPORT Handle(TriangleStructure) RotateXZ(const Standard_Real angleDeg,
         const Standard_Real x0,
         const Standard_Real z0) const;

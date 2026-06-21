@@ -20,6 +20,15 @@ struct UserInfo {
 };
 
 struct ModelGeometryInfo {
+	TDF_Label label;                     // OCAF标签
+	TCollection_ExtendedString name;       // 组件名称
+	TopoDS_Shape shape;                  // 几何形状（带位置变换）
+	TopLoc_Location location;            // 装配位置
+	bool isAssembly = false;             // 是否是子装配体
+	int parentIndex = -1;                // 父组件索引（-1表示根级）
+	QList<int> childIndices;             // 子组件索引列表
+
+
 	TopoDS_Shape shape;
 	QString path="";
 	double theXmin = 0.0;
@@ -34,7 +43,14 @@ struct ModelGeometryInfo {
 	double width = 0.0;
 	double height = 0.0;
 	double thickness = 0.0;
-	
+
+	gp_Pnt connectionPoint; 
+	gp_Pnt bottomEndPoint; 
+	gp_Pnt bottomEndPoint2;
+	double cylinderRadius;
+	double engineLength;
+	double nozzleLength;
+	bool hasNozzle;
 };
 
 struct ModelMeshInfo {

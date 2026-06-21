@@ -81,6 +81,7 @@
 #include "TriangulationWorker.h"
 #include "APICalculateHepler.h"
 #include "CalculateWorker.h"
+#include <BRepPrimAPI_MakeSphere.hxx>
 
 
 // 仅处理 double 类型的 clamp 函数
@@ -1539,12 +1540,60 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
 								context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
 								context->Display(modelPresentation, false);
+
+								/*
+								if (info.hasNozzle) {
+									QString nozzleInfo = QString(
+										"[喷管分析] 连接点: (%.3f, %.3f, %.3f), 半径: %.3f, 发动机长度: %.3f, 喷管长度: %.3f, 厚度: %.3f"
+									)
+										.arg(info.connectionPoint.X())
+										.arg(info.connectionPoint.Y())
+										.arg(info.connectionPoint.Z())
+										.arg(info.cylinderRadius)
+										.arg(info.engineLength)
+										.arg(info.nozzleLength)
+										.arg(info.thickness);
+
+									textEdit->appendPlainText(nozzleInfo);
+								}
+
+								// 可选：3D视图中标记红色连接点
+								if (info.hasNozzle) {
+									gp_Ax2 sphereAxis(info.connectionPoint, gp_Dir(0, 0, 1));
+									TopoDS_Shape marker = BRepPrimAPI_MakeSphere(
+										sphereAxis,
+										info.cylinderRadius * 0.3
+									).Shape();
+									Handle(AIS_Shape) markerAIS = new AIS_Shape(marker);
+									context->SetColor(markerAIS, Quantity_Color(1.0, 0.0, 0.0, Quantity_TOC_RGB), true);
+									context->SetDisplayMode(markerAIS, AIS_Shaded, true);
+									context->Display(markerAIS, false);
+								}
+								*/
+								// 在导入成功回调中，新增底部端点标记
+								//if (info.hasNozzle) {
+								//	gp_Ax2 sphereAxis1(info.bottomEndPoint, gp_Dir(0, 0, 1));
+								//	TopoDS_Shape marker1 = BRepPrimAPI_MakeSphere(sphereAxis1, info.cylinderRadius * 0.3).Shape();
+								//	Handle(AIS_Shape) markerAIS1 = new AIS_Shape(marker1);
+								//	context->SetColor(markerAIS1, Quantity_Color(0.0, 1.0, 0.0, Quantity_TOC_RGB), true); // 绿色
+								//	context->Display(markerAIS1, false);
+
+								//	// 后封头底部（右侧）- 蓝色
+								//	gp_Ax2 sphereAxis2(info.bottomEndPoint2, gp_Dir(0, 0, 1));
+								//	TopoDS_Shape marker2 = BRepPrimAPI_MakeSphere(sphereAxis2, info.cylinderRadius * 0.3).Shape();
+								//	Handle(AIS_Shape) markerAIS2 = new AIS_Shape(marker2);
+								//	context->SetColor(markerAIS2, Quantity_Color(0.0, 0.0, 1.0, Quantity_TOC_RGB), true); // 蓝色
+								//	context->Display(markerAIS2, false);
+								//}
+
+
+
+
 								occView->fitAll();
 
 								// 更新属性窗口
 								auto geomProWid = gfParent->findChild<GeomPropertyWidget*>();
 								geomProWid->UpdataPropertyInfo();
-
 							}
 							else if (!success)
 							{
@@ -1670,11 +1719,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								context->Display(aisCompound, Standard_True);
 
 								updataIcon();
-
-								QDateTime currentTime = QDateTime::currentDateTime();
-								QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-								QString text = timeStr + "[信息]>网格划分完成";
-								textEdit->appendPlainText(text);
 
 								auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
 								meshProWid->UpdataPropertyInfo();

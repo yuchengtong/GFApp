@@ -380,10 +380,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 
-
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
-		view->SetProj(V3d_Yneg);
+		view->SetProj(V3d_Zneg);
 		std::vector<double> nodeValues;
 		APISetNodeValue::SetFallStressResult(occView, nodeValues);
 
