@@ -7,6 +7,7 @@ StartDialog::StartDialog(QWidget* parent)
 {
     // 窗口基础设置
     setWindowTitle("选择数据存储路径");
+    setWindowIcon(QIcon(":/src/engine.svg"));
     setFixedSize(500, 180);
     setStyleSheet("QDialog { background-color: #f5f7fa; }");
 

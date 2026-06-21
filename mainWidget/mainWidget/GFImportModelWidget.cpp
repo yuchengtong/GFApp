@@ -198,8 +198,8 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	// 设置分割器的Handle宽度为0（消除视觉间隙）
 	mainSplitter->setHandleWidth(1);
 
-	mainSplitter->setStretchFactor(0, 1);
-	mainSplitter->setStretchFactor(1, 9);
+	mainSplitter->setStretchFactor(0, 2);
+	mainSplitter->setStretchFactor(1, 8);
 
 	QVBoxLayout* layout = new QVBoxLayout();
 	layout->addWidget(mainSplitter);

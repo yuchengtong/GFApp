@@ -42,19 +42,19 @@
 
 
 
-mainWidget::mainWidget(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::mainWidgetClass())
+mainWidget::mainWidget(QWidget* parent)
+	: QMainWindow(parent)
+	, ui(new Ui::mainWidgetClass())
 {
 	setWindowIcon(QIcon(":/src/engine.svg"));
 	setStyleSheet("QPushButton {"
-                           "background-color:  rgba(0, 0, 0, 0);"
-                           "}"
-                           "QPushButton:hover {"
-                           "background-color: white;"
+		"background-color:  rgba(0, 0, 0, 0);"
+		"}"
+		"QPushButton:hover {"
+		"background-color: white;"
 		"}");
 
-    ui->setupUi(this);
+	ui->setupUi(this);
 	setWindowTitle("固体发动机安全性分析与评估系统");
 	//showMaximized();
 	//setMinimumSize(1050, 800);
@@ -62,76 +62,150 @@ mainWidget::mainWidget(QWidget *parent)
 	// 状态栏
 	QStatusBar* statusbar = this->statusBar();
 	this->setStatusBar(statusbar);
-	QLabel *m_statusLabel = new QLabel("内存使用：0%，CPU使用：0%");
+	QLabel* m_statusLabel = new QLabel("内存使用：0%，CPU使用：0%");
 	statusbar->addPermanentWidget(m_statusLabel);
 	refreshMemoryUsage(m_statusLabel);
 
-	m_ImportModelWidAct = new QAction("安全性特性参数分析", ui->menuBar);
-	m_DataBaseWidAct = new QAction("数据库", ui->menuBar);
-	//m_ParamAnalyWidAct = new QAction("安全性特性参数分析", ui->menuBar);
-	m_IntelligentAnalyWidAct= new QAction("数据智能分析", ui->menuBar);
-	m_AnalyEvalWidAct = new QAction("安全性分析与评估", ui->menuBar);
-	m_AuxiliaryAnalyWidAct = new QAction("安全性指标预计、权衡和辅助分析", ui->menuBar);
-	m_HelpAct = new QAction("帮助", ui->menuBar);
+	QToolBar* topNavToolBar = new QToolBar(this);
+	topNavToolBar->setMovable(false);
+	topNavToolBar->setFloatable(false);
+	topNavToolBar->setIconSize(QSize(40, 40));
+	topNavToolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon); // 图标文字并排
 
-	ui->menuBar->addAction(m_DataBaseWidAct);
-	ui->menuBar->addAction(m_ImportModelWidAct);
-	//ui->menuBar->addAction(m_ParamAnalyWidAct);
-	ui->menuBar->addAction(m_IntelligentAnalyWidAct);
-	ui->menuBar->addAction(m_AnalyEvalWidAct);
-	ui->menuBar->addAction(m_AuxiliaryAnalyWidAct);
-	ui->menuBar->addAction(m_HelpAct);
+	// 统一按钮样式
+	topNavToolBar->setStyleSheet(R"(
+		QToolBar {
+			border: none;                /* 清除全部边框（含底部横线） */
+			border-bottom: 0px solid;
+			padding: 2px 4px;
+			spacing: 6px;               // 按钮之间间距
+		}
+		QToolBar::separator {
+			width: 0px;                 // 隐藏工具栏内分隔线
+			background: transparent;
+		}
+		QToolBar QToolButton{
+			padding: 0 12px;
+			height: 48px;
+			border: none;
+			font-size: 12px;
+			min-width: 180px;
+		}
+		QToolBar QToolButton:hover{
+			background:#e6f0ff;
+		}
+		)");
+	//宽度自适应窗口拉伸
+	topNavToolBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+	// 定义Action
+	m_ImportModelWidAct = new QAction("安全性特性参数分析", this);
+	m_DataBaseWidAct = new QAction("数据库", this);
+	m_IntelligentAnalyWidAct = new QAction("数据智能分析", this);
+	m_AnalyEvalWidAct = new QAction("安全性分析与评估", this);
+	m_AuxiliaryAnalyWidAct = new QAction("安全性指标预计、权衡和辅助分析", this);
+	m_HelpAct = new QAction("帮助", this);
+
+	// 图标
+	auto importModelWidIcon = QIcon(":/src/import_model.svg");
+	auto dataBaseWidIcon = QIcon(":/src/database.svg");
+	auto intelligentAnalyIcon = QIcon(":/src/intelligent_analy.svg");
+	auto AnalyEvalWidIcon = QIcon(":/src/analy_eval.svg");
+	auto auxiliaryAnalyWidIcon = QIcon(":/src/auxiliary_analy.svg");
+	auto helpIcon = QIcon(":/src/help.svg");
+
+	m_ImportModelWidAct->setIcon(importModelWidIcon);
+	m_DataBaseWidAct->setIcon(dataBaseWidIcon);
+	m_IntelligentAnalyWidAct->setIcon(intelligentAnalyIcon);
+	m_AnalyEvalWidAct->setIcon(AnalyEvalWidIcon);
+	m_AuxiliaryAnalyWidAct->setIcon(auxiliaryAnalyWidIcon);
+	m_HelpAct->setIcon(helpIcon);
+
+	// 把所有Action添加到顶部导航工具栏
+	topNavToolBar->addAction(m_DataBaseWidAct);
+	topNavToolBar->addAction(m_ImportModelWidAct);
+	topNavToolBar->addAction(m_IntelligentAnalyWidAct);
+	topNavToolBar->addAction(m_AnalyEvalWidAct);
+	topNavToolBar->addAction(m_AuxiliaryAnalyWidAct);
+	topNavToolBar->addAction(m_HelpAct);
+	topNavToolBar->setFixedHeight(56);
+
+
+	// 先添加顶部导航
+	addToolBar(Qt::TopToolBarArea, topNavToolBar);
+	// 插入换行分割线（必须指定区域）
+	addToolBarBreak(Qt::TopToolBarArea);
+	// 再把ui->mainToolBar加入顶部区域
+	addToolBar(Qt::TopToolBarArea, ui->mainToolBar);
 
 
 	ui->mainToolBar->setMovable(false);
 	ui->mainToolBar->setFloatable(false);
-//////////////////////////////////////////////////////////ToolBar
+	//////////////////////////////////////////////////////////ToolBar
 	auto ImportBtn = new QPushButton();
 	auto SaveBtn = new QPushButton();
 	auto SaveAsBtn = new QPushButton();
-	auto ExportBtn= new QPushButton();
+	auto ExportBtn = new QPushButton();
 	ImportBtn->setIcon(QIcon(":/src/Import.svg"));
 	SaveBtn->setIcon(QIcon(":/src/Save.svg"));
 	SaveAsBtn->setIcon(QIcon(":/src/Save_as.svg"));
 	ExportBtn->setIcon(QIcon(":/src/Export.svg"));
-	ImportBtn->setFixedSize(32,32);
-	SaveBtn->setFixedSize(32, 32);
-	SaveAsBtn->setFixedSize(32, 32);
-	ExportBtn->setFixedSize(32, 32);
+
+	const int btnSize = 32;
+	QSize iconSize(btnSize, btnSize);
+	ImportBtn->setIconSize(iconSize);
+	SaveBtn->setIconSize(iconSize);
+	SaveAsBtn->setIconSize(iconSize);
+	ExportBtn->setIconSize(iconSize);
 
 	auto ImportLabel = new QLabel("导入文件");
 	auto SaveLabel = new QLabel("保存文件");
-	auto SaveAsLabel= new QLabel("另存为...");
-	auto ExportLabel= new QLabel("导出文件");
-	auto bottomTitleLab1 = new QLabel("几何");
+	auto SaveAsLabel = new QLabel("另存为...");
+	auto ExportLabel = new QLabel("导出文件");
+
+
+	auto importVBox = new QVBoxLayout();
+	importVBox->addWidget(ImportBtn, 0, Qt::AlignHCenter);
+	importVBox->addWidget(ImportLabel, 0, Qt::AlignHCenter);
+	importVBox->setSpacing(2);
+	importVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto saveAsVBox = new QVBoxLayout();
+	saveAsVBox->addWidget(SaveAsBtn, 0, Qt::AlignHCenter);
+	saveAsVBox->addWidget(SaveAsLabel, 0, Qt::AlignHCenter);
+	saveAsVBox->setSpacing(2);
+	saveAsVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto saveVBox = new QVBoxLayout();
+	saveVBox->addWidget(SaveBtn, 0, Qt::AlignHCenter);
+	saveVBox->addWidget(SaveLabel, 0, Qt::AlignHCenter);
+	saveVBox->setSpacing(2);
+	saveVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto exportVBox = new QVBoxLayout();
+	exportVBox->addWidget(ExportBtn, 0, Qt::AlignHCenter);
+	exportVBox->addWidget(ExportLabel, 0, Qt::AlignHCenter);
+	exportVBox->setSpacing(2);
+	exportVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto hLayout = new QHBoxLayout();
+	hLayout->addLayout(importVBox);
+	hLayout->addLayout(saveAsVBox);
+	hLayout->addLayout(saveVBox);
+	hLayout->addLayout(exportVBox);
+	hLayout->addStretch();
+	hLayout->setSpacing(4);
+	hLayout->setContentsMargins(4, 0, 4, 0);
+
+	auto vLayout = new QVBoxLayout();
+	vLayout->addLayout(hLayout);
+	vLayout->setContentsMargins(0, 0, 0, 0);
+	vLayout->setSpacing(2);
 
 	auto geomWidget = new QWidget();
-	geomWidget->setFixedWidth(172);
-	auto hLayout1 = new QHBoxLayout();
-	auto hLayout2 = new QHBoxLayout();
-	auto hLayout3 = new QHBoxLayout();
-	hLayout1->addWidget(ImportBtn);
-	hLayout1->addWidget(ImportLabel);
-	hLayout1->setSpacing(0);
-	hLayout1->addWidget(SaveAsBtn);
-	hLayout1->addWidget(SaveAsLabel);
-	hLayout1->setContentsMargins(0, 0, 0, 0);
-	hLayout2->addWidget(SaveBtn);
-	hLayout2->addWidget(SaveLabel);
-	hLayout2->setSpacing(0);
-	hLayout2->addWidget(ExportBtn);
-	hLayout2->addWidget(ExportLabel);
-	hLayout2->setContentsMargins(0, 0, 0, 0);
-	hLayout3->addStretch();
-	hLayout3->addWidget(bottomTitleLab1);
-	hLayout3->addStretch();
-	hLayout3->setContentsMargins(0, 0, 0, 0);
-	auto vLayout = new QVBoxLayout();
-	vLayout->addLayout(hLayout1);
-	vLayout->addLayout(hLayout2);
-	vLayout->addLayout(hLayout3);
-	vLayout->setContentsMargins(0, 0, 0, 0);
+	geomWidget->setFixedWidth(280);
 	geomWidget->setLayout(vLayout);
+
 
 
 
@@ -139,62 +213,72 @@ mainWidget::mainWidget(QWidget *parent)
 	auto RotateBtn = new QPushButton();
 	auto ZoomBtn = new QPushButton();
 	auto FitAllBtn = new QPushButton();
-	auto ResetBtn= new QPushButton();
-	auto nullBtn= new QPushButton();
-	nullBtn->setEnabled(false);
+	auto ResetBtn = new QPushButton();
 	MoveBtn->setIcon(QIcon(":/src/Move.svg"));
 	RotateBtn->setIcon(QIcon(":/src/Rotate.svg"));
 	ZoomBtn->setIcon(QIcon(":/src/Zoom.png"));
 	FitAllBtn->setIcon(QIcon(":/src/FitAll.png"));
 	ResetBtn->setIcon(QIcon(":/src/Reset.svg"));
-	MoveBtn->setFixedSize(32, 32);
-	RotateBtn->setFixedSize(32, 32);
-	ZoomBtn->setFixedSize(32, 32);
-	FitAllBtn->setFixedSize(32, 32);
-	ResetBtn->setFixedSize(32, 32);
+	MoveBtn->setIconSize(iconSize);
+	RotateBtn->setIconSize(iconSize);
+	ZoomBtn->setIconSize(iconSize);
+	FitAllBtn->setIconSize(iconSize);
+	ResetBtn->setIconSize(iconSize);
 	auto MoveLabel = new QLabel("移动");
 	auto RotateLabel = new QLabel("旋转");
 	auto ZoomLabel = new QLabel("缩放");
 	auto FitAllLabel = new QLabel("聚焦");
-	auto ResetLabel= new QLabel("重置");
-	auto nullLabel = new QLabel("");
+	auto ResetLabel = new QLabel("重置");
 
-	auto bottomTitleLab_o = new QLabel("操作");
+	auto moveVBox = new QVBoxLayout();
+	moveVBox->addWidget(MoveBtn, 0, Qt::AlignHCenter);
+	moveVBox->addWidget(MoveLabel, 0, Qt::AlignHCenter);
+	moveVBox->setSpacing(2);
+	moveVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto rotateVBox = new QVBoxLayout();
+	rotateVBox->addWidget(RotateBtn, 0, Qt::AlignHCenter);
+	rotateVBox->addWidget(RotateLabel, 0, Qt::AlignHCenter);
+	rotateVBox->setSpacing(2);
+	rotateVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto zoomVBox = new QVBoxLayout();
+	zoomVBox->addWidget(ZoomBtn, 0, Qt::AlignHCenter);
+	zoomVBox->addWidget(ZoomLabel, 0, Qt::AlignHCenter);
+	zoomVBox->setSpacing(2);
+	zoomVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto fitAllVBox = new QVBoxLayout();
+	fitAllVBox->addWidget(FitAllBtn, 0, Qt::AlignHCenter);
+	fitAllVBox->addWidget(FitAllLabel, 0, Qt::AlignHCenter);
+	fitAllVBox->setSpacing(2);
+	fitAllVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto resetVBox = new QVBoxLayout();
+	resetVBox->addWidget(ResetBtn, 0, Qt::AlignHCenter);
+	resetVBox->addWidget(ResetLabel, 0, Qt::AlignHCenter);
+	resetVBox->setSpacing(2);
+	resetVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto operationHLayout = new QHBoxLayout();
+	operationHLayout->addLayout(moveVBox);
+	operationHLayout->addLayout(rotateVBox);
+	operationHLayout->addLayout(zoomVBox);
+	operationHLayout->addLayout(fitAllVBox);
+	operationHLayout->addLayout(resetVBox);
+	operationHLayout->addStretch();
+	operationHLayout->setSpacing(4);
+	operationHLayout->setContentsMargins(4, 0, 4, 0);
+
+	auto operationVLayout = new QVBoxLayout();
+	operationVLayout->addLayout(operationHLayout);
+	operationVLayout->setContentsMargins(0, 0, 0, 0);
+	operationVLayout->setSpacing(2);
 
 	auto operationWidget = new QWidget();
-	operationWidget->setFixedWidth(184);
-	auto hLayout_o1 = new QHBoxLayout();
-	auto hLayout_o2 = new QHBoxLayout();
-	auto hLayout_o3 = new QHBoxLayout();
-	hLayout_o1->addWidget(MoveBtn);
-	hLayout_o1->addWidget(MoveLabel);
-	hLayout_o1->setSpacing(0);
-	hLayout_o1->addWidget(ZoomBtn);
-	hLayout_o1->addWidget(ZoomLabel);
-	hLayout_o1->setSpacing(0);
-	hLayout_o1->addWidget(ResetBtn);
-	hLayout_o1->addWidget(ResetLabel);
-	hLayout_o1->setContentsMargins(0, 0, 0, 0);
-	hLayout_o2->addWidget(RotateBtn);
-	hLayout_o2->addWidget(RotateLabel);
-	hLayout_o2->setSpacing(0);
-	hLayout_o2->addWidget(FitAllBtn);
-	hLayout_o2->addWidget(FitAllLabel);
-	hLayout_o2->setSpacing(0);
-	hLayout_o2->addWidget(nullBtn);
-	hLayout_o2->addWidget(nullLabel);
+	operationWidget->setFixedWidth(300);
+	operationWidget->setLayout(operationVLayout);
 
-	hLayout_o2->setContentsMargins(0, 0, 0, 0);
-	hLayout_o3->addStretch();
-	hLayout_o3->addWidget(bottomTitleLab_o);
-	hLayout_o3->addStretch();
-	hLayout_o3->setContentsMargins(0, 0, 0, 0);
-	auto vLayout_o = new QVBoxLayout();
-	vLayout_o->addLayout(hLayout_o1);
-	vLayout_o->addLayout(hLayout_o2);
-	vLayout_o->addLayout(hLayout_o3);
-	vLayout_o->setContentsMargins(0, 0, 0, 0);
-	operationWidget->setLayout(vLayout_o);
 
 	auto XBtn = new QPushButton();
 	auto YBtn = new QPushButton();
@@ -202,12 +286,12 @@ mainWidget::mainWidget(QWidget *parent)
 	auto _XBtn = new QPushButton();
 	auto _YBtn = new QPushButton();
 	auto _ZBtn = new QPushButton();
-	XBtn->setFixedSize(32, 32);
-	YBtn->setFixedSize(32, 32);
-	ZBtn->setFixedSize(32, 32);
-	_XBtn->setFixedSize(32, 32);
-	_YBtn->setFixedSize(32, 32);
-	_ZBtn->setFixedSize(32, 32);
+	XBtn->setIconSize(iconSize);
+	YBtn->setIconSize(iconSize);
+	ZBtn->setIconSize(iconSize);
+	_XBtn->setIconSize(iconSize);
+	_YBtn->setIconSize(iconSize);
+	_ZBtn->setIconSize(iconSize);
 
 	XBtn->setIcon(QIcon(":/src/View all From +X.png"));
 	YBtn->setIcon(QIcon(":/src/View all From +Y.png"));
@@ -223,58 +307,61 @@ mainWidget::mainWidget(QWidget *parent)
 	auto _ZLabel = new QLabel("负Z轴方向");
 	auto bottomTitleLab2 = new QLabel("视图");
 
+	auto XVBox = new QVBoxLayout();
+	XVBox->addWidget(XBtn, 0, Qt::AlignHCenter);
+	XVBox->addWidget(XLabel, 0, Qt::AlignHCenter);
+	XVBox->setSpacing(2);
+	XVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto YVBox = new QVBoxLayout();
+	YVBox->addWidget(YBtn, 0, Qt::AlignHCenter);
+	YVBox->addWidget(YLabel, 0, Qt::AlignHCenter);
+	YVBox->setSpacing(2);
+	YVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto ZVBox = new QVBoxLayout();
+	ZVBox->addWidget(ZBtn, 0, Qt::AlignHCenter);
+	ZVBox->addWidget(ZLabel, 0, Qt::AlignHCenter);
+	ZVBox->setSpacing(2);
+	ZVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto _XVBox = new QVBoxLayout();
+	_XVBox->addWidget(_XBtn, 0, Qt::AlignHCenter);
+	_XVBox->addWidget(_XLabel, 0, Qt::AlignHCenter);
+	_XVBox->setSpacing(2);
+	_XVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto _YVBox = new QVBoxLayout();
+	_YVBox->addWidget(_YBtn, 0, Qt::AlignHCenter);
+	_YVBox->addWidget(_YLabel, 0, Qt::AlignHCenter);
+	_YVBox->setSpacing(2);
+	_YVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto _ZVBox = new QVBoxLayout();
+	_ZVBox->addWidget(_ZBtn, 0, Qt::AlignHCenter);
+	_ZVBox->addWidget(_ZLabel, 0, Qt::AlignHCenter);
+	_ZVBox->setSpacing(2);
+	_ZVBox->setContentsMargins(4, 0, 4, 0);
+
+	auto viewHLayout = new QHBoxLayout();
+	viewHLayout->addLayout(XVBox);
+	viewHLayout->addLayout(YVBox);
+	viewHLayout->addLayout(ZVBox);
+	viewHLayout->addLayout(_XVBox);
+	viewHLayout->addLayout(_YVBox);
+	viewHLayout->addLayout(_ZVBox);
+	viewHLayout->addStretch();
+	viewHLayout->setSpacing(4);
+	viewHLayout->setContentsMargins(4, 0, 4, 0);
+
+	auto viewVLayout = new QVBoxLayout();
+	viewVLayout->addLayout(viewHLayout);
+	viewVLayout->setContentsMargins(0, 0, 0, 0);
+	viewVLayout->setSpacing(2);
+
 	auto viewWidget = new QWidget();
-	viewWidget->setFixedWidth(265);
-	auto hLayout_v1 = new QHBoxLayout();
-	auto hLayout_v2 = new QHBoxLayout();
-	auto hLayout_v3 = new QHBoxLayout();
-	hLayout_v1->addWidget(XBtn);
-	hLayout_v1->addWidget(XLabel);
-	hLayout_v1->setSpacing(0);
-	hLayout_v1->addWidget(YBtn);
-	hLayout_v1->addWidget(YLabel);
-	hLayout_v1->setSpacing(0);
-	hLayout_v1->addWidget(ZBtn);
-	hLayout_v1->addWidget(ZLabel);
-	hLayout_v1->setContentsMargins(0,0,0,0);
-	hLayout_v2->addWidget(_XBtn);
-	hLayout_v2->addWidget(_XLabel);
-	hLayout_v2->setSpacing(0);
-	hLayout_v2->addWidget(_YBtn);
-	hLayout_v2->addWidget(_YLabel);
-	hLayout_v2->setSpacing(0);
-	hLayout_v2->addWidget(_ZBtn);
-	hLayout_v2->addWidget(_ZLabel);
-	hLayout_v2->setContentsMargins(0, 0, 0, 0);
-	hLayout_v3->addStretch();
-	hLayout_v3->addWidget(bottomTitleLab2);
-	hLayout_v3->addStretch();
-	auto vLayout_v = new QVBoxLayout();
-	vLayout_v->addLayout(hLayout_v1);
-	vLayout_v->addLayout(hLayout_v2);
-	vLayout_v->addLayout(hLayout_v3);
-	vLayout_v->setContentsMargins(0, 0, 0, 0);
-	viewWidget->setLayout(vLayout_v);
-
-
-	/*auto SettingBtn = new QPushButton();
-	SettingBtn->setFixedSize(67, 67);
-	SettingBtn->setIcon(QIcon(":/src/Setting.svg"));
-	SettingBtn->setIconSize(QSize(50, 50));
-	auto SettingLabel = new QLabel("设置");
-
-	auto settingWidget = new QWidget();
-	settingWidget->setFixedWidth(69);
-	auto hLayout_s = new QHBoxLayout();
-	hLayout_s->addStretch();
-	hLayout_s->addWidget(SettingLabel);
-	hLayout_s->addStretch();
-
-	auto vLayout_s = new QVBoxLayout();
-	vLayout_s->addWidget(SettingBtn);
-	vLayout_s->addLayout(hLayout_s);
-	vLayout_s->setContentsMargins(0, 0, 0, 0);
-	settingWidget->setLayout(vLayout_s);*/
+	viewWidget->setFixedWidth(400);
+	viewWidget->setLayout(viewVLayout);
 
 	ui->mainToolBar->addWidget(geomWidget);
 	ui->mainToolBar->addSeparator();
@@ -282,17 +369,16 @@ mainWidget::mainWidget(QWidget *parent)
 	ui->mainToolBar->addSeparator();
 	ui->mainToolBar->addWidget(viewWidget);
 	ui->mainToolBar->addSeparator();
-	//ui->mainToolBar->addWidget(settingWidget);
-	//ui->mainToolBar->addSeparator();
+
 
 
 	m_TabWidget = new QTabWidget(this);
 
-	GFImportModelWidget*importModelWid = new GFImportModelWidget(m_TabWidget);
+	GFImportModelWidget* importModelWid = new GFImportModelWidget(m_TabWidget);
 	{
 	}
 
-	DatabaseWidget*dataBaseWid = new DatabaseWidget(m_TabWidget);
+	DatabaseWidget* dataBaseWid = new DatabaseWidget(m_TabWidget);
 	{
 	}
 
@@ -300,13 +386,13 @@ mainWidget::mainWidget(QWidget *parent)
 	{
 	}*/
 
-	IntelligentAnalyWidget*IntelligenAnalysisWid = new IntelligentAnalyWidget(m_TabWidget);
+	IntelligentAnalyWidget* IntelligenAnalysisWid = new IntelligentAnalyWidget(m_TabWidget);
 	{
 	}
-	AuxiliaryAnalysisWidget*auxiliaryAnalysisWid = new AuxiliaryAnalysisWidget(m_TabWidget);
+	AuxiliaryAnalysisWidget* auxiliaryAnalysisWid = new AuxiliaryAnalysisWidget(m_TabWidget);
 	{
 	}
-	ParamAnalyWidget*analysisEvaluationWid = new ParamAnalyWidget(m_TabWidget);
+	ParamAnalyWidget* analysisEvaluationWid = new ParamAnalyWidget(m_TabWidget);
 	{
 	}
 
@@ -327,8 +413,8 @@ mainWidget::mainWidget(QWidget *parent)
 		m_TabWidget->setCurrentIndex(0);
 		// 显示工具栏
 		ui->mainToolBar->setVisible(true);
-	});
-		
+		});
+
 	QObject::connect(m_DataBaseWidAct, &QAction::triggered, [=]() {
 		m_TabWidget->setCurrentIndex(1);
 		// 隐藏工具栏
@@ -339,7 +425,7 @@ mainWidget::mainWidget(QWidget *parent)
 		UserInfo info = ins->GetUserInfo();
 		if (info.username != "admin")
 		{
-			QTreeWidgetItem *child;
+			QTreeWidgetItem* child;
 			int size = treeWidget->topLevelItemCount();
 			for (int i = 0; i < size; i++)
 			{
@@ -350,7 +436,7 @@ mainWidget::mainWidget(QWidget *parent)
 				}
 			}
 		}
-	});
+		});
 
 	//QObject::connect(m_ParamAnalyWidAct, &QAction::triggered, [=]() {
 	//	m_TabWidget->setCurrentIndex(2);
@@ -368,7 +454,7 @@ mainWidget::mainWidget(QWidget *parent)
 		/*auto occView3 = IntelligenAnalysisWid->GetOccView();
 		auto myview = occView3->getView();
 		myview->MustBeResized();*/
-	});
+		});
 
 	QObject::connect(m_AnalyEvalWidAct, &QAction::triggered, [=]() {
 		m_TabWidget->setCurrentIndex(3);
@@ -385,9 +471,9 @@ mainWidget::mainWidget(QWidget *parent)
 		ui->mainToolBar->setVisible(false);
 		// 更新echart数据
 		auxiliaryAnalysisWid->updateAllData();
-	});
+		});
 
-	
+
 
 
 	QObject::connect(m_HelpAct, &QAction::triggered, [=]() {
@@ -405,17 +491,17 @@ mainWidget::mainWidget(QWidget *parent)
 			"- **电子邮件**: [联系邮箱]\n"
 			"- **网站**: [官方网站]";
 		QMessageBox::about(nullptr, "固体发动机安全性分析与评估系统", aboutText);
-	});
-	
+		});
 
 
-	QObject::connect(ImportBtn, &QPushButton::clicked, [this,importModelWid]() {
+
+	QObject::connect(ImportBtn, &QPushButton::clicked, [this, importModelWid]() {
 		if (m_TabWidget->currentIndex() == 0) {
 			// 打开文件对话框
 			QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(),
 				"STEP Files (*.stp *.step);;IGES Files (*.iges *.igs);;VTK Files (*.vtk);;X_T Files (*.x_t);;All Files (*.*)");
 
-			if (filePath.isEmpty()) 
+			if (filePath.isEmpty())
 				return;
 			QDateTime currentTime = QDateTime::currentDateTime();
 			QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -501,107 +587,107 @@ mainWidget::mainWidget(QWidget *parent)
 					loadSuccess = true;
 				}
 			}
-		//	else if (filePath.endsWith(".vtk", Qt::CaseInsensitive)) {
-		//		vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
-		//		reader->SetFileName(filePath.toStdString().c_str());
-		//		reader->Update();
+			//	else if (filePath.endsWith(".vtk", Qt::CaseInsensitive)) {
+			//		vtkSmartPointer<vtkPolyDataReader> reader = vtkSmartPointer<vtkPolyDataReader>::New();
+			//		reader->SetFileName(filePath.toStdString().c_str());
+			//		reader->Update();
 
-		//		vtkPolyData* polyData = reader->GetOutput();
-		//		if (!polyData || polyData->GetNumberOfPoints() == 0) {
-		//			QMessageBox::warning(this, "Error", "Failed to read VTK file or empty data.");
-		//			return;
-		//		}
+			//		vtkPolyData* polyData = reader->GetOutput();
+			//		if (!polyData || polyData->GetNumberOfPoints() == 0) {
+			//			QMessageBox::warning(this, "Error", "Failed to read VTK file or empty data.");
+			//			return;
+			//		}
 
-		//		aShape = VtkPolyDataToOCCShape(polyData);
-		//		if (aShape.IsNull()) {
-		//			QMessageBox::warning(this, "Error", "Failed to convert VTK to OCC shape.");
-		//			return;
-		//		}
+			//		aShape = VtkPolyDataToOCCShape(polyData);
+			//		if (aShape.IsNull()) {
+			//			QMessageBox::warning(this, "Error", "Failed to convert VTK to OCC shape.");
+			//			return;
+			//		}
 
-		//		// 计算包围盒等（同前）
-		//		Bnd_Box bbox;
-		//		BRepBndLib::Add(aShape, bbox);
-		//		bbox.SetGap(0.0);
-		//		Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
-		//		bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax);
+			//		// 计算包围盒等（同前）
+			//		Bnd_Box bbox;
+			//		BRepBndLib::Add(aShape, bbox);
+			//		bbox.SetGap(0.0);
+			//		Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
+			//		bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax);
 
-		//		info.shape = aShape;
-		//		info.path = filePath;
-		//		info.theXmin = theXmin; info.theYmin = theYmin; info.theZmin = theZmin;
-		//		info.theXmax = theXmax; info.theYmax = theYmax; info.theZmax = theZmax;
-		//		info.length = theXmax - theXmin;
-		//		info.width = theYmax - theYmin;
-		//		info.height = theZmax - theZmin;
+			//		info.shape = aShape;
+			//		info.path = filePath;
+			//		info.theXmin = theXmin; info.theYmin = theYmin; info.theZmin = theZmin;
+			//		info.theXmax = theXmax; info.theYmax = theYmax; info.theZmax = theZmax;
+			//		info.length = theXmax - theXmin;
+			//		info.width = theYmax - theYmin;
+			//		info.height = theZmax - theZmin;
 
-		//		ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
-		//		importModelWid->GetGFTreeModelWidget()->updataIcon();
-		//		loadSuccess = true;
-		//	}
-		//	else if (filePath.endsWith(".x_t", Qt::CaseInsensitive)) {
-		//	XSControl_Reader aReader_XT;
-		//	// 设置为 Parasolid 模式（关键！）
-		//	aReader_XT.SetMode("XSTEP"); // 或尝试 "DEFAULT"
+			//		ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
+			//		importModelWid->GetGFTreeModelWidget()->updataIcon();
+			//		loadSuccess = true;
+			//	}
+			//	else if (filePath.endsWith(".x_t", Qt::CaseInsensitive)) {
+			//	XSControl_Reader aReader_XT;
+			//	// 设置为 Parasolid 模式（关键！）
+			//	aReader_XT.SetMode("XSTEP"); // 或尝试 "DEFAULT"
 
-		//	IFSelect_ReturnStatus status = aReader_XT.ReadFile(filePath.toStdString().c_str());
-		//	if (status == IFSelect_RetDone) {
-		//		aReader_XT.PrintCheckLoad(Standard_False, IFSelect_ItemsByEntity);
-		//		Standard_Integer nbRoots = aReader_XT.NbRootsForTransfer();
-		//		if (nbRoots > 0) {
-		//			aReader_XT.TransferRoots();
-		//			aShape = aReader_XT.OneShape();
+			//	IFSelect_ReturnStatus status = aReader_XT.ReadFile(filePath.toStdString().c_str());
+			//	if (status == IFSelect_RetDone) {
+			//		aReader_XT.PrintCheckLoad(Standard_False, IFSelect_ItemsByEntity);
+			//		Standard_Integer nbRoots = aReader_XT.NbRootsForTransfer();
+			//		if (nbRoots > 0) {
+			//			aReader_XT.TransferRoots();
+			//			aShape = aReader_XT.OneShape();
 
-		//			if (!aShape.IsNull()) {
-		//				// 计算包围盒
-		//				Bnd_Box bbox;
-		//				BRepBndLib::Add(aShape, bbox);
-		//				bbox.SetGap(0.0);
+			//			if (!aShape.IsNull()) {
+			//				// 计算包围盒
+			//				Bnd_Box bbox;
+			//				BRepBndLib::Add(aShape, bbox);
+			//				bbox.SetGap(0.0);
 
-		//				Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
-		//				bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax);
+			//				Standard_Real theXmin, theYmin, theZmin, theXmax, theYmax, theZmax;
+			//				bbox.Get(theXmin, theYmin, theZmin, theXmax, theYmax, theZmax);
 
-		//				info.shape = aShape;
-		//				info.path = filePath;
-		//				info.theXmin = theXmin; info.theYmin = theYmin; info.theZmin = theZmin;
-		//				info.theXmax = theXmax; info.theYmax = theYmax; info.theZmax = theZmax;
-		//				info.length = double(theXmax - theXmin);
-		//				info.width = double(theYmax - theYmin);
-		//				info.height = double(theZmax - theZmin);
+			//				info.shape = aShape;
+			//				info.path = filePath;
+			//				info.theXmin = theXmin; info.theYmin = theYmin; info.theZmin = theZmin;
+			//				info.theXmax = theXmax; info.theYmax = theYmax; info.theZmax = theZmax;
+			//				info.length = double(theXmax - theXmin);
+			//				info.width = double(theYmax - theYmin);
+			//				info.height = double(theZmax - theZmin);
 
-		//				ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
-		//				importModelWid->GetGFTreeModelWidget()->updataIcon();
-		//				loadSuccess = true;
-		//			}
-		//		}
-		//	}
-		//	if (!loadSuccess || aShape.IsNull()) {
-		//		QMessageBox::warning(this, "Error", "Failed to load model");
-		//		return;
-		//	}
+			//				ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
+			//				importModelWid->GetGFTreeModelWidget()->updataIcon();
+			//				loadSuccess = true;
+			//			}
+			//		}
+			//	}
+			//	if (!loadSuccess || aShape.IsNull()) {
+			//		QMessageBox::warning(this, "Error", "Failed to load model");
+			//		return;
+			//	}
 
-		//	// 获取OCC视图和上下文
-		//	auto occView = importModelWid->GetOccView();
-		//	Handle(AIS_InteractiveContext) context = occView->getContext();
+			//	// 获取OCC视图和上下文
+			//	auto occView = importModelWid->GetOccView();
+			//	Handle(AIS_InteractiveContext) context = occView->getContext();
 
-		//	// 清除之前的显示
-		//	context->EraseAll(true);
+			//	// 清除之前的显示
+			//	context->EraseAll(true);
 
-		//	// 创建模型的AIS表示
-		//	Handle(AIS_Shape) modelPresentation = new AIS_Shape(aShape);
+			//	// 创建模型的AIS表示
+			//	Handle(AIS_Shape) modelPresentation = new AIS_Shape(aShape);
 
-		//	// 设置模型显示属性
-		//	context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-		//	context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
-		//	context->Display(modelPresentation, false);
+			//	// 设置模型显示属性
+			//	context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
+			//	context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
+			//	context->Display(modelPresentation, false);
 
-		//			
-		//	// 调整视图以适应模型
-		//	occView->fitAll();
+			//			
+			//	// 调整视图以适应模型
+			//	occView->fitAll();
 
 
-		//	currentTime = QDateTime::currentDateTime();
-		//	timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-		//	QString text = timeStr + "[信息]>导入几何模型,路径为：" + filePath;
-		//	textEdit->appendPlainText(text);
+			//	currentTime = QDateTime::currentDateTime();
+			//	timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+			//	QString text = timeStr + "[信息]>导入几何模型,路径为：" + filePath;
+			//	textEdit->appendPlainText(text);
 		}
 		else if (m_TabWidget->currentIndex() == 1)
 		{
@@ -610,7 +696,7 @@ mainWidget::mainWidget(QWidget *parent)
 				QDir::currentPath(), filter);
 		}
 
-	});
+		});
 
 	auto occView = importModelWid->GetOccView();
 	connect(MoveBtn, &QPushButton::clicked, occView, &OccView::pan);
@@ -619,8 +705,8 @@ mainWidget::mainWidget(QWidget *parent)
 	connect(FitAllBtn, &QPushButton::clicked, occView, &OccView::fitAll);
 	connect(ResetBtn, &QPushButton::clicked, occView, &OccView::reset);
 
-	QObject::connect(XBtn, &QPushButton::clicked, [occView]() {		
-		auto state=occView->GetCameraRotationState();
+	QObject::connect(XBtn, &QPushButton::clicked, [occView]() {
+		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
 			Handle(V3d_View) view = occView->getView();
@@ -677,16 +763,16 @@ mainWidget::mainWidget(QWidget *parent)
 
 mainWidget::~mainWidget()
 {
-    delete ui;
+	delete ui;
 }
 
 
-void deleteWidget(QLayout *layout)
+void deleteWidget(QLayout* layout)
 {
 	if (layout) {
 		for (int i = layout->count() - 1; i >= 0; --i) {
-			QLayoutItem *item = layout->itemAt(i);
-			QWidget *widget = item->widget();
+			QLayoutItem* item = layout->itemAt(i);
+			QWidget* widget = item->widget();
 			if (widget) {
 				delete widget;
 			}
@@ -703,15 +789,15 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	gradient.setColorAt(0, QColor(5, 96, 135)); // 设置起点颜色为蓝色
 	gradient.setColorAt(1, QColor(16, 27, 50)); // 设置终点颜色为红色
 
-	QWidget*widget_1 = chartWidMap.value(1);
-	QSplineSeries *series_1 = new QSplineSeries();
+	QWidget* widget_1 = chartWidMap.value(1);
+	QSplineSeries* series_1 = new QSplineSeries();
 	series_1->setName("spline");
 	series_1->append(10, 36);
 	series_1->append(12, 54);
 	series_1->append(13, 78);
 	series_1->append(17, 34);
 	series_1->append(20, 15);
-	QChart *chart_1 = new QChart();
+	QChart* chart_1 = new QChart();
 	chart_1->legend()->hide();//隐藏图例
 	chart_1->addSeries(series_1);//添加数据
 	chart_1->setTitle("Simple example");//标题
@@ -720,27 +806,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_1->setBackgroundBrush(QBrush(gradient));
 	chart_1->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_1 = chart_1->axisX();
-	QAbstractAxis *yAxis_1 = chart_1->axisY();
+	QAbstractAxis* xAxis_1 = chart_1->axisX();
+	QAbstractAxis* yAxis_1 = chart_1->axisY();
 	xAxis_1->setLabelsColor(Qt::white);
 	yAxis_1->setLabelsColor(Qt::white);
-	QChartView *chartView_1 = new QChartView();
+	QChartView* chartView_1 = new QChartView();
 	chartView_1->setChart(chart_1);
 	chartView_1->resize(widget_1->size());
 	chartView_1->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_1 = widget_1->layout();
+	QLayout* layout_1 = widget_1->layout();
 	deleteWidget(layout_1);
 	widget_1->layout()->addWidget(chartView_1);
 
-	QWidget*widget_2 = chartWidMap.value(2);
-	QSplineSeries *series_2 = new QSplineSeries();
+	QWidget* widget_2 = chartWidMap.value(2);
+	QSplineSeries* series_2 = new QSplineSeries();
 	series_2->setName("spline");
 	series_2->append(13, 36);
 	series_2->append(22, 64);
 	series_2->append(36, 88);
 	series_2->append(77, 24);
 	series_2->append(90, 5);
-	QChart *chart_2 = new QChart();
+	QChart* chart_2 = new QChart();
 	chart_2->legend()->hide();//隐藏图例
 	chart_2->addSeries(series_2);//添加数据
 	chart_2->setTitle("Simple example");//标题
@@ -749,27 +835,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_2->setBackgroundBrush(QBrush(gradient));
 	chart_2->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_2 = chart_2->axisX();
-	QAbstractAxis *yAxis_2 = chart_2->axisY();
+	QAbstractAxis* xAxis_2 = chart_2->axisX();
+	QAbstractAxis* yAxis_2 = chart_2->axisY();
 	xAxis_2->setLabelsColor(Qt::white);
 	yAxis_2->setLabelsColor(Qt::white);
-	QChartView *chartView_2 = new QChartView();
+	QChartView* chartView_2 = new QChartView();
 	chartView_2->setChart(chart_2);
 	chartView_2->resize(widget_2->size());
 	chartView_2->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_2 = widget_2->layout();
+	QLayout* layout_2 = widget_2->layout();
 	deleteWidget(layout_2);
 	widget_2->layout()->addWidget(chartView_2);
 
-	QWidget*widget_3 = chartWidMap.value(3);
-	QSplineSeries *series_3 = new QSplineSeries();
+	QWidget* widget_3 = chartWidMap.value(3);
+	QSplineSeries* series_3 = new QSplineSeries();
 	series_3->setName("spline");
 	series_3->append(20, 36);
 	series_3->append(42, 54);
 	series_3->append(63, 18);
 	series_3->append(77, 84);
 	series_3->append(80, 55);
-	QChart *chart_3 = new QChart();
+	QChart* chart_3 = new QChart();
 	chart_3->legend()->hide();//隐藏图例
 	chart_3->addSeries(series_3);//添加数据
 	chart_3->setTitle("Simple example");//标题
@@ -778,27 +864,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_3->setBackgroundBrush(QBrush(gradient));
 	chart_3->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_3 = chart_3->axisX();
-	QAbstractAxis *yAxis_3 = chart_3->axisY();
+	QAbstractAxis* xAxis_3 = chart_3->axisX();
+	QAbstractAxis* yAxis_3 = chart_3->axisY();
 	xAxis_3->setLabelsColor(Qt::white);
 	yAxis_3->setLabelsColor(Qt::white);
-	QChartView *chartView_3 = new QChartView();
+	QChartView* chartView_3 = new QChartView();
 	chartView_3->setChart(chart_3);
 	chartView_3->resize(widget_3->size());
 	chartView_3->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_3 = widget_3->layout();
+	QLayout* layout_3 = widget_3->layout();
 	deleteWidget(layout_3);
 	widget_3->layout()->addWidget(chartView_3);
 
-	QWidget*widget_4 = chartWidMap.value(4);
-	QSplineSeries *series_4 = new QSplineSeries();
+	QWidget* widget_4 = chartWidMap.value(4);
+	QSplineSeries* series_4 = new QSplineSeries();
 	series_4->setName("spline");
 	series_4->append(2, 56);
 	series_4->append(23, 74);
 	series_4->append(43, 28);
 	series_4->append(67, 94);
 	series_4->append(80, 100);
-	QChart *chart_4 = new QChart();
+	QChart* chart_4 = new QChart();
 	chart_4->legend()->hide();//隐藏图例
 	chart_4->addSeries(series_4);//添加数据
 	chart_4->setTitle("Simple example");//标题
@@ -807,27 +893,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_4->setBackgroundBrush(QBrush(gradient));
 	chart_4->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_4 = chart_4->axisX();
-	QAbstractAxis *yAxis_4 = chart_4->axisY();
+	QAbstractAxis* xAxis_4 = chart_4->axisX();
+	QAbstractAxis* yAxis_4 = chart_4->axisY();
 	xAxis_4->setLabelsColor(Qt::white);
 	yAxis_4->setLabelsColor(Qt::white);
-	QChartView *chartView_4 = new QChartView();
+	QChartView* chartView_4 = new QChartView();
 	chartView_4->setChart(chart_4);
 	chartView_4->resize(widget_4->size());
 	chartView_4->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_4 = widget_4->layout();
+	QLayout* layout_4 = widget_4->layout();
 	deleteWidget(layout_4);
 	widget_4->layout()->addWidget(chartView_4);
 
-	QWidget*widget_5 = chartWidMap.value(5);
-	QSplineSeries *series_5 = new QSplineSeries();
+	QWidget* widget_5 = chartWidMap.value(5);
+	QSplineSeries* series_5 = new QSplineSeries();
 	series_5->setName("spline");
 	series_5->append(7, 36);
 	series_5->append(43, 14);
 	series_5->append(53, 48);
 	series_5->append(77, 64);
 	series_5->append(87, 85);
-	QChart *chart_5 = new QChart();
+	QChart* chart_5 = new QChart();
 	chart_5->legend()->hide();//隐藏图例
 	chart_5->addSeries(series_5);//添加数据
 	chart_5->setTitle("Simple example");//标题
@@ -836,27 +922,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_5->setBackgroundBrush(QBrush(gradient));
 	chart_5->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_5 = chart_5->axisX();
-	QAbstractAxis *yAxis_5 = chart_5->axisY();
+	QAbstractAxis* xAxis_5 = chart_5->axisX();
+	QAbstractAxis* yAxis_5 = chart_5->axisY();
 	xAxis_5->setLabelsColor(Qt::white);
 	yAxis_5->setLabelsColor(Qt::white);
-	QChartView *chartView_5 = new QChartView();
+	QChartView* chartView_5 = new QChartView();
 	chartView_5->setChart(chart_5);
 	chartView_5->resize(widget_5->size());
 	chartView_5->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_5 = widget_5->layout();
+	QLayout* layout_5 = widget_5->layout();
 	deleteWidget(layout_5);
 	widget_5->layout()->addWidget(chartView_5);
 
-	QWidget*widget_6 = chartWidMap.value(6);
-	QSplineSeries *series_6 = new QSplineSeries();
+	QWidget* widget_6 = chartWidMap.value(6);
+	QSplineSeries* series_6 = new QSplineSeries();
 	series_6->setName("spline");
 	series_6->append(0, 0);
 	series_6->append(32, 34);
 	series_6->append(53, 48);
 	series_6->append(78, 47);
 	series_6->append(90, 95);
-	QChart *chart_6 = new QChart();
+	QChart* chart_6 = new QChart();
 	chart_6->legend()->hide();//隐藏图例
 	chart_6->addSeries(series_6);//添加数据
 	chart_6->setTitle("Simple example");//标题
@@ -865,27 +951,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_6->setBackgroundBrush(QBrush(gradient));
 	chart_6->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_6 = chart_6->axisX();
-	QAbstractAxis *yAxis_6 = chart_6->axisY();
+	QAbstractAxis* xAxis_6 = chart_6->axisX();
+	QAbstractAxis* yAxis_6 = chart_6->axisY();
 	xAxis_6->setLabelsColor(Qt::white);
 	yAxis_6->setLabelsColor(Qt::white);
-	QChartView *chartView_6 = new QChartView();
+	QChartView* chartView_6 = new QChartView();
 	chartView_6->setChart(chart_6);
 	chartView_6->resize(widget_6->size());
 	chartView_6->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_6 = widget_6->layout();
+	QLayout* layout_6 = widget_6->layout();
 	deleteWidget(layout_6);
 	widget_6->layout()->addWidget(chartView_6);
 
-	QWidget*widget_7 = chartWidMap.value(7);
-	QSplineSeries *series_7 = new QSplineSeries();
+	QWidget* widget_7 = chartWidMap.value(7);
+	QSplineSeries* series_7 = new QSplineSeries();
 	series_7->setName("spline");
 	series_7->append(0, 36);
 	series_7->append(34, 84);
 	series_7->append(45, 48);
 	series_7->append(57, 24);
 	series_7->append(68, 95);
-	QChart *chart_7 = new QChart();
+	QChart* chart_7 = new QChart();
 	chart_7->legend()->hide();//隐藏图例
 	chart_7->addSeries(series_7);//添加数据
 	chart_7->setTitle("Simple example");//标题
@@ -894,27 +980,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_7->setBackgroundBrush(QBrush(gradient));
 	chart_7->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_7 = chart_7->axisX();
-	QAbstractAxis *yAxis_7 = chart_7->axisY();
+	QAbstractAxis* xAxis_7 = chart_7->axisX();
+	QAbstractAxis* yAxis_7 = chart_7->axisY();
 	xAxis_7->setLabelsColor(Qt::white);
 	yAxis_7->setLabelsColor(Qt::white);
-	QChartView *chartView_7 = new QChartView();
+	QChartView* chartView_7 = new QChartView();
 	chartView_7->setChart(chart_7);
 	chartView_7->resize(widget_7->size());
 	chartView_7->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_7 = widget_7->layout();
+	QLayout* layout_7 = widget_7->layout();
 	deleteWidget(layout_7);
 	widget_7->layout()->addWidget(chartView_7);
 
-	QWidget*widget_8 = chartWidMap.value(8);
-	QSplineSeries *series_8 = new QSplineSeries();
+	QWidget* widget_8 = chartWidMap.value(8);
+	QSplineSeries* series_8 = new QSplineSeries();
 	series_8->setName("spline");
 	series_8->append(0, 66);
 	series_8->append(32, 94);
 	series_8->append(43, 18);
 	series_8->append(67, 84);
 	series_8->append(80, 5);
-	QChart *chart_8 = new QChart();
+	QChart* chart_8 = new QChart();
 	chart_8->legend()->hide();//隐藏图例
 	chart_8->addSeries(series_8);//添加数据
 	chart_8->setTitle("Simple example");//标题
@@ -923,22 +1009,22 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart_8->setBackgroundBrush(QBrush(gradient));
 	chart_8->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_8 = chart_8->axisX();
-	QAbstractAxis *yAxis_8 = chart_8->axisY();
+	QAbstractAxis* xAxis_8 = chart_8->axisX();
+	QAbstractAxis* yAxis_8 = chart_8->axisY();
 	xAxis_8->setLabelsColor(Qt::white);
 	yAxis_8->setLabelsColor(Qt::white);
-	QChartView *chartView_8 = new QChartView();
+	QChartView* chartView_8 = new QChartView();
 	chartView_8->setChart(chart_8);
 	chartView_8->resize(widget_8->size());
 	chartView_8->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_8 = widget_8->layout();
+	QLayout* layout_8 = widget_8->layout();
 	deleteWidget(layout_8);
 	widget_8->layout()->addWidget(chartView_8);
 
 
 
 	/////////////////////// 中间比例图
-	QWidget*widget_0 = chartWidMap.value(0);
+	QWidget* widget_0 = chartWidMap.value(0);
 	const qreal angularMin = 0;
 	const qreal angularMax = 360;
 	const qreal radialMin = 0;
@@ -947,7 +1033,7 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 
 	qreal ad6 = (angularMax - angularMin) / 8;
 
-	QLineSeries *seriesdata = new QLineSeries();
+	QLineSeries* seriesdata = new QLineSeries();
 	seriesdata->append(angularMin, 143);
 	seriesdata->append(angularMin + ad6 * 1, 330);
 	seriesdata->append(angularMin + ad6 * 2, 290);
@@ -967,11 +1053,11 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 
 
 
-	QAreaSeries *seriesArea = new QAreaSeries();
+	QAreaSeries* seriesArea = new QAreaSeries();
 	seriesArea->setUpperSeries(seriesdata);
 	seriesArea->setOpacity(0.5);
 
-	QPolarChart *chart = new QPolarChart();
+	QPolarChart* chart = new QPolarChart();
 	chart->setPlotArea(QRectF(0, 2500, 0, 0)); // 上移50个单位
 
 
@@ -979,7 +1065,7 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart->addSeries(seriesArea);
 
 
-	QCategoryAxis *angularAxis = new QCategoryAxis();
+	QCategoryAxis* angularAxis = new QCategoryAxis();
 	angularAxis->append("A", 0);
 	angularAxis->append("B", 45);
 	angularAxis->append("C", 90);
@@ -993,7 +1079,7 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 
 	angularAxis->setShadesBrush(QBrush(QColor(249, 249, 255)));
 	chart->addAxis(angularAxis, QPolarChart::PolarOrientationAngular);
-	QValueAxis *radialAxis = new QValueAxis();
+	QValueAxis* radialAxis = new QValueAxis();
 
 	radialAxis->setLabelFormat("");
 	chart->addAxis(radialAxis, QPolarChart::PolarOrientationRadial);
@@ -1005,7 +1091,7 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	seriesArea->attachAxis(angularAxis);
 	for (int i = 0; i <= 2; ++i)
 	{
-		QLineSeries *seriesLineTemp = new QLineSeries();
+		QLineSeries* seriesLineTemp = new QLineSeries();
 		chart->addSeries(seriesLineTemp);
 		seriesLineTemp->attachAxis(radialAxis);
 		seriesLineTemp->attachAxis(angularAxis);
@@ -1024,7 +1110,7 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 
 	chart->legend()->markers(seriesdata).at(0)->setVisible(false);
 
-	foreach(QLegendMarker* marker, chart->legend()->markers())
+	foreach(QLegendMarker * marker, chart->legend()->markers())
 	{
 		if (marker->type() != QLegendMarker::LegendMarkerTypeArea)
 		{
@@ -1039,27 +1125,27 @@ void mainWidget::changeChartView(QMap<int, QWidget*> chartWidMap)
 	chart->setBackgroundBrush(QBrush(gradient));
 	chart->setTitleBrush(Qt::white); // 标题文字颜色
 	// 获取X轴和Y轴对象
-	QAbstractAxis *xAxis_0 = chart->axisX();
-	QAbstractAxis *yAxis_0 = chart->axisY();
+	QAbstractAxis* xAxis_0 = chart->axisX();
+	QAbstractAxis* yAxis_0 = chart->axisY();
 	xAxis_0->setLabelsColor(Qt::white);
 	yAxis_0->setLabelsColor(Qt::white);
-	QChartView *chartView_0 = new QChartView();
+	QChartView* chartView_0 = new QChartView();
 	chartView_0->setChart(chart);
 	chartView_0->resize(440, 400);
 	chartView_0->move(chartView_0->x(), chartView_0->y() - 100);
 	chartView_0->setRenderHint(QPainter::Antialiasing);
-	QLayout *layout_0 = widget_0->layout();
+	QLayout* layout_0 = widget_0->layout();
 	deleteWidget(layout_0);
 	widget_0->layout()->addWidget(chartView_0);
 }
 
 
-void mainWidget::deleteWidget(QLayout *layout)
+void mainWidget::deleteWidget(QLayout* layout)
 {
 	if (layout) {
 		for (int i = layout->count() - 1; i >= 0; --i) {
-			QLayoutItem *item = layout->itemAt(i);
-			QWidget *widget = item->widget();
+			QLayoutItem* item = layout->itemAt(i);
+			QWidget* widget = item->widget();
 			if (widget) {
 				delete widget;
 			}
@@ -1070,7 +1156,7 @@ void mainWidget::deleteWidget(QLayout *layout)
 	}
 }
 
-void mainWidget::refreshMemoryUsage(QLabel *m_statusLabel) {
+void mainWidget::refreshMemoryUsage(QLabel* m_statusLabel) {
 	// 避免重复创建定时器（防止内存泄漏和多次触发）
 	if (timer) {
 		timer->stop();
@@ -1090,7 +1176,7 @@ void mainWidget::refreshMemoryUsage(QLabel *m_statusLabel) {
 	getMemoryUsage(m_statusLabel); // 首次调用（此时CPU显示为0%，避免异常值）
 }
 
-void mainWidget::getMemoryUsage(QLabel *m_statusLabel) {
+void mainWidget::getMemoryUsage(QLabel* m_statusLabel) {
 	QString memoryText = "0.00";
 	QString cpuText = "0.00";
 

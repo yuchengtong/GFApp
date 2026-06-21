@@ -128,9 +128,6 @@ void JudgmentPropertyWidget::initWidget()
 	const int btnSize = 20;
 	QSize iconSize(btnSize, btnSize);
 	importButton->setIconSize(iconSize);
-	QFont font = importButton->font();
-	font.setPointSize(10);
-	importButton->setFont(font);
 	m_tableWidget->setCellWidget(0, 2, importButton);
 
 	connect(importButton, &QPushButton::clicked, this, &JudgmentPropertyWidget::showTableDialog);
