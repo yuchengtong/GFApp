@@ -116,6 +116,7 @@
     <ClCompile Include="Algrithm\APIRotateMeshHelper.cpp" />
     <ClCompile Include="Algrithm\APISetNodeValue.cpp" />
     <ClCompile Include="CalculateWorker.cpp" />
+    <ClCompile Include="DataStructure\CalculateDataManager.cpp" />
     <ClCompile Include="GraphicWidget.cpp" />
     <ClCompile Include="Algrithm\APICreateMidSurfaceHelper.cpp" />
     <ClCompile Include="AuxiliaryAnalysisWidget.cpp" />
@@ -297,6 +298,7 @@
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />
     <QtMoc Include="CustomPolarChart.h" />
     <QtMoc Include="CalculateWorker.h" />
+    <QtMoc Include="DataStructure\CalculateDataManager.h" />
     <ClInclude Include="DataStructure\TriangleStructure.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

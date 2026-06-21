@@ -1,6 +1,7 @@
 #pragma execution_character_set("utf-8")
 #include "DatabaseWidget.h"
 #include "ModelDataManager.h"
+#include "CalculateDataManager.h"
 #include "xlsxdocument.h"
 
 #include <QSplitter>
@@ -108,7 +109,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	fallAnalysisData->setText(0, "1.跌落模型");
 	fallAnalysisData->setIcon(0, QIcon(":/src/data_calculation.svg"));
 
-	QTreeWidgetItem* zero = new QTreeWidgetItem();
+	/*QTreeWidgetItem* zero = new QTreeWidgetItem();
 	zero->setText(0, "0°");
 	zero->setIcon(0, QIcon(":/src/data_calculation.svg"));
 	QTreeWidgetItem* fortyFive = new QTreeWidgetItem();
@@ -119,7 +120,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	ninty->setIcon(0, QIcon(":/src/data_calculation.svg"));
 	fallAnalysisData->addChild(zero);
 	fallAnalysisData->addChild(fortyFive);
-	fallAnalysisData->addChild(ninty);
+	fallAnalysisData->addChild(ninty);*/
 
 
 
@@ -160,6 +161,7 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	calculation->addChild(explosiveBlastAnalysisData);
 	calculation->addChild(sacrificeExplosionAnalysisData);
 
+	treeWidget->expandAll();
 
 	/*QTreeWidgetItem* user = new QTreeWidgetItem(treeWidget);
 	user->setText(0, "用户数据库");
@@ -541,6 +543,10 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
     )");
 	auto ins = ModelDataManager::GetInstance();
 	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
+
+	auto calculateData = CalculateDataManager::GetInstance();
+	auto calculateDataInfo = calculateData->GetCalculateDataInfo();
+
 	QDir dir;
 	currentDataaseType = item->text(0);
 	QVector<QVector<QString>> m_data;
@@ -577,57 +583,57 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 	}*/
 	else if (currentDataaseType == "1.跌落模型" || currentDataaseType == "计算模型数据库")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
+		m_data = calculateDataInfo.m_fallData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "0°")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
+		m_data = calculateDataInfo.m_fallData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "45°")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-45.xlsx");
+		m_data = calculateDataInfo.m_fallData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "90°")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-90.xlsx");
+		m_data = calculateDataInfo.m_fallData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "2.快速烤燃模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-快速烤燃试验.xlsx");
+		m_data = calculateDataInfo.m_fastCombustionData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "3.慢速烤燃模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-慢速烤燃试验.xlsx");
+		m_data = calculateDataInfo.m_slowCombustionData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "4.枪击模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-枪击试验.xlsx");
+		m_data = calculateDataInfo.m_shootData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "5.射流冲击模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-射流冲击试验.xlsx");
+		m_data = calculateDataInfo.m_jetImpactData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "6.破片撞击模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-破片撞击试验.xlsx");
+		m_data = calculateDataInfo.m_fragmentationImpactData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "7.爆炸冲击波模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-爆炸冲击波试验.xlsx");
+		m_data = calculateDataInfo.m_explosiveBlastData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "8.殉爆模型")
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
+		m_data = calculateDataInfo.m_sacrificeExplosionData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "标准数据库")
@@ -637,7 +643,7 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 	}
 	else
 	{
-		//filepath = dir.absoluteFilePath("src/database/计算模型.xlsx");
+		m_data = calculateDataInfo.m_fallData;
 		ui.queryTitle->setText("材料牌号");
 	}
 
