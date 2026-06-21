@@ -20,6 +20,27 @@ OutheatPropertyWidget::OutheatPropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
 {
 	initWidget();
+	m_tableWidget->setStyleSheet(
+		"QTableWidget {"
+		"	background-color: #ffffff;"
+		"   border: 2px solid #999999;"
+		"   border-radius: 12px;"
+		"}"
+
+		"QPushButton {"
+		"   background-color: #f0f0f0;"
+		"   border: 1px solid #ccc;"
+		"   border-radius: 8px;"
+		"   padding: 4px 8px;"
+		"   min-width: 60px;"
+		"}"
+		"QPushButton:hover {"
+		"   background-color: #e0e0e0;"
+		"}"
+		"QPushButton:pressed {"
+		"   background-color: #d0d0d0;"
+		"}"
+	);
 }
 
 void OutheatPropertyWidget::initWidget()
@@ -109,6 +130,10 @@ void OutheatPropertyWidget::initWidget()
 	// 导入按钮
 	QWidget* importWidget = new QWidget();
 	QPushButton* importButton = new QPushButton("导入");
+	importButton->setIcon(QIcon(":/tree/Tree/import.svg"));
+	const int btnSize = 20;
+	QSize iconSize(btnSize, btnSize);
+	importButton->setIconSize(iconSize);
 	importButton->setFixedSize(100, 50);
 	importButton->setMinimumHeight(30);
 	importButton->setStyleSheet("QPushButton {"
@@ -184,31 +209,30 @@ void OutheatPropertyWidget::showTableDialog() {
 	// 隐藏列号
 	diaTableWidget->horizontalHeader()->setVisible(false);
 	QDir dir;
-	QString filepath = dir.absoluteFilePath("src/database/外防热材料.xlsx");
 	int m_rowCount = 0;
 
-	if (!filepath.isEmpty()) {
-		QXlsx::Document xlsx(filepath);
-		int rowcount = xlsx.dimension().lastRow(); // 获取总行数
-		int colcount = xlsx.dimension().lastColumn(); // 获取总列数
-		m_rowCount = rowcount;
+	auto ins = ModelDataManager::GetInstance();
+	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
+	QVector<QVector<QString>> m_data = databaseInfo.m_outheatData;
 
-		diaTableWidget->setRowCount(rowcount);
-		diaTableWidget->setColumnCount(colcount);
+	int rowcount = m_data.size(); // 获取总行数
+	int colcount = m_data.first().size(); // 获取总列数
+	m_rowCount = rowcount;
 
-		for (int row = 1; row <= rowcount; ++row) {
-			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-				diaTableWidget->setItem(row - 1, col - 1, item);
-			}
+	diaTableWidget->setRowCount(rowcount);
+	diaTableWidget->setColumnCount(colcount);
+
+	for (int row = 0; row < rowcount; ++row) {
+		for (int col = 0; col < colcount; ++col) {
+			QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
+			item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+			diaTableWidget->setItem(row , col, item);
 		}
 	}
 
 	// 私有库
-	auto ins = ModelDataManager::GetInstance();
 	UserInfo info = ins->GetUserInfo();
-	QString privateFilePath = dir.absoluteFilePath("src/database/" + info.username + "/外防热材料.xlsx");
+	QString privateFilePath = dir.absoluteFilePath(info.workdir + "/database/外防热材料.xlsx");
 
 
 	QFile file(privateFilePath);

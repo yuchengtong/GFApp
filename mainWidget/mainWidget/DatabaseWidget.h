@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <QWidget>
 #include "ui_DatabaseWidget.h"
@@ -19,24 +19,24 @@ public:
 private:
 	Ui::DatabaseWidgetClass ui;
 
-	// µ±Ç°Ñ¡ÖĞµÄÊı¾İ¿âÀàĞÍ
+	// å½“å‰é€‰ä¸­çš„æ•°æ®åº“ç±»å‹
 	QString currentDataaseType;
 
-	// ´°¿ÚÄÚËùÓĞµÄ¿Ø¼ş
+	// çª—å£å†…æ‰€æœ‰çš„æ§ä»¶
 	QMap<QWidget*, QRect> allWidgetMap;
-	// ´°¿ÚÄÚËùÓĞµÄ²¼¾Ö
+	// çª—å£å†…æ‰€æœ‰çš„å¸ƒå±€
 	QMap<QLayout*, QRect> allLayoutMap;
-	// ´°¿ÚÔ­Ê¼³ß´ç
+	// çª—å£åŸå§‹å°ºå¯¸
 	QSize windowOriginalSize;
-	/** ²éÕÒ´°¿ÚÄÚËùÓĞµÄ²¼¾ÖºÍ¿Ø¼ş **/
+	/** æŸ¥æ‰¾çª—å£å†…æ‰€æœ‰çš„å¸ƒå±€å’Œæ§ä»¶ **/
 	void findAllLayoutAndWidget(QObject* object);
 
-	// TreeWidgeµã»÷ÊÂ¼ş
+	// TreeWidgeç‚¹å‡»äº‹ä»¶
 	void onTreeItemClicked(QTreeWidgetItem* item);
 
 
 protected:
-	/** ´°¿Ú³ß´ç¸Ä±äÊ±×Ô¶¯µ÷ÓÃ **/
+	/** çª—å£å°ºå¯¸æ”¹å˜æ—¶è‡ªåŠ¨è°ƒç”¨ **/
 	void resizeEvent(QResizeEvent* event) override;
 
 public slots:
@@ -55,5 +55,5 @@ private:
 	int m_publicRowCount = 0;
 	QString m_privateDirPath = "";
 
-	QMenu* contextMenu; // ÓÒ¼ü²Ëµ¥¶ÔÏó
+	QMenu* contextMenu; // å³é”®èœå•å¯¹è±¡
 };

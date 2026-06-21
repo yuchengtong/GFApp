@@ -161,10 +161,9 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	calculation->addChild(sacrificeExplosionAnalysisData);
 
 
-
-	QTreeWidgetItem* user = new QTreeWidgetItem(treeWidget);
+	/*QTreeWidgetItem* user = new QTreeWidgetItem(treeWidget);
 	user->setText(0, "用户数据库");
-	user->setIcon(0, QIcon(":/src/data_user.svg"));
+	user->setIcon(0, QIcon(":/src/data_user.svg"));*/
 
 	QPushButton* addBtn = ui.addBtn;
 	addBtn->setIcon(QIcon(":/src/data_add.svg"));
@@ -357,6 +356,20 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 		QString sheetName = nullptr;
 		QDir dir;
 
+		// 设置数据文件读取路径
+		auto ins = ModelDataManager::GetInstance();
+		UserInfo info = ins->GetUserInfo();
+		m_privateDirPath = info.workdir + "/database";
+		QDir creatDir(m_privateDirPath);
+		if (!creatDir.exists()) {
+			bool isCreated = creatDir.mkpath(".");
+			if (!isCreated)
+			{
+				QMessageBox::warning(this, "操作失败", "文件夹创建失败");
+				return;
+			}
+		}
+
 		if (currentDataaseType == "壳体材料" || currentDataaseType == "材料数据库" || currentDataaseType == "金属材料")
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/壳体金属材料.xlsx");
@@ -381,11 +394,6 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 		{
 			filepath = dir.absoluteFilePath(m_privateDirPath + "/外防热材料.xlsx");
 			sheetName = "外防热材料";
-		}
-		else if (currentDataaseType == "碳纤维壳体材料")
-		{
-			filepath = dir.absoluteFilePath(m_privateDirPath + "/碳纤维壳体材料.xlsx");
-			sheetName = "碳纤维壳体材料";
 		}
 		else if (currentDataaseType == "用户数据库")
 		{
@@ -531,170 +539,168 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
             text-overflow: ellipsis; /* 可选：文本过长时显示省略号（...） */
         }
     )");
-
-	QString filepath = nullptr;
+	auto ins = ModelDataManager::GetInstance();
+	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
 	QDir dir;
 	currentDataaseType = item->text(0);
+	QVector<QVector<QString>> m_data;
 	//QMessageBox::information(nullptr, "信息", currentDataaseType);
 	if (currentDataaseType == "壳体材料" || currentDataaseType == "材料数据库" || currentDataaseType == "金属材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/壳体金属材料.xlsx");
+		m_data = databaseInfo.m_metalData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "非金属材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/壳体非金属材料.xlsx");
+		m_data = databaseInfo.m_nonmetallicData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "含能材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/推进剂材料.xlsx");
+		m_data = databaseInfo.m_propellantsData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "外防热材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/外防热材料.xlsx");
+		m_data = databaseInfo.m_outheatData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "绝热层材料")
 	{
-		filepath = dir.absoluteFilePath("src/database/绝热层材料.xlsx");
+		m_data = databaseInfo.m_insulatingheatData;
 		ui.queryTitle->setText("材料牌号");
 	}
-	else if (currentDataaseType == "碳纤维壳体材料")
-	{
-		filepath = dir.absoluteFilePath("src/database/碳纤维壳体材料.xlsx");
-		ui.queryTitle->setText("材料牌号");
-	}
-	else if (currentDataaseType == "用户数据库")
+	/*else if (currentDataaseType == "用户数据库")
 	{
 		filepath = dir.absoluteFilePath("src/database/账号密码.xlsx");
 		ui.queryTitle->setText("账号");
-	}
+	}*/
 	else if (currentDataaseType == "1.跌落模型" || currentDataaseType == "计算模型数据库")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "0°")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-0.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "45°")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-45.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-45.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "90°")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-90.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-跌落试验-90.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "2.快速烤燃模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-快速烤燃试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-快速烤燃试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "3.慢速烤燃模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-慢速烤燃试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-慢速烤燃试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "4.枪击模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-枪击试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-枪击试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "5.射流冲击模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-射流冲击试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-射流冲击试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "6.破片撞击模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-破片撞击试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-破片撞击试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "7.爆炸冲击波模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-爆炸冲击波试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-爆炸冲击波试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "8.殉爆模型")
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型-殉爆试验.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 	else if (currentDataaseType == "标准数据库")
 	{
-		filepath = dir.absoluteFilePath("src/database/标准数据库.xlsx");
+		m_data = databaseInfo.m_judgmentData;
 		ui.queryTitle->setText("材料牌号");
 	}
 	else
 	{
-		filepath = dir.absoluteFilePath("src/database/计算模型.xlsx");
+		//filepath = dir.absoluteFilePath("src/database/计算模型.xlsx");
 		ui.queryTitle->setText("材料牌号");
 	}
 
-	if (!filepath.isEmpty()) {
-		QXlsx::Document xlsx(filepath);
-		int rowcount = xlsx.dimension().lastRow(); // 获取总行数
-		int colcount = xlsx.dimension().lastColumn(); // 获取总列数
+	int rowcount = m_data.size(); // 获取总行数
+	int colcount = m_data.first().size(); // 获取总列数
 
-		m_rowCount = rowcount;
-		m_columnCount = colcount;
-		m_publicRowCount = rowcount;
+	m_rowCount = rowcount;
+	m_columnCount = colcount;
+	m_publicRowCount = rowcount;
 
-		tableWidge->setRowCount(rowcount);
-		tableWidge->setColumnCount(colcount);
+	tableWidge->setRowCount(rowcount);
+	tableWidge->setColumnCount(colcount);
 
-		for (int row = 1; row <= rowcount; ++row) {
-			for (int col = 1; col <= colcount; ++col) {
-				if (currentDataaseType != "用户数据库")
+	for (int row = 0; row < rowcount; ++row) {
+		for (int col = 0; col < colcount; ++col) {
+			if (currentDataaseType != "用户数据库")
+			{
+				QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
+				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+				item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+				if (row == 0)
 				{
-					std::shared_ptr<QXlsx::Cell> cell = xlsx.cellAt(row, col);
-					
-					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-					item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-					item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-					if (row == 1)
-					{
-						item->setBackground(QBrush(QColor(0, 237, 252)));
-					}
-					else
-					{
-						item->setBackground(QBrush(QColor(230, 230, 230)));
-					}
-					tableWidge->setItem(row - 1, col - 1, item);
+					item->setBackground(QBrush(QColor(0, 237, 252)));
 				}
 				else
 				{
-					QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-					if (row == 1 || row == 2 || col == 1 || col == 2)
-					{
-						item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-						if (row == 1)
-						{
-							item->setBackground(QBrush(QColor(0, 237, 252)));
-						}
-					}
-					tableWidge->setItem(row - 1, col - 1, item);
+					item->setBackground(QBrush(QColor(230, 230, 230)));
 				}
+				tableWidge->setItem(row, col, item);
+			}
+			else
+			{
+				QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
+				if (row == 0 || row == 1 || col == 0 || col == 1)
+				{
+					item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+					if (row == 0)
+					{
+						item->setBackground(QBrush(QColor(0, 237, 252)));
+					}
+				}
+				tableWidge->setItem(row , col , item);
 			}
 		}
 	}
 	if (currentDataaseType != "用户数据库" || currentDataaseType != "标准数据库")
 	{
-		// 私有库
-		auto ins = ModelDataManager::GetInstance();
+		// 设置数据文件读取路径
+		
 		UserInfo info = ins->GetUserInfo();
-		m_privateDirPath = "src/database/" + info.username;
+		m_privateDirPath = info.workdir;
 		QDir privateDir(m_privateDirPath);
 		if (!privateDir.exists()) {
-			privateDir.setPath("src/database/");
-			if (!privateDir.mkpath(info.username)) {
-				QMessageBox::warning(this, "操作失败", "读取用户私有库失败");
+			QMessageBox::warning(this, "操作失败", "读取用户私有库失败");
+			return;
+		}
+		m_privateDirPath = info.workdir + "/database";
+		QDir creatDir(m_privateDirPath);
+		if (!creatDir.exists()) {
+			bool isCreated = creatDir.mkpath(".");
+			if (!isCreated) 
+			{
+				QMessageBox::warning(this, "操作失败", "文件夹创建失败");
 				return;
 			}
 		}
@@ -719,10 +725,6 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 		else if (currentDataaseType == "绝热层材料")
 		{
 			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/绝热层材料.xlsx");
-		}
-		else if (currentDataaseType == "碳纤维壳体材料")
-		{
-			privateFilePath = dir.absoluteFilePath(m_privateDirPath + "/碳纤维壳体材料.xlsx");
 		}
 		else if (currentDataaseType == "1.跌落模型" || currentDataaseType == "计算模型数据库")
 		{
@@ -914,10 +916,10 @@ void DatabaseWidget::exportData()
 		UserInfo info = ins->GetUserInfo();
 		int realRow = 0;
 		int tempPublicRowCount = m_publicRowCount;
-		if (info.username == "admin")
+		/*if (info.username == "admin")
 		{
 			tempPublicRowCount = 1;
-		}
+		}*/
 		
 		for (int row = 0; row < rowCount; row++) {
 			if (row == 0 || row >= tempPublicRowCount)

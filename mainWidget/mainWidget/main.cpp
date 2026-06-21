@@ -3,7 +3,7 @@
 #include <QtWidgets/QApplication>
 #include "ModelDataManager.h"
 #include "LoginDialog.h"
-
+#include "StartDialog.h"
 
 //用于生成netgen网格
 #pragma once
@@ -185,14 +185,13 @@ int main(int argc, char *argv[])
 	QApplication::setFont(font);
 	mainWidget w;
 	QCoreApplication::setApplicationName(QStringLiteral("固体发动机安全性分析与评估系统"));
-	/*w.hide();
-	LoginDialog loginDialog;
-	if (loginDialog.exec() == QDialog::Accepted) {
+	w.hide();
+	StartDialog startDialog;
+	if (startDialog.exec() == QDialog::Accepted) {
 		w.show();
 		return a.exec();
-	}*/
-	w.show();
-	return a.exec();
+	}
+	return 0;
 
 
 

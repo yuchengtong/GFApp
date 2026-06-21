@@ -19,6 +19,27 @@ PropellantPropertyWidget::PropellantPropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
 {
 	initWidget();
+	m_tableWidget->setStyleSheet(
+		"QTableWidget {"
+		"	background-color: #ffffff;"
+		"   border: 2px solid #999999;"
+		"   border-radius: 12px;"
+		"}"
+
+		"QPushButton {"
+		"   background-color: #f0f0f0;"
+		"   border: 1px solid #ccc;"
+		"   border-radius: 8px;"
+		"   padding: 4px 8px;"
+		"   min-width: 60px;"
+		"}"
+		"QPushButton:hover {"
+		"   background-color: #e0e0e0;"
+		"}"
+		"QPushButton:pressed {"
+		"   background-color: #d0d0d0;"
+		"}"
+	);
 }
 
 void PropellantPropertyWidget::initWidget()
@@ -28,7 +49,7 @@ void PropellantPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(25);
+	m_tableWidget->setRowCount(26);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -51,7 +72,7 @@ void PropellantPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "材料属性","材料牌号","类别", "密度", "热膨胀系数", "弹性模量","切线模量","泊松比","发火温度","发火超压","10^-5发火概率摩擦感度", "热导率","比热容","I","a","b","c","d","G1","e" ,"g" ,"x" ,"y" ,"z" ,"G2" };
+	QStringList labels = { "材料属性","材料牌号","类别", "密度", "热膨胀系数", "弹性模量","切线模量","泊松比","发火温度","发火超压","10^-5发火概率摩擦感度", "热导率","比热容","I","a","b","c","d","G1","e" ,"g" ,"x" ,"y" ,"z" ,"G2" ,"感度" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -80,7 +101,7 @@ void PropellantPropertyWidget::initWidget()
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
 	// 单位列
-	QStringList unitLabels = { " "," "," ", "kg/m^3", "/℃", "MPa","MPa"," ","℃","MPa","N", "W/(m∙℃)","J/(kg∙℃)"," "," "," "," "," "," "," " ," " ," " ," " ," " ," " };
+	QStringList unitLabels = { " "," "," ", "kg/m^3", "/℃", "MPa","MPa"," ","℃","MPa","N", "W/(m∙℃)","J/(kg∙℃)"," "," "," "," "," "," "," " ," " ," " ," " ," " ," "," " };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -98,6 +119,10 @@ void PropellantPropertyWidget::initWidget()
 	// 导入按钮
 	QWidget* importWidget = new QWidget();
 	QPushButton* importButton = new QPushButton("导入");
+	importButton->setIcon(QIcon(":/tree/Tree/import.svg"));
+	const int btnSize = 20;
+	QSize iconSize(btnSize, btnSize);
+	importButton->setIconSize(iconSize);
 	importButton->setFixedSize(100, 50);
 	importButton->setMinimumHeight(30);
 	importButton->setStyleSheet("QPushButton {"
@@ -180,30 +205,30 @@ void PropellantPropertyWidget::showTableDialog()
 	// 隐藏列号
 	diaTableWidget->horizontalHeader()->setVisible(false);
 	QDir dir;
-	QString filepath = dir.absoluteFilePath("src/database/推进剂材料.xlsx");
 	int m_rowCount = 0;
-	if (!filepath.isEmpty()) {
-		QXlsx::Document xlsx(filepath);
-		int rowcount = xlsx.dimension().lastRow(); // 获取总行数
-		int colcount = xlsx.dimension().lastColumn(); // 获取总列数
-		m_rowCount = rowcount;
 
-		diaTableWidget->setRowCount(rowcount);
-		diaTableWidget->setColumnCount(colcount);
+	auto ins = ModelDataManager::GetInstance();
+	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
+	QVector<QVector<QString>> m_data = databaseInfo.m_propellantsData;
 
-		for (int row = 1; row <= rowcount; ++row) {
-			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
-				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-				diaTableWidget->setItem(row - 1, col - 1, item);
-			}
+	int rowcount = m_data.size(); // 获取总行数
+	int colcount = m_data.first().size(); // 获取总列数
+	m_rowCount = rowcount;
+
+	diaTableWidget->setRowCount(rowcount);
+	diaTableWidget->setColumnCount(colcount);
+
+	for (int row = 0; row < rowcount; ++row) {
+		for (int col = 0; col < colcount; ++col) {
+			QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
+			item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+			diaTableWidget->setItem(row , col , item);
 		}
 	}
 
 	// 私有库
-	auto ins = ModelDataManager::GetInstance();
 	UserInfo info = ins->GetUserInfo();
-	QString privateFilePath = dir.absoluteFilePath("src/database/" + info.username + "/推进剂材料.xlsx");
+	QString privateFilePath = dir.absoluteFilePath(info.workdir + "/database/推进剂材料.xlsx");
 
 
 	QFile file(privateFilePath);

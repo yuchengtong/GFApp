@@ -174,6 +174,7 @@
     <ClCompile Include="PropertyWidget\StrainResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\StressResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\TemperatureResultWidget.cpp" />
+    <ClCompile Include="StartDialog.cpp" />
     <ClCompile Include="TriangulationWorker.cpp" />
     <ClCompile Include="WordExporter.cpp" />
     <ClCompile Include="WordExporterWorker.cpp" />
@@ -254,6 +255,7 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="StartDialog.h" />
     <QtMoc Include="TriangulationWorker.h" />
     <QtMoc Include="ParamAnalyCalculateWorker.h" />
     <QtMoc Include="WordExporterWorker.h" />

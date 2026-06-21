@@ -20,6 +20,27 @@ JudgmentPropertyWidget::JudgmentPropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
 {
 	initWidget();
+	m_tableWidget->setStyleSheet(
+		"QTableWidget {"
+		"	background-color: #ffffff;"
+		"   border: 2px solid #999999;"
+		"   border-radius: 12px;"
+		"}"
+
+		"QPushButton {"
+		"   background-color: #f0f0f0;"
+		"   border: 1px solid #ccc;"
+		"   border-radius: 8px;"
+		"   padding: 4px 8px;"
+		"   min-width: 60px;"
+		"}"
+		"QPushButton:hover {"
+		"   background-color: #e0e0e0;"
+		"}"
+		"QPushButton:pressed {"
+		"   background-color: #d0d0d0;"
+		"}"
+	);
 }
 
 void JudgmentPropertyWidget::initWidget()
@@ -179,24 +200,24 @@ void JudgmentPropertyWidget::showTableDialog() {
 	// 隐藏列号
 	diaTableWidget->horizontalHeader()->setVisible(false);
 	QDir dir;
-	QString filepath = dir.absoluteFilePath("src/database/标准数据库.xlsx");
 	int m_rowCount = 0;
 
-	if (!filepath.isEmpty()) {
-		QXlsx::Document xlsx(filepath);
-		int rowcount = xlsx.dimension().lastRow(); // 获取总行数
-		int colcount = xlsx.dimension().lastColumn(); // 获取总列数
-		m_rowCount = rowcount;
+	auto ins = ModelDataManager::GetInstance();
+	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
+	QVector<QVector<QString>> m_data = databaseInfo.m_judgmentData;
 
-		diaTableWidget->setRowCount(rowcount);
-		diaTableWidget->setColumnCount(colcount);
+	int rowcount = m_data.size(); // 获取总行数
+	int colcount = m_data.first().size(); // 获取总列数
+	m_rowCount = rowcount;
 
-		for (int row = 1; row <= rowcount; ++row) {
-			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-				item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-				diaTableWidget->setItem(row - 1, col - 1, item);
-			}
+	diaTableWidget->setRowCount(rowcount);
+	diaTableWidget->setColumnCount(colcount);
+
+	for (int row = 0; row < rowcount; ++row) {
+		for (int col = 0; col < colcount; ++col) {
+			QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
+			item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
+			diaTableWidget->setItem(row, col , item);
 		}
 	}
 

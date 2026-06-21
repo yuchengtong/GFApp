@@ -554,3 +554,8 @@ const PointResult& ModelDataManager::GetPointResult() const
 {
 	return m_pointResult;
 }
+
+const DatabaseInfo& ModelDataManager::GetDatabaseInfo() const
+{
+	return m_DatabaseInfo;
+}

@@ -42,5 +42,14 @@
         <file>src/treeclose.svg</file>
         <file>src/treeopen.svg</file>
         <file>src/chart_view.png</file>
+        <file>src/analy_eval.svg</file>
+        <file>src/auxiliary_analy.svg</file>
+        <file>src/database.svg</file>
+        <file>src/help.svg</file>
+        <file>src/import_model.svg</file>
+        <file>src/intelligent_analy.svg</file>
+    </qresource>
+    <qresource prefix="/tree">
+        <file alias="Tree/import.svg">src/icon/Tree/import.svg</file>
     </qresource>
 </RCC>
