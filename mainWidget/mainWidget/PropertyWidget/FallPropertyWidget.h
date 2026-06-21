@@ -17,4 +17,5 @@ private:
 	QTableWidget* m_tableWidget = nullptr;
 
 	QString m_highValue = "20";
+	QString m_angle = "0";
 };

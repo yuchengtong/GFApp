@@ -128,32 +128,15 @@ void OutheatPropertyWidget::initWidget()
 	}
 
 	// 导入按钮
-	QWidget* importWidget = new QWidget();
 	QPushButton* importButton = new QPushButton("导入");
 	importButton->setIcon(QIcon(":/tree/Tree/import.svg"));
 	const int btnSize = 20;
 	QSize iconSize(btnSize, btnSize);
 	importButton->setIconSize(iconSize);
-	importButton->setFixedSize(100, 50);
-	importButton->setMinimumHeight(30);
-	importButton->setStyleSheet("QPushButton {"
-		"background-color:  rgba(0, 0, 0, 0);"
-		"border: 2px solid #C1B1B1; "
-		"border-radius: 10px; "
-		"color: black; "
-		"font-weight: bold; "
-		"padding: 5px;"
-		"outline: none;"
-		"}"
-		"QPushButton:hover {"
-		"background-color: rgba(230, 230, 230, 100);"
-		"}");
-	QVBoxLayout* importLayout = new QVBoxLayout(importWidget);
-	importLayout->addWidget(importButton);
-	importLayout->setAlignment(Qt::AlignCenter); // 按钮居中显示
-	importLayout->setMargin(0);
-	importWidget->setLayout(importLayout);
-	m_tableWidget->setCellWidget(0, 2, importWidget);
+	QFont font = importButton->font();
+	font.setPointSize(10);
+	importButton->setFont(font);
+	m_tableWidget->setCellWidget(0, 2, importButton);
 
 	connect(importButton, &QPushButton::clicked, this, &OutheatPropertyWidget::showTableDialog);
 	// 合并第一行的第三和第四列
