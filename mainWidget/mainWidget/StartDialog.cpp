@@ -147,6 +147,49 @@ void StartDialog::onConfirmClicked()
     info.password = "";
     info.workdir = m_selectedPath;
     ins->SetUserInfo(info);
+    // 创建文件夹
+    QDir databaseDir(m_selectedPath + "/database");
+    if (!databaseDir.exists()) {
+        databaseDir.mkpath(".");
+    }
+    QDir templateDir(m_selectedPath + "/template");
+    if (!templateDir.exists()) {
+        templateDir.mkpath(".");
+    }
+
+    QDir fallDir(m_selectedPath + "/template/fall");
+    if (!fallDir.exists()) {
+        fallDir.mkpath(".");
+    }
+    QDir fastCombustionDir(m_selectedPath + "/template/fastCombustion");
+    if (!fastCombustionDir.exists()) {
+        fastCombustionDir.mkpath(".");
+    }
+    QDir slowCombustionDir(m_selectedPath + "/template/slowCombustion");
+    if (!slowCombustionDir.exists()) {
+        slowCombustionDir.mkpath(".");
+    }
+    QDir shootDir(m_selectedPath + "/template/shoot");
+    if (!shootDir.exists()) {
+        shootDir.mkpath(".");
+    }
+    QDir jetImpactDir(m_selectedPath + "/template/jetImpact");
+    if (!jetImpactDir.exists()) {
+        jetImpactDir.mkpath(".");
+    }
+    QDir fragmentationImpactDir(m_selectedPath + "/template/fragmentationImpact");
+    if (!fragmentationImpactDir.exists()) {
+        fragmentationImpactDir.mkpath(".");
+    }
+    QDir explosiveBlastDir(m_selectedPath + "/template/explosiveBlast");
+    if (!explosiveBlastDir.exists()) {
+        explosiveBlastDir.mkpath(".");
+    }
+    QDir sacrificeExplosioDir(m_selectedPath + "/template/sacrificeExplosio");
+    if (!sacrificeExplosioDir.exists()) {
+        sacrificeExplosioDir.mkpath(".");
+    }
+
     accept();
 }
 

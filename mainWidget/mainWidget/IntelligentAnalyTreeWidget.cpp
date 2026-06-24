@@ -1159,8 +1159,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 						QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks); // 选项
 					if (!directory.isEmpty()) {
 
+						UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
 						// 截图结果云图
-						QString chartPath = "src/template/IntelligentAnaly-chart.png";
+						QString chartPath = userinfo.workdir + "/template/IntelligentAnaly-chart.png";
 						QDir chartDir(chartPath);
 						wordExporter->captureWidgetToFile(paParent->getChartView(), chartPath);
 

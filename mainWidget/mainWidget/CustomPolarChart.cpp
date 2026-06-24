@@ -547,7 +547,8 @@ void CustomPolarChart::exportWord()
 				QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks); // 选项
 			if (!directory.isEmpty()) {
 				// 截图
-				QString chartPath = "src/template/AuxiliaryAnalysis.png";
+				UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+				QString chartPath = userinfo.workdir + "/template/AuxiliaryAnalysis.png";
 				QDir chartDir(chartPath);
 				wordExporter->captureWidgetToFile(topParent, chartPath);
 

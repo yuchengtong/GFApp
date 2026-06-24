@@ -475,6 +475,9 @@ GFTreeModelWidget::~GFTreeModelWidget()
 
 void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 {
+	UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+	QString workdir = userinfo.workdir;
+
 	QString itemData = item->data(0, Qt::UserRole).toString();
 	emit itemClicked(itemData);
 
@@ -489,114 +492,114 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 				QString m_privateDirPath = "";
 				if (itemData == "StressResult")
 				{
-					m_privateDirPath = "src/template/fall/Stress.png";
+					m_privateDirPath = workdir + "/template/fall/Stress.png";
 				}
 				else if (itemData == "StrainResult")
 				{
-					m_privateDirPath = "src/template/fall/Strain.png";
+					m_privateDirPath = workdir + "/template/fall/Strain.png";
 				}
 				else if (itemData == "TemperatureResult")
 				{
-					m_privateDirPath = "src/template/fall/Temperature.png";
+					m_privateDirPath = workdir + "/template/fall/Temperature.png";
 				}
 				else if (itemData == "OverpressureResult")
 				{
-					m_privateDirPath = "src/template/fall/Overpressure.png";
+					m_privateDirPath = workdir + "/template/fall/Overpressure.png";
 				}
 
 				else if (itemData == "FastCombustionTemperatureResult")
 				{
-					m_privateDirPath = "src/template/fastCombustion/Temperature.png";
+					m_privateDirPath = workdir + "/template/fastCombustion/Temperature.png";
 				}
 
 				else if (itemData == "SlowCombustionTemperatureResult")
 				{
-					m_privateDirPath = "src/template/slowCombustion/Temperature.png";
+					m_privateDirPath = workdir + "/template/slowCombustion/Temperature.png";
 				}
 
 				if (itemData == "ShootStressResult")
 				{
-					m_privateDirPath = "src/template/shoot/Stress.png";
+					m_privateDirPath = workdir + "/template/shoot/Stress.png";
 				}
 				else if (itemData == "ShootStrainResult")
 				{
-					m_privateDirPath = "src/template/shoot/Strain.png";
+					m_privateDirPath = workdir + "/template/shoot/Strain.png";
 				}
 				else if (itemData == "ShootTemperatureResult")
 				{
-					m_privateDirPath = "src/template/shoot/Temperature.png";
+					m_privateDirPath = workdir + "/template/shoot/Temperature.png";
 				}
 				else if (itemData == "ShootOverpressureResult")
 				{
-					m_privateDirPath = "src/template/shoot/Overpressure.png";
+					m_privateDirPath = workdir + "/template/shoot/Overpressure.png";
 				}
 
 				if (itemData == "JetImpactStressResult")
 				{
-					m_privateDirPath = "src/template/jetImpact/Stress.png";
+					m_privateDirPath = workdir + "/template/jetImpact/Stress.png";
 				}
 				else if (itemData == "JetImpactStrainResult")
 				{
-					m_privateDirPath = "src/template/jetImpact/Strain.png";
+					m_privateDirPath = workdir + "/template/jetImpact/Strain.png";
 				}
 				else if (itemData == "JetImpactTemperatureResult")
 				{
-					m_privateDirPath = "src/template/jetImpact/Temperature.png";
+					m_privateDirPath = workdir + "/template/jetImpact/Temperature.png";
 				}
 				else if (itemData == "JetImpactOverpressureResult")
 				{
-					m_privateDirPath = "src/template/jetImpact/Overpressure.png";
+					m_privateDirPath = workdir + "/template/jetImpact/Overpressure.png";
 				}
 
 				if (itemData == "FragmentationImpactStressResult")
 				{
-					m_privateDirPath = "src/template/fragmentationImpact/Stress.png";
+					m_privateDirPath = workdir + "/template/fragmentationImpact/Stress.png";
 				}
 				else if (itemData == "FragmentationImpactStrainResult")
 				{
-					m_privateDirPath = "src/template/fragmentationImpact/Strain.png";
+					m_privateDirPath = workdir + "/template/fragmentationImpact/Strain.png";
 				}
 				else if (itemData == "FragmentationImpactTemperatureResult")
 				{
-					m_privateDirPath = "src/template/fragmentationImpact/Temperature.png";
+					m_privateDirPath = workdir + "/template/fragmentationImpact/Temperature.png";
 				}
 				else if (itemData == "FragmentationImpactOverpressureResult")
 				{
-					m_privateDirPath = "src/template/fragmentationImpact/Overpressure.png";
+					m_privateDirPath = workdir + "/template/fragmentationImpact/Overpressure.png";
 				}
 
 				if (itemData == "ExplosiveBlastStressResult")
 				{
-					m_privateDirPath = "src/template/explosiveBlast/Stress.png";
+					m_privateDirPath = workdir + "/template/explosiveBlast/Stress.png";
 				}
 				else if (itemData == "ExplosiveBlastStrainResult")
 				{
-					m_privateDirPath = "src/template/explosiveBlast/Strain.png";
+					m_privateDirPath = workdir + "/template/explosiveBlast/Strain.png";
 				}
 				else if (itemData == "ExplosiveBlastTemperatureResult")
 				{
-					m_privateDirPath = "src/template/explosiveBlast/Temperature.png";
+					m_privateDirPath = workdir + "/template/explosiveBlast/Temperature.png";
 				}
 				else if (itemData == "ExplosiveBlastOverpressureResult")
 				{
-					m_privateDirPath = "src/template/explosiveBlast/Overpressure.png";
+					m_privateDirPath = workdir + "/template/explosiveBlast/Overpressure.png";
 				}
 
 				if (itemData == "SacrificeExplosioStressResult")
 				{
-					m_privateDirPath = "src/template/sacrificeExplosio/Stress.png";
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/Stress.png";
 				}
 				else if (itemData == "SacrificeExplosioStrainResult")
 				{
-					m_privateDirPath = "src/template/sacrificeExplosio/Strain.png";
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/Strain.png";
 				}
 				else if (itemData == "SacrificeExplosioTemperatureResult")
 				{
-					m_privateDirPath = "src/template/sacrificeExplosio/Temperature.png";
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/Temperature.png";
 				}
 				else if (itemData == "SacrificeExplosioOverpressureResult")
 				{
-					m_privateDirPath = "src/template/sacrificeExplosio/Overpressure.png";
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/Overpressure.png";
 				}
 				
 				QDir privateDir(m_privateDirPath);
@@ -1559,8 +1562,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							workerThread->deleteLater();
 							progressDialog->deleteLater();
 
+							UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
 							// 截图计算模型
-							QString m_privateDirPath = "src/template/main.png";
+							QString m_privateDirPath = userinfo.workdir + "/template/main.png";
 							QDir privateDir(m_privateDirPath);
 							wordExporter->captureWidgetToFile(gfParent->GetOccView(), m_privateDirPath);
 						});
@@ -1707,6 +1711,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* item)
 {
+	UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+	QString workdir = userinfo.workdir;
+
 	QWidget* parent = parentWidget();
 	while (parent) {
 		GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
@@ -1807,11 +1814,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir("src/template/fall/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir("src/template/fall/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/fall/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir("src/template/fall/Overpressure.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("应力云图", QDir(workdir + "/template/fall/Stress.png").absolutePath());
+						imagePaths.insert("应变云图", QDir(workdir + "/template/fall/Strain.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/fall/Temperature.png").absolutePath());
+						imagePaths.insert("超压云图", QDir(workdir + "/template/fall/Overpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -1906,8 +1913,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/fastCombustion/Temperature.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/fastCombustion/Temperature.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -2001,8 +2008,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/slowCombustion/Temperature.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/slowCombustion/Temperature.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -2105,11 +2112,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir("src/template/shoot/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir("src/template/shoot/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/shoot/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir("src/template/shoot/Overpressure.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("应力云图", QDir(workdir + "/template/shoot/Stress.png").absolutePath());
+						imagePaths.insert("应变云图", QDir(workdir + "/template/shoot/Strain.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/shoot/Temperature.png").absolutePath());
+						imagePaths.insert("超压云图", QDir(workdir + "/template/shoot/Overpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -2211,11 +2218,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir("src/template/jetImpact/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir("src/template/jetImpact/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/jetImpact/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir("src/template/jetImpact/Overpressure.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("应力云图", QDir(workdir + "/template/jetImpact/Stress.png").absolutePath());
+						imagePaths.insert("应变云图", QDir(workdir + "/template/jetImpact/Strain.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/jetImpact/Temperature.png").absolutePath());
+						imagePaths.insert("超压云图", QDir(workdir + "/template/jetImpact/Overpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -2315,11 +2322,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir("src/template/fragmentationImpact/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir("src/template/fragmentationImpact/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/fragmentationImpact/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir("src/template/fragmentationImpact/Overpressure.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("应力云图", QDir(workdir + "/template/fragmentationImpact/Stress.png").absolutePath());
+						imagePaths.insert("应变云图", QDir(workdir + "/template/fragmentationImpact/Strain.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/fragmentationImpact/Temperature.png").absolutePath());
+						imagePaths.insert("超压云图", QDir(workdir + "/template/fragmentationImpact/Overpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -2420,11 +2427,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir("src/template/explosiveBlast/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir("src/template/explosiveBlast/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/explosiveBlast/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir("src/template/explosiveBlast/Overpressure.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("应力云图", QDir(workdir + "/template/explosiveBlast/Stress.png").absolutePath());
+						imagePaths.insert("应变云图", QDir(workdir + "/template/explosiveBlast/Strain.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/explosiveBlast/Temperature.png").absolutePath());
+						imagePaths.insert("超压云图", QDir(workdir + "/template/explosiveBlast/Overpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -2525,11 +2532,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 						QMap<QString, QString> imagePaths;
-						imagePaths.insert("计算模型", QDir("src/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir("src/template/sacrificeExplosio/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir("src/template/sacrificeExplosio/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir("src/template/sacrificeExplosio/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir("src/template/sacrificeExplosio/Overpressure.png").absolutePath());
+						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("应力云图", QDir(workdir + "/template/sacrificeExplosio/Stress.png").absolutePath());
+						imagePaths.insert("应变云图", QDir(workdir + "/template/sacrificeExplosio/Strain.png").absolutePath());
+						imagePaths.insert("温度云图", QDir(workdir + "/template/sacrificeExplosio/Temperature.png").absolutePath());
+						imagePaths.insert("超压云图", QDir(workdir + "/template/sacrificeExplosio/Overpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
