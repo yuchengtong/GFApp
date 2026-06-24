@@ -52,4 +52,17 @@
     <qresource prefix="/tree">
         <file alias="Tree/import.svg">src/icon/Tree/import.svg</file>
     </qresource>
+    <qresource prefix="/template">
+        <file alias="跌落仿真计算数据表.docx">src/template/跌落仿真计算数据表.docx</file>
+        <file alias="爆炸冲击波仿真计算数据表.docx">src/template/爆炸冲击波仿真计算数据表.docx</file>
+        <file alias="快速烤燃仿真计算数据表.docx">src/template/快速烤燃仿真计算数据表.docx</file>
+        <file alias="慢速烤燃仿真计算数据表.docx">src/template/慢速烤燃仿真计算数据表.docx</file>
+        <file alias="破片撞击仿真计算数据表.docx">src/template/破片撞击仿真计算数据表.docx</file>
+        <file alias="枪击仿真计算数据表.docx">src/template/枪击仿真计算数据表.docx</file>
+        <file alias="射流冲击仿真计算数据表.docx">src/template/射流冲击仿真计算数据表.docx</file>
+        <file alias="/数据智能分析报告.docx">src/template/数据智能分析报告.docx</file>
+        <file alias="殉爆仿真计算数据表.docx">src/template/殉爆仿真计算数据表.docx</file>
+        <file alias="安全性分析与评估报告.docx">src/template/安全性分析与评估报告.docx</file>
+        <file alias="安全性指标辅助分析报告.docx">src/template/安全性指标辅助分析报告.docx</file>
+    </qresource>
 </RCC>

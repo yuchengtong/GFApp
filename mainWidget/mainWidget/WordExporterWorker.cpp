@@ -36,9 +36,20 @@ void WordExporterWorker::DoWork()
         }
 
         // 检查模板文件是否存在
-        if (!QFile::exists(m_templateFilePath)) {
+        /*if (!QFile::exists(m_templateFilePath)) {
             msg = "模板文件不存在" + m_templateFilePath;
             success = false;
+            return;
+        }*/
+
+        // 从资源释放模板到本地临时文件
+        QString realLoadTemplate = extractTemplateFromResource(m_templateFilePath);
+        if (realLoadTemplate.isEmpty())
+        {
+            msg = "内置模板释放失败，无法初始化报告";
+            success = false;
+            cleanup();
+            emit WorkFinished(false, msg);
             return;
         }
         
@@ -68,7 +79,7 @@ void WordExporterWorker::DoWork()
         /*QVariant varTemplate(m_templateFilePath);
         activeDocument = documents->querySubObject("Open(QVariant)", varTemplate);*/
 
-        activeDocument = documents->querySubObject("Add(const QString&)", m_templateFilePath);
+        activeDocument = documents->querySubObject("Add(const QString&)", realLoadTemplate);
         // 激活文档窗口
         if (activeDocument) {
             QAxObject* docWindow = activeDocument->querySubObject("ActiveWindow");
@@ -223,6 +234,16 @@ void WordExporterWorker::cleanup()
 		wordApp->deleteLater();
 		wordApp = nullptr;
 	}
+    // 删除从资源解压的临时模板文件
+    if (!m_tempTemplatePath.isEmpty())
+    {
+        QFile tempFile(m_tempTemplatePath);
+        if (tempFile.exists())
+        {
+            tempFile.remove();
+        }
+        m_tempTemplatePath.clear();
+    }
 }
 
 bool WordExporterWorker::replaceTextMarkers(const QMap<QString, QVariant>& data)
@@ -499,4 +520,43 @@ void WordExporterWorker::setBorderStyle(QAxObject* borders, int borderType, int 
         border->setProperty("Color", color);          // 线条颜色
         border->deleteLater();
     }
+}
+
+
+QString WordExporterWorker::extractTemplateFromResource(QString path)
+{
+    // 资源内模板路径，和qrc前缀对应
+    const QString resTemplatePath = ":/template/" + path;
+    // 系统临时目录存放释放后的模板
+    QString tempDir = QDir::tempPath() + "/word_export_embed_temp/";
+    QDir dir;
+    dir.mkpath(tempDir);
+    QString tempFile = tempDir + path;
+
+    QFile resFile(resTemplatePath);
+    QFile outputTemp(tempFile);
+
+    // 打开资源文件读取
+    if (!resFile.open(QIODevice::ReadOnly))
+    {
+        qCritical() << "资源模板打开失败，资源路径：" << resTemplatePath;
+        return "";
+    }
+    // 打开临时文件写入
+    if (!outputTemp.open(QIODevice::WriteOnly))
+    {
+        qCritical() << "临时模板文件创建失败：" << tempFile;
+        resFile.close();
+        return "";
+    }
+
+    // 二进制完整写入
+    QByteArray fileData = resFile.readAll();
+    outputTemp.write(fileData);
+
+    resFile.close();
+    outputTemp.close();
+
+    m_tempTemplatePath = tempFile;
+    return m_tempTemplatePath;
 }

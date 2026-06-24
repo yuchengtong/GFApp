@@ -563,7 +563,8 @@ void CustomPolarChart::exportWord()
 				progressDialog->show();
 
 				// 创建工作线程和工作对象
-				WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/安全性指标辅助分析报告.docx").absolutePath(), directory + "/安全性指标辅助分析报告.docx", textData, imagePaths, tableData);
+				//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/安全性指标辅助分析报告.docx").absolutePath(), directory + "/安全性指标辅助分析报告.docx", textData, imagePaths, tableData);
+				WordExporterWorker* wordExporterWorker = new WordExporterWorker("安全性指标辅助分析报告.docx", directory + "/安全性指标辅助分析报告.docx", textData, imagePaths, tableData);
 				QThread* wordExporterThread = new QThread();
 				wordExporterWorker->moveToThread(wordExporterThread);
 

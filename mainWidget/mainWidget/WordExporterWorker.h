@@ -64,10 +64,16 @@ private:
     // 设置表格边框
     void WordExporterWorker::setBorderStyle(QAxObject* borders, int borderType, int lineStyle, int lineWidth, int color);
 
+    // 从资源释放模板到临时目录，返回临时文件路径
+    QString extractTemplateFromResource(QString path);
+
 private:
     volatile bool m_interrupted;
 
     QString m_templateFilePath; // 模板文件路径
+    // 临时模板路径成员
+    QString m_tempTemplatePath;
+
     QString m_outputFilePath; // 导出文件路径
     QMap<QString, QVariant> m_textData; // 文字
     QMap<QString, QString> m_imageWidgets; // 截图

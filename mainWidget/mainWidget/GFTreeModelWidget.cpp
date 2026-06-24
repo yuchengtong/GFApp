@@ -1819,7 +1819,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory + "/跌落仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/跌落仿真计算数据表.docx").absolutePath(), directory + "/跌落仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("跌落仿真计算数据表.docx", directory + "/跌落仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -1914,7 +1915,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/快速烤燃仿真计算数据表.docx").absolutePath(), directory + "/快速烤燃仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/快速烤燃仿真计算数据表.docx").absolutePath(), directory + "/快速烤燃仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("快速烤燃仿真计算数据表.docx", directory + "/快速烤燃仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2008,7 +2010,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/慢速烤燃仿真计算数据表.docx").absolutePath(), directory + "/慢速烤燃仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/慢速烤燃仿真计算数据表.docx").absolutePath(), directory + "/慢速烤燃仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("慢速烤燃仿真计算数据表.docx", directory + "/慢速烤燃仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2114,7 +2117,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/枪击仿真计算数据表.docx").absolutePath(), directory + "/枪击仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/枪击仿真计算数据表.docx").absolutePath(), directory + "/枪击仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("枪击仿真计算数据表.docx", directory + "/枪击仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2219,7 +2223,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/射流冲击仿真计算数据表.docx").absolutePath(), directory + "/射流冲击仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/射流冲击仿真计算数据表.docx").absolutePath(), directory + "/射流冲击仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("射流冲击仿真计算数据表.docx", directory + "/射流冲击仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2322,7 +2327,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/破片撞击仿真计算数据表.docx").absolutePath(), directory + "/破片撞击仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/破片撞击仿真计算数据表.docx").absolutePath(), directory + "/破片撞击仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("破片撞击仿真计算数据表.docx", directory + "/破片撞击仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2426,7 +2432,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/爆炸冲击波仿真计算数据表.docx").absolutePath(), directory + "/爆炸冲击波仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/爆炸冲击波仿真计算数据表.docx").absolutePath(), directory + "/爆炸冲击波仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("爆炸冲击波仿真计算数据表.docx", directory + "/爆炸冲击波仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2530,7 +2537,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						progressDialog->show();
 
 						// 创建工作线程和工作对象
-						WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/殉爆仿真计算数据表.docx").absolutePath(), directory + "/殉爆仿真计算数据表.docx", data, imagePaths, tableData);
+						//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/殉爆仿真计算数据表.docx").absolutePath(), directory + "/殉爆仿真计算数据表.docx", data, imagePaths, tableData);
+						WordExporterWorker* wordExporterWorker = new WordExporterWorker("殉爆仿真计算数据表.docx", directory + "/殉爆仿真计算数据表.docx", data, imagePaths, tableData);
 						QThread* wordExporterThread = new QThread();
 						wordExporterWorker->moveToThread(wordExporterThread);
 
@@ -2621,9 +2629,9 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	data.insert("工程时间", m_projectTableWid->item(3, 2)->text());
 	data.insert("测试标准", m_databaseTableWid->item(1, 2)->text());
 	data.insert("壳体材料", m_materialTableWid->item(1, 2)->text());
-	data.insert("绝热层材料", m_materialTableWid->item(2, 2)->text());
+	data.insert("含能材料", m_materialTableWid->item(2, 2)->text());
 	data.insert("外防热材料", m_materialTableWid->item(3, 2)->text());
-	data.insert("推进剂材料", m_materialTableWid->item(4, 2)->text());
+	data.insert("绝热层材料", m_materialTableWid->item(4, 2)->text());
 
 
 	// 计算输出数据

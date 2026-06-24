@@ -1645,6 +1645,11 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 				steelStressResults.push_back(res);
 			}
 		}
+		else
+		{
+			propellantStressResults.push_back(0);
+			steelStressResults.push_back(0);
+		}
 		
 	}
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());

@@ -1290,7 +1290,8 @@ void IntelligentAnalyTreeWidget::exportWord(const QString& directory,
 	progressDialog->show();
 
 	// 创建工作线程和工作对象
-	WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/数据智能分析报告.docx").absolutePath(), directory + "/数据智能分析报告.docx", textData, imageWidgets, tableData);
+	//WordExporterWorker* wordExporterWorker = new WordExporterWorker(QDir("src/template/数据智能分析报告.docx").absolutePath(), directory + "/数据智能分析报告.docx", textData, imageWidgets, tableData);
+	WordExporterWorker* wordExporterWorker = new WordExporterWorker("数据智能分析报告.docx", directory + "/数据智能分析报告.docx", textData, imageWidgets, tableData);
 	QThread* wordExporterThread = new QThread();
 	wordExporterWorker->moveToThread(wordExporterThread);
 

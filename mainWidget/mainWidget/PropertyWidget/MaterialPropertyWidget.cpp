@@ -89,7 +89,7 @@ void MaterialPropertyWidget::initWidget()
 	}
 
 	
-	QStringList labels = { "材料数据库", "壳体材料", "含能材料", "外防热材料", "防隔热材料" };
+	QStringList labels = { "材料数据库", "壳体材料", "含能材料", "外防热材料", "绝热层材料" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
