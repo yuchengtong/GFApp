@@ -3,6 +3,9 @@
 #include <Standard_Type.hxx>
 #include <TopoDS_Shape.hxx>
 #include <gp_Pnt.hxx>
+#include <TDF_Label.hxx>
+#include <TCollection_ExtendedString.hxx>
+#include <AIS_Shape.hxx>
 
 #include <QObject>
 #include <string>
@@ -20,17 +23,18 @@ struct UserInfo {
 };
 
 struct ModelGeometryInfo {
-	TDF_Label label;                     // OCAF标签
-	TCollection_ExtendedString name;       // 组件名称
-	TopoDS_Shape shape;                  // 几何形状（带位置变换）
-	TopLoc_Location location;            // 装配位置
-	bool isAssembly = false;             // 是否是子装配体
-	int parentIndex = -1;                // 父组件索引（-1表示根级）
-	QList<int> childIndices;             // 子组件索引列表
-
+	QString path = "";
 
 	TopoDS_Shape shape;
-	QString path="";
+	Handle(AIS_Shape) shellAisShape;
+	Handle(AIS_Shape) propellantAisShape;
+	Handle(AIS_Shape) heatInsulatingLayerAisShape;
+	
+	gp_Pnt ptShellLeftBottom;     // 筒体左端底部与壳体的交点
+	gp_Pnt ptShellRightBottom;    // 筒体右端底部与壳体的交点
+	gp_Pnt ptNozzleInletBottom;   // 喷管入口底部
+	gp_Pnt ptNozzleOutletBottom;  // 喷管出口底部
+
 	double theXmin = 0.0;
 	double theYmin = 0.0;
 	double theZmin = 0.0;
@@ -38,33 +42,29 @@ struct ModelGeometryInfo {
 	double theYmax = 0.0;
 	double theZmax = 0.0;
 
-
-	double length = 0.0; 
+	double length = 0.0;
 	double width = 0.0;
 	double height = 0.0;
 	double thickness = 0.0;
-
-	gp_Pnt connectionPoint; 
-	gp_Pnt bottomEndPoint; 
-	gp_Pnt bottomEndPoint2;
-	double cylinderRadius;
-	double engineLength;
-	double nozzleLength;
-	bool hasNozzle;
 };
 
 struct ModelMeshInfo {
-	TriangleStructure triangleStructure;
-	TriangleStructure triangleStructure45;
-	TriangleStructure triangleStructure90;
-	bool isChecked=false;
+	Handle(TriangleStructure) shellMesh;
+	Handle(TriangleStructure) propellantMesh;
+	Handle(TriangleStructure) heatInsulatingLayerMesh;
 
-	double x_min = 0.0;
-	double x_max = 0.0;
-	double z_min = 0.0;
-	double z_max = 0.0;
+	Handle(AIS_Shape) shellAisMesh;
+	Handle(AIS_Shape) propellantAisMesh;
+	Handle(AIS_Shape) heatInsulatingLayerAisMesh;
 
+	// 三种几何的边界框信息
+	double shell_x_min = 0, shell_x_max = 0, shell_z_min = 0, shell_z_max = 0;
+	double propellant_x_min = 0, propellant_x_max = 0, propellant_z_min = 0, propellant_z_max = 0;
+	double heatInsulating_x_min = 0, heatInsulating_x_max = 0, heatInsulating_z_min = 0, heatInsulating_z_max = 0;
+
+	bool isChecked = false;  // 三种网格划分是否都成功
 };
+
 //跌落
 struct FallSettingInfo {
 	double high = 20; // 跌落高度

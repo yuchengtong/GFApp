@@ -29,6 +29,9 @@ public:
 	GFTreeModelWidget(QWidget*parent = nullptr);
 	~GFTreeModelWidget();
 
+	void init();
+	void bindConnect();
+
 public:
 	void updataIcon();
 
@@ -59,7 +62,7 @@ private slots:
 private:
 	QMenu *contextMenu; // ÓÒ¼ü²Ëµ¥¶ÔÏó
 
-	GFTreeWidget* treeWidget = nullptr;
+	GFTreeWidget* m_treeWidget = nullptr;
 	TopoDS_Shape m_aShape;
 
 	WordExporter* wordExporter;

@@ -8,7 +8,7 @@
 #include <TColStd_Array1OfReal.hxx>
 #include <MeshVS_EntityType.hxx>
 #include <TColStd_Array1OfInteger.hxx>
-#include <TopoDS_Shape.hxx>
+#include <AIS_Shape.hxx>
 #include <unordered_map>
 #include <vector>
 #include <utility>
@@ -32,12 +32,13 @@ struct GpPntEqual {
     }
 };
 
-class TriangleStructure : public MeshVS_DataSource {
+class TriangleStructure : public MeshVS_DataSource 
+{
 public:
     Standard_EXPORT TriangleStructure();
 
-    // 注意：传入非 const 引用以匹配 Ng_OCC_Load_Shape
-    Standard_EXPORT TriangleStructure(TopoDS_Shape& shape,
+    // 修改：参数改为 Handle(AIS_Shape)
+    Standard_EXPORT TriangleStructure(const Handle(AIS_Shape)& aisShape,
         const Standard_Real linearDeflection = 0.5,
         volatile bool* interrupted = nullptr);
 
@@ -79,7 +80,7 @@ public:
         Standard_Real& nz) const Standard_OVERRIDE;
 
 private:
-    TopoDS_Shape m_shape; // 新增：持有深拷贝后的几何
+    Handle(AIS_Shape) m_aisShape; // 存储 AIS_Shape
 
     Handle(TColStd_HArray2OfReal) myNodeCoords;
     Handle(TColStd_HArray2OfInteger) myElemNodes;

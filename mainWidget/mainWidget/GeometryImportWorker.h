@@ -10,6 +10,13 @@
 #include <TopLoc_Location.hxx>
 #include "ModelDataManager.h"
 
+enum class PartType {
+    Shell,           // 壳体
+    Propellant,      // 推进剂
+    HeatInsulatingLayer, // 绝热层
+    Unknown          // 未知
+};
+
 class GeometryImportWorker : public QObject
 {
     Q_OBJECT
@@ -17,6 +24,17 @@ class GeometryImportWorker : public QObject
 public:
     explicit GeometryImportWorker(const QString& filePath, QObject* parent = nullptr)
         : QObject(parent), m_filePath(filePath), m_interrupted(false) {}
+
+    void SetPartType(PartType type);
+
+    bool FindConnectionCircle(const TopoDS_Shape& shape, gp_Pnt& center, double& radius);
+
+    void AnalyzeGeometry(ModelGeometryInfo& info);
+
+    void FindShellBottomPoints(ModelGeometryInfo& info);
+
+    void FindNozzleOutletPoint(ModelGeometryInfo& info);
+
 
 public slots:
     void DoWork();
@@ -26,13 +44,9 @@ public slots:
 signals:
     void ProgressUpdated(int progress);
     void StatusUpdated(const QString& status);
-    void WorkFinished(bool success, const QString& msg, const ModelGeometryInfo& info);
+    void WorkFinished(bool success, QString msg, ModelGeometryInfo info);
 
 private:
-    QString m_filePath;
-    std::atomic<bool> m_interrupted;
-    TopoDS_Shape m_shape;
-
     // 解析STEP文件
     bool ImportSTEP(ModelGeometryInfo& info);
     // 解析STL文件
@@ -42,11 +56,14 @@ private:
     // 计算边界盒
     void CalculateBoundingBox(ModelGeometryInfo& info);
 
+private:
 
-    void AnalyzeNozzleConnection(ModelGeometryInfo& info);
-    bool FindConnectionCircle(const TopoDS_Shape& shape, gp_Pnt& center, double& radius);
-    void FindBottomEndPoint(ModelGeometryInfo& info);  // 新增
 
+private:
+    QString m_filePath;
+    std::atomic<bool> m_interrupted;
+
+    PartType m_partType = PartType::Unknown;
 };
 
 #endif // GEOMETRY_IMPORT_WORKER_H

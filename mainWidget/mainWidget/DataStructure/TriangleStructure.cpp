@@ -37,18 +37,33 @@ TriangleStructure::TriangleStructure() {
     myElemNormals = new TColStd_HArray2OfReal(0, 0, 1, 3);
 }
 
-// 主构造函数（修复版）
-TriangleStructure::TriangleStructure(TopoDS_Shape& shape,
+// 主构造函数（参数改为 Handle(AIS_Shape)）
+TriangleStructure::TriangleStructure(const Handle(AIS_Shape)& aisShape,
     const Standard_Real linearDeflection,
     volatile bool* interrupted)
 {
+    m_aisShape = aisShape;
+
+    if (m_aisShape.IsNull()) {
+        std::cerr << "TriangleStructure: AIS_Shape is null." << std::endl;
+        return;
+    }
+
+    // 从 AIS_Shape 获取 TopoDS_Shape
+    TopoDS_Shape shape = m_aisShape->Shape();
+
+    if (shape.IsNull()) {
+        std::cerr << "TriangleStructure: Shape inside AIS_Shape is null." << std::endl;
+        return;
+    }
+
     // === Step 1: 深拷贝输入几何 ===
     BRepBuilderAPI_Copy copier(shape);
     if (!copier.IsDone() || copier.Shape().IsNull()) {
         std::cerr << "TriangleStructure: Failed to deep-copy input shape." << std::endl;
         return;
     }
-    m_shape = copier.Shape();
+    TopoDS_Shape copiedShape = copier.Shape();
 
     if (CheckInterruption(interrupted)) return;
 
@@ -56,21 +71,19 @@ TriangleStructure::TriangleStructure(TopoDS_Shape& shape,
     EnsureNgInit();
 
     // === Step 3: 加载几何 ===
-    assert(!m_shape.IsNull());
-    Ng_OCC_Geometry* occ_geom = Ng_OCC_Load_Shape(m_shape);
+    assert(!copiedShape.IsNull());
+    Ng_OCC_Geometry* occ_geom = Ng_OCC_Load_Shape(copiedShape);
     if (!occ_geom) {
         std::cerr << "TriangleStructure: Failed to load shape into Netgen." << std::endl;
         return;
     }
 
-    // RAII Guard：确保 occ_geom 在任何退出路径下都被释放
-    // 注意：如果 Ng_OCC_DeleteGeometry 不存在，请根据你的 nglib 版本改为正确的释放函数
+    // RAII Guard
     struct OccGeomGuard {
         Ng_OCC_Geometry*& ref;
         OccGeomGuard(Ng_OCC_Geometry*& r) : ref(r) {}
         ~OccGeomGuard() {
             if (ref) {
-                // 根据 Netgen 版本，释放函数可能是 Ng_OCC_Delete / Ng_OCC_DeleteGeometry
                 Ng_OCC_DeleteGeometry(ref);
                 ref = nullptr;
             }
@@ -84,7 +97,6 @@ TriangleStructure::TriangleStructure(TopoDS_Shape& shape,
         return;
     }
 
-    // RAII Guard：确保 mesh 在任何退出路径下都被释放
     struct MeshGuard {
         Ng_Mesh*& ref;
         MeshGuard(Ng_Mesh*& r) : ref(r) {}
@@ -96,14 +108,14 @@ TriangleStructure::TriangleStructure(TopoDS_Shape& shape,
         }
     } meshGuard(mesh);
 
-    // === Step 5: 设置参数（使用传入的 linearDeflection）===
+    // === Step 5: 设置参数 ===
     Ng_Meshing_Parameters mp = {};
     mp.uselocalh = 1;
-    mp.maxh = linearDeflection;                    // 使用传入参数
-    mp.minh = std::max(linearDeflection * 0.02, 0.001); // 自动计算最小尺寸
-    mp.elementsperedge = 2.0;
-    mp.elementspercurve = 2.0;
-    mp.grading = 0.5;
+    mp.maxh = linearDeflection;
+    mp.minh = 5.0;
+    mp.elementsperedge = 0.3;
+    mp.elementspercurve = 0.3;
+    mp.grading = 0.8;
     mp.closeedgeenable = 0;
     mp.optsurfmeshenable = 1;
 
@@ -173,10 +185,8 @@ TriangleStructure::TriangleStructure(TopoDS_Shape& shape,
         myElemNormals->SetValue(i, 3, normal.Z());
     }
 
-    // 数据已拷贝到 OpenCASCADE 数组，释放 Netgen mesh
     Ng_DeleteMesh(mesh);
-    meshGuard.ref = nullptr; // 告诉 Guard 已经手动释放，防止 double-free
-    // occ_geom 会在 occGuard 析构时自动释放
+    meshGuard.ref = nullptr;
 
     if (CheckInterruption(interrupted)) return;
 
@@ -220,19 +230,17 @@ Handle(TriangleStructure) TriangleStructure::RotateXY(const Standard_Real angleD
         Standard_Real y = myNodeCoords->Value(i, 2);
         Standard_Real z = myNodeCoords->Value(i, 3);
 
-        // 绕Z轴旋转（在XY平面内旋转）
         Standard_Real tx = x - x0;
         Standard_Real ty = y - y0;
-        Standard_Real rx = tx * cosAngle - ty * sinAngle + x0;  // 注意：XY平面旋转公式
+        Standard_Real rx = tx * cosAngle - ty * sinAngle + x0;
         Standard_Real ry = tx * sinAngle + ty * cosAngle + y0;
 
         rotatedStructure->myNodeCoords->SetValue(i, 1, rx);
         rotatedStructure->myNodeCoords->SetValue(i, 2, ry);
-        rotatedStructure->myNodeCoords->SetValue(i, 3, z);  // Z不变
+        rotatedStructure->myNodeCoords->SetValue(i, 3, z);
         rotatedStructure->myNodes.Add(i);
     }
 
-    // 复制单元
     Standard_Integer elemCount = myElemNodes->UpperRow();
     rotatedStructure->myElemNodes = new TColStd_HArray2OfInteger(1, elemCount, 1, 3);
     for (Standard_Integer i = 1; i <= elemCount; ++i) {
@@ -242,7 +250,6 @@ Handle(TriangleStructure) TriangleStructure::RotateXY(const Standard_Real angleD
         rotatedStructure->myElements.Add(i);
     }
 
-    // 重新计算法向
     rotatedStructure->myElemNormals = new TColStd_HArray2OfReal(1, elemCount, 1, 3);
     for (Standard_Integer i = 1; i <= elemCount; ++i) {
         Standard_Integer n1 = rotatedStructure->myElemNodes->Value(i, 1);
@@ -270,7 +277,6 @@ Handle(TriangleStructure) TriangleStructure::RotateXY(const Standard_Real angleD
         rotatedStructure->myElemNormals->SetValue(i, 3, normal.Z());
     }
 
-    // 重建坐标映射
     for (Standard_Integer i = 1; i <= nodeCount; ++i) {
         gp_Pnt p(rotatedStructure->myNodeCoords->Value(i, 1),
             rotatedStructure->myNodeCoords->Value(i, 2),

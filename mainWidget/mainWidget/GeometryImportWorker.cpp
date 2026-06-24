@@ -6,6 +6,20 @@
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
 #include <QThread>
+#include <STEPCAFControl_Reader.hxx>
+#include <BRep_Builder.hxx>
+#include <XCAFDoc_DocumentTool.hxx>
+#include <TDocStd_Application.hxx>
+#include <TDocStd_Document.hxx>
+#include <XCAFApp_Application.hxx>
+#include <IFSelect_ReturnStatus.hxx>
+#include <XCAFDoc_ShapeTool.hxx>
+#include <TDataStd_Name.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <BRepAdaptor_Curve.hxx>
+
+
 
 void GeometryImportWorker::DoWork()
 {
@@ -65,8 +79,15 @@ void GeometryImportWorker::DoWork()
             }
 
             CalculateBoundingBox(info);
+
+            if (m_partType == PartType::Shell)
+            {
+                AnalyzeGeometry(info);
+            }
+
+
             info.path = m_filePath;
-            msg = "几何模型导入成功，文件路径：" + m_filePath;
+            msg = "几何模型导入成功";
             emit ProgressUpdated(100);
         }
         else
@@ -81,7 +102,7 @@ void GeometryImportWorker::DoWork()
             msg = "导入已取消";
             success = false;
         }
-        else 
+        else
         {
             msg = QString("导入错误: %1").arg(e.GetMessageString());
             success = false;
@@ -89,12 +110,12 @@ void GeometryImportWorker::DoWork()
     }
     catch (...)
     {
-        if (m_interrupted) 
+        if (m_interrupted)
         {
             msg = "导入已取消";
             success = false;
         }
-        else 
+        else
         {
             msg = "导入时发生未知错误";
             success = false;
@@ -147,9 +168,9 @@ bool GeometryImportWorker::ImportSTEP(ModelGeometryInfo& info)
         return false;
     }
 
-    m_shape = reader.OneShape();
+    auto shape = reader.OneShape();
 
-    if (m_shape.IsNull())
+    if (shape.IsNull())
     {
         return false;
     }
@@ -159,7 +180,31 @@ bool GeometryImportWorker::ImportSTEP(ModelGeometryInfo& info)
         return false;
     }
 
-    info.shape = m_shape;
+    Handle(AIS_Shape) aisShape = new AIS_Shape(shape);
+
+    switch (m_partType)
+    {
+    case PartType::Shell:
+        // 壳体 - 灰色
+        aisShape->SetColor(Quantity_Color(0.8, 0.8, 0.8, Quantity_TOC_RGB));
+        info.shellAisShape = aisShape;
+        break;
+    case PartType::Propellant:
+        // 推进剂 - 橙色
+        aisShape->SetColor(Quantity_Color(1.0, 0.5, 0.0, Quantity_TOC_RGB));
+        info.propellantAisShape = aisShape;
+        break;
+    case PartType::HeatInsulatingLayer:
+        // 绝热层 - 蓝色
+        aisShape->SetColor(Quantity_Color(0.0, 0.5, 1.0, Quantity_TOC_RGB));
+        info.heatInsulatingLayerAisShape = aisShape;
+        break;
+    default:
+        // 未知类型，不设置颜色
+        break;
+    }
+
+    info.shape = shape;
 
     emit ProgressUpdated(70);
     return true;
@@ -171,11 +216,12 @@ bool GeometryImportWorker::ImportSTL(ModelGeometryInfo& info)
     emit ProgressUpdated(30);
 
     StlAPI_Reader reader;
-    if (!reader.Read(m_shape, m_filePath.toStdString().c_str()))
+    TopoDS_Shape shape;
+    if (!reader.Read(shape, m_filePath.toStdString().c_str()))
         return false;
 
     if (m_interrupted) return false;
-    info.shape = m_shape;
+    info.shape = shape;
 
     emit ProgressUpdated(70);
     return true;
@@ -195,10 +241,33 @@ bool GeometryImportWorker::ImportIGES(ModelGeometryInfo& info)
     emit StatusUpdated("转换IGES模型...");
 
     reader.TransferRoots();
-    m_shape = reader.OneShape();
+    TopoDS_Shape shape;
+    shape = reader.OneShape();
 
-    if (m_shape.IsNull()) return false;
-    info.shape = m_shape;
+    if (shape.IsNull()) return false;
+
+    // IGES 同样处理部件类型
+    Handle(AIS_Shape) aisShape = new AIS_Shape(shape);
+
+    switch (m_partType)
+    {
+    case PartType::Shell:
+        aisShape->SetColor(Quantity_Color(0.8, 0.8, 0.8, Quantity_TOC_RGB));
+        info.shellAisShape = aisShape;
+        break;
+    case PartType::Propellant:
+        aisShape->SetColor(Quantity_Color(1.0, 0.5, 0.0, Quantity_TOC_RGB));
+        info.propellantAisShape = aisShape;
+        break;
+    case PartType::HeatInsulatingLayer:
+        aisShape->SetColor(Quantity_Color(0.0, 0.5, 1.0, Quantity_TOC_RGB));
+        info.heatInsulatingLayerAisShape = aisShape;
+        break;
+    default:
+        break;
+    }
+
+    info.shape = shape;
 
     emit ProgressUpdated(70);
     return true;
@@ -206,10 +275,60 @@ bool GeometryImportWorker::ImportIGES(ModelGeometryInfo& info)
 
 void GeometryImportWorker::CalculateBoundingBox(ModelGeometryInfo& info)
 {
-    if (info.shape.IsNull()) return;
+    // 先清空原有整体 shape
+    info.shape = TopoDS_Shape();
+
+    std::vector<TopoDS_Shape> shapes;
+
+    if (!info.shellAisShape.IsNull())
+        shapes.push_back(info.shellAisShape->Shape());
+
+    if (!info.propellantAisShape.IsNull())
+        shapes.push_back(info.propellantAisShape->Shape());
+
+    if (!info.heatInsulatingLayerAisShape.IsNull())
+        shapes.push_back(info.heatInsulatingLayerAisShape->Shape());
+
+    if (shapes.empty())
+        return;
+
+    // 只有一个部件时，直接用该部件的 shape
+    if (shapes.size() == 1)
+    {
+        info.shape = shapes[0];
+
+        Bnd_Box bbox;
+        BRepBndLib::Add(info.shape, bbox);
+        bbox.SetGap(0.0);
+
+        Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
+        bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+
+        info.theXmin = xmin;
+        info.theYmin = ymin;
+        info.theZmin = zmin;
+        info.theXmax = xmax;
+        info.theYmax = ymax;
+        info.theZmax = zmax;
+
+        info.length = xmax - xmin;
+        info.width = ymax - ymin;
+        info.height = zmax - zmin;
+        return;
+    }
+
+    // 多个部件时，合并成 Compound
+    BRep_Builder builder;
+    TopoDS_Compound compound;
+    builder.MakeCompound(compound);
+
+    for (const auto& s : shapes)
+    {
+        builder.Add(compound, s);
+    }
 
     Bnd_Box bbox;
-    BRepBndLib::Add(info.shape, bbox);
+    BRepBndLib::Add(compound, bbox);
     bbox.SetGap(0.0);
 
     Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
@@ -226,9 +345,15 @@ void GeometryImportWorker::CalculateBoundingBox(ModelGeometryInfo& info)
     info.width = ymax - ymin;
     info.height = zmax - zmin;
 
-    // ===== 新增：分析喷管连接点 =====
-    AnalyzeNozzleConnection(info);
+    info.shape = compound;
 }
+
+void GeometryImportWorker::SetPartType(PartType type)
+{
+    m_partType = type;
+}
+
+
 
 // ========== 在 GeometryImportWorker.cpp 末尾添加 ==========
 
@@ -245,7 +370,7 @@ void GeometryImportWorker::CalculateBoundingBox(ModelGeometryInfo& info)
 #include <gp_Circ.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <algorithm>
-#include <3rdParty/OpenCASCADE/opencascade-7.4.0/inc/BRep_Tool.hxx>
+#include <BRep_Tool.hxx>
 
 bool GeometryImportWorker::FindConnectionCircle(const TopoDS_Shape& shape, gp_Pnt& center, double& radius)
 {
@@ -282,10 +407,8 @@ bool GeometryImportWorker::FindConnectionCircle(const TopoDS_Shape& shape, gp_Pn
         return false;
     }
 
-    // 找所有圆柱面-锥面的公共圆边
-    // 筛选条件：取 X 最大（最靠右）且半径最大（外壁）的
     bool found = false;
-    double bestScore = -1e300;  // 评分：X坐标 * 半径，越大越靠外、越靠右
+    double bestScore = -1e300;
 
     for (const auto& cyl : cylFaces) {
         TopTools_IndexedMapOfShape cylEdges;
@@ -306,8 +429,8 @@ bool GeometryImportWorker::FindConnectionCircle(const TopoDS_Shape& shape, gp_Pn
                         gp_Circ circle = curve.Circle();
                         gp_Pnt p = circle.Location();
 
-                        // 评分：靠右(X大) + 半径大(外壁)
-                        double score = p.X() * 1000.0 + cyl.radius;
+                        // 评分：X 主导，radius 辅助
+                        double score = p.X() + cyl.radius * 0.001;
 
                         if (score > bestScore) {
                             bestScore = score;
@@ -325,12 +448,13 @@ bool GeometryImportWorker::FindConnectionCircle(const TopoDS_Shape& shape, gp_Pn
     return found;
 }
 
-void GeometryImportWorker::AnalyzeNozzleConnection(ModelGeometryInfo& info)
+void GeometryImportWorker::AnalyzeGeometry(ModelGeometryInfo& info)
 {
-    info.hasNozzle = false;
-    info.cylinderRadius = 0.0;
-    info.engineLength = 0.0;
-    info.nozzleLength = 0.0;
+    // 初始化所有点
+    info.ptShellLeftBottom = gp_Pnt(0, 0, 0);
+    info.ptShellRightBottom = gp_Pnt(0, 0, 0);
+    info.ptNozzleInletBottom = gp_Pnt(0, 0, 0);
+    info.ptNozzleOutletBottom = gp_Pnt(0, 0, 0);
 
     if (info.shape.IsNull()) {
         return;
@@ -338,15 +462,16 @@ void GeometryImportWorker::AnalyzeNozzleConnection(ModelGeometryInfo& info)
 
     gp_Pnt center;
     double radius = 0.0;
+    bool hasNozzle = false;
 
-    // 尝试精确找连接圆
+    // 尝试精确找连接圆（圆柱-锥面交界）
     if (FindConnectionCircle(info.shape, center, radius)) {
-        info.connectionPoint = center;
-        info.cylinderRadius = radius;
-        info.hasNozzle = true;
+        // 喷管入口底部：连接圆中心向下偏移半径
+        info.ptNozzleInletBottom = gp_Pnt(center.X(), center.Y() + radius, center.Z());
+        hasNozzle = true;
     }
     else {
-        // fallback：边界框估算，但优先用最大半径圆柱面
+        // fallback：用最大半径圆柱面的位置估算
         std::vector<double> radii;
         std::vector<gp_Pnt> locations;
 
@@ -362,26 +487,24 @@ void GeometryImportWorker::AnalyzeNozzleConnection(ModelGeometryInfo& info)
         }
 
         double connX = info.theXmin + info.length * 0.72;
-        double bestR = info.cylinderRadius;
+        double bestR = 0.0;
 
         if (!radii.empty()) {
-            // 找最大半径对应的X位置（外壁）
             size_t maxIdx = 0;
             for (size_t i = 1; i < radii.size(); ++i) {
                 if (radii[i] > radii[maxIdx]) maxIdx = i;
             }
             connX = locations[maxIdx].X();
             bestR = radii[maxIdx];
+            hasNozzle = true;
         }
 
-        info.connectionPoint = gp_Pnt(connX, (info.theYmin + info.theYmax) / 2.0, (info.theZmin + info.theZmax) / 2.0);
-        info.cylinderRadius = bestR;
-        info.hasNozzle = true;
+        info.ptNozzleInletBottom = gp_Pnt(
+            connX,
+            (info.theYmin + info.theYmax) / 2.0 + bestR,
+            (info.theZmin + info.theZmax) / 2.0
+        );
     }
-
-    // 计算长度
-    info.engineLength = info.connectionPoint.X() - info.theXmin;
-    info.nozzleLength = info.theXmax - info.connectionPoint.X();
 
     // 计算厚度：最大半径 - 次大半径（外壁 - 内壁）
     std::vector<double> radii;
@@ -397,17 +520,23 @@ void GeometryImportWorker::AnalyzeNozzleConnection(ModelGeometryInfo& info)
 
     if (radii.size() >= 2) {
         std::sort(radii.begin(), radii.end(), std::greater<double>());
-        info.thickness = radii[0] - radii[1];  // 最大 - 次大
+        info.thickness = radii[0] - radii[1];
     }
 
-    FindBottomEndPoint(info);
+    // 找筒体两端底部点
+    FindShellBottomPoints(info);
+
+    // 找喷管出口底部点
+    if (hasNozzle) {
+        FindNozzleOutletPoint(info);
+    }
 }
 
-void GeometryImportWorker::FindBottomEndPoint(ModelGeometryInfo& info)
+void GeometryImportWorker::FindShellBottomPoints(ModelGeometryInfo& info)
 {
     if (info.shape.IsNull()) {
-        info.bottomEndPoint = gp_Pnt(0, 0, 0);
-        info.bottomEndPoint2 = gp_Pnt(0, 0, 0);
+        info.ptShellLeftBottom = gp_Pnt(0, 0, 0);
+        info.ptShellRightBottom = gp_Pnt(0, 0, 0);
         return;
     }
 
@@ -425,7 +554,6 @@ void GeometryImportWorker::FindBottomEndPoint(ModelGeometryInfo& info)
 
     std::vector<CylData> cylFaces;
 
-    // 收集所有圆柱面
     TopExp_Explorer faceExp(info.shape, TopAbs_FACE);
     while (faceExp.More()) {
         TopoDS_Face face = TopoDS::Face(faceExp.Current());
@@ -452,16 +580,19 @@ void GeometryImportWorker::FindBottomEndPoint(ModelGeometryInfo& info)
 
     if (cylFaces.empty()) {
         double r = std::max(info.width, info.height) / 2.0;
-        info.bottomEndPoint = gp_Pnt(info.theXmin + r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
-        info.bottomEndPoint2 = gp_Pnt(info.theXmax - r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
+        info.ptShellLeftBottom = gp_Pnt(info.theXmin + r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
+        info.ptShellRightBottom = gp_Pnt(info.theXmax - r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
         return;
     }
 
-    // 标记外壁
+    // 标记外壁：按范围 + 半径辅助判断
+    double expectedR = std::max(info.width, info.height) / 2.0;
     for (auto& cyl : cylFaces) {
         double cylYRange = cyl.ymax - cyl.ymin;
         double cylZRange = cyl.zmax - cyl.zmin;
-        cyl.isOuter = (cylYRange > totalYRange * 0.85 && cylZRange > totalZRange * 0.85);
+        bool byRange = (cylYRange > totalYRange * 0.85 && cylZRange > totalZRange * 0.85);
+        bool byRadius = (cyl.radius > expectedR * 0.7);
+        cyl.isOuter = byRange || byRadius;
     }
 
     struct CircleEdge {
@@ -508,8 +639,6 @@ void GeometryImportWorker::FindBottomEndPoint(ModelGeometryInfo& info)
                 gp_Circ circle = curve.Circle();
                 gp_Pnt p = circle.Location();
 
-                // 外壁判断：半径接近整体宽度/2
-                double expectedR = std::max(info.width, info.height) / 2.0;
                 if (circle.Radius() < expectedR * 0.7) { edgeExp2.Next(); continue; }
 
                 double xCenter = (info.theXmin + info.theXmax) / 2.0;
@@ -532,33 +661,36 @@ void GeometryImportWorker::FindBottomEndPoint(ModelGeometryInfo& info)
             else rightCircles.push_back(c);
         }
 
-        // 左侧：找X最大的（最靠近中心），避免封头边缘
+        // 左侧：找X最大的（最靠近中心，即封头与圆柱交界）
         if (!leftCircles.empty()) {
-            // 修正：左侧圆中，X最大的才是最靠近圆柱段的（封头与圆柱交界）
-            // X最小的可能是封头最边缘
             auto bestLeft = std::max_element(leftCircles.begin(), leftCircles.end(),
                 [](const CircleEdge& a, const CircleEdge& b) { return a.x < b.x; });
 
-            // 但还要排除太靠右的（避免找到右侧的圆）
-            // 确保 X < 中心 - 一些余量
             if (bestLeft->x < (info.theXmin + info.theXmax) / 2.0 - info.length * 0.1) {
-                info.bottomEndPoint = gp_Pnt(bestLeft->center.X(), bestLeft->center.Y() + bestLeft->radius, bestLeft->center.Z());
+                info.ptShellLeftBottom = gp_Pnt(
+                    bestLeft->center.X(),
+                    bestLeft->center.Y() + bestLeft->radius,  // 上边缘作为底部？根据坐标系确认
+                    bestLeft->center.Z()
+                );
             }
             else {
-                //  fallback：找X最小的
                 auto fallbackLeft = std::min_element(leftCircles.begin(), leftCircles.end(),
                     [](const CircleEdge& a, const CircleEdge& b) { return a.x < b.x; });
-                info.bottomEndPoint = gp_Pnt(fallbackLeft->center.X(), fallbackLeft->center.Y() + fallbackLeft->radius, fallbackLeft->center.Z());
+                info.ptShellLeftBottom = gp_Pnt(
+                    fallbackLeft->center.X(),
+                    fallbackLeft->center.Y() + fallbackLeft->radius,
+                    fallbackLeft->center.Z()
+                );
             }
         }
         else {
             double r = std::max(info.width, info.height) / 2.0;
-            info.bottomEndPoint = gp_Pnt(info.theXmin + r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
+            info.ptShellLeftBottom = gp_Pnt(info.theXmin + r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
         }
 
-        // 右侧：找X最大且不是喷管处的
+        // 右侧：找X最大但排除喷管处（必须在喷管入口左侧）
         if (!rightCircles.empty()) {
-            double connX = info.connectionPoint.X();
+            double connX = info.ptNozzleInletBottom.X();
             std::vector<CircleEdge> validRight;
             for (const auto& c : rightCircles) {
                 if (c.x < connX - info.length * 0.05) {
@@ -569,20 +701,96 @@ void GeometryImportWorker::FindBottomEndPoint(ModelGeometryInfo& info)
             if (!validRight.empty()) {
                 auto bestRight = std::max_element(validRight.begin(), validRight.end(),
                     [](const CircleEdge& a, const CircleEdge& b) { return a.x < b.x; });
-                info.bottomEndPoint2 = gp_Pnt(bestRight->center.X(), bestRight->center.Y() + bestRight->radius, bestRight->center.Z());
+                info.ptShellRightBottom = gp_Pnt(
+                    bestRight->center.X(),
+                    bestRight->center.Y() + bestRight->radius,
+                    bestRight->center.Z()
+                );
             }
             else {
-                info.bottomEndPoint2 = gp_Pnt(info.connectionPoint.X(), info.connectionPoint.Y() + info.cylinderRadius, info.connectionPoint.Z());
+                // fallback：用喷管入口点
+                double cylR = std::max(info.width, info.height) / 2.0;
+                info.ptShellRightBottom = gp_Pnt(
+                    info.ptNozzleInletBottom.X(),
+                    info.ptNozzleInletBottom.Y() + cylR,
+                    info.ptNozzleInletBottom.Z()
+                );
             }
         }
         else {
             double r = std::max(info.width, info.height) / 2.0;
-            info.bottomEndPoint2 = gp_Pnt(info.theXmax - r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
+            info.ptShellRightBottom = gp_Pnt(info.theXmax - r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
         }
     }
     else {
         double r = std::max(info.width, info.height) / 2.0;
-        info.bottomEndPoint = gp_Pnt(info.theXmin + r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
-        info.bottomEndPoint2 = gp_Pnt(info.theXmax - r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
+        info.ptShellLeftBottom = gp_Pnt(info.theXmin + r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
+        info.ptShellRightBottom = gp_Pnt(info.theXmax - r * 0.5, info.theYmax, (info.theZmin + info.theZmax) / 2.0);
     }
+}
+
+void GeometryImportWorker::FindNozzleOutletPoint(ModelGeometryInfo& info)
+{
+    if (info.shape.IsNull()) {
+        info.ptNozzleOutletBottom = gp_Pnt(0, 0, 0);
+        return;
+    }
+
+    struct CircleCandidate {
+        gp_Pnt center;
+        double radius;
+        gp_Pnt bottom;
+    };
+
+    std::vector<CircleCandidate> candidates;
+
+    // 遍历所有面，收集所有圆边
+    TopExp_Explorer faceExp(info.shape, TopAbs_FACE);
+    while (faceExp.More()) {
+        TopoDS_Face face = TopoDS::Face(faceExp.Current());
+
+        TopExp_Explorer edgeExp(face, TopAbs_EDGE);
+        while (edgeExp.More()) {
+            TopoDS_Edge edge = TopoDS::Edge(edgeExp.Current());
+            BRepAdaptor_Curve curve(edge);
+
+            if (curve.GetType() != GeomAbs_Circle) {
+                edgeExp.Next();
+                continue;
+            }
+
+            gp_Circ circle = curve.Circle();
+            gp_Pnt c = circle.Location();
+            double r = circle.Radius();
+
+            // 底部点
+            gp_Pnt bottom(c.X(), c.Y() + r, c.Z());
+
+            candidates.push_back({ c, r, bottom });
+
+            edgeExp.Next();
+        }
+        faceExp.Next();
+    }
+
+    if (candidates.empty()) {
+        info.ptNozzleOutletBottom = gp_Pnt(0, 0, 0);
+        return;
+    }
+
+    // 严格按你的规则排序：X 最大 → Y 最大 → Z 最小
+    std::sort(candidates.begin(), candidates.end(),
+        [](const CircleCandidate& a, const CircleCandidate& b) {
+            // X 降序
+            if (std::abs(a.bottom.X() - b.bottom.X()) > 1.0e-6)
+                return a.bottom.X() > b.bottom.X();
+            // X 相同，Y 降序
+            if (std::abs(a.bottom.Y() - b.bottom.Y()) > 1.0e-6)
+                return a.bottom.Y() > b.bottom.Y();
+            // Y 相同，Z 升序（最小）
+            return a.bottom.Z() < b.bottom.Z();
+        });
+
+    // 取第一个（最优）
+    info.ptNozzleOutletBottom = candidates.front().bottom;
 }

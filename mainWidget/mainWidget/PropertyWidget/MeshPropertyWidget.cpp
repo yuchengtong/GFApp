@@ -34,21 +34,21 @@ MeshPropertyWidget::MeshPropertyWidget(QWidget* parent)
 
 void MeshPropertyWidget::UpdataPropertyInfo()
 {
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	if (meshInfo.isChecked)
-	{
-		auto nodeCount = meshInfo.triangleStructure.GetAllNodes().Extent();
-		auto elemCount = meshInfo.triangleStructure.GetAllElements().Extent();
+	//auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	//if (meshInfo.isChecked)
+	//{
+	//	auto nodeCount = meshInfo.triangleStructure.GetAllNodes().Extent();
+	//	auto elemCount = meshInfo.triangleStructure.GetAllElements().Extent();
 
-		QTableWidgetItem* node_item = m_tableWidget->item(1, 2);
-		QTableWidgetItem* elem_item = m_tableWidget->item(2, 2);
+	//	QTableWidgetItem* node_item = m_tableWidget->item(1, 2);
+	//	QTableWidgetItem* elem_item = m_tableWidget->item(2, 2);
 
-		if (node_item && elem_item)
-		{
-			node_item->setText(QString::number(nodeCount));
-			elem_item->setText(QString::number(elemCount));
-		}
-	}
+	//	if (node_item && elem_item)
+	//	{
+	//		node_item->setText(QString::number(nodeCount));
+	//		elem_item->setText(QString::number(elemCount));
+	//	}
+	//}
 
 }
 

@@ -12,6 +12,7 @@
 #include <QRegularExpression> 
 #include <QValidator>
 #include <QThread>
+#include <QTimer>
 #include <algorithm>
 
 #include <AIS_Shape.hxx>
@@ -74,8 +75,6 @@
 #include "APICreateMidSurfaceHelper.h"
 
 
-
-
 #include <QScreen>
 #include <QtCore/qstandardpaths.h>
 #include "TriangulationWorker.h"
@@ -84,39 +83,30 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 
 
-// 仅处理 double 类型的 clamp 函数
-double my_clamp(double value, double low, double high) {
-	if (value < low) return low;
-	if (value > high) return high;
-	return value;
-}
 
-double getAverage(std::vector<double> data) {
-	return std::accumulate(data.begin(), data.end(), 0.0) / data.size();
-}
-
-double getStd(std::vector<double> data) {
-	double mean = getAverage(data);
-	double accum = 0.0;
-	std::for_each(std::begin(data), std::end(data), [&](const double d) {
-		accum += (d - mean) * (d - mean);
-	});
-	return sqrt(accum / data.size()); //除以n-1是无偏估计方差, 除以n是概率分布方差, 都行
-}
 
 GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	:QWidget(parent)
 {
-	wordExporter = new WordExporter(this);
-
 	qRegisterMetaType<ModelGeometryInfo>("ModelGeometryInfo");
 	qRegisterMetaType<ModelMeshInfo>("ModelMeshInfo");
 
+	init();
+	bindConnect();
+}
+
+GFTreeModelWidget::~GFTreeModelWidget()
+{
+}
+
+void GFTreeModelWidget::init()
+{
+	wordExporter = new WordExporter(this);
 
 	QIcon error_icon(":/src/Error.svg");
 	QIcon checked_icon(":/src/Checked.svg");
 
-	treeWidget = new GFTreeWidget(this);
+	m_treeWidget = new GFTreeWidget(this);
 	//treeWidget->setStyleSheet(R"(
 	// QTreeWidget::branch:has-children:!has-siblings:closed,
 	// QTreeWidget::branch:closed:has-children:has-siblings {
@@ -131,12 +121,12 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	// }
 	//)");
 
-	treeWidget->setColumnCount(1);
-	treeWidget->setHeaderLabels({ "项目结构" });
-	treeWidget->setHeaderHidden(true);
+	m_treeWidget->setColumnCount(1);
+	m_treeWidget->setHeaderLabels({ "项目结构" });
+	m_treeWidget->setHeaderHidden(true);
 
 	// 创建根节点
-	QTreeWidgetItem*rootItem = new QTreeWidgetItem(treeWidget);
+	QTreeWidgetItem* rootItem = new QTreeWidgetItem(m_treeWidget);
 	rootItem->setText(0, "工程文件");
 	rootItem->setData(0, Qt::UserRole, "Project");
 	rootItem->setExpanded(true);
@@ -147,7 +137,27 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	geometryNode->setText(0, "固体发动机三维模型导入");
 	geometryNode->setData(0, Qt::UserRole, "Geometry");
 	geometryNode->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* shellShape = new QTreeWidgetItem();
+		shellShape->setText(0, "壳体");
+		shellShape->setData(0, Qt::UserRole, "Shell");
+		shellShape->setIcon(0, error_icon);
 
+		QTreeWidgetItem* propellantShape = new QTreeWidgetItem();
+		propellantShape->setText(0, "推进剂");
+		propellantShape->setData(0, Qt::UserRole, "Propellant");
+		propellantShape->setIcon(0, error_icon);
+
+		QTreeWidgetItem* heatInsulatingLayerShape = new QTreeWidgetItem();
+		heatInsulatingLayerShape->setText(0, "绝热层");
+		heatInsulatingLayerShape->setData(0, Qt::UserRole, "HeatInsulatingLayer");
+		heatInsulatingLayerShape->setIcon(0, error_icon);
+
+		geometryNode->addChild(shellShape);
+		geometryNode->addChild(propellantShape);
+		geometryNode->addChild(heatInsulatingLayerShape);
+		geometryNode->setExpanded(true);
+	}
 	// 材料节点
 	QTreeWidgetItem* databaseNode = new QTreeWidgetItem(rootItem);
 	databaseNode->setText(0, "数据库");
@@ -159,7 +169,6 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	materialNode->setText(0, "材料数据库");
 	materialNode->setData(0, Qt::UserRole, "Material");
 	materialNode->setIcon(0, error_icon);
-	materialNode->setExpanded(true);
 
 	databaseNode->addChild(materialNode);
 
@@ -189,6 +198,8 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	materialNode->addChild(outheat);
 	materialNode->addChild(insulatingheat);
 
+	materialNode->setExpanded(true);
+
 	QTreeWidgetItem* judgment = new QTreeWidgetItem();
 	judgment->setText(0, "标准数据库");
 	judgment->setData(0, Qt::UserRole, "Judgment");
@@ -199,7 +210,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	calculation->setData(0, Qt::UserRole, "Calculation");
 	calculation->setIcon(0, checked_icon);
 
-	
+
 	databaseNode->addChild(judgment);
 	databaseNode->addChild(calculation);
 
@@ -208,6 +219,27 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	meshItem->setText(0, "网格");
 	meshItem->setData(0, Qt::UserRole, "Mesh");
 	meshItem->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* stressShellMesh = new QTreeWidgetItem();
+		stressShellMesh->setText(0, "壳体");
+		stressShellMesh->setData(0, Qt::UserRole, "ShellMesh");
+		stressShellMesh->setIcon(0, error_icon);
+
+		QTreeWidgetItem* stressPropellantMesh = new QTreeWidgetItem();
+		stressPropellantMesh->setText(0, "推进剂");
+		stressPropellantMesh->setData(0, Qt::UserRole, "Propellant");
+		stressPropellantMesh->setIcon(0, error_icon);
+
+		QTreeWidgetItem* heatInsulatingLayerMesh = new QTreeWidgetItem();
+		heatInsulatingLayerMesh->setText(0, "绝热层");
+		heatInsulatingLayerMesh->setData(0, Qt::UserRole, "HeatInsulatingLayer");
+		heatInsulatingLayerMesh->setIcon(0, error_icon);
+
+		meshItem->addChild(stressShellMesh);
+		meshItem->addChild(stressPropellantMesh);
+		meshItem->addChild(heatInsulatingLayerMesh);
+		meshItem->setExpanded(true);
+	}
 
 	// 分析设置节点
 	QTreeWidgetItem* analysisNode = new QTreeWidgetItem(rootItem);
@@ -227,21 +259,77 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	stressResult->setText(0, "应力分析");
 	stressResult->setData(0, Qt::UserRole, "StressResult");
 	stressResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* stressShellResult = new QTreeWidgetItem();
+		stressShellResult->setText(0, "壳体");
+		stressShellResult->setData(0, Qt::UserRole, "FallStressShellResult");
+		stressShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* stressPropellantResult = new QTreeWidgetItem();
+		stressPropellantResult->setText(0, "推进剂");
+		stressPropellantResult->setData(0, Qt::UserRole, "FallStressPropellantResult");
+		stressPropellantResult->setIcon(0, error_icon);
+
+		stressResult->addChild(stressShellResult);
+		stressResult->addChild(stressPropellantResult);
+	}
 
 	QTreeWidgetItem* strainResult = new QTreeWidgetItem();
 	strainResult->setText(0, "应变分析");
 	strainResult->setData(0, Qt::UserRole, "StrainResult");
 	strainResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* strainShellResult = new QTreeWidgetItem();
+		strainShellResult->setText(0, "壳体");
+		strainShellResult->setData(0, Qt::UserRole, "FallStrainShellResult");
+		strainShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* strainPropellantResult = new QTreeWidgetItem();
+		strainPropellantResult->setText(0, "推进剂");
+		strainPropellantResult->setData(0, Qt::UserRole, "FallStrainPropellantResult");
+		strainPropellantResult->setIcon(0, error_icon);
+
+		strainResult->addChild(strainShellResult);
+		strainResult->addChild(strainPropellantResult);
+	}
 
 	QTreeWidgetItem* temperatureResult = new QTreeWidgetItem();
 	temperatureResult->setText(0, "温度分析");
 	temperatureResult->setData(0, Qt::UserRole, "TemperatureResult");
 	temperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* tempShellResult = new QTreeWidgetItem();
+		tempShellResult->setText(0, "壳体");
+		tempShellResult->setData(0, Qt::UserRole, "FallTemperatureShellResult");
+		tempShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* tempPropellantResult = new QTreeWidgetItem();
+		tempPropellantResult->setText(0, "推进剂");
+		tempPropellantResult->setData(0, Qt::UserRole, "FallTemperaturePropellantResult");
+		tempPropellantResult->setIcon(0, error_icon);
+
+		temperatureResult->addChild(tempShellResult);
+		temperatureResult->addChild(tempPropellantResult);
+	}
 
 	QTreeWidgetItem* overpressureResult = new QTreeWidgetItem();
 	overpressureResult->setText(0, "超压分析");
 	overpressureResult->setData(0, Qt::UserRole, "OverpressureResult");
 	overpressureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* overpressureShellResult = new QTreeWidgetItem();
+		overpressureShellResult->setText(0, "壳体");
+		overpressureShellResult->setData(0, Qt::UserRole, "FallOverpressureShellResult");
+		overpressureShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* overpressurePropellantResult = new QTreeWidgetItem();
+		overpressurePropellantResult->setText(0, "推进剂");
+		overpressurePropellantResult->setData(0, Qt::UserRole, "FallOverpressurePropellantResult");
+		overpressurePropellantResult->setIcon(0, error_icon);
+
+		overpressureResult->addChild(overpressureShellResult);
+		overpressureResult->addChild(overpressurePropellantResult);
+	}
 
 	fallAnalysis->addChild(stressResult);
 	fallAnalysis->addChild(strainResult);
@@ -275,7 +363,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	slowCombustionAnalysis->addChild(slowCombustionTemperatureResult);
 
-	
+
 	QTreeWidgetItem* shootAnalysis = new QTreeWidgetItem();
 	shootAnalysis->setText(0, "4.枪击安全性分析");
 	shootAnalysis->setData(0, Qt::UserRole, "ShootAnalysis");
@@ -409,7 +497,7 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	sacrificeExplosionAnalysis->setData(0, Qt::UserRole, "SacrificeExplosionAnalysis");
 	//sacrificeExplosionAnalysis->setCheckState(0, Qt::Unchecked);
 	sacrificeExplosionAnalysis->setIcon(0, error_icon);
-	
+
 	QTreeWidgetItem* sacrificeExplosionStressResult = new QTreeWidgetItem();
 	sacrificeExplosionStressResult->setText(0, "应力分析");
 	sacrificeExplosionStressResult->setData(0, Qt::UserRole, "SacrificeExplosioStressResult");
@@ -439,14 +527,14 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 	analysisNode->addChild(fallAnalysis);
 	analysisNode->addChild(fastCombustionAnalysis);
 	analysisNode->addChild(slowCombustionAnalysis);
-	
+
 	analysisNode->addChild(shootAnalysis);
 	analysisNode->addChild(jetImpactAnalysis);
 	analysisNode->addChild(fragmentationImpactAnalysis);
 	analysisNode->addChild(explosiveBlastAnalysis);
 	analysisNode->addChild(sacrificeExplosionAnalysis);
-	
-	
+
+
 	//// 安全特性分析
 	//QTreeWidgetItem* paramAnalyNode = new QTreeWidgetItem(rootItem);
 	//paramAnalyNode->setText(0, "安全特性分析");
@@ -460,18 +548,15 @@ GFTreeModelWidget::GFTreeModelWidget(QWidget*parent)
 
 	//paramAnalyNode->addChild(paramAnalyResult);
 
-	QVBoxLayout*layout = new QVBoxLayout();
-	layout->addWidget(treeWidget);
+	QVBoxLayout* layout = new QVBoxLayout();
+	layout->addWidget(m_treeWidget);
 	layout->setContentsMargins(0, 0, 0, 0);
 	this->setLayout(layout);
-
-
-	// 连接信号槽
-	connect(treeWidget, &QTreeWidget::itemClicked, this, &GFTreeModelWidget::onTreeItemClicked);
 }
 
-GFTreeModelWidget::~GFTreeModelWidget()
+void GFTreeModelWidget::bindConnect()
 {
+	connect(m_treeWidget, &QTreeWidget::itemClicked, this, &GFTreeModelWidget::onTreeItemClicked);
 }
 
 void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
@@ -631,11 +716,11 @@ void GFTreeModelWidget::updataIcon()
 	auto insulatingheatPropertyInfo = ins->GetInsulatingheatPropertyInfo();
 	auto outheatPropertyInfo = ins->GetOutheatPropertyInfo();
 
-	int size = treeWidget->topLevelItemCount();
+	int size = m_treeWidget->topLevelItemCount();
 	QTreeWidgetItem *child;
 	for (int i = 0; i < size; i++)
 	{
-		child = treeWidget->topLevelItem(i);
+		child = m_treeWidget->topLevelItem(i);
 		int childCount = child->childCount();
 		for (int j = 0; j < childCount; ++j)
 		{
@@ -808,13 +893,494 @@ void GFTreeModelWidget::updataIcon()
 
 void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 {
-	QTreeWidgetItem *item = treeWidget->itemAt(event->pos());
-	if (!item) {
+	QTreeWidgetItem *item = m_treeWidget->itemAt(event->pos());
+	if (!item) 
+	{
 		return;
 	}
-	//QString type = item->data(0, Qt::UserRole).toString();
+
 	QString text = item->text(0);
-	if (text == "安全特性参数分析")
+	if (text == "壳体" || text == "推进剂" || text == "绝热层")
+	{
+		// ========== 新增：判断是否为网格子节点 ==========
+		QTreeWidgetItem* parentItem = item->parent();
+		if (parentItem && parentItem->data(0, Qt::UserRole).toString() == "Mesh")
+		{
+			QMenu menu(this);
+			QAction* actShow = menu.addAction("显示");
+			QAction* actHide = menu.addAction("隐藏");
+
+			QAction* selected = menu.exec(m_treeWidget->viewport()->mapToGlobal(event->pos()));
+			if (!selected)
+			{
+				return;
+			}
+
+			// 查找父窗口 GFImportModelWidget
+			QWidget* parent = parentWidget();
+			GFImportModelWidget* importModelWidget = nullptr;
+			while (parent)
+			{
+				importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+				if (importModelWidget)
+				{
+					break;
+				}
+				parent = parent->parentWidget();
+			}
+
+			if (!importModelWidget)
+			{
+				return;
+			}
+
+			// 获取对应网格的AIS显示对象
+			auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+			Handle(AIS_Shape) aisMesh;
+			QString role = item->data(0, Qt::UserRole).toString();
+
+			if (role == "ShellMesh")
+			{
+				aisMesh = meshInfo.shellAisMesh;
+			}
+			else if (role == "Propellant")
+			{
+				aisMesh = meshInfo.propellantAisMesh;
+			}
+			else if (role == "HeatInsulatingLayer")
+			{
+				aisMesh = meshInfo.heatInsulatingLayerAisMesh;
+			}
+
+			if (aisMesh.IsNull())
+			{
+				QMessageBox::warning(this, "提示", "该部件网格尚未划分或显示对象不存在");
+				return;
+			}
+
+			auto occView = importModelWidget->GetOccView();
+			Handle(AIS_InteractiveContext) context = occView->getContext();
+
+			if (selected == actShow)
+			{
+				context->Display(aisMesh, Standard_True);
+			}
+			else if (selected == actHide)
+			{
+				context->Erase(aisMesh, Standard_True);
+			}
+			return;  // 处理完毕，直接返回
+		}
+		else if (parentItem && parentItem->data(0, Qt::UserRole).toString() == "Geometry")
+		{
+			QMenu menu(this);
+			QAction* actImport = menu.addAction("导入");
+			QAction* actShow = menu.addAction("显示");
+			QAction* actHide = menu.addAction("隐藏");
+
+			QAction* selected = menu.exec(m_treeWidget->viewport()->mapToGlobal(event->pos()));
+			if (!selected)
+			{
+				return;
+			}
+
+			QWidget* parent = parentWidget();
+			GFImportModelWidget* importModelWidget = nullptr;
+			while (parent)
+			{
+				importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+				if (importModelWidget)
+				{
+					break;
+				}
+
+				parent = parent->parentWidget();
+			}
+
+			if (!importModelWidget)
+			{
+				return;
+			}
+
+			if (selected == actImport)
+			{
+				QString filePath = QFileDialog::getOpenFileName(
+					importModelWidget,
+					"Open File",
+					QDir::homePath(),
+					"STEP Files (*.stp *.step);;"
+					"IGES Files (*.iges *.igs);;"
+					"VTK Files (*.vtk);;"
+					"X_T Files (*.x_t);;"
+					"All Files (*.*)");
+
+				if (filePath.isEmpty())
+				{
+					return;
+				}
+
+				// 写日志
+				auto logWidget = importModelWidget->GetLogWidget();
+				auto textEdit = logWidget->GetTextEdit();
+				QString timeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+				QString partName = text;
+				textEdit->appendPlainText(timeStr + "[信息]>开始导入" + partName + "几何模型");
+				logWidget->update();
+				QApplication::processEvents();
+
+				// 创建进度对话框
+				ProgressDialog* progressDialog = new ProgressDialog(partName + "导入", importModelWidget);
+				progressDialog->setAttribute(Qt::WA_DeleteOnClose);
+				progressDialog->show();
+
+				// 创建工作线程和对象
+				QThread* workerThread = new QThread(this);
+				GeometryImportWorker* worker = new GeometryImportWorker(filePath);
+
+				// 根据部件名称设置部件类型
+				PartType partType = PartType::Unknown;
+				if (text == "壳体")
+				{
+					partType = PartType::Shell;
+				}
+				else if (text == "推进剂")
+				{
+					partType = PartType::Propellant;
+				}
+				else if (text == "绝热层")
+				{
+					partType = PartType::HeatInsulatingLayer;
+				}
+				worker->SetPartType(partType);
+
+				worker->moveToThread(workerThread);
+
+				// 连接工作信号
+				connect(workerThread, &QThread::started, worker, &GeometryImportWorker::DoWork);
+				connect(worker, &GeometryImportWorker::ProgressUpdated,
+					progressDialog, &ProgressDialog::SetProgress);
+				connect(worker, &GeometryImportWorker::StatusUpdated,
+					progressDialog, &ProgressDialog::SetStatusText);
+				connect(progressDialog, &ProgressDialog::Canceled,
+					worker, &GeometryImportWorker::RequestInterruption);
+
+				// 使用 QueuedConnection 确保在主线程处理结果
+				connect(worker, &GeometryImportWorker::WorkFinished, this,
+					[=](bool success, QString msg, ModelGeometryInfo info) {
+						QString finishTimeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+						QString level = success ? "信息" : "错误";
+						textEdit->appendPlainText(finishTimeStr + "[" + level + "]>" + msg);
+
+						if (success && !info.shape.IsNull())
+						{
+							auto occView = importModelWidget->GetOccView();
+							Handle(AIS_InteractiveContext) context = occView->getContext();
+
+							Handle(AIS_Shape) aisShape;
+							if (text == "壳体" && !info.shellAisShape.IsNull())
+							{
+								aisShape = info.shellAisShape;
+							}
+							else if (text == "推进剂" && !info.propellantAisShape.IsNull())
+							{
+								aisShape = info.propellantAisShape;
+							}
+							else if (text == "绝热层" && !info.heatInsulatingLayerAisShape.IsNull())
+							{
+								aisShape = info.heatInsulatingLayerAisShape;
+							}
+
+							if (!aisShape.IsNull())
+							{
+								context->EraseAll(true);
+								context->ClearCurrents(true);
+								context->SetDisplayMode(aisShape, AIS_Shaded, false);
+								context->Display(aisShape, true);
+
+								auto* manager = ModelDataManager::GetInstance();
+								auto existingInfo = manager->GetModelGeometryInfo();
+
+								if (text == "壳体")
+								{
+									existingInfo.shellAisShape = info.shellAisShape;
+
+									existingInfo.ptShellLeftBottom = info.ptShellLeftBottom;
+									existingInfo.ptShellRightBottom = info.ptShellRightBottom;
+									existingInfo.ptNozzleInletBottom = info.ptNozzleInletBottom;
+									existingInfo.ptNozzleOutletBottom = info.ptNozzleOutletBottom;
+								}
+								else if (text == "推进剂")
+								{
+									existingInfo.propellantAisShape = info.propellantAisShape;
+								}
+								else if (text == "绝热层")
+								{
+									existingInfo.heatInsulatingLayerAisShape = info.heatInsulatingLayerAisShape;
+								}
+
+								existingInfo.path = info.path;
+								existingInfo.shape = info.shape;
+
+								existingInfo.theXmin = info.theXmin;
+								existingInfo.theYmin = info.theYmin;
+								existingInfo.theZmin = info.theZmin;
+								existingInfo.theXmax = info.theXmax;
+								existingInfo.theYmax = info.theYmax;
+								existingInfo.theZmax = info.theZmax;
+								existingInfo.length = info.length;
+								existingInfo.width = info.width;
+								existingInfo.height = info.height;
+
+								manager->SetModelGeometryInfo(std::move(existingInfo));
+
+								updataIcon();
+
+								occView->fitAll();
+								occView->update();
+
+								if (auto geomProWid = importModelWidget->findChild<GeomPropertyWidget*>())
+								{
+									geomProWid->UpdataPropertyInfo();
+								}
+							}
+						}
+						else if (!success)
+						{
+							QMessageBox::warning(importModelWidget, "导入失败", msg);
+						}
+
+						// 安全关闭线程
+						progressDialog->close();
+
+						workerThread->quit();
+						QTimer::singleShot(1000, this, [=]() {
+							if (workerThread->isRunning())
+							{
+								workerThread->terminate();
+							}
+							worker->deleteLater();
+							workerThread->deleteLater();
+							});
+
+						QTimer::singleShot(500, this, [=]() {
+							QString m_privateDirPath = "src/template/main.png";
+							if (wordExporter) {
+								wordExporter->captureWidgetToFile(importModelWidget->GetOccView(), m_privateDirPath);
+							}
+							});
+					}, Qt::QueuedConnection);
+				workerThread->start();
+			}
+			else if (selected == actShow)
+			{
+				auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+				Handle(AIS_Shape) aisShape;
+				if (text == "壳体")
+				{
+					aisShape = geomInfo.shellAisShape;
+				}
+				else if (text == "推进剂")
+				{
+					aisShape = geomInfo.propellantAisShape;
+				}
+				else if (text == "绝热层")
+				{
+					aisShape = geomInfo.heatInsulatingLayerAisShape;
+				}
+
+				if (!aisShape.IsNull())
+				{
+					auto occView = importModelWidget->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					context->Display(aisShape, Standard_True);
+				}
+			}
+			else if (selected == actHide)
+			{
+				auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+				Handle(AIS_Shape) aisShape;
+				if (text == "壳体")
+				{
+					aisShape = geomInfo.shellAisShape;
+				}
+				else if (text == "推进剂")
+				{
+					aisShape = geomInfo.propellantAisShape;
+				}
+				else if (text == "绝热层")
+				{
+					aisShape = geomInfo.heatInsulatingLayerAisShape;
+				}
+
+				if (!aisShape.IsNull())
+				{
+					auto occView = importModelWidget->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					context->Erase(aisShape, Standard_True);
+				}
+			}
+		}
+	}
+	else if (text == "网格")
+	{
+		contextMenu = new QMenu(this);
+		QAction* meshAction = new QAction("网格划分", this);
+		connect(meshAction, &QAction::triggered, this, [item, this]() {
+		QWidget* parent = parentWidget();
+		GFImportModelWidget* importModelWidget = nullptr;
+		while (parent)
+		{
+			importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+			if (importModelWidget)
+			{
+				break;
+			}
+
+			parent = parent->parentWidget();
+		}
+
+		if (!importModelWidget)
+		{
+			return;
+		}
+
+		QDateTime currentTime = QDateTime::currentDateTime();
+		QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+		auto logWidget = importModelWidget->GetLogWidget();
+		auto textEdit = logWidget->GetTextEdit();
+		QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
+		textEdit->appendPlainText(text);
+		logWidget->update();
+
+		// 创建进度对话框
+		ProgressDialog* progressDialog = new ProgressDialog("网格划分", importModelWidget);
+		progressDialog->show();
+
+		// 从数据管理器获取三种几何的 AIS_Shape
+		auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+
+		// 创建工作线程和工作对象（传入三个 Handle(AIS_Shape)）
+		TriangulationWorker* worker = new TriangulationWorker(
+			geomInfo.shellAisShape,        // 壳体
+			geomInfo.propellantAisShape,   // 推进剂
+			geomInfo.heatInsulatingLayerAisShape // 隔热层
+		);
+
+		QThread* workerThread = new QThread();
+		worker->moveToThread(workerThread);
+
+		// 连接信号槽
+		connect(workerThread, &QThread::started, worker, &TriangulationWorker::DoWork);
+		connect(worker, &TriangulationWorker::ProgressUpdated,
+			progressDialog, &ProgressDialog::SetProgress);
+		connect(worker, &TriangulationWorker::StatusUpdated,
+			progressDialog, &ProgressDialog::SetStatusText);
+		connect(progressDialog, &ProgressDialog::Canceled,
+			worker, &TriangulationWorker::RequestInterruption,
+			Qt::DirectConnection);
+
+		// 处理导入结果
+		connect(worker, &TriangulationWorker::WorkFinished, this,
+			[=](bool success, const QString& msg, const ModelMeshInfo& info) {
+				// 更新日志
+				QDateTime finishTime = QDateTime::currentDateTime();
+				QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
+				textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+
+				if (success)
+				{
+					auto occView = importModelWidget->GetOccView();
+					Handle(AIS_InteractiveContext) context = occView->getContext();
+					auto view = occView->getView();
+					context->EraseAll(true);
+
+					// ========== 显示三种网格结果（修改lambda返回AIS句柄） ==========
+					auto displayMesh = [&](const Handle(TriangleStructure)& meshData,
+						const QString& name,
+						const QColor& color)->Handle(AIS_Shape) {
+						if (meshData.IsNull() || meshData->GetAllNodes().IsEmpty())
+						{
+							return Handle(AIS_Shape)();  // 返回空句柄
+						}
+
+						BRep_Builder builder;
+						TopoDS_Compound compound;
+						builder.MakeCompound(compound);
+
+						auto myEdges = meshData->GetMyEdge();
+						auto myNodeCoords = meshData->GetmyNodeCoords();
+
+						for (const auto& edge : myEdges)
+						{
+							Standard_Integer node1ID = edge.first;
+							Standard_Integer node2ID = edge.second;
+
+							Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
+							Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
+							Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
+
+							Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
+							Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
+							Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
+
+							gp_Pnt p1(x1, y1, z1);
+							gp_Pnt p2(x2, y2, z2);
+
+							TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
+							TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
+
+							TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
+							builder.Add(compound, edgeShape);
+						}
+
+						Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
+						aisCompound->SetColor(Quantity_Color(color.redF(), color.greenF(), color.blueF(), Quantity_TOC_RGB));
+						context->Display(aisCompound, Standard_True);
+						return aisCompound;  // 返回创建的AIS对象
+					};
+
+					// 显示三种网格并保存AIS对象
+					Handle(AIS_Shape) shellAis = displayMesh(info.shellMesh, "壳体", QColor(255, 0, 0));
+					Handle(AIS_Shape) propAis = displayMesh(info.propellantMesh, "推进剂", QColor(0, 255, 0));
+					Handle(AIS_Shape) heatAis = displayMesh(info.heatInsulatingLayerMesh, "隔热层", QColor(0, 0, 255));
+
+					// 保存网格数据及显示对象到数据管理器
+					ModelMeshInfo updatedInfo = info;  // info 是 const&，这里拷贝一份
+					updatedInfo.shellAisMesh = shellAis;
+					updatedInfo.propellantAisMesh = propAis;
+					updatedInfo.heatInsulatingLayerAisMesh = heatAis;
+					ModelDataManager::GetInstance()->SetModelMeshInfo(updatedInfo);
+
+					updataIcon();
+
+					auto meshProWid = importModelWidget->findChild<MeshPropertyWidget*>();
+					if (meshProWid)
+					{
+						meshProWid->UpdataPropertyInfo();
+					}
+				}
+				else
+				{
+					QMessageBox::warning(this, "网格划分失败", msg);
+				}
+
+				// 清理资源
+				progressDialog->close();
+				workerThread->quit();
+				workerThread->wait();
+				worker->deleteLater();
+				workerThread->deleteLater();
+				progressDialog->deleteLater();
+			});
+
+		// 启动线程
+		workerThread->start();
+
+		});
+	contextMenu->addAction(meshAction);
+	contextMenu->exec(event->globalPos());
+	}
+	else if (text == "安全特性参数分析")
 	{
 		contextMenu = new QMenu(this);
 		QAction* calAction = new QAction("计算", this);
@@ -967,7 +1533,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												{
 													tableWidget->item(10, 2)->setText("超压超过推进剂最大发火超压");
 												}
-
 											}
 											else
 											{
