@@ -16,7 +16,6 @@
         <file>src/FitAll.png</file>
         <file>src/Zoom.png</file>
         <file>src/Reset.svg</file>
-        <file>src/engine.svg</file>
         <file>src/key_line.svg</file>
         <file>src/Error.svg</file>
         <file>src/Complete.svg</file>
@@ -48,6 +47,7 @@
         <file>src/help.svg</file>
         <file>src/import_model.svg</file>
         <file>src/intelligent_analy.svg</file>
+        <file>src/engine.svg</file>
     </qresource>
     <qresource prefix="/tree">
         <file alias="Tree/import.svg">src/icon/Tree/import.svg</file>

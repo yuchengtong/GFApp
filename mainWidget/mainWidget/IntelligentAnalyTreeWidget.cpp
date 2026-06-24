@@ -22,6 +22,23 @@
 #include "WordExporter.h"
 #include "WordExporterWorker.h"
 
+
+double translateStress(double x)
+{
+	const double k = 0.0294118;
+	const double mid = 360.0;
+	const double steep = 320.0;
+	double base = k * x;
+	double soften = 1.0 + exp((x - mid) / steep);
+	double y = base / soften;
+
+	// 封顶保底
+	if (y < 0.0) y = 0.0;
+	//if (y > 20.0) y = 20.0;
+	return y;
+}
+
+
 QVector<QVector<QVariant>> tableWidToVariantVector(QTableWidget* tableWidget)
 {
 	QVector<QVector<QVariant>> result;
@@ -330,8 +347,19 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 							auto calInfo = ins->GetCalculationPropertyInfo();
 							auto fallInfo = ins->GetFallSettingInfo();
 							auto modelGeomInfo = ins->GetModelGeometryInfo();
+							auto insulatingheatPropertyInfo = ins->GetInsulatingheatPropertyInfo();
 
 							auto fallTableWidget = paParent->getFallTableWidget();
+
+							auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+							auto tangentModulus = steelInfo.tangentModulus; // 切线模量
+							auto modulus = steelInfo.modulus;// 弹性模量
+							double difference = (tangentModulus / modulus);
+							difference = (difference - 0.15) / 0.15;
+
+							// 绝热层导热系数
+							auto thermalConductivity = insulatingheatPropertyInfo.thermalConductivity;
+							double tempDifference = thermalConductivity - 1;
 
 							QTreeWidgetItem* child;
 							int childCount = treeWidget->topLevelItemCount();
@@ -383,8 +411,14 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													res = 0;
 												}
 												res = res * 0.5;
+												res = res + res * difference * 0.1;
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
 												if (!m_array.contains(i + 1))
 												{
+													res = translateStress(res);
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -561,6 +595,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 												res = res * 0.7;
+												res = res + res * 0.1 * tempDifference;
 												if (res <= 25)
 												{
 													res = 25;
@@ -617,22 +652,29 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+												res = res + res * 0.1 * tempDifference;
 												if (res > M)
 												{
 													res = M;
 												}
 												if (!m_array.contains(i + 1))
 												{
-													
-													propellantTemperatureResults.push_back(M);
+													if (res < (M * 0.94))
+													{
+														res = M * 0.94;
+													}
+													propellantTemperatureResults.push_back(res);
 												}
 												else
 												{
-													
-													steelTemperatureResults.push_back(M);
+													if (res < (M * 0.95))
+													{
+														res = M * 0.95;
+													}
+													steelTemperatureResults.push_back(res);
 												}
 											}
-
+											steelTemperatureResults.push_back(M);
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
@@ -685,8 +727,14 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													res = 0;
 												}
 												res = res * 0.5;
+												res = res + res * difference * 0.1;
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
 												if (!m_array.contains(i + 1))
 												{
+													res = translateStress(res);
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -768,8 +816,14 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													res = 0;
 												}
 												res = res * 0.5;
+												res = res + res * difference * 0.1;
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
 												if (!m_array.contains(i + 1))
 												{
+													res = translateStress(res);
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -852,8 +906,14 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													res = 0;
 												}
 												res = res * 0.5;
+												res = res + res * difference * 0.1;
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
 												if (!m_array.contains(i + 1))
 												{
+													res = translateStress(res);
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -938,10 +998,16 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													res = 0;
 												}
 												res = res * 0.5;
+												res = res + res * difference * 0.1;
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
 												if (res < 4000)
 												{
 													if (!m_array.contains(i + 1))
 													{
+														res = translateStress(res);
 														propellantStressResults.push_back(res);
 													}
 													else
@@ -1008,8 +1074,14 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 													res = 0;
 												}
 												res = res * 0.1;
+												res = res + res * difference * 0.1;
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
 												if (!m_array.contains(i + 1))
 												{
+													res = translateStress(res);
 													propellantStressResults.push_back(res);
 												}
 												else
