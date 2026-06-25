@@ -176,6 +176,7 @@ void InsulatingheatPropertyWidget::initWidget()
 void InsulatingheatPropertyWidget::showTableDialog()
 {
 	QDialog *dialog = new QDialog();
+	dialog->setWindowIcon(QIcon(":/src/engine.svg"));
 	dialog->setWindowTitle("绝热层材料");
 	dialog->resize(1000, 500);
 	QVBoxLayout *layout = new QVBoxLayout(this);

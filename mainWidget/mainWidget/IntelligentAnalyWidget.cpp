@@ -479,8 +479,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	// 设置分割器的Handle宽度为0（消除视觉间隙）
 	mainSplitter->setHandleWidth(1);
 
-	mainSplitter->setStretchFactor(0, 3);
-	mainSplitter->setStretchFactor(1, 7);
+	mainSplitter->setStretchFactor(0, 1);
+	mainSplitter->setStretchFactor(1, 1);
 
 	QVBoxLayout* layout = new QVBoxLayout();
 	layout->addWidget(mainSplitter);

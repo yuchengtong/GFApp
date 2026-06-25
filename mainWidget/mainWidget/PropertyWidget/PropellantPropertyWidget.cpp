@@ -175,6 +175,7 @@ void PropellantPropertyWidget::initWidget()
 void PropellantPropertyWidget::showTableDialog() 
 {
 	QDialog *dialog = new QDialog();
+	dialog->setWindowIcon(QIcon(":/src/engine.svg"));
 	dialog->setWindowTitle("含能材料");
 	dialog->resize(1000, 500);
 	QVBoxLayout *layout = new QVBoxLayout(this);

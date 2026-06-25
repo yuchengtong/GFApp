@@ -206,8 +206,11 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		if (!m_steelArray.contains(i+1))
 		{
-			//res = res * 0.4;
 			res = translate(res);
+			if (fallInfo.high > 0 && fallInfo.high < 25)
+			{
+				res = res * 0.56;
+			}
 			propellantStressResults.push_back(res);
 		}
 		else

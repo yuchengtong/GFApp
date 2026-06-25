@@ -717,6 +717,13 @@ void GFTreeModelWidget::updataIcon()
 	auto insulatingheatPropertyInfo = ins->GetInsulatingheatPropertyInfo();
 	auto outheatPropertyInfo = ins->GetOutheatPropertyInfo();
 	auto fallAnalysisResultInfo = ins->GetFallAnalysisResultInfo();
+	auto fastCombustionAnalysisResultInfo = ins->GetFastCombustionAnalysisResultInfo();
+	auto slowCombustionAnalysisResultInfo = ins->GetSlowCombustionAnalysisResultInfo();
+	auto shootAnalysisResultInfo = ins->GetShootAnalysisResultInfo();
+	auto jetImpactAnalysisResultInfo = ins->GetJetImpactAnalysisResultInfo();
+	auto fragmentationAnalysisResultInfo = ins->GetFragmentationAnalysisResultInfo();
+	auto explosiveBlastAnalysisResultInfo = ins->GetExplosiveBlastAnalysisResultInfo();
+	auto sacrificeExplosionAnalysisResultInfo = ins->GetSacrificeExplosionAnalysisResultInfo();
 
 	int size = m_treeWidget->topLevelItemCount();
 	QTreeWidgetItem *child;
@@ -973,7 +980,201 @@ void GFTreeModelWidget::updataIcon()
 				}
 				
 			}
-			
+			else if (child->child(j)->text(0).contains("安全特性参数分析"))
+			{
+				QTreeWidgetItem* clChild = child->child(j);
+				int clChildCount = clChild->childCount();
+				for (int m = 0; m < clChildCount; ++m) {
+					if (clChild->child(m)->text(0).contains("1.跌落安全性分析"))
+					{
+						QTreeWidgetItem* clclChild = clChild->child(m);
+						int clclChildCount = clclChild->childCount();
+						for (int o = 0; o < clclChildCount; ++o)
+						{
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							{
+								if (!fallAnalysisResultInfo.isChecked)
+								{
+									clclChild->child(o)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+
+								QTreeWidgetItem* clclclChild = clclChild->child(o);
+								int clclclChildCount = clclclChild->childCount();
+								for (int p = 0; p < clclclChildCount; ++p)
+								{
+									if (!fallAnalysisResultInfo.isChecked)
+									{
+										clclclChild->child(p)->setIcon(0, error_icon);
+									}
+									else
+									{
+										clclclChild->child(p)->setIcon(0, checked_icon);
+									}
+								}
+							}
+						}
+						
+					}
+					else if (clChild->child(m)->text(0).contains("2.快速烤燃安全性分析"))
+					{
+						QTreeWidgetItem* clclChild = clChild->child(m);
+						int clclChildCount = clclChild->childCount();
+						for (int o = 0; o < clclChildCount; ++o)
+						{
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							{
+								if (!fastCombustionAnalysisResultInfo.isChecked)
+								{
+									clclChild->child(o)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+							}
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("2.快速烤燃安全性分析"))
+					{
+						QTreeWidgetItem* clclChild = clChild->child(m);
+						int clclChildCount = clclChild->childCount();
+						for (int o = 0; o < clclChildCount; ++o)
+						{
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							{
+								if (!fastCombustionAnalysisResultInfo.isChecked)
+								{
+									clclChild->child(o)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+							}
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("3.慢速烤燃安全性分析"))
+					{
+						QTreeWidgetItem* clclChild = clChild->child(m);
+						int clclChildCount = clclChild->childCount();
+						for (int o = 0; o < clclChildCount; ++o)
+						{
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							{
+								if (!slowCombustionAnalysisResultInfo.isChecked)
+								{
+									clclChild->child(o)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+							}
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("4.枪击安全性分析"))
+					{
+						QTreeWidgetItem* clclChild = clChild->child(m);
+						int clclChildCount = clclChild->childCount();
+						for (int o = 0; o < clclChildCount; ++o)
+						{
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							{
+								if (!shootAnalysisResultInfo.isChecked)
+								{
+									clclChild->child(o)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+							}
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("5.射流冲击安全性分析"))
+					{
+					QTreeWidgetItem* clclChild = clChild->child(m);
+					int clclChildCount = clclChild->childCount();
+					for (int o = 0; o < clclChildCount; ++o)
+					{
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						{
+							if (!jetImpactAnalysisResultInfo.isChecked)
+							{
+								clclChild->child(o)->setIcon(0, error_icon);
+							}
+							else
+							{
+								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+						}
+					}
+					}
+					else if (clChild->child(m)->text(0).contains("6.破片撞击安全性分析"))
+					{
+					QTreeWidgetItem* clclChild = clChild->child(m);
+					int clclChildCount = clclChild->childCount();
+					for (int o = 0; o < clclChildCount; ++o)
+					{
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						{
+							if (!fragmentationAnalysisResultInfo.isChecked)
+							{
+								clclChild->child(o)->setIcon(0, error_icon);
+							}
+							else
+							{
+								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+						}
+					}
+					}
+					else if (clChild->child(m)->text(0).contains("7.爆炸冲击波安全性分析"))
+					{
+					QTreeWidgetItem* clclChild = clChild->child(m);
+					int clclChildCount = clclChild->childCount();
+					for (int o = 0; o < clclChildCount; ++o)
+					{
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						{
+							if (!explosiveBlastAnalysisResultInfo.isChecked)
+							{
+								clclChild->child(o)->setIcon(0, error_icon);
+							}
+							else
+							{
+								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+						}
+					}
+					}
+					else if (clChild->child(m)->text(0).contains("8.殉爆安全性分析"))
+					{
+					QTreeWidgetItem* clclChild = clChild->child(m);
+					int clclChildCount = clclChild->childCount();
+					for (int o = 0; o < clclChildCount; ++o)
+					{
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						{
+							if (!sacrificeExplosionAnalysisResultInfo.isChecked)
+							{
+								clclChild->child(o)->setIcon(0, error_icon);
+							}
+							else
+							{
+								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+						}
+					}
+					}
+					
+				}
+
+			}
 		}
 	}
 }
@@ -1221,6 +1422,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								manager->SetModelGeometryInfo(std::move(existingInfo));
 
 								updataIcon();
+								
 
 								occView->fitAll();
 								occView->update();
@@ -1250,8 +1452,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							});
 
 						QTimer::singleShot(500, this, [=]() {
-							QString m_privateDirPath = "src/template/main.png";
-							if (wordExporter) {
+							if (text == "壳体")
+							{
+								UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+								// 截图计算模型
+								QString m_privateDirPath = userinfo.workdir + "/template/main.png";
+								QDir privateDir(m_privateDirPath);
 								wordExporter->captureWidgetToFile(importModelWidget->GetOccView(), m_privateDirPath);
 							}
 							});

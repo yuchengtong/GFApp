@@ -179,6 +179,7 @@ void OutheatPropertyWidget::showTableDialog() {
 
 
 	QDialog* dialog = new QDialog();
+	dialog->setWindowIcon(QIcon(":/src/engine.svg"));
 	dialog->setWindowTitle("外防热材料");
 	dialog->resize(1000, 500);
 	QVBoxLayout* layout = new QVBoxLayout(this);
