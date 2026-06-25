@@ -335,10 +335,10 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
 			else if (distToNozzleOutlet < 300.0)
 				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
-			else if (distToNozzleOutlet < 400.0)
+			else if (distToNozzleOutlet < 900.0)
 				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
-			else if (distToNozzleOutlet < 700.0)
-				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+			/*else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;*/
 
 			value = std::max({valueNozzleInlet, valueNozzleOutlet });
 		}
@@ -369,7 +369,7 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 			else if (distToNozzleInlet < 500.0)
 				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
 			else if (distToNozzleInlet < 600.0)
-				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
 
 
 			// ptNozzleOutletBottom 
@@ -576,9 +576,9 @@ bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::ve
 				valueShellRight = min_value + (max_value - min_value) * 0.2;
 
 
-			gp_Pnt ptShellRightUp(ptShellRightBottom.X(), ptShellRightBottom.Y()-1000, ptShellRightBottom.Z());
+			gp_Pnt ptShellRightUp(ptShellRightBottom.X(), ptShellRightBottom.Y()-1700, ptShellRightBottom.Z());
 			double distToShellRightUp = currentNode.Distance(ptShellRightUp);
-			if (distToShellRightUp < 50.0)
+			if (distToShellRightUp < 30.0)
 				valueShellRight = max_value;
 			else if (distToShellRightUp < 40.0)
 				valueShellRight = min_value + (max_value - min_value) * 0.7;
@@ -588,9 +588,9 @@ bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::ve
 				valueShellRight = min_value + (max_value - min_value) * 0.5;
 			else if (distToShellRightUp < 120.0)
 				valueShellRight = min_value + (max_value - min_value) * 0.4;
-			else if (distToShellRightUp < 150.0)
+			else if (distToShellRightUp < 250.0)
 				valueShellRight = min_value + (max_value - min_value) * 0.3;
-			else if (distToShellRightUp < 200.0)
+			else if (distToShellRightUp < 300.0)
 				valueShellRight = min_value + (max_value - min_value) * 0.2;
 
 
@@ -834,25 +834,29 @@ bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::ve
 				double distY = std::max(0.0, dy - 300.0);
 				double distToRect = std::sqrt(distX * distX + distY * distY);
 
-				if (distToRect < 100.0)
+				if (distToRect < 40.0)
 				{
 					valueRect = min_value + (max_value - min_value) * 0.8;
 				}
-				else if (distToRect < 200.0)
+				else if (distToRect < 50.0)
 				{
 					valueRect = min_value + (max_value - min_value) * 0.7;
 				}
-				else if (distToRect < 400.0)
+				else if (distToRect < 70.0)
 				{
 					valueRect = min_value + (max_value - min_value) * 0.6;
 				}
-				else if (distToRect < 600.0)
+				else if (distToRect < 90.0)
 				{
 					valueRect = min_value + (max_value - min_value) * 0.5;
 				}
-				else if (distToRect < 800.0)
+				else if (distToRect < 100.0)
 				{
 					valueRect = min_value + (max_value - min_value) * 0.4;
+				}
+				else if (distToRect < 120.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.2;
 				}
 				else
 				{
@@ -1141,7 +1145,7 @@ bool APISetNodeValue::SetPropellantFallTempNephogram(OccView* occView, std::vect
 
 	auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
 	auto max_value = fallTemperatureResult.propellantsMaxTemperature;
-	auto min_value = fallTemperatureResult.propellantsMaxTemperature;
+	auto min_value = fallTemperatureResult.propellantsMinTemperature;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
@@ -1473,26 +1477,9 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 		}
 		else if (angle == 90)
 		{
-			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			// 计算每个点的独立影响值
-			double valueShellRight = min_value;
-			// ptShellRightBottom 影响
-			if (distToShellRight < 100.0)
-				valueShellRight = max_value;
-			else if (distToShellRight < 150.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.7;
-			else if (distToShellRight < 170.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.6;
-			else if (distToShellRight < 220.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.5;
-			else if (distToShellRight < 280.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.4;
-			else if (distToShellRight < 300.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.3;
-			else if (distToShellRight < 350.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.2;
+			//double distToShellRight = currentNode.Distance(ptShellRightBottom);
 
-			value = valueShellRight;
+			value = min_value + (max_value - min_value) * 0.3;
 		}
 
 		nodeValues.push_back(value);
@@ -1696,11 +1683,11 @@ bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::
 				{
 					value = min_value + (max_value - min_value) * 0.8;
 				}
-				else if (distToRect < 150.0)
+				else if (distToRect < 130.0)
 				{
 					value = min_value + (max_value - min_value) * 0.7;
 				}
-				else if (distToRect < 200.0)
+				else if (distToRect < 150.0)
 				{
 					value = min_value + (max_value - min_value) * 0.6;
 				}

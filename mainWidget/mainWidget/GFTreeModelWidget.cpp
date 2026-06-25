@@ -1556,7 +1556,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 		TriangulationWorker* worker = new TriangulationWorker(
 			geomInfo.shellAisShape,        // 壳体
 			geomInfo.propellantAisShape,   // 推进剂
-			geomInfo.heatInsulatingLayerAisShape // 隔热层
+			geomInfo.heatInsulatingLayerAisShape // 绝热层
 		);
 
 		QThread* workerThread = new QThread();
@@ -1635,7 +1635,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 					// 显示三种网格并保存AIS对象
 					Handle(AIS_Shape) shellAis = displayMesh(info.shellMesh, "壳体", QColor(255, 0, 0));
 					Handle(AIS_Shape) propAis = displayMesh(info.propellantMesh, "推进剂", QColor(0, 255, 0));
-					Handle(AIS_Shape) heatAis = displayMesh(info.heatInsulatingLayerMesh, "隔热层", QColor(0, 0, 255));
+					Handle(AIS_Shape) heatAis = displayMesh(info.heatInsulatingLayerMesh, "绝热层", QColor(0, 0, 255));
 
 					// 保存网格数据及显示对象到数据管理器
 					ModelMeshInfo updatedInfo = info;  // info 是 const&，这里拷贝一份
@@ -2551,126 +2551,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 		contextMenu->addAction(customAction); // 将动作添加到菜单中
 		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
 	}
-	//else if (text == "网格")
-	//{
-	//	contextMenu = new QMenu(this);
-	//	QAction *meshAction = new QAction("网格划分", this);
-	//	connect(meshAction, &QAction::triggered, this, [item, this]() {
-	//		QWidget* parent = parentWidget();
-	//		while (parent)
-	//		{
-	//			GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
-	//			if (gfParent)
-	//			{								
-	//				QDateTime currentTime = QDateTime::currentDateTime();
-	//				QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-	//				auto logWidget = gfParent->GetLogWidget();
-	//				auto textEdit = logWidget->GetTextEdit();
-	//				QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
-	//				textEdit->appendPlainText(text);
-	//				logWidget->update();
-	//				
-	//				auto occView = gfParent->GetOccView();
-	//				Handle(AIS_InteractiveContext) context = occView->getContext();
-	//				auto view = occView->getView();
-	//				context->EraseAll(true);
-
-	//				// 创建进度对话框
-	//				ProgressDialog* progressDialog = new ProgressDialog("网格划分", gfParent);
-	//				progressDialog->show();
-
-	//				// 创建工作线程和工作对象
-	//				auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	//				TriangulationWorker* worker = new TriangulationWorker(geomInfo.shape);
-	//				QThread* workerThread = new QThread();
-	//				worker->moveToThread(workerThread);
-
-	//				// 连接信号槽
-	//				connect(workerThread, &QThread::started, worker, &TriangulationWorker::DoWork);
-	//				connect(worker, &TriangulationWorker::ProgressUpdated,
-	//					progressDialog, &ProgressDialog::SetProgress);
-	//				connect(worker, &TriangulationWorker::StatusUpdated,
-	//					progressDialog, &ProgressDialog::SetStatusText);
-	//				connect(progressDialog, &ProgressDialog::Canceled,
-	//					worker, &TriangulationWorker::RequestInterruption,
-	//					Qt::DirectConnection);
-
-	//				// 处理导入结果
-	//				connect(worker, &TriangulationWorker::WorkFinished, this,
-	//					[=](bool success, const QString& msg, const ModelMeshInfo& info) {
-	//						// 更新日志
-	//						QDateTime finishTime = QDateTime::currentDateTime();
-	//						QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
-	//						textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
-	//						if (success)
-	//						{
-	//							ModelDataManager::GetInstance()->SetModelMeshInfo(info);
-	//							BRep_Builder builder;
-	//							TopoDS_Compound compound;
-	//							builder.MakeCompound(compound);
-
-	//							auto aDataSource = info.triangleStructure;
-	//							auto myEdges = aDataSource.GetMyEdge();
-	//							auto myNodeCoords = aDataSource.GetmyNodeCoords();
-	//							for (const auto& edge : myEdges)
-	//							{
-	//								Standard_Integer node1ID = edge.first;
-	//								Standard_Integer node2ID = edge.second;
-
-	//								Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
-	//								Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
-	//								Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
-
-	//								Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
-	//								Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
-	//								Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
-
-	//								gp_Pnt p1(x1, y1, z1);
-	//								gp_Pnt p2(x2, y2, z2);
-
-	//								TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
-	//								TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
-
-	//								TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
-
-	//								builder.Add(compound, edgeShape);
-	//							}
-	//							Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
-	//							context->Display(aisCompound, Standard_True);
-
-	//							updataIcon();
-
-	//							auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
-	//							meshProWid->UpdataPropertyInfo();
-	//						}
-	//						else if (!success)
-	//						{
-	//							QMessageBox::warning(this, "导入失败", msg);
-	//						}
-
-	//						// 清理资源
-	//						progressDialog->close();
-	//						workerThread->quit();
-	//						workerThread->wait();
-	//						worker->deleteLater();
-	//						workerThread->deleteLater();
-	//						progressDialog->deleteLater();
-	//					});
-
-	//				// 启动线程
-	//				workerThread->start();
-
-	//				break;
-	//			}
-	//			else
-	//			{
-	//				parent = parent->parentWidget();
-	//			}
-	//		}
-	//	});
-	//	contextMenu->addAction(meshAction);
-	//	contextMenu->exec(event->globalPos());
-	//}
 }
 
 void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* item)

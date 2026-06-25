@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
 	StartDialog startDialog;
 	if (startDialog.exec() == QDialog::Accepted) {
 		w.show();
+		w.showMaximized();
 		return a.exec();
 	}
 	//w.show();

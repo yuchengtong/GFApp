@@ -149,9 +149,9 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        // ========== 3. 隔热层网格划分 ==========
+        // ========== 3. 绝热层网格划分 ==========
         bool heatInsulatingOK = TriangulateSingleShape(
-            m_heatInsulatingAisShape, "隔热层",
+            m_heatInsulatingAisShape, "绝热层",
             meshInfo.heatInsulatingLayerMesh,
             meshInfo.heatInsulating_x_min, meshInfo.heatInsulating_x_max,
             meshInfo.heatInsulating_z_min, meshInfo.heatInsulating_z_max,
@@ -175,7 +175,7 @@ void TriangulationWorker::DoWork()
         else
         {
             success = false;
-            msg = QString("部分失败：壳体[%1] 推进剂[%2] 隔热层[%3]")
+            msg = QString("部分失败：壳体[%1] 推进剂[%2] 绝热层[%3]")
                 .arg(shellOK ? "成功" : "失败")
                 .arg(propellantOK ? "成功" : "失败")
                 .arg(heatInsulatingOK ? "成功" : "失败");
