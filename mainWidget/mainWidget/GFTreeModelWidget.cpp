@@ -140,17 +140,17 @@ void GFTreeModelWidget::init()
 	{
 		QTreeWidgetItem* shellShape = new QTreeWidgetItem();
 		shellShape->setText(0, "壳体");
-		shellShape->setData(0, Qt::UserRole, "Shell");
+		shellShape->setData(0, Qt::UserRole, "ShellGeometry");
 		shellShape->setIcon(0, error_icon);
 
 		QTreeWidgetItem* propellantShape = new QTreeWidgetItem();
 		propellantShape->setText(0, "推进剂");
-		propellantShape->setData(0, Qt::UserRole, "Propellant");
+		propellantShape->setData(0, Qt::UserRole, "PropellantGeometry");
 		propellantShape->setIcon(0, error_icon);
 
 		QTreeWidgetItem* heatInsulatingLayerShape = new QTreeWidgetItem();
 		heatInsulatingLayerShape->setText(0, "绝热层");
-		heatInsulatingLayerShape->setData(0, Qt::UserRole, "HeatInsulatingLayer");
+		heatInsulatingLayerShape->setData(0, Qt::UserRole, "HeatInsulatingLayerGeometry");
 		heatInsulatingLayerShape->setIcon(0, error_icon);
 
 		geometryNode->addChild(shellShape);
@@ -227,12 +227,12 @@ void GFTreeModelWidget::init()
 
 		QTreeWidgetItem* stressPropellantMesh = new QTreeWidgetItem();
 		stressPropellantMesh->setText(0, "推进剂");
-		stressPropellantMesh->setData(0, Qt::UserRole, "Propellant");
+		stressPropellantMesh->setData(0, Qt::UserRole, "PropellantMesh");
 		stressPropellantMesh->setIcon(0, error_icon);
 
 		QTreeWidgetItem* heatInsulatingLayerMesh = new QTreeWidgetItem();
 		heatInsulatingLayerMesh->setText(0, "绝热层");
-		heatInsulatingLayerMesh->setData(0, Qt::UserRole, "HeatInsulatingLayer");
+		heatInsulatingLayerMesh->setData(0, Qt::UserRole, "HeatInsulatingLayerMesh");
 		heatInsulatingLayerMesh->setIcon(0, error_icon);
 
 		meshItem->addChild(stressShellMesh);
@@ -567,7 +567,8 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 	QString itemData = item->data(0, Qt::UserRole).toString();
 	emit itemClicked(itemData);
 
-	if (itemData.contains("StressResult")|| itemData.contains("StrainResult") || itemData.contains("TemperatureResult") || itemData.contains("OverpressureResult") )
+	if (itemData.contains("StressResult")|| itemData.contains("StrainResult") || itemData.contains("TemperatureResult") || itemData.contains("OverpressureResult")
+		|| itemData.contains("FallStressShellResult") || itemData.contains("FallStrainShellResult") || itemData.contains("FallTemperatureShellResult") || itemData.contains("FallOverpressureShellResult"))
 	{
 		QWidget* parent = parentWidget();
 		while (parent) {
@@ -576,19 +577,19 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 			{
 				// 截图结果云图
 				QString m_privateDirPath = "";
-				if (itemData == "StressResult")
+				if (itemData == "FallStressShellResult")
 				{
 					m_privateDirPath = workdir + "/template/fall/Stress.png";
 				}
-				else if (itemData == "StrainResult")
+				else if (itemData == "FallStrainShellResult")
 				{
 					m_privateDirPath = workdir + "/template/fall/Strain.png";
 				}
-				else if (itemData == "TemperatureResult")
+				else if (itemData == "FallTemperatureShellResult")
 				{
 					m_privateDirPath = workdir + "/template/fall/Temperature.png";
 				}
-				else if (itemData == "OverpressureResult")
+				else if (itemData == "FallOverpressureShellResult")
 				{
 					m_privateDirPath = workdir + "/template/fall/Overpressure.png";
 				}
@@ -715,6 +716,7 @@ void GFTreeModelWidget::updataIcon()
 	auto judgementPropertyInfo = ins->GetJudgementPropertyInfo();
 	auto insulatingheatPropertyInfo = ins->GetInsulatingheatPropertyInfo();
 	auto outheatPropertyInfo = ins->GetOutheatPropertyInfo();
+	auto fallAnalysisResultInfo = ins->GetFallAnalysisResultInfo();
 
 	int size = m_treeWidget->topLevelItemCount();
 	QTreeWidgetItem *child;
@@ -726,14 +728,59 @@ void GFTreeModelWidget::updataIcon()
 		{
 			if (child->child(j)->text(0).contains("固体发动机三维模型导入"))
 			{
-				if (geomInfo.path.isEmpty())
+
+				QTreeWidgetItem* clChild = child->child(j);
+				int clChildCount = clChild->childCount();
+				for (int m = 0; m < clChildCount; ++m) {
+
+					if (clChild->child(m)->text(0).contains("壳体"))
+					{
+						if (geomInfo.shellAisShape.IsNull())
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("推进剂"))
+					{
+						if (geomInfo.propellantAisShape.IsNull())
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("绝热层"))
+					{
+						if (geomInfo.heatInsulatingLayerAisShape.IsNull())
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+				}
+				if (!geomInfo.heatInsulatingLayerAisShape.IsNull() && !geomInfo.heatInsulatingLayerAisShape.IsNull() && !geomInfo.heatInsulatingLayerAisShape.IsNull())
+				{
+					clChild->setIcon(0, checked_icon);
+				}
+
+
+				/*if (geomInfo.path.isEmpty())
 				{
 					child->child(j)->setIcon(0, error_icon);
 				}
 				else
 				{
 					child->child(j)->setIcon(0, checked_icon);
-				}
+				}*/
 			}
 			else if (child->child(j)->text(0).contains("网格"))
 			{
@@ -745,6 +792,45 @@ void GFTreeModelWidget::updataIcon()
 				{
 					child->child(j)->setIcon(0, checked_icon);
 				}
+				QTreeWidgetItem* clChild = child->child(j);
+				int clChildCount = clChild->childCount();
+				for (int m = 0; m < clChildCount; ++m) {
+
+					if (clChild->child(m)->text(0).contains("壳体"))
+					{
+						if (!meshInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("推进剂"))
+					{
+						if (!meshInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+					else if (clChild->child(m)->text(0).contains("绝热层"))
+					{
+						if (!meshInfo.isChecked)
+						{
+							clChild->child(m)->setIcon(0, error_icon);
+						}
+						else
+						{
+							clChild->child(m)->setIcon(0, checked_icon);
+						}
+					}
+				}
+
 			}
 			else if (child->child(j)->text(0).contains("数据库"))
 			{
@@ -887,6 +973,7 @@ void GFTreeModelWidget::updataIcon()
 				}
 				
 			}
+			
 		}
 	}
 }
@@ -2066,6 +2153,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							worker->deleteLater();
 							workerThread->deleteLater();
 							progressDialog->deleteLater();
+
+							updataIcon();
 						});
 
 					// 启动线程

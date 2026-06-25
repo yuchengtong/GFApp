@@ -233,6 +233,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		}
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
+	else if (itemData == "ShellGeometry" || itemData == "PropellantGeometry" || itemData == "HeatInsulatingLayerGeometry" )
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
+	}
 	else if (itemData == "Material") 
 	{
 		occView->SetCameraRotationState(true);
@@ -334,6 +339,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 		m_meshPropertyWidget->UpdataPropertyInfo();
 	}
+	else if (itemData == "ShellMesh" || itemData == "PropellantMesh" || itemData == "HeatInsulatingLayerMesh" )
+	{
+		occView->SetCameraRotationState(true);
+		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
+	}
 	else if (itemData == "Analysis") 
 	{
 		occView->SetCameraRotationState(true);
@@ -373,9 +383,9 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	}
 	else if (itemData == "StressResult")
 	{
-		//occView->SetCameraRotationState(false);
+		occView->SetCameraRotationState(false);
 
-		//m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
+		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 
 		//Handle(AIS_InteractiveContext) context = occView->getContext();
 		//Handle(V3d_View) view = occView->getView();
@@ -411,7 +421,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	{
 		occView->SetCameraRotationState(false);
 
-		//m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
+		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Zneg);
@@ -444,7 +454,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	{
 		occView->SetCameraRotationState(false);
 
-		//m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
+		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
 		view->SetProj(V3d_Zneg);

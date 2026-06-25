@@ -185,15 +185,15 @@ int main(int argc, char *argv[])
 	QApplication::setFont(font);
 	mainWidget w;
 	QCoreApplication::setApplicationName(QStringLiteral("固体发动机安全性分析与评估系统"));
-	//w.hide();
-	//StartDialog startDialog;
-	//if (startDialog.exec() == QDialog::Accepted) {
-	//	w.show();
-	//	return a.exec();
-	//}
-	w.show();
-	w.showMaximized();
-	return a.exec();
+	w.hide();
+	StartDialog startDialog;
+	if (startDialog.exec() == QDialog::Accepted) {
+		w.show();
+		return a.exec();
+	}
+	//w.show();
+	//w.showMaximized();
+	//return a.exec();
 
 	return 0;
 }
