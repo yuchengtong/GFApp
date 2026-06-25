@@ -1,0 +1,3 @@
+cmd进入到release文件夹
+
+输入命令：windeployqt mainWidget.exe
