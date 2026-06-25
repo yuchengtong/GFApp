@@ -155,9 +155,9 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 	{
 		return false;
 	}
-
-	auto max_value = fallAnalysisResultInfo.stressMaxValue;
-	auto min_value = fallAnalysisResultInfo.stressMinValue;
+	auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+	auto max_value = fallStressResult.metalsMaxStress;
+	auto min_value = fallStressResult.metalsMinStress;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -453,8 +453,9 @@ bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::ve
 		return false;
 	}
 
-	auto max_value = fallAnalysisResultInfo.stressMaxValue;
-	auto min_value = fallAnalysisResultInfo.stressMinValue;
+	auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+	auto max_value = fallStressResult.propellantsMaxStress;
+	auto min_value = fallStressResult.propellantsMinStress;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
@@ -922,8 +923,9 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 		return false;
 	}
 
-	auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
-	auto min_value = fallAnalysisResultInfo.temperatureMinValue;
+	auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+	auto max_value = fallTemperatureResult.metalsMaxTemperature;
+	auto min_value = fallTemperatureResult.metalsMinTemperature;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -1137,8 +1139,9 @@ bool APISetNodeValue::SetPropellantFallTempNephogram(OccView* occView, std::vect
 		return false;
 	}
 
-	auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
-	auto min_value = fallAnalysisResultInfo.temperatureMinValue;
+	auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+	auto max_value = fallTemperatureResult.propellantsMaxTemperature;
+	auto min_value = fallTemperatureResult.propellantsMaxTemperature;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
@@ -1394,8 +1397,9 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 		return false;
 	}
 
-	auto max_value = fallAnalysisResultInfo.overpressureMaxValue;
-	auto min_value = fallAnalysisResultInfo.overpressureMinValue;
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fallOverpressureResult.metalsMinOverpressure;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -1529,8 +1533,9 @@ bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::
 		return false;
 	}
 
-	auto max_value = fallAnalysisResultInfo.overpressureMaxValue;
-	auto min_value = fallAnalysisResultInfo.overpressureMinValue;
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.propellantsMaxOverpressure;
+	auto min_value = fallOverpressureResult.propellantsMinOverpressure;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();

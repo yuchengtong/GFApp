@@ -21,55 +21,53 @@ void GFTreeWidgetItemDelegate::paint(QPainter* painter, const QStyleOptionViewIt
 	QStyleOptionViewItem opti = option;
 	initStyleOption(&opti, index);
 
-	bool isSelected = opti.state & QStyle::State_Selected;
-	bool isHovered = opti.state & QStyle::State_MouseOver;
-
-
 	QString text = index.data(Qt::DisplayRole).toString();
-	if (index.column() == 0&&(text== "安全特性参数分析"|| text =="1.跌落安全性分析"|| text == "2.快速烤燃安全性分析" || text == "3.慢速烤燃安全性分析" || 
-		text == "4.枪击安全性分析"|| text == "5.射流冲击安全性分析"|| text == "6.破片撞击安全性分析" || text == "7.爆炸冲击波安全性分析" || text == "8.殉爆安全性分析"))
-	{ // 只对第一列进行自定义绘制
+	if (index.column() == 0 && (text == "安全特性参数分析" || text == "1.跌落安全性分析" || text == "2.快速烤燃安全性分析" || text == "3.慢速烤燃安全性分析" ||
+		text == "4.枪击安全性分析" || text == "5.射流冲击安全性分析" || text == "6.破片撞击安全性分析" || text == "7.爆炸冲击波安全性分析" || text == "8.殉爆安全性分析"))
+	{
 		painter->save();
 
-		// 计算复选框的位置和大小
-		int checkboxSize = 20;
+		// 计算复选框的位置和大小（与字体高度匹配）
+		int checkboxSize = painter->fontMetrics().height();
 		int margin = 4;
 		QRect checkboxRect =
 			QRect(option.rect.left() + margin, option.rect.center().y() - checkboxSize / 2, checkboxSize, checkboxSize);
-		// 绘制复选框
-		QStyle* style = qApp->style();
-		QStyleOptionButton optBtn;
-		optBtn.rect = checkboxRect;
 
+		// 绘制复选框
 		Qt::CheckState state = static_cast<Qt::CheckState>(index.data(Qt::CheckStateRole).toInt());
 		auto iter = m_checkStatePixmap.find(state);
 		if (iter != m_checkStatePixmap.end())
 		{
-			// 根据状态选择图片
-			const QPixmap& pixmap = iter.value();
-			// 计算图片绘制区域（居中）
+			// 缩放图片以适应 checkbox 大小，保持比例
+			QPixmap pixmap = iter.value().scaled(checkboxSize, checkboxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+			// 计算图片绘制区域（在 checkboxRect 内居中）
 			int x = checkboxRect.x() + (checkboxRect.width() - pixmap.width()) / 2;
 			int y = checkboxRect.y() + (checkboxRect.height() - pixmap.height()) / 2;
 			painter->drawPixmap(x, y, pixmap);
 		}
 		else
 		{
+			QStyleOptionButton optBtn;
+			optBtn.rect = checkboxRect;
+			optBtn.state |= QStyle::State_Enabled;
 			if (state == Qt::Checked)
 			{
-				optBtn.state = (QStyle::State_On | QStyle::State_Enabled);
+				optBtn.state |= QStyle::State_On;
 			}
-			else if (state = Qt::PartiallyChecked)
+			else if (state == Qt::PartiallyChecked)
 			{
-				optBtn.state = QStyle::State_NoChange | QStyle::State_Enabled;
+				optBtn.state |= QStyle::State_NoChange;
 			}
 			else
 			{
-				optBtn.state = QStyle::State_Off | QStyle::State_Enabled;
-				style->drawControl(QStyle::CE_CheckBox, &optBtn, painter);
-			}			
+				optBtn.state |= QStyle::State_Off;
+			}
+			QApplication::style()->drawControl(QStyle::CE_CheckBox, &optBtn, painter);
 		}
+
+		// 绘制文本（垂直居中于 checkbox）
 		int textX = checkboxRect.right() + margin;
-		int textY = option.rect.bottom() - painter->fontMetrics().height() + 12;
+		int textY = option.rect.center().y() + painter->fontMetrics().ascent() / 2 - 1;
 		painter->setPen(Qt::black);
 		painter->drawText(QPoint(textX, textY), text);
 
@@ -87,32 +85,34 @@ bool GFTreeWidgetItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mo
 	{
 		return QStyledItemDelegate::editorEvent(event, model, option, index);
 	}
-	else
+
+	QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*>(event);
+	if (!mouseEvent)
 	{
-		QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*>(event);
-		if (!mouseEvent)
+		return false;
+	}
+
+	QString text = index.data(Qt::DisplayRole).toString();
+	if (text == "安全特性参数分析" || text == "1.跌落安全性分析" || text == "2.快速烤燃安全性分析" || text == "3.慢速烤燃安全性分析" ||
+		text == "4.枪击安全性分析" || text == "5.射流冲击安全性分析" || text == "6.破片撞击安全性分析" || text == "7.爆炸冲击波安全性分析" || text == "8.殉爆安全性分析")
+	{
+		// 与 paint 保持一致：使用字体高度作为 checkbox 大小
+		QFontMetrics fm(option.font);
+		int checkboxSize = fm.height();
+		int margin = 4;
+		QRect checkboxRect =
+			QRect(option.rect.left() + margin, option.rect.center().y() - checkboxSize / 2, checkboxSize, checkboxSize);
+
+		if (mouseEvent->type() == QEvent::MouseButtonRelease && mouseEvent->button() == Qt::LeftButton)
 		{
-			return false;
-		}
-		QString text = index.data(Qt::DisplayRole).toString();
-		if (text == "安全特性参数分析" || text == "1.跌落安全性分析" || text == "2.快速烤燃安全性分析" || text == "3.慢速烤燃安全性分析" ||
-			text == "4.枪击安全性分析" || text == "5.射流冲击安全性分析" || text == "6.破片撞击安全性分析" || text == "7.爆炸冲击波安全性分析" || text == "8.殉爆安全性分析")
-		{
-			int checkboxSize = 20;
-			int margin = 4;;
-			QRect checkboxRect =
-				QRect(option.rect.left() + margin, option.rect.center().y() - checkboxSize / 2, checkboxSize, checkboxSize);
-			if (mouseEvent && mouseEvent->type() == QEvent::MouseButtonRelease && mouseEvent->button() == Qt::LeftButton)
+			if (checkboxRect.contains(mouseEvent->pos()))
 			{
-				if (checkboxRect.contains(mouseEvent->pos()))
-				{
-					Qt::CheckState currentState =
-						static_cast<Qt::CheckState>(model->data(index, Qt::CheckStateRole).toInt());
-					Qt::CheckState newState = (currentState == Qt::Checked) ? Qt::Unchecked : Qt::Checked;
-					model->setData(index, newState, Qt::CheckStateRole);
-					emit sigCheckboxToggled(index, newState == Qt::Checked);
-					return true;
-				}
+				Qt::CheckState currentState =
+					static_cast<Qt::CheckState>(model->data(index, Qt::CheckStateRole).toInt());
+				Qt::CheckState newState = (currentState == Qt::Checked) ? Qt::Unchecked : Qt::Checked;
+				model->setData(index, newState, Qt::CheckStateRole);
+				emit sigCheckboxToggled(index, newState == Qt::Checked);
+				return true;
 			}
 		}
 	}
