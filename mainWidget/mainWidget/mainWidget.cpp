@@ -194,16 +194,16 @@ mainWidget::mainWidget(QWidget* parent)
 	hLayout->addLayout(saveVBox);
 	hLayout->addLayout(exportVBox);
 	hLayout->addStretch();
-	hLayout->setSpacing(4);
+	hLayout->setSpacing(2);
 	hLayout->setContentsMargins(4, 0, 4, 0);
 
 	auto vLayout = new QVBoxLayout();
 	vLayout->addLayout(hLayout);
 	vLayout->setContentsMargins(0, 0, 0, 0);
-	vLayout->setSpacing(2);
+	vLayout->setSpacing(1);
 
 	auto geomWidget = new QWidget();
-	geomWidget->setFixedWidth(280);
+	geomWidget->setMinimumWidth(240);
 	geomWidget->setLayout(vLayout);
 
 
@@ -267,16 +267,16 @@ mainWidget::mainWidget(QWidget* parent)
 	operationHLayout->addLayout(fitAllVBox);
 	operationHLayout->addLayout(resetVBox);
 	operationHLayout->addStretch();
-	operationHLayout->setSpacing(4);
+	operationHLayout->setSpacing(2);
 	operationHLayout->setContentsMargins(4, 0, 4, 0);
 
 	auto operationVLayout = new QVBoxLayout();
 	operationVLayout->addLayout(operationHLayout);
 	operationVLayout->setContentsMargins(0, 0, 0, 0);
-	operationVLayout->setSpacing(2);
+	operationVLayout->setSpacing(1);
 
 	auto operationWidget = new QWidget();
-	operationWidget->setFixedWidth(300);
+	operationWidget->setMinimumWidth(240);
 	operationWidget->setLayout(operationVLayout);
 
 
@@ -351,18 +351,21 @@ mainWidget::mainWidget(QWidget* parent)
 	viewHLayout->addLayout(_YVBox);
 	viewHLayout->addLayout(_ZVBox);
 	viewHLayout->addStretch();
-	viewHLayout->setSpacing(4);
+	viewHLayout->setSpacing(2);
 	viewHLayout->setContentsMargins(4, 0, 4, 0);
 
 	auto viewVLayout = new QVBoxLayout();
 	viewVLayout->addLayout(viewHLayout);
 	viewVLayout->setContentsMargins(0, 0, 0, 0);
-	viewVLayout->setSpacing(2);
+	viewVLayout->setSpacing(1);
 
 	auto viewWidget = new QWidget();
-	viewWidget->setFixedWidth(400);
+	viewWidget->setMinimumWidth(340);
 	viewWidget->setLayout(viewVLayout);
 
+	geomWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	operationWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	viewWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 	ui->mainToolBar->addWidget(geomWidget);
 	ui->mainToolBar->addSeparator();
 	ui->mainToolBar->addWidget(operationWidget);
@@ -370,6 +373,9 @@ mainWidget::mainWidget(QWidget* parent)
 	ui->mainToolBar->addWidget(viewWidget);
 	ui->mainToolBar->addSeparator();
 
+	QWidget* rightSpacer = new QWidget;
+	rightSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	ui->mainToolBar->addWidget(rightSpacer);
 
 
 	m_TabWidget = new QTabWidget(this);
