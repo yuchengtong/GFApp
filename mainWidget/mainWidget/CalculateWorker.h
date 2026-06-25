@@ -10,8 +10,8 @@ class CalculateWorker : public QObject
     Q_OBJECT
 
 public:
-    explicit CalculateWorker(QObject* parent = nullptr)
-        : QObject(parent),m_interrupted(false) 
+    explicit CalculateWorker(QVector<QString> processedNameList, QObject* parent = nullptr)
+        : QObject(parent), m_processedNameList(processedNameList), m_interrupted(false)
     {
     }
 
@@ -30,6 +30,8 @@ signals:
 private:
 
     volatile bool m_interrupted;
+
+    QVector<QString> m_processedNameList;
 
 };
 

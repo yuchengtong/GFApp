@@ -1395,8 +1395,68 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				checkedChildItems.append(childItem);
 			}
 		}
+		QVector<QString> processedNameList;
 
-		connect(calAction, &QAction::triggered, this, [item, this]() {
+		for (int i = 0; i < item->childCount(); ++i) {
+			QTreeWidgetItem* childItem = item->child(i);
+			auto originalName = childItem->text(0);
+			int dotIndex = originalName.indexOf('.');
+			QString processedName;
+			if (dotIndex != -1)
+			{
+				processedName = originalName.mid(dotIndex + 1).trimmed();
+			}
+			else {
+				processedName = originalName;
+			}
+
+			bool isChecked = (childItem->checkState(0) == Qt::Checked);
+			if (isChecked)
+			{
+				if (processedName == "跌落安全性分析")
+				{
+					processedNameList.push_back("跌落试验计算");
+				}
+				else if (processedName == "快速烤燃安全性分析")
+				{
+					processedNameList.push_back("快速烤燃试验计算");
+				}
+				else if (processedName == "慢速烤燃安全性分析")
+				{
+					processedNameList.push_back("慢速烤燃试验计算");
+				}
+				else if (processedName == "枪击安全性分析")
+				{
+					processedNameList.push_back("枪击试验计算");
+				}
+				else if (processedName == "射流冲击安全性分析")
+				{
+					processedNameList.push_back("射流冲击试验计算");
+				}
+				else if (processedName == "破片撞击安全性分析")
+				{
+					processedNameList.push_back("破片撞击试验计算");
+				}
+				else if (processedName == "爆炸冲击波安全性分析")
+				{
+					processedNameList.push_back("爆炸冲击试验计算");
+				}
+				else if (processedName == "殉爆安全性分析")
+				{
+					processedNameList.push_back("殉爆试验计算");
+				}
+			}
+		}
+
+
+		connect(calAction, &QAction::triggered, this, [item, processedNameList, this]() {
+
+			if (processedNameList.isEmpty())
+			{
+				QMessageBox::warning(this, "计算", "请先选择安全性分析场景");
+				return;
+			}
+
 			QWidget* parent = parentWidget();
 			while (parent)
 			{
@@ -1418,7 +1478,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 					// 创建工作线程和工作对象
 					auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-					CalculateWorker* worker = new CalculateWorker();
+					CalculateWorker* worker = new CalculateWorker(processedNameList);
 					QThread* workerThread = new QThread();
 					worker->moveToThread(workerThread);
 
@@ -2196,126 +2256,126 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 		contextMenu->addAction(customAction); // 将动作添加到菜单中
 		contextMenu->exec(event->globalPos()); // 在鼠标位置显示菜单
 	}
-	else if (text == "网格")
-	{
-		contextMenu = new QMenu(this);
-		QAction *meshAction = new QAction("网格划分", this);
-		connect(meshAction, &QAction::triggered, this, [item, this]() {
-			QWidget* parent = parentWidget();
-			while (parent)
-			{
-				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
-				if (gfParent)
-				{								
-					QDateTime currentTime = QDateTime::currentDateTime();
-					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-					auto logWidget = gfParent->GetLogWidget();
-					auto textEdit = logWidget->GetTextEdit();
-					QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
-					textEdit->appendPlainText(text);
-					logWidget->update();
-					
-					auto occView = gfParent->GetOccView();
-					Handle(AIS_InteractiveContext) context = occView->getContext();
-					auto view = occView->getView();
-					context->EraseAll(true);
+	//else if (text == "网格")
+	//{
+	//	contextMenu = new QMenu(this);
+	//	QAction *meshAction = new QAction("网格划分", this);
+	//	connect(meshAction, &QAction::triggered, this, [item, this]() {
+	//		QWidget* parent = parentWidget();
+	//		while (parent)
+	//		{
+	//			GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+	//			if (gfParent)
+	//			{								
+	//				QDateTime currentTime = QDateTime::currentDateTime();
+	//				QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+	//				auto logWidget = gfParent->GetLogWidget();
+	//				auto textEdit = logWidget->GetTextEdit();
+	//				QString text = timeStr + "[信息]>启动网格划分引擎，采用自适应尺寸控制算法";
+	//				textEdit->appendPlainText(text);
+	//				logWidget->update();
+	//				
+	//				auto occView = gfParent->GetOccView();
+	//				Handle(AIS_InteractiveContext) context = occView->getContext();
+	//				auto view = occView->getView();
+	//				context->EraseAll(true);
 
-					// 创建进度对话框
-					ProgressDialog* progressDialog = new ProgressDialog("网格划分", gfParent);
-					progressDialog->show();
+	//				// 创建进度对话框
+	//				ProgressDialog* progressDialog = new ProgressDialog("网格划分", gfParent);
+	//				progressDialog->show();
 
-					// 创建工作线程和工作对象
-					auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-					TriangulationWorker* worker = new TriangulationWorker(geomInfo.shape);
-					QThread* workerThread = new QThread();
-					worker->moveToThread(workerThread);
+	//				// 创建工作线程和工作对象
+	//				auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	//				TriangulationWorker* worker = new TriangulationWorker(geomInfo.shape);
+	//				QThread* workerThread = new QThread();
+	//				worker->moveToThread(workerThread);
 
-					// 连接信号槽
-					connect(workerThread, &QThread::started, worker, &TriangulationWorker::DoWork);
-					connect(worker, &TriangulationWorker::ProgressUpdated,
-						progressDialog, &ProgressDialog::SetProgress);
-					connect(worker, &TriangulationWorker::StatusUpdated,
-						progressDialog, &ProgressDialog::SetStatusText);
-					connect(progressDialog, &ProgressDialog::Canceled,
-						worker, &TriangulationWorker::RequestInterruption,
-						Qt::DirectConnection);
+	//				// 连接信号槽
+	//				connect(workerThread, &QThread::started, worker, &TriangulationWorker::DoWork);
+	//				connect(worker, &TriangulationWorker::ProgressUpdated,
+	//					progressDialog, &ProgressDialog::SetProgress);
+	//				connect(worker, &TriangulationWorker::StatusUpdated,
+	//					progressDialog, &ProgressDialog::SetStatusText);
+	//				connect(progressDialog, &ProgressDialog::Canceled,
+	//					worker, &TriangulationWorker::RequestInterruption,
+	//					Qt::DirectConnection);
 
-					// 处理导入结果
-					connect(worker, &TriangulationWorker::WorkFinished, this,
-						[=](bool success, const QString& msg, const ModelMeshInfo& info) {
-							// 更新日志
-							QDateTime finishTime = QDateTime::currentDateTime();
-							QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
-							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
-							if (success)
-							{
-								ModelDataManager::GetInstance()->SetModelMeshInfo(info);
-								BRep_Builder builder;
-								TopoDS_Compound compound;
-								builder.MakeCompound(compound);
+	//				// 处理导入结果
+	//				connect(worker, &TriangulationWorker::WorkFinished, this,
+	//					[=](bool success, const QString& msg, const ModelMeshInfo& info) {
+	//						// 更新日志
+	//						QDateTime finishTime = QDateTime::currentDateTime();
+	//						QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
+	//						textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+	//						if (success)
+	//						{
+	//							ModelDataManager::GetInstance()->SetModelMeshInfo(info);
+	//							BRep_Builder builder;
+	//							TopoDS_Compound compound;
+	//							builder.MakeCompound(compound);
 
-								auto aDataSource = info.triangleStructure;
-								auto myEdges = aDataSource.GetMyEdge();
-								auto myNodeCoords = aDataSource.GetmyNodeCoords();
-								for (const auto& edge : myEdges)
-								{
-									Standard_Integer node1ID = edge.first;
-									Standard_Integer node2ID = edge.second;
+	//							auto aDataSource = info.triangleStructure;
+	//							auto myEdges = aDataSource.GetMyEdge();
+	//							auto myNodeCoords = aDataSource.GetmyNodeCoords();
+	//							for (const auto& edge : myEdges)
+	//							{
+	//								Standard_Integer node1ID = edge.first;
+	//								Standard_Integer node2ID = edge.second;
 
-									Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
-									Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
-									Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
+	//								Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
+	//								Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
+	//								Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
 
-									Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
-									Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
-									Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
+	//								Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
+	//								Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
+	//								Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
 
-									gp_Pnt p1(x1, y1, z1);
-									gp_Pnt p2(x2, y2, z2);
+	//								gp_Pnt p1(x1, y1, z1);
+	//								gp_Pnt p2(x2, y2, z2);
 
-									TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
-									TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
+	//								TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
+	//								TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
 
-									TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
+	//								TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
 
-									builder.Add(compound, edgeShape);
-								}
-								Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
-								context->Display(aisCompound, Standard_True);
+	//								builder.Add(compound, edgeShape);
+	//							}
+	//							Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
+	//							context->Display(aisCompound, Standard_True);
 
-								updataIcon();
+	//							updataIcon();
 
-								auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
-								meshProWid->UpdataPropertyInfo();
-							}
-							else if (!success)
-							{
-								QMessageBox::warning(this, "导入失败", msg);
-							}
+	//							auto meshProWid = gfParent->findChild<MeshPropertyWidget*>();
+	//							meshProWid->UpdataPropertyInfo();
+	//						}
+	//						else if (!success)
+	//						{
+	//							QMessageBox::warning(this, "导入失败", msg);
+	//						}
 
-							// 清理资源
-							progressDialog->close();
-							workerThread->quit();
-							workerThread->wait();
-							worker->deleteLater();
-							workerThread->deleteLater();
-							progressDialog->deleteLater();
-						});
+	//						// 清理资源
+	//						progressDialog->close();
+	//						workerThread->quit();
+	//						workerThread->wait();
+	//						worker->deleteLater();
+	//						workerThread->deleteLater();
+	//						progressDialog->deleteLater();
+	//					});
 
-					// 启动线程
-					workerThread->start();
+	//				// 启动线程
+	//				workerThread->start();
 
-					break;
-				}
-				else
-				{
-					parent = parent->parentWidget();
-				}
-			}
-		});
-		contextMenu->addAction(meshAction);
-		contextMenu->exec(event->globalPos());
-	}
+	//				break;
+	//			}
+	//			else
+	//			{
+	//				parent = parent->parentWidget();
+	//			}
+	//		}
+	//	});
+	//	contextMenu->addAction(meshAction);
+	//	contextMenu->exec(event->globalPos());
+	//}
 }
 
 void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* item)
