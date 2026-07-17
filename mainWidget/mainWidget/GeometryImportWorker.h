@@ -11,6 +11,7 @@
 #include "ModelDataManager.h"
 
 enum class PartType {
+    Nozzle,
     Shell,           // 壳体
     Propellant,      // 推进剂
     HeatInsulatingLayer, // 绝热层

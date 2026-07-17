@@ -30,11 +30,9 @@
 #include <BRepBndLib.hxx>
 #include <StlAPI_Reader.hxx>
 
-#include "GFImportModelWidget.h"
+
 #include "GFLogWidget.h"
-#include "DatabaseWidget.h"
 #include "ParamAnalyWidget.h"
-#include "AuxiliaryAnalysisWidget.h"
 #include "GFParamAnalyWidget.h"
 #include "OccView.h"
 #include "GFTreeModelWidget.h"
@@ -142,21 +140,24 @@ mainWidget::mainWidget(QWidget* parent)
 	ui->mainToolBar->setMovable(false);
 	ui->mainToolBar->setFloatable(false);
 	//////////////////////////////////////////////////////////ToolBar
-	auto ImportBtn = new QPushButton();
-	auto SaveBtn = new QPushButton();
-	auto SaveAsBtn = new QPushButton();
-	auto ExportBtn = new QPushButton();
-	ImportBtn->setIcon(QIcon(":/src/Import.svg"));
-	SaveBtn->setIcon(QIcon(":/src/Save.svg"));
-	SaveAsBtn->setIcon(QIcon(":/src/Save_as.svg"));
-	ExportBtn->setIcon(QIcon(":/src/Export.svg"));
+
+
+
+	m_importBtn = new QPushButton();
+	m_saveBtn = new QPushButton();
+	m_saveAsBtn = new QPushButton();
+	m_exportBtn = new QPushButton();
+	m_importBtn->setIcon(QIcon(":/src/Import.svg"));
+	m_saveBtn->setIcon(QIcon(":/src/Save.svg"));
+	m_saveAsBtn->setIcon(QIcon(":/src/Save_as.svg"));
+	m_exportBtn->setIcon(QIcon(":/src/Export.svg"));
 
 	const int btnSize = 32;
 	QSize iconSize(btnSize, btnSize);
-	ImportBtn->setIconSize(iconSize);
-	SaveBtn->setIconSize(iconSize);
-	SaveAsBtn->setIconSize(iconSize);
-	ExportBtn->setIconSize(iconSize);
+	m_importBtn->setIconSize(iconSize);
+	m_saveBtn->setIconSize(iconSize);
+	m_saveAsBtn->setIconSize(iconSize);
+	m_exportBtn->setIconSize(iconSize);
 
 	auto ImportLabel = new QLabel("导入文件");
 	auto SaveLabel = new QLabel("保存文件");
@@ -165,25 +166,25 @@ mainWidget::mainWidget(QWidget* parent)
 
 
 	auto importVBox = new QVBoxLayout();
-	importVBox->addWidget(ImportBtn, 0, Qt::AlignHCenter);
+	importVBox->addWidget(m_importBtn, 0, Qt::AlignHCenter);
 	importVBox->addWidget(ImportLabel, 0, Qt::AlignHCenter);
 	importVBox->setSpacing(2);
 	importVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto saveAsVBox = new QVBoxLayout();
-	saveAsVBox->addWidget(SaveAsBtn, 0, Qt::AlignHCenter);
+	saveAsVBox->addWidget(m_saveAsBtn, 0, Qt::AlignHCenter);
 	saveAsVBox->addWidget(SaveAsLabel, 0, Qt::AlignHCenter);
 	saveAsVBox->setSpacing(2);
 	saveAsVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto saveVBox = new QVBoxLayout();
-	saveVBox->addWidget(SaveBtn, 0, Qt::AlignHCenter);
+	saveVBox->addWidget(m_saveBtn, 0, Qt::AlignHCenter);
 	saveVBox->addWidget(SaveLabel, 0, Qt::AlignHCenter);
 	saveVBox->setSpacing(2);
 	saveVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto exportVBox = new QVBoxLayout();
-	exportVBox->addWidget(ExportBtn, 0, Qt::AlignHCenter);
+	exportVBox->addWidget(m_exportBtn, 0, Qt::AlignHCenter);
 	exportVBox->addWidget(ExportLabel, 0, Qt::AlignHCenter);
 	exportVBox->setSpacing(2);
 	exportVBox->setContentsMargins(4, 0, 4, 0);
@@ -209,21 +210,21 @@ mainWidget::mainWidget(QWidget* parent)
 
 
 
-	auto MoveBtn = new QPushButton();
-	auto RotateBtn = new QPushButton();
-	auto ZoomBtn = new QPushButton();
-	auto FitAllBtn = new QPushButton();
-	auto ResetBtn = new QPushButton();
-	MoveBtn->setIcon(QIcon(":/src/Move.svg"));
-	RotateBtn->setIcon(QIcon(":/src/Rotate.svg"));
-	ZoomBtn->setIcon(QIcon(":/src/Zoom.png"));
-	FitAllBtn->setIcon(QIcon(":/src/FitAll.png"));
-	ResetBtn->setIcon(QIcon(":/src/Reset.svg"));
-	MoveBtn->setIconSize(iconSize);
-	RotateBtn->setIconSize(iconSize);
-	ZoomBtn->setIconSize(iconSize);
-	FitAllBtn->setIconSize(iconSize);
-	ResetBtn->setIconSize(iconSize);
+	m_moveBtn = new QPushButton();
+	m_rotateBtn = new QPushButton();
+	m_zoomBtn = new QPushButton();
+	m_fitAllBtn = new QPushButton();
+	m_resetBtn = new QPushButton();
+	m_moveBtn->setIcon(QIcon(":/src/Move.svg"));
+	m_rotateBtn->setIcon(QIcon(":/src/Rotate.svg"));
+	m_zoomBtn->setIcon(QIcon(":/src/Zoom.png"));
+	m_fitAllBtn->setIcon(QIcon(":/src/FitAll.png"));
+	m_resetBtn->setIcon(QIcon(":/src/Reset.svg"));
+	m_moveBtn->setIconSize(iconSize);
+	m_rotateBtn->setIconSize(iconSize);
+	m_zoomBtn->setIconSize(iconSize);
+	m_fitAllBtn->setIconSize(iconSize);
+	m_resetBtn->setIconSize(iconSize);
 	auto MoveLabel = new QLabel("移动");
 	auto RotateLabel = new QLabel("旋转");
 	auto ZoomLabel = new QLabel("缩放");
@@ -231,31 +232,31 @@ mainWidget::mainWidget(QWidget* parent)
 	auto ResetLabel = new QLabel("重置");
 
 	auto moveVBox = new QVBoxLayout();
-	moveVBox->addWidget(MoveBtn, 0, Qt::AlignHCenter);
+	moveVBox->addWidget(m_moveBtn, 0, Qt::AlignHCenter);
 	moveVBox->addWidget(MoveLabel, 0, Qt::AlignHCenter);
 	moveVBox->setSpacing(2);
 	moveVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto rotateVBox = new QVBoxLayout();
-	rotateVBox->addWidget(RotateBtn, 0, Qt::AlignHCenter);
+	rotateVBox->addWidget(m_rotateBtn, 0, Qt::AlignHCenter);
 	rotateVBox->addWidget(RotateLabel, 0, Qt::AlignHCenter);
 	rotateVBox->setSpacing(2);
 	rotateVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto zoomVBox = new QVBoxLayout();
-	zoomVBox->addWidget(ZoomBtn, 0, Qt::AlignHCenter);
+	zoomVBox->addWidget(m_zoomBtn, 0, Qt::AlignHCenter);
 	zoomVBox->addWidget(ZoomLabel, 0, Qt::AlignHCenter);
 	zoomVBox->setSpacing(2);
 	zoomVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto fitAllVBox = new QVBoxLayout();
-	fitAllVBox->addWidget(FitAllBtn, 0, Qt::AlignHCenter);
+	fitAllVBox->addWidget(m_fitAllBtn, 0, Qt::AlignHCenter);
 	fitAllVBox->addWidget(FitAllLabel, 0, Qt::AlignHCenter);
 	fitAllVBox->setSpacing(2);
 	fitAllVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto resetVBox = new QVBoxLayout();
-	resetVBox->addWidget(ResetBtn, 0, Qt::AlignHCenter);
+	resetVBox->addWidget(m_resetBtn, 0, Qt::AlignHCenter);
 	resetVBox->addWidget(ResetLabel, 0, Qt::AlignHCenter);
 	resetVBox->setSpacing(2);
 	resetVBox->setContentsMargins(4, 0, 4, 0);
@@ -280,25 +281,25 @@ mainWidget::mainWidget(QWidget* parent)
 	operationWidget->setLayout(operationVLayout);
 
 
-	auto XBtn = new QPushButton();
-	auto YBtn = new QPushButton();
-	auto ZBtn = new QPushButton();
-	auto _XBtn = new QPushButton();
-	auto _YBtn = new QPushButton();
-	auto _ZBtn = new QPushButton();
-	XBtn->setIconSize(iconSize);
-	YBtn->setIconSize(iconSize);
-	ZBtn->setIconSize(iconSize);
-	_XBtn->setIconSize(iconSize);
-	_YBtn->setIconSize(iconSize);
-	_ZBtn->setIconSize(iconSize);
+	m_XBtn = new QPushButton();
+	m_YBtn = new QPushButton();
+	m_ZBtn = new QPushButton();
+	m__XBtn = new QPushButton();
+	m__YBtn = new QPushButton();
+	m__ZBtn = new QPushButton();
+	m_XBtn->setIconSize(iconSize);
+	m_YBtn->setIconSize(iconSize);
+	m_ZBtn->setIconSize(iconSize);
+	m__XBtn->setIconSize(iconSize);
+	m__YBtn->setIconSize(iconSize);
+	m__ZBtn->setIconSize(iconSize);
 
-	XBtn->setIcon(QIcon(":/src/View all From +X.png"));
-	YBtn->setIcon(QIcon(":/src/View all From +Y.png"));
-	ZBtn->setIcon(QIcon(":/src/View all From +Z.png"));
-	_XBtn->setIcon(QIcon(":/src/View all From -X.png"));
-	_YBtn->setIcon(QIcon(":/src/View all From -Y.png"));
-	_ZBtn->setIcon(QIcon(":/src/View all From -Z.png"));
+	m_XBtn->setIcon(QIcon(":/src/View all From +X.png"));
+	m_YBtn->setIcon(QIcon(":/src/View all From +Y.png"));
+	m_ZBtn->setIcon(QIcon(":/src/View all From +Z.png"));
+	m__XBtn->setIcon(QIcon(":/src/View all From -X.png"));
+	m__YBtn->setIcon(QIcon(":/src/View all From -Y.png"));
+	m__ZBtn->setIcon(QIcon(":/src/View all From -Z.png"));
 	auto XLabel = new QLabel("X轴方向");
 	auto YLabel = new QLabel("Y轴方向");
 	auto ZLabel = new QLabel("Z轴方向");
@@ -308,37 +309,37 @@ mainWidget::mainWidget(QWidget* parent)
 	auto bottomTitleLab2 = new QLabel("视图");
 
 	auto XVBox = new QVBoxLayout();
-	XVBox->addWidget(XBtn, 0, Qt::AlignHCenter);
+	XVBox->addWidget(m_XBtn, 0, Qt::AlignHCenter);
 	XVBox->addWidget(XLabel, 0, Qt::AlignHCenter);
 	XVBox->setSpacing(2);
 	XVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto YVBox = new QVBoxLayout();
-	YVBox->addWidget(YBtn, 0, Qt::AlignHCenter);
+	YVBox->addWidget(m_YBtn, 0, Qt::AlignHCenter);
 	YVBox->addWidget(YLabel, 0, Qt::AlignHCenter);
 	YVBox->setSpacing(2);
 	YVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto ZVBox = new QVBoxLayout();
-	ZVBox->addWidget(ZBtn, 0, Qt::AlignHCenter);
+	ZVBox->addWidget(m_ZBtn, 0, Qt::AlignHCenter);
 	ZVBox->addWidget(ZLabel, 0, Qt::AlignHCenter);
 	ZVBox->setSpacing(2);
 	ZVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto _XVBox = new QVBoxLayout();
-	_XVBox->addWidget(_XBtn, 0, Qt::AlignHCenter);
+	_XVBox->addWidget(m__XBtn, 0, Qt::AlignHCenter);
 	_XVBox->addWidget(_XLabel, 0, Qt::AlignHCenter);
 	_XVBox->setSpacing(2);
 	_XVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto _YVBox = new QVBoxLayout();
-	_YVBox->addWidget(_YBtn, 0, Qt::AlignHCenter);
+	_YVBox->addWidget(m__YBtn, 0, Qt::AlignHCenter);
 	_YVBox->addWidget(_YLabel, 0, Qt::AlignHCenter);
 	_YVBox->setSpacing(2);
 	_YVBox->setContentsMargins(4, 0, 4, 0);
 
 	auto _ZVBox = new QVBoxLayout();
-	_ZVBox->addWidget(_ZBtn, 0, Qt::AlignHCenter);
+	_ZVBox->addWidget(m__ZBtn, 0, Qt::AlignHCenter);
 	_ZVBox->addWidget(_ZLabel, 0, Qt::AlignHCenter);
 	_ZVBox->setSpacing(2);
 	_ZVBox->setContentsMargins(4, 0, 4, 0);
@@ -380,11 +381,11 @@ mainWidget::mainWidget(QWidget* parent)
 
 	m_TabWidget = new QTabWidget(this);
 
-	GFImportModelWidget* importModelWid = new GFImportModelWidget(m_TabWidget);
+	m_importModelWid = new GFImportModelWidget(m_TabWidget);
 	{
 	}
 
-	DatabaseWidget* dataBaseWid = new DatabaseWidget(m_TabWidget);
+	m_dataBaseWid = new DatabaseWidget(m_TabWidget);
 	{
 	}
 
@@ -395,7 +396,7 @@ mainWidget::mainWidget(QWidget* parent)
 	IntelligentAnalyWidget* IntelligenAnalysisWid = new IntelligentAnalyWidget(m_TabWidget);
 	{
 	}
-	AuxiliaryAnalysisWidget* auxiliaryAnalysisWid = new AuxiliaryAnalysisWidget(m_TabWidget);
+	m_auxiliaryAnalysisWid = new AuxiliaryAnalysisWidget(m_TabWidget);
 	{
 	}
 	ParamAnalyWidget* analysisEvaluationWid = new ParamAnalyWidget(m_TabWidget);
@@ -403,18 +404,28 @@ mainWidget::mainWidget(QWidget* parent)
 	}
 
 
-	m_TabWidget->addTab(importModelWid, "importModelWid");
-	m_TabWidget->addTab(dataBaseWid, "dataBaseWid");
+	m_TabWidget->addTab(m_importModelWid, "importModelWid");
+	m_TabWidget->addTab(m_dataBaseWid, "dataBaseWid");
 	//m_TabWidget->addTab(paramAnalysisWid, "paramAnalysisWid");
 	m_TabWidget->addTab(IntelligenAnalysisWid, "IntelligenAnalysisWid");
 	m_TabWidget->addTab(analysisEvaluationWid, "analysisEvaluationWid");
-	m_TabWidget->addTab(auxiliaryAnalysisWid, "auxiliaryAnalysisWid");
+	m_TabWidget->addTab(m_auxiliaryAnalysisWid, "auxiliaryAnalysisWid");
 	m_TabWidget->tabBar()->setVisible(false);
 
 
 	setCentralWidget(m_TabWidget);
 
+	bindConnect();
+	
+}
 
+mainWidget::~mainWidget()
+{
+	delete ui;
+}
+
+void mainWidget::bindConnect()
+{
 	QObject::connect(m_ImportModelWidAct, &QAction::triggered, [=]() {
 		m_TabWidget->setCurrentIndex(0);
 		// 显示工具栏
@@ -426,7 +437,7 @@ mainWidget::mainWidget(QWidget* parent)
 		// 隐藏工具栏
 		ui->mainToolBar->setVisible(false);
 		// 非admin用户，隐藏用户数据库
-		QTreeWidget* treeWidget = dataBaseWid->getQTreeWid();
+		QTreeWidget* treeWidget = m_dataBaseWid->getQTreeWid();
 		auto ins = ModelDataManager::GetInstance();
 		UserInfo info = ins->GetUserInfo();
 		if (info.username != "admin")
@@ -476,11 +487,8 @@ mainWidget::mainWidget(QWidget* parent)
 		// 显示工具栏
 		ui->mainToolBar->setVisible(false);
 		// 更新echart数据
-		auxiliaryAnalysisWid->updateAllData();
+		m_auxiliaryAnalysisWid->updateAllData();
 		});
-
-
-
 
 	QObject::connect(m_HelpAct, &QAction::triggered, [=]() {
 		QString aboutText = "**[软件名称] - 固体发动机安全性分析与评估系统**\n\n"
@@ -499,9 +507,7 @@ mainWidget::mainWidget(QWidget* parent)
 		QMessageBox::about(nullptr, "固体发动机安全性分析与评估系统", aboutText);
 		});
 
-
-
-	QObject::connect(ImportBtn, &QPushButton::clicked, [this, importModelWid]() {
+	QObject::connect(m_importBtn, &QPushButton::clicked, [this]() {
 		if (m_TabWidget->currentIndex() == 0) {
 			// 打开文件对话框
 			QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(),
@@ -511,7 +517,7 @@ mainWidget::mainWidget(QWidget* parent)
 				return;
 			QDateTime currentTime = QDateTime::currentDateTime();
 			QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-			auto logWidget = importModelWid->GetLogWidget();
+			auto logWidget = m_importModelWid->GetLogWidget();
 			auto textEdit = logWidget->GetTextEdit();
 			textEdit->appendPlainText(timeStr + "[信息]>开始导入几何模型");
 			logWidget->update();
@@ -557,7 +563,7 @@ mainWidget::mainWidget(QWidget* parent)
 					info.height = height;
 					ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
 
-					importModelWid->GetGFTreeModelWidget()->updataIcon();
+					m_importModelWid->GetGFTreeModelWidget()->updataIcon();
 
 					loadSuccess = true;
 				}
@@ -588,7 +594,7 @@ mainWidget::mainWidget(QWidget* parent)
 					info.height = height;
 					ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
 
-					importModelWid->GetGFTreeModelWidget()->updataIcon();
+					m_importModelWid->GetGFTreeModelWidget()->updataIcon();
 
 					loadSuccess = true;
 				}
@@ -704,14 +710,124 @@ mainWidget::mainWidget(QWidget* parent)
 
 		});
 
-	auto occView = importModelWid->GetOccView();
-	connect(MoveBtn, &QPushButton::clicked, occView, &OccView::pan);
-	connect(RotateBtn, &QPushButton::clicked, occView, &OccView::rotate);
-	connect(ZoomBtn, &QPushButton::clicked, occView, &OccView::zoom);
-	connect(FitAllBtn, &QPushButton::clicked, occView, &OccView::fitAll);
-	connect(ResetBtn, &QPushButton::clicked, occView, &OccView::reset);
 
-	QObject::connect(XBtn, &QPushButton::clicked, [occView]() {
+	auto doSave = [this](const QString& folderPath) -> bool {
+		QString baseName = QFileInfo(folderPath).fileName();
+		QString gfFilePath = folderPath + "/" + baseName + ".gf";
+
+		QFile file(gfFilePath);
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			QMessageBox::warning(this, tr("保存失败"),
+				tr("无法打开项目文件:\n%1").arg(file.errorString()));
+			return false;
+		}
+
+		// 创建 Model 子文件夹
+		QString modelDir = folderPath + "/Model";
+		if (!QDir().exists(modelDir) && !QDir().mkpath(modelDir)) {
+			QMessageBox::warning(this, tr("保存失败"),
+				tr("无法创建 Model 文件夹:\n%1").arg(modelDir));
+			file.close();
+			return false;
+		}
+
+		// 复制几何模型资源文件到 Model 文件夹
+		auto geo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+		auto copyIfValid = [](const QString& srcPath, const QString& destDir) {
+			if (!srcPath.isEmpty()) {
+				QString destPath = destDir + "/" + QFileInfo(srcPath).fileName();
+				QFile::copy(srcPath, destPath);
+			}
+		};
+		copyIfValid(geo.nozzlePath, modelDir);
+		copyIfValid(geo.shellPath, modelDir);
+		copyIfValid(geo.propellantPath, modelDir);
+		copyIfValid(geo.heatInsulatingLayerPath, modelDir);
+
+		// 写入 .gf 项目数据
+		// QTextStream out(&file);
+		// out << yourDataToSave;
+
+		file.close();
+		return true;
+	};
+
+	// 2. 提取公共的"另存为"对话框：只负责 UI 交互和创建文件夹
+	auto saveAsDialog = [this]() -> QString {
+		QSettings settings;
+		QString lastDir = settings.value("lastSaveDir").toString();
+
+		QString selectedPath = QFileDialog::getSaveFileName(
+			this,
+			tr("另存为"),
+			lastDir,
+			tr("GF Files (*.gf);;All Files (*)")
+		);
+
+		if (selectedPath.isEmpty())
+			return QString();
+
+		QFileInfo fi(selectedPath);
+		QString parentDir = fi.absolutePath();
+		QString baseName = fi.completeBaseName();
+		QString folderPath = parentDir + "/" + baseName;
+
+		if (!QDir().exists(folderPath) && !QDir().mkpath(folderPath)) {
+			QMessageBox::warning(this, tr("保存失败"),
+				tr("无法创建文件夹:\n%1").arg(folderPath));
+			return QString();
+		}
+
+		settings.setValue("lastSaveDir", parentDir);
+		return folderPath;
+	};
+
+	// 3. 保存按钮：有路径直接覆盖，无路径走另存为
+	connect(m_saveBtn, &QPushButton::clicked, [this, doSave, saveAsDialog]() {
+		auto projectInfo = ModelDataManager::GetInstance()->GetProjectInfo();
+
+		if (projectInfo.projectPath.isEmpty()) 
+		{
+			QString folderPath = saveAsDialog();
+			if (folderPath.isEmpty())
+				return;
+
+			if (!doSave(folderPath))
+				return;
+
+			projectInfo.projectPath = folderPath;
+			ModelDataManager::GetInstance()->SetProjectInfo(projectInfo);
+		}
+		else 
+		{
+			doSave(projectInfo.projectPath);  // 直接覆盖原文件
+		}
+		});
+
+	// 4. 另存为按钮：总是弹对话框，完成后更新项目路径
+	connect(m_saveAsBtn, &QPushButton::clicked, [this, doSave, saveAsDialog]() {
+		QString folderPath = saveAsDialog();
+		if (folderPath.isEmpty())
+			return;
+
+		if (!doSave(folderPath))
+			return;
+
+		auto projectInfo = ModelDataManager::GetInstance()->GetProjectInfo();
+		projectInfo.projectPath = folderPath;
+		ModelDataManager::GetInstance()->SetProjectInfo(projectInfo);
+		});
+
+
+
+	auto occView = m_importModelWid->GetOccView();
+	connect(m_moveBtn, &QPushButton::clicked, occView, &OccView::pan);
+	connect(m_rotateBtn, &QPushButton::clicked, occView, &OccView::rotate);
+	connect(m_zoomBtn , &QPushButton::clicked, occView, &OccView::zoom);
+	connect(m_fitAllBtn, &QPushButton::clicked, occView, &OccView::fitAll);
+	connect(m_resetBtn, &QPushButton::clicked, occView, &OccView::reset);
+
+	QObject::connect(m_XBtn, &QPushButton::clicked, [occView]() {
 		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
@@ -720,7 +836,7 @@ mainWidget::mainWidget(QWidget* parent)
 			occView->fitAll();
 		}
 		});
-	QObject::connect(YBtn, &QPushButton::clicked, [occView]() {
+	QObject::connect(m_YBtn, &QPushButton::clicked, [occView]() {
 		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
@@ -729,7 +845,7 @@ mainWidget::mainWidget(QWidget* parent)
 			occView->fitAll();
 		}
 		});
-	QObject::connect(ZBtn, &QPushButton::clicked, [occView]() {
+	QObject::connect(m_ZBtn, &QPushButton::clicked, [occView]() {
 		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
@@ -738,7 +854,7 @@ mainWidget::mainWidget(QWidget* parent)
 			occView->fitAll();
 		}
 		});
-	QObject::connect(_XBtn, &QPushButton::clicked, [occView]() {
+	QObject::connect(m__XBtn, &QPushButton::clicked, [occView]() {
 		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
@@ -747,7 +863,7 @@ mainWidget::mainWidget(QWidget* parent)
 			occView->fitAll();
 		}
 		});
-	QObject::connect(_YBtn, &QPushButton::clicked, [occView]() {
+	QObject::connect(m__YBtn, &QPushButton::clicked, [occView]() {
 		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
@@ -756,7 +872,7 @@ mainWidget::mainWidget(QWidget* parent)
 			occView->fitAll();
 		}
 		});
-	QObject::connect(_ZBtn, &QPushButton::clicked, [occView]() {
+	QObject::connect(m__ZBtn, &QPushButton::clicked, [occView]() {
 		auto state = occView->GetCameraRotationState();
 		if (state)
 		{
@@ -765,11 +881,6 @@ mainWidget::mainWidget(QWidget* parent)
 			occView->fitAll();
 		}
 		});
-}
-
-mainWidget::~mainWidget()
-{
-	delete ui;
 }
 
 

@@ -8,6 +8,10 @@
 #include <QTimer>
 #include <Windows.h>
 
+#include "GFImportModelWidget.h"
+#include "DatabaseWidget.h"
+#include "AuxiliaryAnalysisWidget.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class mainWidgetClass; };
 QT_END_NAMESPACE
@@ -19,6 +23,8 @@ class mainWidget : public QMainWindow
 public:
     mainWidget(QWidget *parent = nullptr);
     ~mainWidget();
+
+	void bindConnect();
 
 	void deleteWidget(QLayout * layout);
 
@@ -45,21 +51,27 @@ private:
 	QTabWidget*m_TabWidget = nullptr;
 
 
-	QAction* m_ImportAct = nullptr;
-	QAction* m_SaveAct = nullptr;
-	QAction* m_SaveAsAct = nullptr;
-	QAction*m_Export = nullptr;
-	QAction* m_SettingAct = nullptr;
-	QAction* XAct = nullptr;
-	QAction* YAct = nullptr;
-	QAction* ZAct = nullptr;
-	QAction* _XAct = nullptr;
-	QAction* _YAct = nullptr;
-	QAction* _ZAct = nullptr;
-	//QAction* m_IntelligentAnalyWidAct = nullptr;
-	//QAction* m_AuxiliaryAnalyWidAct = nullptr;
-	//QAction* m_AnalyEvalWidAct = nullptr;
-	//QAction* m_HelpAct = nullptr;
+	QPushButton* m_importBtn = nullptr;
+	QPushButton* m_saveBtn = nullptr;
+	QPushButton* m_saveAsBtn = nullptr;
+	QPushButton* m_exportBtn = nullptr;
+
+	QPushButton* m_moveBtn = nullptr;
+	QPushButton* m_rotateBtn = nullptr;
+	QPushButton* m_zoomBtn = nullptr;
+	QPushButton* m_fitAllBtn = nullptr;
+	QPushButton* m_resetBtn = nullptr;
+
+	QPushButton* m_XBtn = nullptr;
+	QPushButton* m_YBtn = nullptr;
+	QPushButton* m_ZBtn = nullptr;
+	QPushButton* m__XBtn = nullptr;
+	QPushButton* m__YBtn = nullptr;
+	QPushButton* m__ZBtn = nullptr;
+
+	GFImportModelWidget* m_importModelWid = nullptr;
+	DatabaseWidget* m_dataBaseWid = nullptr;
+	AuxiliaryAnalysisWidget* m_auxiliaryAnalysisWid = nullptr;
 
 
 	QTimer* timer = nullptr; // 定时器指针（初始化为空）
@@ -71,6 +83,4 @@ private:
 
 	// 辅助函数：将 FILETIME 转换为 64 位整数（100纳秒为单位）
 	ULONGLONG fileTimeToULL(const FILETIME& ft);
-
-
 };

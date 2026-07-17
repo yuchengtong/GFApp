@@ -12,6 +12,12 @@
 #include <QString>
 #include <QRandomGenerator>
 #include <QVector>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QFile>
+#include <QDataStream>
+#include <QDir>
 
 #include "TriangleStructure.h"
 
@@ -22,10 +28,20 @@ struct UserInfo {
 	QString workdir = "";
 };
 
+struct ProjectInfo {
+	QString projectPath = "";
+};
+
 struct ModelGeometryInfo {
 	QString path = "";
+	QString nozzlePath = "";
+	QString shellPath = "";
+	QString propellantPath = "";
+	QString heatInsulatingLayerPath = "";
+
 
 	TopoDS_Shape shape;
+	Handle(AIS_Shape) nozzleAisShape;
 	Handle(AIS_Shape) shellAisShape;
 	Handle(AIS_Shape) propellantAisShape;
 	Handle(AIS_Shape) heatInsulatingLayerAisShape;
@@ -49,20 +65,22 @@ struct ModelGeometryInfo {
 };
 
 struct ModelMeshInfo {
+	Handle(TriangleStructure) nozzleMesh;
 	Handle(TriangleStructure) shellMesh;
 	Handle(TriangleStructure) propellantMesh;
 	Handle(TriangleStructure) heatInsulatingLayerMesh;
 
+	Handle(AIS_Shape) nozzleAisMesh;
 	Handle(AIS_Shape) shellAisMesh;
 	Handle(AIS_Shape) propellantAisMesh;
 	Handle(AIS_Shape) heatInsulatingLayerAisMesh;
 
-	// 三种几何的边界框信息
+	double nozzle_x_min = 0, nozzle_x_max = 0, nozzle_z_min = 0, nozzle_z_max = 0;
 	double shell_x_min = 0, shell_x_max = 0, shell_z_min = 0, shell_z_max = 0;
 	double propellant_x_min = 0, propellant_x_max = 0, propellant_z_min = 0, propellant_z_max = 0;
 	double heatInsulating_x_min = 0, heatInsulating_x_max = 0, heatInsulating_z_min = 0, heatInsulating_z_max = 0;
 
-	bool isChecked = false;  // 三种网格划分是否都成功
+	bool isChecked = false;
 };
 
 //跌落
@@ -1363,6 +1381,12 @@ public:
 
 
 	static ModelDataManager* GetInstance();
+	//用户信息
+	void SetUserInfo(const UserInfo& info);
+	const UserInfo& GetUserInfo() const;
+	//
+	void SetProjectInfo(const ProjectInfo& info);
+	const ProjectInfo& GetProjectInfo() const;
 
 	// 设置模型数据
 	void SetModelGeometryInfo(const ModelGeometryInfo& info);
@@ -1436,10 +1460,6 @@ public:
 
 	void SetCalculationPropertyInfo(const CalculationPropertyInfo& info);
 	const CalculationPropertyInfo& GetCalculationPropertyInfo() const;
-
-	void SetUserInfo(const UserInfo& info);
-	const UserInfo& GetUserInfo() const;
-
 
 
 	void SetJudgementPropertyInfo(const JudgementPropertyInfo& info);
@@ -1541,6 +1561,10 @@ public:
 
 private:
 	static ModelDataManager* m_Instance; 
+
+	UserInfo m_UserInfo;
+	ProjectInfo m_ProjectInfo;
+
 	ModelGeometryInfo m_ModelGeometryInfo; 
 	ModelMeshInfo m_ModelMeshInfo;
 
@@ -1577,8 +1601,6 @@ private:
 	JudgementPropertyInfo m_JudgementPropertyInfo;
 	InsulatingheatPropertyInfo m_InsulatingheatPropertyInfo;
 	OutheatPropertyInfo m_OutheatPropertyInfo;
-
-	UserInfo m_UserInfo;
 
 	// 跌落计算结果
 	StressResult m_FallStressResult;

@@ -183,18 +183,44 @@ int main(int argc, char *argv[])
 	// 设置全局字体大小
 	QFont font = QFont("Arial", 10);
 	QApplication::setFont(font);
-	mainWidget w;
-	QCoreApplication::setApplicationName(QStringLiteral("固体发动机安全性分析与评估系统"));
-	w.hide();
-	StartDialog startDialog;
-	if (startDialog.exec() == QDialog::Accepted) {
-		w.show();
-		w.showMaximized();
-		return a.exec();
-	}
-	//w.show();
-	//w.showMaximized();
-	//return a.exec();
 
-	return 0;
+	QString tempPath = QDir::tempPath();
+	QDir tempDir(tempPath);
+
+	//if (!tempDir.exists("NEW_GF"))
+	//{
+	//	if (!tempDir.mkdir("NEW_GF")) 
+	//	{
+	//		QMessageBox::critical(nullptr,"错误","软件启动失败");
+	//		return -1;
+	//	}
+	//}
+
+	//QDir newGfDir(tempDir.filePath("NEW_GF"));
+	//if (!newGfDir.exists("Geom")) {
+	//	if (!newGfDir.mkdir("Geom")) {
+	//		QMessageBox::critical(nullptr, "错误", "软件启动失败");
+	//		return -1;
+	//	}
+	//}
+
+	//if (!newGfDir.exists("Mesh")) {
+	//	if (!newGfDir.mkdir("Mesh")) {
+	//		QMessageBox::critical(nullptr, "错误", "软件启动失败");
+	//		return -1;
+	//	}
+	//}
+
+	mainWidget w;
+	QCoreApplication::setApplicationName("固体发动机安全性分析与评估系统");
+	//w.hide();
+	//StartDialog startDialog;
+	//if (startDialog.exec() == QDialog::Accepted) {
+	//	w.show();
+	//	w.showMaximized();
+	//	return a.exec();
+	//}
+	w.show();
+	w.showMaximized();
+	return a.exec();
 }

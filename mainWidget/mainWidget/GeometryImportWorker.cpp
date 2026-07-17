@@ -5,7 +5,6 @@
 #include <IGESControl_Reader.hxx>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
-#include <QThread>
 #include <STEPCAFControl_Reader.hxx>
 #include <BRep_Builder.hxx>
 #include <XCAFDoc_DocumentTool.hxx>
@@ -23,7 +22,8 @@
 
 void GeometryImportWorker::DoWork()
 {
-    ModelGeometryInfo info;
+    auto info = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+
     bool success = false;
     QString msg;
 
@@ -80,13 +80,31 @@ void GeometryImportWorker::DoWork()
 
             CalculateBoundingBox(info);
 
-            if (m_partType == PartType::Shell)
+
+            //if (m_partType == PartType::Shell)
+            //{
+            //    AnalyzeGeometry(info);
+            //}
+
+            // 记录通用路径 + 按部件类型记录专属路径
+            info.path = m_filePath;
+            switch (m_partType)
             {
-                AnalyzeGeometry(info);
+            case PartType::Shell:
+                info.shellPath = m_filePath;
+                break;
+            case PartType::Propellant:
+                info.propellantPath = m_filePath;
+                break;
+            case PartType::HeatInsulatingLayer:
+                info.heatInsulatingLayerPath = m_filePath;
+                break;
+            case PartType::Nozzle:
+                info.nozzlePath = m_filePath;
+                break;
+            default: break;
             }
 
-
-            info.path = m_filePath;
             msg = "几何模型导入成功";
             emit ProgressUpdated(100);
         }
@@ -184,23 +202,27 @@ bool GeometryImportWorker::ImportSTEP(ModelGeometryInfo& info)
 
     switch (m_partType)
     {
+    case PartType::Nozzle:
+        // 喷管 - 深钢灰（耐高温合金/石墨质感）
+        aisShape->SetColor(Quantity_Color(0.35, 0.35, 0.37, Quantity_TOC_RGB));
+        info.nozzleAisShape = aisShape;
+        break;
     case PartType::Shell:
-        // 壳体 - 灰色
-        aisShape->SetColor(Quantity_Color(0.8, 0.8, 0.8, Quantity_TOC_RGB));
+        // 壳体 - 银白金属（铝合金/钢材）
+        aisShape->SetColor(Quantity_Color(0.82, 0.84, 0.86, Quantity_TOC_RGB));
         info.shellAisShape = aisShape;
         break;
     case PartType::Propellant:
-        // 推进剂 - 橙色
-        aisShape->SetColor(Quantity_Color(1.0, 0.5, 0.0, Quantity_TOC_RGB));
+        // 推进剂 - 砖红（燃料/火药）
+        aisShape->SetColor(Quantity_Color(0.90, 0.38, 0.15, Quantity_TOC_RGB));
         info.propellantAisShape = aisShape;
         break;
     case PartType::HeatInsulatingLayer:
-        // 绝热层 - 蓝色
-        aisShape->SetColor(Quantity_Color(0.0, 0.5, 1.0, Quantity_TOC_RGB));
+        // 绝热层 - 青蓝（陶瓷/隔热材料）
+        aisShape->SetColor(Quantity_Color(0.20, 0.60, 0.75, Quantity_TOC_RGB));
         info.heatInsulatingLayerAisShape = aisShape;
         break;
     default:
-        // 未知类型，不设置颜色
         break;
     }
 
@@ -280,17 +302,30 @@ void GeometryImportWorker::CalculateBoundingBox(ModelGeometryInfo& info)
 
     std::vector<TopoDS_Shape> shapes;
 
+    if (!info.nozzleAisShape.IsNull())
+    {
+        shapes.push_back(info.nozzleAisShape->Shape());
+    }
+    
     if (!info.shellAisShape.IsNull())
+    {
         shapes.push_back(info.shellAisShape->Shape());
+    }
 
     if (!info.propellantAisShape.IsNull())
+    {
         shapes.push_back(info.propellantAisShape->Shape());
+    }
 
     if (!info.heatInsulatingLayerAisShape.IsNull())
+    {
         shapes.push_back(info.heatInsulatingLayerAisShape->Shape());
+    }
 
     if (shapes.empty())
+    {
         return;
+    }
 
     // 只有一个部件时，直接用该部件的 shape
     if (shapes.size() == 1)

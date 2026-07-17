@@ -229,6 +229,16 @@ const UserInfo & ModelDataManager::GetUserInfo() const
 	return m_UserInfo;
 }
 
+void ModelDataManager::SetProjectInfo(const ProjectInfo& info)
+{
+	m_ProjectInfo = info;
+}
+
+const ProjectInfo& ModelDataManager::GetProjectInfo() const
+{
+	return m_ProjectInfo;
+}
+
 void ModelDataManager::SetFallSettingInfo(const FallSettingInfo & info)
 {
 	m_FallSettingInfo = info;

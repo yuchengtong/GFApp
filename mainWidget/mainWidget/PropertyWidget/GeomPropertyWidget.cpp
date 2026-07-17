@@ -85,11 +85,11 @@ void GeomPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "固体发动机三维模型导入","发动机型号","来源","长","直径", "壳体厚度" };
+	QStringList labels = { "固体发动机三维模型","发动机型号","来源","长","直径", "壳体厚度" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
-			serialItem = new QTableWidgetItem("固体发动机三维模型导入");
+			serialItem = new QTableWidgetItem("固体发动机三维模型");
 		}
 		serialItem->setFlags(serialItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 		m_tableWidget->setItem(row, 0, serialItem);
