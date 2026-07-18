@@ -26,6 +26,9 @@ protected:
 signals:
 	void itemClicked(const QString& itemData);
 
+public:
+	vector<QString> calculateOnly();
+
 private slots:
 	void onTreeItemClicked(QTreeWidgetItem* item, int column);
 	// º∆À„

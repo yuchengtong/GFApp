@@ -8,6 +8,8 @@ class SteelPropertyWidget : public BasePropertyWidget
 public:
 	explicit SteelPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

@@ -465,7 +465,7 @@ mainWidget::mainWidget(QWidget* parent)
 	QObject::connect(m_AnalyEvalWidAct, &QAction::triggered, [=]() {
 		m_TabWidget->setCurrentIndex(3);
 		// ÏÔÊ¾¹¤¾ßÀ¸
-		ui->mainToolBar->setVisible(true);
+		ui->mainToolBar->setVisible(false);
 		/*auto occView5 = analysisEvaluationWid->GetOccView();
 		auto myview = occView5->getView();
 		myview->MustBeResized();*/

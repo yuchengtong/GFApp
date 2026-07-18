@@ -8,6 +8,8 @@ class InsulatingheatPropertyWidget : public BasePropertyWidget
 public:
 	explicit InsulatingheatPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

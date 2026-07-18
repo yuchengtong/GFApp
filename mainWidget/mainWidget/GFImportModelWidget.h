@@ -55,6 +55,11 @@ public:
 	MaterialPropertyWidget* GetMaterialPropertyWidget() { return m_materialPropertyWidget; }
 	DatabasePropertyWidget* GetDatabasePropertyWidget() { return m_databasePropertyWidget; }
 
+	SteelPropertyWidget* GetSteelPropertyWidget() { return m_steelPropertyWidgett; }
+	PropellantPropertyWidget* GetPropellantPropertyWidget() { return m_propellantPropertyWidget; }
+	InsulatingheatPropertyWidget* GetInsulatingheatPropertyWidget() { return m_insulatingheatPropertyWidget; }
+	OutheatPropertyWidget* GetOutheatPropertyWidget() { return m_outheatPropertyWidget; }
+
 	FallPropertyWidget* GetFallPropertyWidget() { return m_fallPropertyWidget; }
 	FastCombustionPropertyWidget* GetFastCombustionPropertyWidget() { return m_fastCombustionPropertyWidget; };
 	SlowCombustionPropertyWidget* GetSlowCombustionPropertyWidget() { return m_slowCombustionPropertyWidget; };

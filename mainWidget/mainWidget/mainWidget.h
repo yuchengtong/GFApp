@@ -29,6 +29,8 @@ public:
 
 	void getMemoryUsage(QLabel *m_statusLabel);
 
+	QTabWidget* getTabWidget() { return m_TabWidget; }
+
 private:
     Ui::mainWidgetClass *ui;
 

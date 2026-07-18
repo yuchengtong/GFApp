@@ -960,3 +960,224 @@ double ParamAnalyTreeWidget::consistencyCheck(const vector<vector<double>>& matr
 	}
 	return CR;
 }
+
+vector<QString> ParamAnalyTreeWidget::calculateOnly()
+{
+	vector<QString> resultStr;
+	QWidget* parent = parentWidget();
+	while (parent)
+	{
+		ParamAnalyWidget* paParent = dynamic_cast<ParamAnalyWidget*>(parent);
+		if (paParent)
+		{
+
+			// U1权重向量A1与一致性Rc1计算
+			auto u1WeightTtableWidget = paParent->getU1WeightTtableWidget();
+			// table数据转Vector
+			auto u1WeightVector = convertTableToVector(u1WeightTtableWidget);
+			// 计算权重向量
+			auto u1Weight = calculateWeights(u1WeightVector);
+			// 一致性
+			auto u1Consistency = consistencyCheck(u1WeightVector, u1Weight);
+
+
+			// U2权重向量A2与一致性Rc2计算
+			auto u2WeightTtableWidget = paParent->getU2WeightTtableWidget();
+			// table数据转Vector
+			auto u2WeightVector = convertTableToVector(u2WeightTtableWidget);
+			// 计算权重向量
+			auto u2Weight = calculateWeights(u2WeightVector);
+			// 一致性
+			auto u2Consistency = consistencyCheck(u2WeightVector, u2Weight);
+
+			
+
+			auto ins = ModelDataManager::GetInstance();
+			// 跌落计算结果
+			StressResult m_FallStressResult = ins->GetFallStressResult();
+			StrainResult m_FallStrainResult = ins->GetFallStrainResult();
+			TemperatureResult m_FallTemperatureResult = ins->GetFallTemperatureResult();
+			OverpressureResult m_FallOverpressureResult = ins->GetFallOverpressureResult();
+			// 快烤计算结果
+			TemperatureResult m_FastCombustionTemperatureResult = ins->GetFastCombustionTemperatureResult();
+			// 慢烤计算结果
+			TemperatureResult m_SlowCombustionTemperatureResult = ins->GetSlowCombustionTemperatureResult();
+			// 枪击计算结果
+			StressResult m_ShootStressResult = ins->GetShootStressResult();
+			StrainResult m_ShootStrainResult = ins->GetShootStrainResult();
+			TemperatureResult m_ShootTemperatureResult = ins->GetShootTemperatureResult();
+			OverpressureResult m_ShootOverpressureResult = ins->GetShootOverpressureResult();
+			// 射流冲击计算结果
+			StressResult m_JetImpactStressResult = ins->GetJetImpactStressResult();
+			StrainResult m_JetImpactStrainResult = ins->GetJetImpactStrainResult();
+			TemperatureResult m_JetImpactTemperatureResult = ins->GetJetImpactTemperatureResult();
+			OverpressureResult m_JetImpactOverpressureResult = ins->GetJetImpactOverpressureResult();
+			// 破片撞击计算结果
+			StressResult m_FragmentationImpactStressResult = ins->GetFragmentationImpactStressResult();
+			StrainResult m_FragmentationImpactStrainResult = ins->GetFragmentationImpactStrainResult();
+			TemperatureResult m_FragmentationImpactTemperatureResult = ins->GetFragmentationImpactTemperatureResult();
+			OverpressureResult m_FragmentationImpactOverpressureResult = ins->GetFragmentationImpactOverpressureResult();
+			// 爆炸冲击波计算结果
+			StressResult m_ExplosiveBlastStressResult = ins->GetExplosiveBlastStressResult();
+			StrainResult m_ExplosiveBlastStrainResult = ins->GetExplosiveBlastStrainResult();
+			TemperatureResult m_ExplosiveBlastTemperatureResult = ins->GetExplosiveBlastTemperatureResult();
+			OverpressureResult m_ExplosiveBlastOverpressureResult = ins->GetExplosiveBlastOverpressureResult();
+			// 殉爆计算结果
+			StressResult m_SacrificeExplosionStressResult = ins->GetSacrificeExplosionStressResult();
+			StrainResult m_SacrificeExplosionStrainResult = ins->GetSacrificeExplosionStrainResult();
+			TemperatureResult m_SacrificeExplosionTemperatureResult = ins->GetSacrificeExplosionTemperatureResult();
+			OverpressureResult m_SacrificeExplosionOverpressureResult = ins->GetSacrificeExplosionOverpressureResult();
+			// U1权重向量A1与一致性Rc1计算
+			auto u1EvaluationMatrixTableWidget = paParent->getU1EvaluationMatrixTableWidget();
+			// 推进剂超压
+			double one_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.7;
+			double two_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.8;
+			double three_verpressure = ins->GetPropellantPropertyInfo().fireOverpressure * 0.9;
+
+			// 推进剂温度
+			double one_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature - 50;
+			double two_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature - 30;
+			double three_ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature - 10;
+
+			vector<double> fallOverpressureMembership = getMembership(m_FallOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+
+			vector<double> fallTemperatureMembership = getMembership(m_FallTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> fastCombustionTemperatureMembership = getMembership(m_FastCombustionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> slowCombustionTemperatureMembership = getMembership(m_SlowCombustionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> shootOverpressureMembership = getMembership(m_ShootOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+
+			vector<double> shootTemperatureMembership = getMembership(m_ShootTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> fragmentationImpactOverpressureMembership = getMembership(m_FragmentationImpactOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+
+			vector<double> fragmentationImpactTemperatureMembership = getMembership(m_FragmentationImpactTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> sacrificeExplosionOverpressureMembership = getMembership(m_SacrificeExplosionOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+
+			vector<double> sacrificeExplosionTemperatureMembership = getMembership(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> jetImpactOverpressureMembership = getMembership(m_JetImpactOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+
+			vector<double> jetImpactTemperatureMembership = getMembership(m_JetImpactTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			vector<double> explosiveBlastOverpressureMembership = getMembership(m_ExplosiveBlastOverpressureResult.propellantsMaxOverpressure, one_verpressure, two_verpressure, three_verpressure);
+
+			vector<double> explosiveBlastTemperatureMembership = getMembership(m_ExplosiveBlastTemperatureResult.propellantsMaxTemperature, one_ignitionTemperature, two_ignitionTemperature, three_ignitionTemperature);
+
+			
+			// 壳体应力--抗拉强度
+			double one_yieldStrengthe = ins->GetSteelPropertyInfo().tensileStrength * 0.7;
+			double two_yieldStrength = ins->GetSteelPropertyInfo().tensileStrength * 0.8;
+			double three_yieldStrength = ins->GetSteelPropertyInfo().tensileStrength * 0.9;
+			vector<double> fallStressMembership = getMembership(m_FallStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+
+			vector<double> shootStressMembership = getMembership(m_ShootStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+
+			vector<double> fragmentationImpactStressMembership = getMembership(m_FragmentationImpactStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+
+			vector<double> sacrificeExplosionStressMembership = getMembership(m_SacrificeExplosionStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+
+			vector<double> jetImpactStressMembership = getMembership(m_JetImpactStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+
+			vector<double> explosiveBlastStressMembership = getMembership(m_ExplosiveBlastStressResult.propellantsMaxStress, one_yieldStrengthe, two_yieldStrength, three_yieldStrength);
+
+
+			double yieldStrength = ins->GetSteelPropertyInfo().tensileStrength; // 壳体应力--抗拉强度
+			double ignitionTemperature = ins->GetPropellantPropertyInfo().ignitionTemperature; //推进剂温度
+			double fireOverpressure = ins->GetPropellantPropertyInfo().fireOverpressure; //推进剂超压
+
+
+			// 准则层隶属度
+			vector<vector<double>> A1;
+			A1.push_back(u1Weight);
+			vector<vector<double>> A2;
+			A2.push_back(u2Weight);
+			vector<vector<double>> R1;
+			R1.push_back(fallOverpressureMembership);
+			R1.push_back(fallTemperatureMembership);
+			R1.push_back(fastCombustionTemperatureMembership);
+			R1.push_back(slowCombustionTemperatureMembership);
+			R1.push_back(shootOverpressureMembership);
+			R1.push_back(shootTemperatureMembership);
+			R1.push_back(fragmentationImpactOverpressureMembership);
+			R1.push_back(fragmentationImpactTemperatureMembership);
+			R1.push_back(sacrificeExplosionOverpressureMembership);
+			R1.push_back(sacrificeExplosionTemperatureMembership);
+			R1.push_back(jetImpactOverpressureMembership);
+			R1.push_back(jetImpactTemperatureMembership);
+			R1.push_back(explosiveBlastOverpressureMembership);
+			R1.push_back(explosiveBlastTemperatureMembership);
+
+
+			vector<vector<double>> R2;
+			R2.push_back(fallStressMembership);
+			R2.push_back(shootStressMembership);
+			R2.push_back(fragmentationImpactStressMembership);
+			R2.push_back(sacrificeExplosionStressMembership);
+			R2.push_back(jetImpactStressMembership);
+			R2.push_back(explosiveBlastStressMembership);
+
+			auto B1 = matrixMultiply(A1, R1);
+			auto B2 = matrixMultiply(A2, R2);
+
+			auto weightTtableWidget = paParent->getWeightTtableWidget();
+			// table数据转Vector
+			auto weightVector = convertTableToVector(weightTtableWidget);
+			// 计算权重向量
+			auto weight = calculateWeights(weightVector);
+
+			vector<vector<double>> A;
+			A.push_back(weight);
+			vector<vector<double>> B;
+			B.push_back(B1[0]);
+			B.push_back(B2[0]);
+
+
+			auto result = matrixMultiply(A, B)[0];
+
+
+			// 等级判定
+			auto max_it = std::max_element(result.begin(), result.end());
+			size_t max_index = std::distance(result.begin(), max_it);
+			double max_value = *max_it;
+
+			vector<QString> level = { "V1（优，安全）","V2（良，基本安全）" ,"V3（中，需管控）" ,"V4（差，不安全）" };
+			resultStr.push_back("最大隶属度：数值为" + QString::number(max_value, 'f', 2) + "，等级为" + level[max_index]);
+			
+
+			// 分数评定
+			vector<double> scoreVector = { 95,80,65,30 };
+			double score = 0;
+			for (size_t i = 0; i < scoreVector.size(); ++i) {
+				score = score + scoreVector[i] * result[i];
+			}
+			QString scoreText = "";
+			if (score >= 85)
+			{
+				scoreText = "V₁（优）";
+			}
+			else if (score >= 70 && score < 85)
+			{
+				scoreText = "V₂（良）";
+			}
+			else if (score >= 50 && score < 70)
+			{
+				scoreText = "V₃（中）";
+			}
+			else
+			{
+				scoreText = "V₄（差）";
+			}
+			resultStr.push_back("分数评定：数值为" + QString::number(score, 'f', 2) + "，等级为" + scoreText);
+			break;
+		}
+		else
+		{
+			parent = parent->parentWidget();
+		}
+	}
+	return resultStr;
+}

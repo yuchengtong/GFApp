@@ -8,6 +8,8 @@ class PropellantPropertyWidget : public BasePropertyWidget
 public:
 	explicit PropellantPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

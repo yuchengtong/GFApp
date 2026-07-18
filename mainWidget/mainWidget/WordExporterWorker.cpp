@@ -248,75 +248,93 @@ void WordExporterWorker::cleanup()
 
 bool WordExporterWorker::replaceTextMarkers(const QMap<QString, QVariant>& data)
 {
-	if (!activeDocument) return false;
+    if (!activeDocument) return false;
 
-	try {
-		// 获取文档内容
-		QAxObject* content = activeDocument->querySubObject("Content");
-		if (content->isNull()) return false;
+    try {
+        QAxObject* content = activeDocument->querySubObject("Content");
+        if (content->isNull()) return false;
 
-		// 遍历数据并替换所有标记
-		QMap<QString, QVariant>::const_iterator it;
-		for (it = data.constBegin(); it != data.constEnd(); ++it) {
-			QString marker = "{{" + it.key() + "}}";
-			QString value = it.value().toString();
+        QMap<QString, QVariant>::const_iterator it;
+        for (it = data.constBegin(); it != data.constEnd(); ++it)
+        {
+            // 线程中断检测，支持取消导出
+            if (m_interrupted)
+            {
+                content->deleteLater();
+                return false;
+            }
 
-			if (!findAndReplace(marker, value)) {
-				qDebug() << "替换标记失败:" << marker;
-			}
-		}
+            QString marker = "{{" + it.key() + "}}";
+            QString value = it.value().toString();
 
-		content->deleteLater();
-		return true;
-	}
-	catch (...) {
-		qDebug() << "替换文本标记时发生异常";
-		return false;
-	}
+         
+
+            bool ret = findAndReplace(marker, value);
+            if (!ret)
+            {
+                // 区分两种失败：找不到标记 / 超长匹配失败
+                if (marker.length() > 250 || value.length() > 250)
+                {
+                    qWarning() << "超长文本替换失败！标记：" << marker
+                        << "文本长度：" << value.length();
+                }
+                else
+                {
+                    qDebug() << "文档中未找到标记:" << marker;
+                }
+            }
+        }
+
+        content->deleteLater();
+        return true;
+    }
+    catch (...) {
+        qDebug() << "替换文本标记时发生异常";
+        return false;
+    }
 }
 
 bool WordExporterWorker::findAndReplace(const QString& findText, const QString& replaceText)
 {
-	if (!activeDocument) return false;
+    if (!activeDocument || findText.isEmpty())
+        return false;
 
-	try {
-		// 获取查找对象
-		QAxObject* findObj = activeDocument->querySubObject("Range()")->querySubObject("Find");
-		if (findObj->isNull()) return false;
+    try
+    {
+        QAxObject* docRange = activeDocument->querySubObject("Content");
+        if (!docRange || docRange->isNull())
+            return false;
 
-		// 设置查找参数
-		QVariantList params;
-		params << findText;    // FindText
-		params << false;       // MatchCase
-		params << false;       // MatchWholeWord
-		params << false;       // MatchWildcards
-		params << false;       // MatchSoundsLike
-		params << false;       // MatchAllWordForms
-		params << true;        // Forward
-		params << 1;           // Wrap (1 = wdFindContinue)
-		params << false;       // Format
-		params << replaceText; // ReplaceWith
-		params << 2;           // Replace (2 = wdReplaceAll)
-		params << false;       // MatchKashida
-		params << false;       // MatchDiacritics
-		params << false;       // MatchAlefHamza
-		params << false;       // MatchControl
+        QAxObject* find = docRange->querySubObject("Find");
+        find->setProperty("Text", findText);
+        find->setProperty("MatchCase", false);
+        find->setProperty("MatchWholeWord", false);
+        find->setProperty("MatchWildcards", false);
+        find->setProperty("Wrap", 1); // wdFindContinue
 
-		// 执行查找替换
-		QVariant result = findObj->dynamicCall("Execute(const QVariant&, const QVariant&, "
-			"const QVariant&, const QVariant&, const QVariant&, "
-			"const QVariant&, const QVariant&, const QVariant&, "
-			"const QVariant&, const QVariant&, const QVariant&, "
-			"const QVariant&, const QVariant&, const QVariant&)",
-			params);
+        bool hasMatch = false;
+        // 循环查找所有匹配项，规避单次Execute超长限制
+        while (find->dynamicCall("Execute()").toBool())
+        {
+            hasMatch = true;
+            QAxObject* matchRange = find->querySubObject("Parent");
+            if (matchRange && !matchRange->isNull())
+            {
+                // 清空原有占位符，写入超长替换文本
+                matchRange->setProperty("Text", replaceText);
+                matchRange->deleteLater();
+            }
+        }
 
-		findObj->deleteLater();
-		return result.toBool();
-	}
-	catch (...) {
-		qDebug() << "查找替换时发生异常";
-		return false;
-	}
+        find->deleteLater();
+        docRange->deleteLater();
+        return hasMatch;
+    }
+    catch (...)
+    {
+        qDebug() << "查找替换异常，查找内容：" << findText.left(100) << "...";
+        return false;
+    }
 }
 
 bool WordExporterWorker::insertImagesAtMarkers(const QMap<QString, QString>& imagePaths)

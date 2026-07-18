@@ -19,6 +19,11 @@
 #include "StrainResultWidget.h"
 #include "TemperatureResultWidget.h"
 #include "OverpressureResultWidget.h"
+#include "SteelPropertyWidget.h"
+#include "PropellantPropertyWidget.h"
+#include "InsulatingheatPropertyWidget.h"
+#include "OutheatPropertyWidget.h"
+#include "ParamAnalyWidget.h"
 
 
 
@@ -56,7 +61,13 @@ private slots:
 		StressResultWidget* stressResultWidget,
 		StrainResultWidget* strainResultWidget,
 		TemperatureResultWidget* temperatureResultWidget,
-		OverpressureResultWidget* overpressureResultWidge);
+		OverpressureResultWidget* overpressureResultWidge,
+		SteelPropertyWidget* steelPropertyWidget,
+		PropellantPropertyWidget* propellantPropertyWidget,
+		InsulatingheatPropertyWidget* insulatingheatPropertyWidget,
+		OutheatPropertyWidget* outheatPropertyWidget);
+
+	QString calculateParamAnaly();
 
 
 private:

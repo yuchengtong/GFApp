@@ -73,6 +73,7 @@
 #include "GeometryImportWorker.h"
 #include "WordExporterWorker.h"
 #include "APICreateMidSurfaceHelper.h"
+#include "mainWidget.h"
 
 
 #include <QScreen>
@@ -2555,7 +2556,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* item)
 {
+	QString content = calculateParamAnaly();
 	UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+	auto calculationinfo = ModelDataManager::GetInstance()->GetCalculationPropertyInfo();
 	QString workdir = userinfo.workdir;
 
 	QWidget* parent = parentWidget();
@@ -2577,6 +2580,18 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 			DatabasePropertyWidget* m_databasePropertyWidget = gfParent->GetDatabasePropertyWidget();
 			QTableWidget* m_databaseTableWid = m_databasePropertyWidget->GetQTableWidget();
+
+			SteelPropertyWidget* m_steelPropertyWidget = gfParent->GetSteelPropertyWidget();
+			QTableWidget* m_steelTableWid = m_databasePropertyWidget->GetQTableWidget();
+
+			PropellantPropertyWidget* m_propellantPropertyWidget = gfParent->GetPropellantPropertyWidget();
+			QTableWidget* m_propellantTableWid = m_databasePropertyWidget->GetQTableWidget();
+
+			InsulatingheatPropertyWidget* m_insulatingheatPropertyWidget = gfParent->GetInsulatingheatPropertyWidget();
+			QTableWidget* m_insulatingheatTableWid = m_databasePropertyWidget->GetQTableWidget();
+
+			OutheatPropertyWidget* m_outheatPropertyWidget = gfParent->GetOutheatPropertyWidget();
+			QTableWidget* m_outheatTableWid = m_databasePropertyWidget->GetQTableWidget();
 
 			for (int i = 0; i < item->childCount(); ++i) {
 				QTreeWidgetItem* childItem = item->child(i);
@@ -2621,6 +2636,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetOverpressureResultWidget();
 						QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
+
+
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
 							m_geomPropertyWidget,
 							m_materialPropertyWidget,
@@ -2628,21 +2645,16 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_stressResultWidget,
 							m_strainResultWidget,
 							m_temperatureResultWidget,
-							m_overpressureResultWidge);
+							m_overpressureResultWidge,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 						
 						// 跌落输入数据
 						data.insert("测试项目", m_fallTableWid->item(1, 2)->text());
 						data.insert("跌落高度", m_fallTableWid->item(2, 2)->text());
-						QComboBox* comboBox = qobject_cast<QComboBox*>(m_fallTableWid->cellWidget(3, 2));
-						if (comboBox)
-						{
-							QString selectedText = comboBox->currentText();
-							data.insert("跌落姿态", selectedText);
-						}
-						else
-						{
-							data.insert("跌落姿态", "");
-						}
+						data.insert("跌落姿态", m_fallTableWid->item(3, 2)->text());
 						data.insert("跌落钢板硬度", m_fallTableWid->item(4, 2)->text());
 						data.insert("温度传感器数量", m_fallTableWid->item(5, 2)->text());
 						if (m_fallTableWid->item(6, 2))
@@ -2654,8 +2666,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							data.insert("冲击波超压传感器数量", "");
 						}
 						data.insert("风速", m_fallTableWid->item(7, 2)->text());
-
-						
+						data.insert("拟合优度", "92.98");
+						data.insert("计算模型公式", calculationinfo.fallStressCalculation.at(0));
+						data.insert("结论", m_fallTableWid->item(8, 2)->text() + "，" + m_fallTableWid->item(9, 2)->text() + "，" + m_fallTableWid->item(10, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -2742,7 +2756,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							nullptr,
 							nullptr,
 							m_temperatureResultWidget,
-							nullptr);
+							nullptr,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_fastCombustionTableWid->item(1, 2)->text());
@@ -2755,6 +2773,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("结束时间", m_fastCombustionTableWid->item(8, 2)->text());
 						data.insert("平均温度", m_fastCombustionTableWid->item(9, 2)->text());
 
+						data.insert("拟合优度", "99.88");
+						data.insert("计算模型公式", calculationinfo.fastCombustionCalculation.at(0));
+						data.insert("结论", m_fastCombustionTableWid->item(10, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -2837,7 +2859,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							nullptr,
 							nullptr,
 							m_temperatureResultWidget,
-							nullptr);
+							nullptr,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_slowCombustionTableWid->item(1, 2)->text());
@@ -2848,8 +2874,12 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("风速", m_slowCombustionTableWid->item(6, 2)->text());
 						data.insert("平衡时刻", m_slowCombustionTableWid->item(7, 2)->text());
 						data.insert("烘箱升温速率", m_slowCombustionTableWid->item(8, 2)->text());
-						data.insert("烘箱终止温度}", m_slowCombustionTableWid->item(9, 2)->text());
+						data.insert("烘箱终止温度", m_slowCombustionTableWid->item(9, 2)->text());
 
+						data.insert("拟合优度", "98.92");
+						data.insert("计算模型公式", calculationinfo.slowCombustionCalculation.at(0));
+						data.insert("结论", m_slowCombustionTableWid->item(10, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -2941,7 +2971,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_stressResultWidget,
 							m_strainResultWidget,
 							m_temperatureResultWidget,
-							m_overpressureResultWidge);
+							m_overpressureResultWidge,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_shootTableWid->item(1, 2)->text());
@@ -2954,6 +2988,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("超压传感器数量", m_shootTableWid->item(8, 2)->text());
 						data.insert("风速", m_shootTableWid->item(9, 2)->text());
 
+						data.insert("拟合优度", "99.16");
+						data.insert("计算模型公式", calculationinfo.shootStressCalculation.at(0));
+						data.insert("结论", m_shootTableWid->item(10, 2)->text() + "，" + m_shootTableWid->item(11, 2)->text() + "，" + m_shootTableWid->item(12, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -3048,7 +3086,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_stressResultWidget,
 							m_strainResultWidget,
 							m_temperatureResultWidget,
-							m_overpressureResultWidge);
+							m_overpressureResultWidge,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_jetImpactTableWid->item(1, 2)->text());
@@ -3058,7 +3100,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("温度传感器数量", m_jetImpactTableWid->item(5, 2)->text());
 						data.insert("超压传感器数量", m_jetImpactTableWid->item(6, 2)->text());
 						data.insert("风速", m_jetImpactTableWid->item(7, 2)->text());
-						
+
+						data.insert("拟合优度", "98.53");
+						data.insert("计算模型公式", calculationinfo.jetImpactStressCalculation.at(0));
+						data.insert("结论", m_jetImpactTableWid->item(8, 2)->text() + "，" + m_jetImpactTableWid->item(9, 2)->text() + "，" + m_jetImpactTableWid->item(10, 2)->text());
+						data.insert("内容摘要", content);
 
 
 						QMap<QString, QString> imagePaths;
@@ -3150,7 +3196,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_stressResultWidget,
 							m_strainResultWidget,
 							m_temperatureResultWidget,
-							m_overpressureResultWidge);
+							m_overpressureResultWidge,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_fragmentationImpactTableWid->item(1, 2)->text());
@@ -3164,6 +3214,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("超压传感器数量", m_fragmentationImpactTableWid->item(9, 2)->text());
 						data.insert("风速", m_fragmentationImpactTableWid->item(10, 2)->text());
 
+						data.insert("拟合优度", "99.72");
+						data.insert("计算模型公式", calculationinfo.fragmentationImpactStressCalculation.at(0));
+						data.insert("结论", m_fragmentationImpactTableWid->item(11, 2)->text() + "，" + m_fragmentationImpactTableWid->item(12, 2)->text() + "，" + m_fragmentationImpactTableWid->item(13, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -3258,7 +3312,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_stressResultWidget,
 							m_strainResultWidget,
 							m_temperatureResultWidget,
-							m_overpressureResultWidge);
+							m_overpressureResultWidge,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_explosiveBlastTableWid->item(1, 2)->text());
@@ -3268,7 +3326,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("超压传感器数量", m_explosiveBlastTableWid->item(5, 2)->text());
 						data.insert("风速", m_explosiveBlastTableWid->item(6, 2)->text());
 						
-
+						data.insert("拟合优度", "98.87");
+						data.insert("计算模型公式", calculationinfo.explosiveBlastStressCalculation.at(0));
+						data.insert("结论", m_explosiveBlastTableWid->item(7, 2)->text() + "，" + m_explosiveBlastTableWid->item(8, 2)->text() + "，" + m_explosiveBlastTableWid->item(9, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -3363,7 +3424,11 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_stressResultWidget,
 							m_strainResultWidget,
 							m_temperatureResultWidget,
-							m_overpressureResultWidge);
+							m_overpressureResultWidge,
+							m_steelPropertyWidget,
+							m_propellantPropertyWidget,
+							m_insulatingheatPropertyWidget,
+							m_outheatPropertyWidget);
 
 						// 跌落输入数据
 						data.insert("测试项目", m_sacrificeExplosionTableWid->item(1, 2)->text());
@@ -3374,6 +3439,10 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						data.insert("超压传感器数量", m_sacrificeExplosionTableWid->item(6, 2)->text());
 						data.insert("风速", m_sacrificeExplosionTableWid->item(7, 2)->text());
 
+						data.insert("拟合优度", "97.94");
+						data.insert("计算模型公式", calculationinfo.sacrificeExplosionStressCalculation.at(0));
+						data.insert("结论", m_sacrificeExplosionTableWid->item(7, 2)->text() + "，" + m_sacrificeExplosionTableWid->item(8, 2)->text() + "，" + m_sacrificeExplosionTableWid->item(9, 2)->text());
+						data.insert("内容摘要", content);
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
@@ -3448,6 +3517,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 
 
+
 QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge* projectPropertyWidge,
 	GeomPropertyWidget* geomPropertyWidget,
 	MaterialPropertyWidget* materialPropertyWidget,
@@ -3455,7 +3525,11 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	StressResultWidget* stressResultWidget,
 	StrainResultWidget* strainResultWidget,
 	TemperatureResultWidget* temperatureResultWidget,
-	OverpressureResultWidget* overpressureResultWidge)
+	OverpressureResultWidget* overpressureResultWidge,
+	SteelPropertyWidget* steelPropertyWidget,
+	PropellantPropertyWidget* propellantPropertyWidget,
+	InsulatingheatPropertyWidget* insulatingheatPropertyWidget,
+	OutheatPropertyWidget* outheatPropertyWidget)
 {
 	QTableWidget* m_projectTableWid = projectPropertyWidge->GetQTableWidget();
 
@@ -3465,12 +3539,11 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 
 	QTableWidget* m_databaseTableWid = databasePropertyWidget->GetQTableWidget();
 
+	QTableWidget* m_steelTableWid = steelPropertyWidget->GetQTableWidget();
+	QTableWidget* m_propellantTableWid = propellantPropertyWidget->GetQTableWidget();
+	QTableWidget* m_insulatingheatTableWid = insulatingheatPropertyWidget->GetQTableWidget();
+	QTableWidget* m_outheatTableWid = outheatPropertyWidget->GetQTableWidget();
 	
-
-	
-
-
-
 	QMap<QString, QVariant> data;
 	// 标题数据
 	data.insert("工程名称", m_projectTableWid->item(1, 2)->text());
@@ -3483,8 +3556,77 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	data.insert("含能材料", m_materialTableWid->item(2, 2)->text());
 	data.insert("外防热材料", m_materialTableWid->item(3, 2)->text());
 	data.insert("绝热层材料", m_materialTableWid->item(4, 2)->text());
+	data.insert("直径", m_geomTableWid->item(3, 2)->text());
+	data.insert("总长", m_geomTableWid->item(4, 2)->text());
 
 
+	// 材料数据
+	data.insert("推进剂-材料牌号", m_propellantTableWid->item(1, 2)->text());
+	data.insert("推进剂-类别", m_propellantTableWid->item(2, 2)->text());
+	data.insert("推进剂-密度", m_propellantTableWid->item(3, 2)->text());
+	data.insert("推进剂-热膨胀系数", m_propellantTableWid->item(4, 2)->text());
+	data.insert("推进剂-弹性模量", m_propellantTableWid->item(5, 2)->text());
+	data.insert("推进剂-切线模量", m_propellantTableWid->item(6, 2)->text());
+	data.insert("推进剂-泊松比", m_propellantTableWid->item(7, 2)->text());
+	data.insert("推进剂-发火温度", m_propellantTableWid->item(8, 2)->text());
+	data.insert("推进剂-发火超压", m_propellantTableWid->item(9, 2)->text());
+	data.insert("推进剂-发火概率摩擦感度", m_propellantTableWid->item(10, 2)->text());
+	data.insert("推进剂-热导率", m_propellantTableWid->item(11, 2)->text());
+	data.insert("推进剂-比热容", m_propellantTableWid->item(12, 2)->text());
+	data.insert("l", m_propellantTableWid->item(13, 2)->text());
+	data.insert("a", m_propellantTableWid->item(14, 2)->text());
+	data.insert("b", m_propellantTableWid->item(15, 2)->text());
+	data.insert("c", m_propellantTableWid->item(16, 2)->text());
+	data.insert("d", m_propellantTableWid->item(17, 2)->text());
+	data.insert("G1", m_propellantTableWid->item(18, 2)->text());
+	data.insert("e", m_propellantTableWid->item(19, 2)->text());
+	data.insert("g", m_propellantTableWid->item(20, 2)->text());
+	data.insert("x", m_propellantTableWid->item(21, 2)->text());
+	data.insert("y", m_propellantTableWid->item(22, 2)->text());
+	data.insert("z", m_propellantTableWid->item(23, 2)->text());
+	data.insert("G2", m_propellantTableWid->item(24, 2)->text());
+	data.insert("感度", m_propellantTableWid->item(25, 2)->text());
+	double G1 = m_propellantTableWid->item(18, 2)->text().toDouble();
+	double G2 = m_propellantTableWid->item(24, 2)->text().toDouble();
+	auto figmax = G1 > G2 ? m_propellantTableWid->item(18, 2)->text() : m_propellantTableWid->item(24, 2)->text();
+	data.insert("Figmax", figmax);
+
+
+
+	data.insert("壳体-材料牌号", m_steelTableWid->item(1, 2)->text());
+	data.insert("壳体-密度", m_steelTableWid->item(2, 2)->text());
+	data.insert("壳体-热膨胀系数", m_steelTableWid->item(3, 2)->text());
+	data.insert("壳体-弹性模量", m_steelTableWid->item(4, 2)->text());
+	data.insert("壳体-切线模量", m_steelTableWid->item(5, 2)->text());
+	data.insert("壳体-泊松比", m_steelTableWid->item(6, 2)->text());
+	data.insert("壳体-屈服强度", m_steelTableWid->item(7, 2)->text());
+	data.insert("壳体-抗拉强度", m_steelTableWid->item(8, 2)->text());
+	data.insert("壳体-热导率", m_steelTableWid->item(9, 2)->text());
+	data.insert("壳体-比热容", m_steelTableWid->item(10, 2)->text());
+
+	data.insert("绝热层-材料牌号", m_insulatingheatTableWid->item(1, 2)->text());
+	data.insert("绝热层-密度", m_insulatingheatTableWid->item(2, 2)->text());
+	data.insert("绝热层-热膨胀系数", m_insulatingheatTableWid->item(3, 2)->text());
+	data.insert("绝热层-弹性模量", m_insulatingheatTableWid->item(4, 2)->text());
+	data.insert("绝热层-切线模量", m_insulatingheatTableWid->item(5, 2)->text());
+	data.insert("绝热层-泊松比", m_insulatingheatTableWid->item(6, 2)->text());
+	data.insert("绝热层-屈服强度", m_insulatingheatTableWid->item(7, 2)->text());
+	data.insert("绝热层-抗拉强度", m_insulatingheatTableWid->item(8, 2)->text());
+	data.insert("绝热层-热导率", m_insulatingheatTableWid->item(9, 2)->text());
+	data.insert("绝热层-比热容", m_insulatingheatTableWid->item(10, 2)->text());
+
+	data.insert("喷管-材料牌号", m_outheatTableWid->item(1, 2)->text());
+	data.insert("喷管-密度", m_outheatTableWid->item(2, 2)->text());
+	data.insert("喷管-热膨胀系数", m_outheatTableWid->item(3, 2)->text());
+	data.insert("喷管-弹性模量", m_outheatTableWid->item(4, 2)->text());
+	data.insert("喷管-切线模量", m_outheatTableWid->item(5, 2)->text());
+	data.insert("喷管-泊松比", m_outheatTableWid->item(6, 2)->text());
+	data.insert("喷管-屈服强度", m_outheatTableWid->item(7, 2)->text());
+	data.insert("喷管-抗拉强度", m_outheatTableWid->item(8, 2)->text());
+	data.insert("喷管-热导率", m_outheatTableWid->item(9, 2)->text());
+	data.insert("喷管-比热容", m_outheatTableWid->item(10, 2)->text());
+
+	
 	// 计算输出数据
 	if (stressResultWidget != nullptr)
 	{
@@ -3572,4 +3714,31 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	
 
 	return data;
+}
+
+// 获取安全性分析评估结果
+QString GFTreeModelWidget::calculateParamAnaly()
+{
+	QString result = "";
+	QWidget* parent = parentWidget();
+	while (parent)
+	{
+		mainWidget* paParent = dynamic_cast<mainWidget*>(parent);
+		if (paParent)
+		{
+			QTabWidget* tabWid = paParent->getTabWidget();
+			ParamAnalyWidget* analysisEvaluationWid = dynamic_cast<ParamAnalyWidget*>(tabWid->widget(3));
+			ParamAnalyTreeWidget* paramAnalyTreeWidget = analysisEvaluationWid->getParamAnalyTreeWidget();
+			vector<QString> resultStr = paramAnalyTreeWidget->calculateOnly();
+			for (const QString& str : resultStr) {
+				result = result + str + "\n";
+			}
+			break;
+		}
+		else
+		{
+			parent = parent->parentWidget();
+		}
+	}
+	return result;
 }

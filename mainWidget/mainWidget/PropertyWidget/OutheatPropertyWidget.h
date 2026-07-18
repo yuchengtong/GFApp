@@ -8,6 +8,8 @@ class OutheatPropertyWidget : public BasePropertyWidget
 public:
 	explicit OutheatPropertyWidget(QWidget* parent = nullptr);
 
+	QTableWidget* GetQTableWidget() { return m_tableWidget; }
+
 private:
 	void initWidget() override;
 

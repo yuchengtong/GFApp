@@ -45,6 +45,8 @@ public:
 
 	void exportWord(const QString& directory, const QString& text);
 
+	ParamAnalyTreeWidget* getParamAnalyTreeWidget() { return m_treeModelWidget; }
+
 private slots:
 	void onTreeItemClicked(const QString& itemData);
 
