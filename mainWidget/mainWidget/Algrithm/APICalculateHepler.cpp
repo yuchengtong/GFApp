@@ -206,7 +206,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		if (!m_steelArray.contains(i+1))
 		{
-			res = translate(res);
+			res = translate(res) * 20;
 			if (fallInfo.high > 0 && fallInfo.high < 25)
 			{
 				res = res * 0.56;
@@ -277,7 +277,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	fallStrainResult.metalsAvgStrain = fallStressResult.metalsAvgStress / steelInfo.modulus ;
 	fallStrainResult.metalsStandardStrain = fallStressResult.metalsStandardStress / steelInfo.modulus ;
 	fallStrainResult.propellantsMaxStrain = fallStressResult.propellantsMaxStress / propellantInfo.modulus ;
-	fallStrainResult.propellantsMinStrain = fallStressResult.propellantsMaxStress / propellantInfo.modulus ;
+	fallStrainResult.propellantsMinStrain = fallStressResult.propellantsMinStress / propellantInfo.modulus ;
 	fallStrainResult.mpropellantsAvgStrain = fallStressResult.propellantsAvgStress / propellantInfo.modulus ;
 	fallStrainResult.propellantsStandardStrain = fallStressResult.propellantsStandardStress / propellantInfo.modulus ;
 	fallStrainResult.outheatMaxStrain = fallStressResult.outheatMaxStress / steelInfo.modulus ;
@@ -842,7 +842,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
 	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
 	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
 	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
@@ -1129,7 +1129,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
 	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
 	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
 	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
@@ -1416,7 +1416,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
 	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
 	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
 	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
@@ -1710,7 +1710,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
 	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
 	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
 	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
@@ -1949,7 +1949,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
 	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
 	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
 	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
