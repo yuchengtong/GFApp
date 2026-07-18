@@ -26,39 +26,70 @@ public:
 	static bool SetShellFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
 
+	//¿ìËÙ¿¾È¼
+	static bool SetShellFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+	//ÂýËÙ¿¾È¼
+	static bool SetShellSlowCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantSlowCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+	//Ç¹»÷ÊÔÑé
+	static bool SetShellShootStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantShootStressResult(OccView* occView, std::vector<double>& nodeValues);
 
+	static bool SetShellShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
 
-	//static bool SetFallStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetFallTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetFallOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	////¿ìËÙ¿¾È¼
-	//static bool SetFastCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	////ÂýËÙ¿¾È¼
-	//static bool SetSlowCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	////Ç¹»÷ÊÔÑé
-	//static bool SetShootStressResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	////ÉäÁ÷³å»÷ÊÔÑé
-	//static bool SetJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	//
-	////ÆÆÆ¬ÊÔÑé
-	//static bool SetFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	////±¬Õ¨³å»÷²¨ÊÔÑé
-	//static bool SetExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	//// Ñ³±¬ÊÔÑé
-	//static bool SetSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	//static bool SetSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetShellShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	//ÉäÁ÷³å»÷ÊÔÑé
+	static bool SetShellJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	//ÆÆÆ¬ÊÔÑé
+	static bool SetShellFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	//±¬Õ¨³å»÷²¨ÊÔÑé
+	static bool SetShellExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	// Ñ³±¬ÊÔÑé
+	static bool SetShellSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetShellSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool SetPropellantSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 };

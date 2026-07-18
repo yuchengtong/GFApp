@@ -81,10 +81,10 @@ void GeometryImportWorker::DoWork()
             CalculateBoundingBox(info);
 
 
-            //if (m_partType == PartType::Shell)
-            //{
-            //    AnalyzeGeometry(info);
-            //}
+            if (m_partType == PartType::Shell)
+            {
+                AnalyzeGeometry(info);
+            }
 
             // 记录通用路径 + 按部件类型记录专属路径
             info.path = m_filePath;

@@ -174,42 +174,22 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 	gp_Pnt ptNozzleInletBottom = modelGeometryInfo.ptNozzleInletBottom;
 	gp_Pnt ptNozzleOutletBottom = modelGeometryInfo.ptNozzleOutletBottom;
 
-	const std::vector<double> thresholds = {
-		10.0,  
-		25.0,  
-		50.0,  
-		90.0,  
-		160.0, 
-		260.0, 
-		300.0, 
-		330.0, 
-		400.0, 
-		500.0  
-	};
 
-	const std::vector<double> thresholds90 = {
-	40.0,
-	100.0,
-	150.0,
-	200.0,
-	300.0,
-	350.0,
-	1000.0,
-	2000.0,
-	3000.0,
-	3500.0
-	};
-	const int layerCount = 9;  // 实际分层数
-
-	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	// Lambda：计算单个节点的跌落应力值
+	auto calculateStress = [&](const gp_Pnt& currentNode) -> double
 	{
-		int nodeID = it.Key();
-		double x = nodecoords->Value(nodeID, 1);
-		double y = nodecoords->Value(nodeID, 2);
-		double z = nodecoords->Value(nodeID, 3);
-		gp_Pnt currentNode(x, y, z);
-
 		double value = min_value;
+		const int layerCount = 9;
+
+		const std::vector<double> thresholds = {
+			10.0, 25.0, 50.0, 90.0, 160.0, 260.0, 300.0, 330.0, 400.0, 500.0
+		};
+
+		const std::vector<double> thresholds90 = {
+			40.0, 100.0, 150.0, 200.0, 300.0, 350.0,
+			1000.0, 2000.0, 3000.0, 3500.0
+		};
+
 		if (angle == 0)
 		{
 			double dist1 = currentNode.Distance(ptShellLeftBottom);
@@ -237,7 +217,7 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 		}
 		else if (angle > 0 && angle <= 15)
 		{
-			gp_Pnt cor_ptShellRightBottom(ptShellRightBottom.X()+30, ptShellRightBottom.Y(), ptShellRightBottom.Z());
+			gp_Pnt cor_ptShellRightBottom(ptShellRightBottom.X() + 30, ptShellRightBottom.Y(), ptShellRightBottom.Z());
 			double distToShellRight = currentNode.Distance(cor_ptShellRightBottom);
 			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 30, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
 			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
@@ -340,7 +320,7 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 			/*else if (distToNozzleOutlet < 900.0)
 				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;*/
 
-			value = std::max({valueNozzleInlet, valueNozzleOutlet });
+			value = std::max({ valueNozzleInlet, valueNozzleOutlet });
 		}
 		else if (angle > 60 && angle < 90)
 		{
@@ -353,7 +333,7 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 			double valueNozzleOutlet = min_value;
 
 			// ptNozzleInletBottom 影响
-			if (cor_ptNozzleInletBottom.X() - x < 400)
+			if (cor_ptNozzleInletBottom.X() - currentNode.X() < 400)
 				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
 
 			if (distToNozzleInlet < 50.0)
@@ -391,10 +371,10 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 			value = std::max({ valueNozzleInlet, valueNozzleOutlet });
 		}
 		else if (angle == 90)
-		{	
+		{
 			double startX = ptNozzleInletBottom.X();
 
-			double xDist = std::abs(x - startX);
+			double xDist = std::abs(currentNode.X() - startX);
 
 			if (xDist > 3500)
 			{
@@ -415,23 +395,94 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 				value = min_value + (max_value - min_value) * ratio;
 			}
 		}
-		nodeValues.push_back(value);
+
+		return value;
+	};
+
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellNodeValues;
+	{
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+			double z = shellNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculateStress(currentNode);
+			shellNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
 	}
 
-	// 设置颜色映射和显示
-	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(
-		mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-	nodal->SetColors(colormap);
-	mesh->AddBuilder(nodal);
-	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-	context->EraseAll(true);
-	context->Display(mesh, Standard_True);
-	occView->fitAll();
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+			double z = nozzleNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculateStress(currentNode);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(shellMeshData);
+
+		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		shellNodal->SetColors(shellColorMap);
+		shellMesh->AddBuilder(shellNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
 	return true;
 }
-
 bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -898,12 +949,812 @@ bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::ve
 
 bool APISetNodeValue::SetShellFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
-	return false;
-}
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
 
+	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+
+	auto high = fallSettingInfo.high;
+	auto angle = fallSettingInfo.angle;
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+
+	if (!fallAnalysisResultInfo.isChecked)
+	{
+		return false;
+	}
+	auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
+	auto max_value = fallStrainResult.metalsMaxStrain;
+	auto min_value = fallStrainResult.metalsMinStrain;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData = modelMeshInfo.shellMesh->RotateXY(angle,
+		(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData);
+
+	gp_Pnt ptShellLeftBottom = modelGeometryInfo.ptShellLeftBottom;
+	gp_Pnt ptShellRightBottom = modelGeometryInfo.ptShellRightBottom;
+	gp_Pnt ptNozzleInletBottom = modelGeometryInfo.ptNozzleInletBottom;
+	gp_Pnt ptNozzleOutletBottom = modelGeometryInfo.ptNozzleOutletBottom;
+
+
+	// Lambda：计算单个节点的跌落应力值
+	auto calculateStress = [&](const gp_Pnt& currentNode) -> double
+	{
+		double value = min_value;
+		const int layerCount = 9;
+
+		const std::vector<double> thresholds = {
+			10.0, 25.0, 50.0, 90.0, 160.0, 260.0, 300.0, 330.0, 400.0, 500.0
+		};
+
+		const std::vector<double> thresholds90 = {
+			40.0, 100.0, 150.0, 200.0, 300.0, 350.0,
+			1000.0, 2000.0, 3000.0, 3500.0
+		};
+
+		if (angle == 0)
+		{
+			double dist1 = currentNode.Distance(ptShellLeftBottom);
+			double dist2 = currentNode.Distance(ptShellRightBottom);
+			double minDist = std::min(dist1, dist2);
+			if (minDist > 500.0)
+			{
+				value = min_value;
+			}
+			else
+			{
+				int layer = layerCount - 1;  // 默认最后一层
+				for (int i = 0; i < layerCount; ++i)
+				{
+					if (minDist <= thresholds[i])
+					{
+						layer = i;
+						break;
+					}
+				}
+
+				double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+				value = min_value + (max_value - min_value) * ratio;
+			}
+		}
+		else if (angle > 0 && angle <= 15)
+		{
+			gp_Pnt cor_ptShellRightBottom(ptShellRightBottom.X() + 30, ptShellRightBottom.Y(), ptShellRightBottom.Z());
+			double distToShellRight = currentNode.Distance(cor_ptShellRightBottom);
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 30, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
+
+			// 计算每个点的独立影响值
+			double valueShellRight = min_value;
+			double valueNozzleInlet = min_value;
+			double valueNozzleOutlet = min_value;
+
+			// ptShellRightBottom 影响
+			if (distToShellRight < 100.0)
+				valueShellRight = max_value;
+			else if (distToShellRight < 150.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			else if (distToShellRight < 200.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			else if (distToShellRight < 300.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.5;
+			else if (distToShellRight < 400.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.4;
+			else if (distToShellRight < 500.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+			else if (distToShellRight < 600.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+			// ptNozzleInletBottom 影响
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 150.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 400.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 500.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 600.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+			// ptNozzleOutletBottom 
+			if (distToNozzleOutlet < 50.0)
+				valueNozzleOutlet = max_value;
+			else if (distToNozzleOutlet < 100.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleOutlet < 150.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleOutlet < 200.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleOutlet < 250.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleOutlet < 300.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+			else if (distToNozzleOutlet < 700.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+
+			value = std::max({ valueShellRight, valueNozzleInlet, valueNozzleOutlet });
+		}
+		else if (angle > 15 && angle <= 60)
+		{
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
+
+			// 计算每个点的独立影响值
+			double valueNozzleInlet = min_value;
+			double valueNozzleOutlet = min_value;
+
+			// ptNozzleInletBottom 影响
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 150.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 300.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 500.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 600.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 800.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+			// ptNozzleOutletBottom 
+			if (distToNozzleOutlet < 50.0)
+				valueNozzleOutlet = max_value;
+			else if (distToNozzleOutlet < 100.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleOutlet < 150.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleOutlet < 250.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleOutlet < 300.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+			/*else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;*/
+
+			value = std::max({ valueNozzleInlet, valueNozzleOutlet });
+		}
+		else if (angle > 60 && angle < 90)
+		{
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
+
+			// 计算每个点的独立影响值
+			double valueNozzleInlet = min_value;
+			double valueNozzleOutlet = min_value;
+
+			// ptNozzleInletBottom 影响
+			if (cor_ptNozzleInletBottom.X() - currentNode.X() < 400)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 150.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 400.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 500.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 600.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+
+
+			// ptNozzleOutletBottom 
+			if (distToNozzleOutlet < 50.0)
+				valueNozzleOutlet = max_value;
+			else if (distToNozzleOutlet < 100.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleOutlet < 150.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleOutlet < 250.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleOutlet < 400.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleOutlet < 700.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+			else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+
+			value = std::max({ valueNozzleInlet, valueNozzleOutlet });
+		}
+		else if (angle == 90)
+		{
+			double startX = ptNozzleInletBottom.X();
+
+			double xDist = std::abs(currentNode.X() - startX);
+
+			if (xDist > 3500)
+			{
+				value = min_value;
+			}
+			else
+			{
+				int layer = layerCount - 1;
+				for (int i = 0; i < layerCount; ++i)
+				{
+					if (xDist <= thresholds90[i])
+					{
+						layer = i;
+						break;
+					}
+				}
+				double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+				value = min_value + (max_value - min_value) * ratio;
+			}
+		}
+
+		return value;
+	};
+
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellNodeValues;
+	{
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+			double z = shellNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculateStress(currentNode);
+			shellNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+			double z = nozzleNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculateStress(currentNode);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(shellMeshData);
+
+		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		shellNodal->SetColors(shellColorMap);
+		shellMesh->AddBuilder(shellNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
+	return true;
+}
 bool APISetNodeValue::SetPropellantFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
-	return false;
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+
+	auto high = fallSettingInfo.high;
+	auto angle = fallSettingInfo.angle;
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+
+	if (!fallAnalysisResultInfo.isChecked)
+	{
+		return false;
+	}
+
+	auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
+	auto max_value = fallStrainResult.propellantsMaxStrain;
+	auto min_value = fallStrainResult.propellantsMinStrain;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData = modelMeshInfo.propellantMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData);
+
+	gp_Pnt ptShellLeftBottom = modelGeometryInfo.ptShellLeftBottom;
+	gp_Pnt ptShellRightBottom = modelGeometryInfo.ptShellRightBottom;
+	gp_Pnt ptNozzleInletBottom = modelGeometryInfo.ptNozzleInletBottom;
+
+	const int layerCount = 9;
+
+	std::vector<double> layerBoundaries = { 10.0, 40.0, 90.0, 150.0, 200.0, 260.0, 300.0, 330.0, 350.0 };
+	double maxDistance = layerBoundaries.back();
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
+		double z = nodecoords->Value(nodeID, 3);
+		gp_Pnt currentNode(x, y, z);
+
+		double value = min_value;
+
+		if (angle == 0)
+		{
+			gp_Pnt A = ptShellLeftBottom;
+			gp_Pnt B = ptShellRightBottom;
+			gp_Pnt P = currentNode;
+
+			gp_Vec AB(B.X() - A.X(), B.Y() - A.Y(), B.Z() - A.Z());
+			gp_Vec AP(P.X() - A.X(), P.Y() - A.Y(), P.Z() - A.Z());
+
+			double abLenSq = AB.SquareMagnitude();
+			double distToSegment = 0.0;
+
+			if (abLenSq < 1e-12)
+			{
+				// 两底部点重合，退化为到单点的距离
+				distToSegment = P.Distance(A);
+			}
+			else
+			{
+				double t = AP.Dot(AB) / abLenSq;
+
+				if (t <= 0.0)
+				{
+					distToSegment = P.Distance(A);
+				}
+				else if (t >= 1.0)
+				{
+					distToSegment = P.Distance(B);
+				}
+				else
+				{
+					gp_Vec cross = AB.Crossed(AP);
+					distToSegment = cross.Magnitude() / std::sqrt(abLenSq);
+				}
+			}
+
+			// Z方向衰减因子
+			double zFactor = 1.0;
+			if (z > ptShellLeftBottom.Z())
+			{
+				zFactor = std::max(0.0, 1.0 - (z - ptShellLeftBottom.Z()) / high);
+			}
+
+			// 根据自定义边界判断所属层
+			int layer = -1;
+			for (int i = 0; i < layerCount; ++i)
+			{
+				if (distToSegment <= layerBoundaries[i] + 1e-6)
+				{
+					layer = i;
+					break;
+				}
+			}
+
+			if (layer == -1)
+			{
+				// 超出最外层边界
+				value = min_value;
+			}
+			else
+			{
+				// 从内到外逐层递减
+				double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+				value = min_value + (max_value - min_value) * ratio * zFactor;
+			}
+		}
+		else if (angle > 0 && angle <= 15)
+		{
+			double distToShellRight = currentNode.Distance(ptShellRightBottom);
+			double valueShellRight = min_value;
+			// ptShellRightBottom 影响
+			if (distToShellRight < 50.0)
+				valueShellRight = max_value;
+			else if (distToShellRight < 80.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			else if (distToShellRight < 120.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			else if (distToShellRight < 180.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.5;
+			else if (distToShellRight < 230.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.4;
+			else if (distToShellRight < 300.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+			else if (distToShellRight < 400.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+
+			gp_Pnt ptShellRightUp(ptShellRightBottom.X(), ptShellRightBottom.Y() - 1700, ptShellRightBottom.Z());
+			double distToShellRightUp = currentNode.Distance(ptShellRightUp);
+			if (distToShellRightUp < 30.0)
+				valueShellRight = max_value;
+			else if (distToShellRightUp < 40.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			else if (distToShellRightUp < 60.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			else if (distToShellRightUp < 90.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.5;
+			else if (distToShellRightUp < 120.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.4;
+			else if (distToShellRightUp < 250.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+			else if (distToShellRightUp < 300.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+
+			if (abs(ptNozzleInletBottom.X() - x) < 200)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+
+			value = valueShellRight;
+		}
+		else if (angle > 15 && angle <= 60)
+		{
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+
+			// 计算每个点的独立影响值
+			double valueNozzleInlet = min_value;
+
+			// ptNozzleInletBottom 影响
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 150.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 300.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 500.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 800.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+			value = valueNozzleInlet;
+		}
+		else if (angle > 60 && angle < 90)
+		{
+			// 胶囊中心
+			gp_Pnt capsuleCenter(
+				modelGeometryInfo.theXmin + (modelGeometryInfo.theXmax - modelGeometryInfo.theXmin) / 2.0,
+				modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+				ptNozzleInletBottom.Z()
+			);
+
+			// 胶囊参数：长3000（沿X轴），宽1000（半径500）
+			double capsuleLength = 4000.0;
+			double capsuleRadius = 500.0;
+
+			// 圆柱段半长
+			double cylinderHalfLength = (capsuleLength - 2.0 * capsuleRadius) / 2.0;
+			if (cylinderHalfLength < 0)
+			{
+				cylinderHalfLength = 0;
+			}
+
+			// 胶囊轴线沿 X 方向
+			gp_Dir axisDir(1.0, 0.0, 0.0);
+			gp_Vec axisVec(axisDir);
+
+			// 圆柱段两端点（半球球心）—— 沿 X 方向变化
+			gp_Pnt cylStart(
+				capsuleCenter.X() - cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+			gp_Pnt cylEnd(
+				capsuleCenter.X() + cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+
+			gp_Pnt P = currentNode;
+
+			// 节点在轴线方向上的投影 —— 沿 X 轴
+			gp_Vec centerToP(
+				P.X() - capsuleCenter.X(),
+				P.Y() - capsuleCenter.Y(),
+				P.Z() - capsuleCenter.Z()
+			);
+			double t = centerToP.Dot(axisVec);
+
+			double distToSurface = 0.0;
+
+			if (t < -cylinderHalfLength - capsuleRadius)
+			{
+				// 起始端（-X侧）半球外侧
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength + capsuleRadius)
+			{
+				// 末端（+X侧）半球外侧
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else if (t < -cylinderHalfLength)
+			{
+				// 起始端（-X侧）半球区域
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength)
+			{
+				// 末端（+X侧）半球区域
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else
+			{
+				// 圆柱段区域：到轴线的垂直距离
+				gp_Pnt projPoint(
+					capsuleCenter.X() + t,  // X 随投影变化
+					capsuleCenter.Y(),       // Y 保持中心
+					capsuleCenter.Z()
+				);
+				double distToAxis = P.Distance(projPoint);
+				distToSurface = distToAxis - capsuleRadius;
+			}
+
+			// 胶囊内部距离为负，取0
+			double effectiveDist = std::max(0.0, distToSurface);
+
+			// 9层硬编码衰减
+			if (effectiveDist < 100.0)
+			{
+				value = min_value;
+			}
+			else if (effectiveDist < 200.0)
+			{
+				value = min_value + (max_value - min_value) * 0.2;
+			}
+			else
+			{
+				value = min_value + (max_value - min_value) * 0.3;
+			}
+		}
+		else if (angle == 90)
+		{
+			// ========== 胶囊影响（大区域背景）==========
+			gp_Pnt capsuleCenter(
+				modelGeometryInfo.theXmin + (modelGeometryInfo.theXmax - modelGeometryInfo.theXmin) / 2.0,
+				modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+				ptNozzleInletBottom.Z()
+			);
+
+			double capsuleLength = 4000.0;
+			double capsuleRadius = 500.0;
+
+			double cylinderHalfLength = (capsuleLength - 2.0 * capsuleRadius) / 2.0;
+			if (cylinderHalfLength < 0)
+			{
+				cylinderHalfLength = 0;
+			}
+
+			gp_Dir axisDir(1.0, 0.0, 0.0);
+			gp_Vec axisVec(axisDir);
+
+			gp_Pnt cylStart(
+				capsuleCenter.X() - cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+			gp_Pnt cylEnd(
+				capsuleCenter.X() + cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+
+			gp_Pnt P = currentNode;
+			gp_Vec centerToP(
+				P.X() - capsuleCenter.X(),
+				P.Y() - capsuleCenter.Y(),
+				P.Z() - capsuleCenter.Z()
+			);
+			double t = centerToP.Dot(axisVec);
+
+			double distToSurface = 0.0;
+
+			if (t < -cylinderHalfLength - capsuleRadius)
+			{
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength + capsuleRadius)
+			{
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else if (t < -cylinderHalfLength)
+			{
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength)
+			{
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else
+			{
+				gp_Pnt projPoint(
+					capsuleCenter.X() + t,
+					capsuleCenter.Y(),
+					capsuleCenter.Z()
+				);
+				double distToAxis = P.Distance(projPoint);
+				distToSurface = distToAxis - capsuleRadius;
+			}
+
+			double effectiveDist = std::max(0.0, distToSurface);
+
+			// 胶囊衰减值（修复：越远越小）
+			double valueCapsule;
+			if (effectiveDist < 100.0)
+			{
+				valueCapsule = min_value;  // 胶囊外100内：最小值
+			}
+			else if (effectiveDist < 500.0)
+			{
+				valueCapsule = min_value + (max_value - min_value) * 0.2;
+			}
+			else if (effectiveDist < 1000.0)
+			{
+				valueCapsule = min_value + (max_value - min_value) * 0.1;
+			}
+			else
+			{
+				valueCapsule = min_value;  // 远离胶囊：最小值
+			}
+
+			// ========== 矩形核心影响（局部高应力区）==========
+			gp_Pnt circleCenter(
+				ptNozzleInletBottom.X() - 200,
+				modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+				ptNozzleInletBottom.Z()
+			);
+
+			double dx = abs(circleCenter.X() - x);
+			double dy = abs(circleCenter.Y() - y);
+
+			double valueRect;
+			if (dx < 30.0 && dy < 300.0)
+			{
+				// 核心矩形：最大值
+				valueRect = max_value;
+			}
+			else
+			{
+				double distX = std::max(0.0, dx - 30.0);
+				double distY = std::max(0.0, dy - 300.0);
+				double distToRect = std::sqrt(distX * distX + distY * distY);
+
+				if (distToRect < 40.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.8;
+				}
+				else if (distToRect < 50.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.7;
+				}
+				else if (distToRect < 70.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.6;
+				}
+				else if (distToRect < 90.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.5;
+				}
+				else if (distToRect < 100.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.4;
+				}
+				else if (distToRect < 120.0)
+				{
+					valueRect = min_value + (max_value - min_value) * 0.2;
+				}
+				else
+				{
+					valueRect = min_value;
+				}
+			}
+
+			// ========== 最终值：取两者最大值（应力叠加）==========
+			value = std::max(valueCapsule, valueRect);
+		}
+
+		nodeValues.push_back(value);
+	}
+
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
+	occView->fitAll();
+
+	return true;
 }
 
 bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<double>& nodeValues)
@@ -949,14 +1800,10 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 	const int layerCount = 9;
 	const double layerWidth = maxDistance / layerCount;
 
-	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-	{
-		int nodeID = it.Key();
-		double x = nodecoords->Value(nodeID, 1);
-		double y = nodecoords->Value(nodeID, 2);
-		double z = nodecoords->Value(nodeID, 3);
-		gp_Pnt currentNode(x, y, z);
 
+	// Lambda：计算单个节点的温度值
+	auto calculateTemp = [&](const gp_Pnt& currentNode) -> double
+	{
 		double value = min_value;
 
 		if (angle == 0)
@@ -969,9 +1816,9 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 
 			// Z方向衰减因子：Z高于底部点时，应力随高度增加而减小
 			double zFactor = 1.0;
-			if (z > ptShellLeftBottom.Z())
+			if (currentNode.Z() > ptShellLeftBottom.Z())
 			{
-				zFactor = std::max(0.0, 1.0 - (z - ptShellLeftBottom.Z()) / high);
+				zFactor = std::max(0.0, 1.0 - (currentNode.Z() - ptShellLeftBottom.Z()) / high);
 			}
 
 			if (minDist > maxDistance)
@@ -1036,7 +1883,7 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 		}
 		else if (angle > 60 && angle < 90)
 		{
-			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 40, ptNozzleInletBottom.X(), ptNozzleInletBottom.X());
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 40, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
 			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
 			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
 
@@ -1074,21 +1921,21 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 		}
 		else if (angle == 90)
 		{
-			if (abs(z - ptNozzleInletBottom.Z()) < 20)
+			if (abs(currentNode.Z() - ptNozzleInletBottom.Z()) < 20)
 			{
-				if (abs(x - ptNozzleInletBottom.X()) < 50)
+				if (abs(currentNode.X() - ptNozzleInletBottom.X()) < 50)
 				{
 					value = min_value + (max_value - min_value) * 0.3;
 				}
-				else if (abs(x - ptNozzleInletBottom.X()) < 100)
+				else if (abs(currentNode.X() - ptNozzleInletBottom.X()) < 100)
 				{
 					value = min_value + (max_value - min_value) * 0.5;
 				}
-				else if (ptNozzleInletBottom.X() - x < 150 && ptNozzleInletBottom.X() - x>0)
+				else if (ptNozzleInletBottom.X() - currentNode.X() < 150 && ptNozzleInletBottom.X() - currentNode.X() > 0)
 				{
 					value = min_value + (max_value - min_value) * 0.8;
 				}
-				else if (ptNozzleInletBottom.X() - x < 200 && ptNozzleInletBottom.X() - x>0)
+				else if (ptNozzleInletBottom.X() - currentNode.X() < 200 && ptNozzleInletBottom.X() - currentNode.X() > 0)
 				{
 					value = min_value + (max_value - min_value) * 1.0;
 				}
@@ -1098,30 +1945,101 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 				value = min_value;
 			}
 
-			if (abs(x - ptNozzleInletBottom.X()) < 40)
+			if (abs(currentNode.X() - ptNozzleInletBottom.X()) < 40)
 			{
 				value = min_value + (max_value - min_value) * 0.3;
 			}
 
 		}
 
-		nodeValues.push_back(value);
+
+		return value;
+	};
+
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellNodeValues;
+	{
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+			double z = shellNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculateTemp(currentNode);
+			shellNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
 	}
 
-	// 设置颜色映射和显示（与原逻辑一致）
-	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-	nodal->SetColors(colormap);
-	mesh->AddBuilder(nodal);
-	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-	context->EraseAll(true);
-	context->Display(mesh, Standard_True);
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+			double z = nozzleNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculateTemp(currentNode);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(shellMeshData);
+
+		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		shellNodal->SetColors(shellColorMap);
+		shellMesh->AddBuilder(shellNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
 	occView->fitAll();
-
-
 	return true;
 }
-
 bool APISetNodeValue::SetPropellantFallTempNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -1421,14 +2339,10 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 	const int layerCount = 9;
 	const double layerWidth = maxDistance / layerCount;
 
-	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-	{
-		int nodeID = it.Key();
-		double x = nodecoords->Value(nodeID, 1);
-		double y = nodecoords->Value(nodeID, 2);
-		double z = nodecoords->Value(nodeID, 3);
-		gp_Pnt currentNode(x, y, z);
 
+	// Lambda：计算单个节点的压力值
+	auto calculatePressure = [&](const gp_Pnt& currentNode) -> double
+	{
 		double value = min_value;
 
 		if (angle == 0)
@@ -1443,7 +2357,7 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 				c_value = min_value + (max_value - min_value) * 0.6;
 
 			value = c_value;
-		
+
 		}
 		else if (angle > 0 && angle <= 15)
 		{
@@ -1453,7 +2367,7 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 			if (distToShellRight < 200.0)
 				valueShellRight = min_value + (max_value - min_value) * 0.6;
 
-			value = valueShellRight;	
+			value = valueShellRight;
 		}
 		else if (angle > 15 && angle <= 60)
 		{
@@ -1482,23 +2396,94 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 			value = min_value + (max_value - min_value) * 0.3;
 		}
 
-		nodeValues.push_back(value);
+
+		return value;
+	};
+
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellNodeValues;
+	{
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+			double z = shellNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculatePressure(currentNode);
+			shellNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
 	}
 
-	// 设置颜色映射和显示（与原逻辑一致）
-	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-	nodal->SetColors(colormap);
-	mesh->AddBuilder(nodal);
-	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-	context->EraseAll(true);
-	context->Display(mesh, Standard_True);
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+			double z = nozzleNodeCoords->Value(nodeID, 3);
+			gp_Pnt currentNode(x, y, z);
+
+			double value = calculatePressure(currentNode);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(shellMeshData);
+
+		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		shellNodal->SetColors(shellColorMap);
+		shellMesh->AddBuilder(shellNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
 	occView->fitAll();
-
-
 	return true;
 }
-
 bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
@@ -1745,3722 +2730,3749 @@ bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::
 	return true;
 }
 
-/*
-bool APISetNodeValue::SetFallStrainResult(OccView* occView, std::vector<double>& nodeValues)
+//快速烤燃
+bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
-
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 
 	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 
 	auto high = fallSettingInfo.high;
-	auto angle = fallSettingInfo.angle;
-	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+
+	if (!fallAnalysisResultInfo.isChecked)
+	{
+		return false;
+	}
+	auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+	auto max_value = fallStressResult.metalsMaxStress;
+	auto min_value = fallStressResult.metalsMinStress;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData = modelMeshInfo.shellMesh->RotateXY(90,
+		(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData);
+
+
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
 
-	if (fallAnalysisResultInfo.isChecked)
+	// --- 2. 根据矩形角点计算椭圆参数 ---
+	const double rect_length = x_max - x_min;
+	const double rect_width = y_max - y_min;
+
+	const double h = (x_min + x_max) / 2.0;     // 椭圆中心 X
+	const double k = (y_min + y_max) / 2.0;     // 椭圆中心 Y
+
+	// 主椭圆半轴（注意：b 被放大了 20%）
+	const double a_main = rect_length / 2.0;
+	const double b_main = (rect_width / 2.0) * 1.1;
+
+	std::vector<std::pair<double, double>> ellipses = {
+				{a_main * 0.8, b_main * 0.6},
+				{a_main * 0.82, b_main * 0.62},
+				{a_main * 0.85, b_main * 0.65},
+				{a_main * 0.9, b_main * 0.7},
+				{a_main * 0.95, b_main * 0.75},
+				{a_main * 0.98, b_main * 0.78},
+				{a_main * 1.0, b_main * 0.8},
+				{a_main * 1.0, b_main * 1.0}
+	};
+
+	//黄线
+	const double yellow_line_y_min = y_min + 30;
+	const double yellow_line_y_max = y_max - 30;
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double y, double cx, double cy, double a, double b) -> bool {
+		double dx = x - cx;
+		double dy = y - cy;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dy * dy) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = fallAnalysisResultInfo.strainMaxValue;
-		auto min_value = fallAnalysisResultInfo.strainMinValue;
-
-		//std::vector<double> nodeValues;
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-		if (angle == 0)
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
 		{
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
-
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = z_min + 20;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length * 0.8 / 2.0;
-			const double ellipse_b = rect_width * 0.4 / 2.0;
-
-			double red_line_z = z_min + 10;
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-			{
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				// 考虑浮点计算误差，使用一个小的容差
-				if (z < red_line_z)
-				{
-					nodeValues.push_back(max_value);
-				}
-				else if (z > red_line_z && z < red_line_z + 5)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-				}
-				else if (z > red_line_z + 5 && z < red_line_z + 10)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-				}
-				else if (z > red_line_z + 10 && z < red_line_z + 15)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-				}
-				else if (z > red_line_z + 15 && z < red_line_z + 20)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
-				}
-				else
-				{
-					if (value <= threshold + Precision::Confusion())
-					{
-						nodeValues.push_back(0.3 * max_value);
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-			}
+			return min_value;
 		}
-		else if (angle == 45)
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
 		{
-			//点的坐标用0，渲染用45
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length / 2.0;
-			const double ellipse_b = rect_width / 2.0;
-
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				// 考虑浮点计算误差，使用一个小的容差
-				if (value <= threshold + Precision::Confusion())
-				{
-					nodeValues.push_back(min_value);
-				}
-				else
-				{
-					if (x > ellipse_h && z < ellipse_k)
-					{
-						if (z >= z_min && z<z_min + 20 && x>x_max - 20 && x <= x_max)
-						{
-							nodeValues.push_back(max_value);
-						}
-						else if (z > z_min + 20 && z < z_min + 30
-							&& x < x_max - 20 && x > x_max - 30)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-						}
-						else if (z > z_min + 30 && z < z_min + 40
-							&& x < x_max - 30 && x > x_max - 40)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-						}
-						else if (z > z_min + 40 && z < z_min + 50
-							&& x < x_max - 40 && x > x_max - 50)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-						}
-						else
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
-						}
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-
-
-
-			}
+			return min_value + (max_value - min_value) * 1.5 / 9.0;
 		}
-		else if (angle == 90)
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
 		{
-			//点的坐标用0，渲染用90
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length / 2.0;
-			const double ellipse_b = rect_width / 2.0;
-
-			//double red_line_z = z_min + 200;
-
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				if (value <= threshold + Precision::Confusion())
-				{
-					nodeValues.push_back(min_value);
-				}
-				else
-				{
-					if (x > (x_min + x_max) / 2.0)
-					{
-						if (x< x_max && x>x_max - 10)
-						{
-							nodeValues.push_back(max_value);
-						}
-						else if (x< x_max - 10 && x>x_max - 20)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-						}
-						else if (x< x_max - 20 && x>x_max - 30)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-						}
-						else if (x< x_max - 30 && x>x_max - 40)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-						}
-						else
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
-						}
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-			}
+			return min_value + (max_value - min_value) * 2.5 / 9.0;
 		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			return min_value + (max_value - min_value) * 3.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			return min_value + (max_value - min_value) * 4.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			return min_value + (max_value - min_value) * 5.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			return min_value + (max_value - min_value) * 6.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			return min_value + (max_value - min_value) * 7.5 / 9.0;
+		}
+		else
+		{
+			return max_value;
+		}
+	};
 
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellNodeValues;
+	{
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			shellNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
 	}
 
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(shellMeshData);
+
+		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		shellNodal->SetColors(shellColorMap);
+		shellMesh->AddBuilder(shellNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
 	return true;
 }
-
-bool APISetNodeValue::SetFallTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetPropellantFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-
-	auto high = fallSettingInfo.high;
-	auto angle = fallSettingInfo.angle;
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (fallAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = fallAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = fallAnalysisResultInfo.temperatureMinValue;
-
-		//std::vector<double> nodeValues;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-		if (angle == 0)
-		{
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
-
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = z_min + 20;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length * 0.8 / 2.0;
-			const double ellipse_b = rect_width * 0.4 / 2.0;
-
-			double red_line_z = z_min + 10;
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) 
-			{
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-
-				if (z < red_line_z)
-				{
-					nodeValues.push_back(max_value);
-				}
-				else if (z > red_line_z && z < red_line_z + 5)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-				}
-				else if (z > red_line_z + 5 && z < red_line_z + 10)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-				}
-				//else if (z > red_line_z + 10 && z < red_line_z + 15)
-				//{
-				//	nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-				//}
-				else
-				{
-					if (value <= threshold + Precision::Confusion())
-					{
-						nodeValues.push_back(min_value+0.5 * (max_value- min_value));
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-			}
-		}
-		else if (angle == 45)
-		{
-			//点的坐标用0，渲染用45
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length / 2.0;
-			const double ellipse_b = rect_width / 2.0;
-
-			//double red_line_z = z_min + 200;
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				// 考虑浮点计算误差，使用一个小的容差
-				if (value <= threshold + Precision::Confusion())
-				{
-					nodeValues.push_back(min_value);
-				}
-				else
-				{
-					if (x > ellipse_h && z < ellipse_k)
-					{
-						if (z > z_min && z<z_min + 10 && x>x_max - 10 && x < x_max)
-						{
-							nodeValues.push_back(max_value);
-						}
-						else if (z > z_min + 10 && z < z_min + 20
-							&& x < x_max - 10 && x > x_max - 20)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-						}
-						else if (z > z_min + 20 && z < z_min + 30
-							&& x < x_max - 20 && x > x_max - 30)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-						}
-						else if (z > z_min + 30 && z < z_min + 40
-							&& x < x_max - 30 && x > x_max - 40)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-						}
-						else
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
-						}
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-			}
-
-		}
-		else if (angle == 90)
-		{
-			//点的坐标用0，渲染用90
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length / 2.0;
-			const double ellipse_b = rect_width / 2.0;
-
-			//double red_line_z = z_min + 200;
-			double min_z_value = std::numeric_limits<double>::max();
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				if (z < min_z_value)
-				{
-					min_z_value = z;
-				}
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				// 考虑浮点计算误差，使用一个小的容差
-				if (value <= threshold + Precision::Confusion())
-				{
-					nodeValues.push_back(min_value);
-				}
-				else
-				{
-					if (x > (x_min + x_max) / 2.0)
-					{
-						if (x< x_max && x>x_max - 10)
-						{
-							nodeValues.push_back(max_value);
-						}
-						else if (x< x_max - 10 && x>x_max - 20)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-						}
-						else if (x< x_max - 20 && x>x_max - 30)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-						}
-						else if (x< x_max - 30 && x>x_max - 40)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-						}
-						else
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.2);
-						}
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-	}
-
-	return true;
-}
-
-bool APISetNodeValue::SetFallOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-
-	auto high = fallSettingInfo.high;
-	auto angle = fallSettingInfo.angle;
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (fallAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = fallAnalysisResultInfo.overpressureMaxValue;
-		auto min_value = fallAnalysisResultInfo.overpressureMinValue;
-
-		//std::vector<double> nodeValues;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-		if (angle == 0)
-		{
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = z_min + 20;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length * 0.8 / 2.0;
-			const double ellipse_b = rect_width * 0.4 / 2.0;
-
-			double red_line_z = z_min + 10;
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-			{
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				// 考虑浮点计算误差，使用一个小的容差
-				if (z < red_line_z)
-				{
-					nodeValues.push_back(max_value);
-				}
-				else if (z > red_line_z && z < red_line_z + 5)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-				}
-				else if (z > red_line_z + 5 && z < red_line_z + 10)
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-				}
-				else
-				{
-					if (value < threshold + Precision::Confusion())
-					{
-						nodeValues.push_back(0.5 * max_value);
-					}
-					else if (value == threshold + Precision::Confusion() && abs(z - ellipse_h) < 50)
-					{
-						nodeValues.push_back(min_value);
-					}
-					else
-					{
-						nodeValues.push_back(0.35 * max_value);
-					}
-				}
-
-			}
-		}
-		else if (angle == 45)
-		{
-			//点的坐标用0，渲染用45
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure45);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length / 2.0;
-			const double ellipse_b = rect_width / 2.0;
-
-			//double red_line_z = z_min + 200;
-
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				if (value <= threshold + Precision::Confusion())
-				{
-					nodeValues.push_back(min_value);
-				}
-				else
-				{
-					if (x > ellipse_h && z < ellipse_k)
-					{
-						if (z > z_min && z<z_min + 10 && x>x_max - 10 && x < x_max)
-						{
-							nodeValues.push_back(max_value);
-						}
-						else if (z > z_min + 10 && z < z_min + 20
-							&& x < x_max - 10 && x > x_max - 20)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-						}
-						else if (z > z_min + 20 && z < z_min + 30
-							&& x < x_max - 20 && x > x_max - 30)
-						{
-							nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-						}
-						//else if (z > z_min + 30 && z < z_min + 40
-						//	&& x < x_max - 30 && x > x_max - 40)
-						//{
-						//	nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-						//}
-					}
-					else
-					{
-						nodeValues.push_back(min_value);
-					}
-				}
-
-
-			}
-		}
-		else if (angle == 90)
-		{
-			//点的坐标用0，渲染用90
-			allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-			nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-			aMesh = new MeshVS_Mesh();
-			aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-			// --- 2. 根据矩形角点计算椭圆参数 ---
-			const double ellipse_h = (x_min + x_max) / 2.0;
-			const double ellipse_k = (z_min + z_max) / 2.0;
-			const double rect_length = x_max - x_min;
-			const double rect_width = z_max - z_min;
-			const double ellipse_a = rect_length / 2.0;
-			const double ellipse_b = rect_width / 2.0;
-
-			//double red_line_z = z_min + 200;
-			double min_z_value = std::numeric_limits<double>::max();
-			for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-				int nodeID = it.Key();
-				double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-				double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-				if (z < min_z_value)
-				{
-					min_z_value = z;
-				}
-				// --- 数学判断逻辑 ---
-				// 计算椭圆方程左边的值
-				// ((x - h)^2) / (a^2) + ((z - k)^2) / (b^2)
-				double dx = x - ellipse_h;
-				double dz = z - ellipse_k;
-
-				// 为了提高精度和效率，可以比较平方和，避免开方和除法
-				// (dx*dx) * (b*b) + (dz*dz) * (a*a) <= (a*a) * (b*b)
-				double value = (dx * dx) * (ellipse_b * ellipse_b) + (dz * dz) * (ellipse_a * ellipse_a);
-				double threshold = (ellipse_a * ellipse_a) * (ellipse_b * ellipse_b);
-
-				// 考虑浮点计算误差，使用一个小的容差
-				if (value <= threshold + Precision::Confusion())
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
-				}
-				else
-				{
-					if (x< x_max && x>x_max - 10)
-					{
-						nodeValues.push_back(max_value);
-					}
-					else if (x< x_max - 10 && x>x_max - 20)
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 0.8);
-					}
-					else if (x< x_max - 20 && x>x_max - 30)
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 0.6);
-					}
-					else if (x< x_max - 30 && x>x_max - 40)
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 0.4);
-					}
-					else
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 0.3);
-					}
-				}
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-	}
-
-	return true;
-}
-
-bool APISetNodeValue::SetFastCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto fastCombustionSettingInfo = ModelDataManager::GetInstance()->GetFastCombustionSettingInfo();
-	auto fastCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetFastCombustionAnalysisResultInfo();
+	auto fastCombustionTemperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
 
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (fastCombustionAnalysisResultInfo.isChecked)
+	auto max_value = fastCombustionTemperatureResult.propellantsMaxTemperature;
+	auto min_value = fastCombustionTemperatureResult.propellantsMinTemperature;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+
+	// --- 2. 根据矩形角点计算椭圆参数 ---
+	const double rect_length = x_max - x_min;
+	const double rect_width = y_max - y_min;
+
+	const double h = (x_min + x_max) / 2.0;     // 椭圆中心 X
+	const double k = (y_min + y_max) / 2.0;     // 椭圆中心 Y
+
+	// 主椭圆半轴（注意：b 被放大了 20%）
+	const double a_main = rect_length / 2.0;
+	const double b_main = (rect_width / 2.0) * 1.1;
+
+	std::vector<std::pair<double, double>> ellipses = {
+				{a_main * 0.8, b_main * 0.6},
+				{a_main * 0.82, b_main * 0.62},
+				{a_main * 0.85, b_main * 0.65},
+				{a_main * 0.9, b_main * 0.7},
+				{a_main * 0.95, b_main * 0.75},
+				{a_main * 0.98, b_main * 0.78},
+				{a_main * 1.0, b_main * 0.8},
+				{a_main * 1.0, b_main * 1.0}
+	};
+
+	//黄线
+	const double yellow_line_y_min = y_min + 30;
+	const double yellow_line_y_max = y_max - 30;
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double y, double cx, double cy, double a, double b) -> bool {
+		double dx = x - cx;
+		double dy = y - cy;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dy * dy) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
 
-		auto max_value = fastCombustionAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = fastCombustionAnalysisResultInfo.temperatureMinValue;
-
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// --- 2. 根据矩形角点计算椭圆参数 ---
-		const double rect_length = x_max - x_min;
-		const double rect_width = z_max - z_min;
-
-		const double h = (x_min + x_max) / 2.0;     // 椭圆中心 X
-		const double k = (z_min + z_max) / 2.0;     // 椭圆中心 Z
-
-		// 主椭圆半轴（注意：b 被放大了 20%）
-		const double a_main = rect_length / 2.0;
-		const double b_main = (rect_width / 2.0) * 1.1;
-
-		std::vector<std::pair<double, double>> ellipses = {
-					{a_main * 0.8, b_main * 0.6},
-					{a_main * 0.82, b_main * 0.62},
-					{a_main * 0.85, b_main * 0.65},
-					{a_main * 0.9, b_main * 0.7},
-					{a_main * 0.95, b_main * 0.75},
-					{a_main * 0.98, b_main * 0.78},
-					{a_main * 1.0, b_main * 0.8},
-					{a_main * 1.0, b_main * 1.0}
-		};
-
-		//黄线
-		const double yellow_line_z_min = z_min + 30;
-		const double yellow_line_z_max = z_max - 30;
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) {
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(min_value);			
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else
-			{		
-				nodeValues.push_back(max_value);
-			}
-			
+		if (isInEllipse(x,y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(min_value);
+		}
+		else if (isInEllipse(x,y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(max_value);
 		}
 
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
 	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
 
 	return true;
 }
 
-bool APISetNodeValue::SetSlowCombustionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+//慢速烤燃
+bool APISetNodeValue::SetShellSlowCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
+	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+
+	auto high = fallSettingInfo.high;
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto slowCombustionSettingInfo = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo();
-	auto slowCombustionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSlowCombustionAnalysisResultInfo();
+
+	if (!fallAnalysisResultInfo.isChecked)
+	{
+		return false;
+	}
+	auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+	auto max_value = fallStressResult.metalsMaxStress;
+	auto min_value = fallStressResult.metalsMinStress;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData = modelMeshInfo.shellMesh->RotateXY(90,
+		(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData);
 
 
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (slowCombustionAnalysisResultInfo.isChecked)
+
+	const double rect_width = x_max - x_min;
+	const double rect_height = y_max - y_min;
+	const double h = (x_min + x_max) / 2.0; // 矩形/主椭圆中心 X
+	const double k = (y_min + y_max) / 2.0; // 矩形/主椭圆中心 Z
+	const double a_main = rect_width / 2.0; // 主椭圆长半轴
+	const double b_main = rect_height / 2.0; // 主椭圆短半轴
+
+	// 上边线三个椭圆的参数（中心在顶部中点）
+	const double top_center_z = k + rect_height / 2.0;
+	std::vector<std::pair<double, double>> top_ellipses = {
+		{a_main * 0.6, b_main * 0.3}, // 椭圆1
+		{a_main * 0.7, b_main * 0.4}, // 椭圆2
+		{a_main * 0.8, b_main * 0.5}, // 椭圆3
+		{a_main * 0.9, b_main * 0.6}  // 椭圆4
+	};
+
+	// 下边线三个椭圆
+	const double bottom_center_z = k - rect_height / 2.0;
+	std::vector<std::pair<double, double>> bottom_ellipses = {
+		{a_main * 0.6, b_main * 0.3},
+		{a_main * 0.7, b_main * 0.4},
+		{a_main * 0.8, b_main * 0.5},
+		{a_main * 0.9, b_main * 0.6}
+	};
+
+	// 左右对称圆（实际是 a = b 的椭圆）
+	const double offset_x = a_main * 0.6;
+	const double left_center_x = h - offset_x;
+	const double right_center_x = h + offset_x;
+	std::vector<double> circle_radii = { b_main * 0.5 * 0.4, b_main * 0.5 * 0.8 }; // 两个半径
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution())
+			return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = slowCombustionAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = slowCombustionAnalysisResultInfo.temperatureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double rect_width = x_max - x_min;
-		const double rect_height = z_max - z_min;
-		const double h = (x_min + x_max) / 2.0; // 矩形/主椭圆中心 X
-		const double k = (z_min + z_max) / 2.0; // 矩形/主椭圆中心 Z
-		const double a_main = rect_width / 2.0; // 主椭圆长半轴
-		const double b_main = rect_height / 2.0; // 主椭圆短半轴
-
-		// 上边线三个椭圆的参数（中心在顶部中点）
-		const double top_center_z = k + rect_height / 2.0;
-		std::vector<std::pair<double, double>> top_ellipses = {
-			{a_main * 0.6, b_main * 0.3}, // 椭圆1
-			{a_main * 0.7, b_main * 0.4}, // 椭圆2
-			{a_main * 0.8, b_main * 0.5}, // 椭圆3
-			{a_main * 0.9, b_main * 0.6}  // 椭圆4
-		};
-
-		// 下边线三个椭圆
-		const double bottom_center_z = k - rect_height / 2.0;
-		std::vector<std::pair<double, double>> bottom_ellipses = {
-			{a_main * 0.6, b_main * 0.3},
-			{a_main * 0.7, b_main * 0.4},
-			{a_main * 0.8, b_main * 0.5},
-			{a_main * 0.9, b_main * 0.6}
-		};
-
-		// 左右对称圆（实际是 a = b 的椭圆）
-		const double offset_x = a_main * 0.6;
-		const double left_center_x = h - offset_x;
-		const double right_center_x = h + offset_x;
-		std::vector<double> circle_radii = { b_main * 0.5 * 0.4, b_main * 0.5 * 0.8 }; // 两个半径
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next()) 
+		// 1. 判断是否在主内切椭圆内
+		if (isInEllipse(x, y, h, k, a_main, b_main))
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
+			double a_t0 = top_ellipses[0].first;
+			double b_t0 = top_ellipses[0].second;
+			double a_t1 = top_ellipses[1].first;
+			double b_t1 = top_ellipses[1].second;
+			double a_t2 = top_ellipses[2].first;
+			double b_t2 = top_ellipses[2].second;
+			double a_t3 = top_ellipses[3].first;
+			double b_t3 = top_ellipses[3].second;
 
-			// 1. 判断是否在主内切椭圆内
-			if (isInEllipse(x, z, h, k, a_main, b_main))
+			double a_b0 = bottom_ellipses[0].first;
+			double b_b0 = bottom_ellipses[0].second;
+			double a_b1 = bottom_ellipses[1].first;
+			double b_b1 = bottom_ellipses[1].second;
+			double a_b2 = bottom_ellipses[2].first;
+			double b_b2 = bottom_ellipses[2].second;
+			double a_b3 = bottom_ellipses[3].first;
+			double b_b3 = bottom_ellipses[3].second;
+
+
+			if (isInEllipse(x, y, h, top_center_z, a_t0, b_t0) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b0, b_b0))
 			{
-				double a_t0 = top_ellipses[0].first;
-				double b_t0 = top_ellipses[0].second;
-				double a_t1 = top_ellipses[1].first;
-				double b_t1 = top_ellipses[1].second;
-				double a_t2 = top_ellipses[2].first;
-				double b_t2 = top_ellipses[2].second;
-				double a_t3 = top_ellipses[3].first;
-				double b_t3 = top_ellipses[3].second;
-
-				double a_b0 = bottom_ellipses[0].first;
-				double b_b0 = bottom_ellipses[0].second;
-				double a_b1 = bottom_ellipses[1].first;
-				double b_b1 = bottom_ellipses[1].second;
-				double a_b2 = bottom_ellipses[2].first;
-				double b_b2 = bottom_ellipses[2].second;
-				double a_b3 = bottom_ellipses[3].first;
-				double b_b3 = bottom_ellipses[3].second;
-
-
-				if (isInEllipse(x, z, h, top_center_z, a_t0, b_t0)|| 
-					isInEllipse(x, z, h, bottom_center_z, a_b0, b_b0))
+				return max_value;
+			}
+			else if (isInEllipse(x, y, h, top_center_z, a_t1, b_t1) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b1, b_b1))
+			{
+				return min_value + (max_value - min_value) * 7.5 / 9.0;//橙色
+			}
+			else if (isInEllipse(x, y, h, top_center_z, a_t2, b_t2) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b2, b_b2))
+			{
+				return min_value + (max_value - min_value) * 6.5 / 9.0;//黄色
+			}
+			else if (isInEllipse(x, y, h, top_center_z, a_t3, b_t3) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b3, b_b3))
+			{
+				return min_value + (max_value - min_value) * 5.5 / 9.0;//绿色
+			}
+			else
+			{
+				if (isInEllipse(x, y, left_center_x, k, circle_radii[0], circle_radii[0]) ||
+					isInEllipse(x, y, right_center_x, k, circle_radii[0], circle_radii[0]))
 				{
-					nodeValues.push_back(max_value);
+					return min_value;
 				}
-				else if (isInEllipse(x, z, h, top_center_z, a_t1, b_t1) || 
-					isInEllipse(x, z, h, bottom_center_z, a_b1, b_b1))
+				else if (isInEllipse(x, y, left_center_x, k, circle_radii[1], circle_radii[1]) ||
+					isInEllipse(x, y, right_center_x, k, circle_radii[1], circle_radii[1]))
 				{
-					nodeValues.push_back(min_value+(max_value-min_value)*7.5/9.0);//橙色
-				}
-				else if (isInEllipse(x, z, h, top_center_z, a_t2, b_t2) || 
-					isInEllipse(x, z, h, bottom_center_z, a_b2, b_b2))
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);//黄色
-				}
-				else if (isInEllipse(x, z, h, top_center_z, a_t3, b_t3) || 
-					isInEllipse(x, z, h, bottom_center_z, a_b3, b_b3))
-				{
-					nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);//绿色
+					return min_value + (max_value - min_value) * 1.5 / 9.0;//蓝色
 				}
 				else
 				{
-					if (isInEllipse(x, z, left_center_x, k, circle_radii[0], circle_radii[0])|| 
-						isInEllipse(x, z, right_center_x, k, circle_radii[0], circle_radii[0]))
-					{
-						nodeValues.push_back(min_value);
-					}
-					else if (isInEllipse(x, z, left_center_x, k, circle_radii[1], circle_radii[1]) ||
-						isInEllipse(x, z, right_center_x, k, circle_radii[1], circle_radii[1]))
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);//蓝色
-					}
-					else
-					{
-						nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);//浅蓝色
-					}
+					return min_value + (max_value - min_value) * 2.5 / 9.0;//浅蓝色
 				}
 			}
-			else
-			{
-				nodeValues.push_back(max_value);
-			}						
+		}
+		else
+		{
+			return max_value;
 		}
 
+	};
 
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellNodeValues;
+	{
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			shellNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
 	}
+
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(shellMeshData);
+
+		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		shellNodal->SetColors(shellColorMap);
+		shellMesh->AddBuilder(shellNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
 	return true;
 }
-
-bool APISetNodeValue::SetShootStressResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+	auto slowCombustionSettingInfo = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo();
+	auto slowCombustionTemperatureResult = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
+
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto shootSettingInfo=ModelDataManager::GetInstance()->GetShootSettingInfo();
-	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto max_value = slowCombustionTemperatureResult.propellantsMaxTemperature;
+	auto min_value = slowCombustionTemperatureResult.propellantsMinTemperature;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+
+	const double rect_width = x_max - x_min;
+	const double rect_height = y_max - y_min;
+	const double h = (x_min + x_max) / 2.0; // 矩形/主椭圆中心 X
+	const double k = (y_min + y_max) / 2.0; // 矩形/主椭圆中心 Z
+	const double a_main = rect_width / 2.0; // 主椭圆长半轴
+	const double b_main = rect_height / 2.0; // 主椭圆短半轴
+
+	// 上边线三个椭圆的参数（中心在顶部中点）
+	const double top_center_z = k + rect_height / 2.0;
+	std::vector<std::pair<double, double>> top_ellipses = {
+		{a_main * 0.6, b_main * 0.3}, // 椭圆1
+		{a_main * 0.7, b_main * 0.4}, // 椭圆2
+		{a_main * 0.8, b_main * 0.5}, // 椭圆3
+		{a_main * 0.9, b_main * 0.6}  // 椭圆4
+	};
+
+	// 下边线三个椭圆
+	const double bottom_center_z = k - rect_height / 2.0;
+	std::vector<std::pair<double, double>> bottom_ellipses = {
+		{a_main * 0.6, b_main * 0.3},
+		{a_main * 0.7, b_main * 0.4},
+		{a_main * 0.8, b_main * 0.5},
+		{a_main * 0.9, b_main * 0.6}
+	};
+
+	// 左右对称圆（实际是 a = b 的椭圆）
+	const double offset_x = a_main * 0.6;
+	const double left_center_x = h - offset_x;
+	const double right_center_x = h + offset_x;
+	std::vector<double> circle_radii = { b_main * 0.5 * 0.4, b_main * 0.5 * 0.8 }; // 两个半径
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution())
+			return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
+
+		// 1. 判断是否在主内切椭圆内
+		if (isInEllipse(x, y, h, k, a_main, b_main))
+		{
+			double a_t0 = top_ellipses[0].first;
+			double b_t0 = top_ellipses[0].second;
+			double a_t1 = top_ellipses[1].first;
+			double b_t1 = top_ellipses[1].second;
+			double a_t2 = top_ellipses[2].first;
+			double b_t2 = top_ellipses[2].second;
+			double a_t3 = top_ellipses[3].first;
+			double b_t3 = top_ellipses[3].second;
+
+			double a_b0 = bottom_ellipses[0].first;
+			double b_b0 = bottom_ellipses[0].second;
+			double a_b1 = bottom_ellipses[1].first;
+			double b_b1 = bottom_ellipses[1].second;
+			double a_b2 = bottom_ellipses[2].first;
+			double b_b2 = bottom_ellipses[2].second;
+			double a_b3 = bottom_ellipses[3].first;
+			double b_b3 = bottom_ellipses[3].second;
+
+
+			if (isInEllipse(x, y, h, top_center_z, a_t0, b_t0) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b0, b_b0))
+			{
+				nodeValues.push_back(max_value);
+			}
+			else if (isInEllipse(x, y, h, top_center_z, a_t1, b_t1) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b1, b_b1))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);//橙色
+			}
+			else if (isInEllipse(x, y, h, top_center_z, a_t2, b_t2) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b2, b_b2))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);//黄色
+			}
+			else if (isInEllipse(x, y, h, top_center_z, a_t3, b_t3) ||
+				isInEllipse(x, y, h, bottom_center_z, a_b3, b_b3))
+			{
+				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);//绿色
+			}
+			else
+			{
+				if (isInEllipse(x, y, left_center_x, k, circle_radii[0], circle_radii[0]) ||
+					isInEllipse(x, y, right_center_x, k, circle_radii[0], circle_radii[0]))
+				{
+					nodeValues.push_back(min_value);
+				}
+				else if (isInEllipse(x, y, left_center_x, k, circle_radii[1], circle_radii[1]) ||
+					isInEllipse(x, y, right_center_x, k, circle_radii[1], circle_radii[1]))
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);//蓝色
+				}
+				else
+				{
+					nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);//浅蓝色
+				}
+			}
+		}
+		else
+		{
+			nodeValues.push_back(max_value);
+		}
+	}
+
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+	return true;
+}
+
+//枪击试验
+bool APISetNodeValue::SetShellShootStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto shootStressResult = ModelDataManager::GetInstance()->GetShootStressResult();
+	auto max_value = shootStressResult.propellantsMaxStress;
+	auto min_value = shootStressResult.propellantsMinStress;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
+		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.65},
+		{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 y
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
+	{
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			return -1;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			return max_value;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			return min_value + (max_value - min_value) * 7.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			return min_value + (max_value - min_value) * 6.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			return min_value + (max_value - min_value) * 5.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			return min_value + (max_value - min_value) * 4.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			return min_value + (max_value - min_value) * 3.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			return min_value + (max_value - min_value) * 2.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			return min_value + (max_value - min_value) * 1.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			return min_value + (max_value - min_value) * 0.5 / 9.0;
+		}
+		else
+		{
+			return min_value;
+		}
+
+	};
+
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = propellantNodeCoords->Value(nodeID, 1);
+			double y = propellantNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			propellantNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 处理喷嘴网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示推进剂网格 ==========
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(propellantMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
+	return true;
+}
+bool APISetNodeValue::SetPropellantShootStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto shootStressResult = ModelDataManager::GetInstance()->GetShootStressResult();
+	auto max_value = shootStressResult.propellantsMaxStress;
+	auto min_value = shootStressResult.propellantsMinStress;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
+		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.65},
+		{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 y
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点z坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantShootStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+	auto shootTemperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
+	auto raw_min = shootTemperatureResult.metalsMaxTemperature;
+	auto raw_max = shootTemperatureResult.metalsMinTemperature;
+
+	// 保证 min_value <= max_value
+	double min_value = std::min(raw_min, raw_max);
+	double max_value = std::max(raw_min, raw_max);
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
+		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.65},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.85},
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
+	};
+
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点z坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
+
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+
+	auto shootOverpressureResult = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+	auto max_value = shootOverpressureResult.propellantsMaxOverpressure;
+	auto min_value = shootOverpressureResult.propellantsMinOverpressure;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+{12,semi_major_z_1 * 0.4},
+{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
+{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
+{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.6},
+{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.65},
+{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.7},
+{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.8},
+{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.85},
+{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+
+	return true;
+}
+
+// 射流冲击试验
+bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto jetImpactStressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+	auto max_value = jetImpactStressResult.propellantsMaxStress;
+	auto min_value = jetImpactStressResult.propellantsMinStress;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.9}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
+	{
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			return -1;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			return max_value;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			return min_value + (max_value - min_value) * 7.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			return min_value + (max_value - min_value) * 6.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			return min_value + (max_value - min_value) * 5.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			return min_value + (max_value - min_value) * 4.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			return min_value + (max_value - min_value) * 3.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			return min_value + (max_value - min_value) * 2.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			return min_value + (max_value - min_value) * 1.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			return min_value + (max_value - min_value) * 0.5 / 9.0;
+		}
+		else
+		{
+			return min_value;
+		}
+	};
+
+
+		// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			{
+				int nodeID = it.Key();
+				double x = propellantNodeCoords->Value(nodeID, 1);
+				double y = propellantNodeCoords->Value(nodeID, 2);
+
+				double value = calculateEllipseValue(x, y);
+				propellantNodeValues.push_back(value);
+				nodeValues.push_back(value);
+			}
+		}
+	}
+
+	// ========== 处理喷嘴网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			{
+				int nodeID = it.Key();
+				double x = nozzleNodeCoords->Value(nodeID, 1);
+				double y = nozzleNodeCoords->Value(nodeID, 2);
+
+				double value = calculateEllipseValue(x, y);
+				nozzleNodeValues.push_back(value);
+				nodeValues.push_back(value);
+			}
+		}
+	}
+
+	// ========== 显示推进剂网格 ==========
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(propellantMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
+	return true;
+}
+bool APISetNodeValue::SetPropellantJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto jetImpactStressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+	auto max_value = jetImpactStressResult.propellantsMaxStress;
+	auto min_value = jetImpactStressResult.propellantsMinStress;
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.9}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+
+	auto jetImpactTemperatureResult = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
+	auto max_value = jetImpactTemperatureResult.propellantsMaxTemperature;
+	auto min_value = jetImpactTemperatureResult.propellantsMinTemperature;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.35},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.8}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
+
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+	auto jetImpactOverpressureResult = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+	auto max_value = jetImpactOverpressureResult.propellantsMaxOverpressure;
+	auto min_value = jetImpactOverpressureResult.propellantsMinOverpressure;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
+		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.25},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.85}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+	return true;
+}
+
+// 破片撞击试验
+bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto fragmentationImpactStressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+	auto max_value = fragmentationImpactStressResult.propellantsMaxStress;
+	auto min_value = fragmentationImpactStressResult.propellantsMinStress;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.9},
+		{semi_minor_x_1 * 0.9, semi_major_z_1 * 1.0}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
+	{
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			return -1;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			return max_value;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			return min_value + (max_value - min_value) * 7.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			return min_value + (max_value - min_value) * 6.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			return min_value + (max_value - min_value) * 5.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			return min_value + (max_value - min_value) * 4.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			return min_value + (max_value - min_value) * 3.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			return min_value + (max_value - min_value) * 2.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			return min_value + (max_value - min_value) * 1.5 / 9.0;
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			return min_value + (max_value - min_value) * 0.5 / 9.0;
+		}
+		else
+		{
+			return min_value;
+		}
+
+	};
+
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = propellantNodeCoords->Value(nodeID, 1);
+			double y = propellantNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			propellantNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 处理喷嘴网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示推进剂网格 ==========
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(propellantMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+
+	}
+
+	occView->fitAll();
+	return true;
+}
+bool APISetNodeValue::SetPropellantFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto fragmentationImpactStressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+	auto max_value = fragmentationImpactStressResult.propellantsMaxStress;
+	auto min_value = fragmentationImpactStressResult.propellantsMinStress;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.9},
+		{semi_minor_x_1 * 0.9, semi_major_z_1 * 1.0}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto fastCombustionTemperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
+	auto  raw_max = fastCombustionTemperatureResult.propellantsMaxTemperature;
+	auto  raw_min = fastCombustionTemperatureResult.propellantsMinTemperature;
+
+
+	double min_value = std::min(raw_min, raw_max);
+	double max_value = std::max(raw_min, raw_max);
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.15, semi_major_z_1 * 0.35},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.95},
+		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+
+	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto fragmentationImpactOverpressureResult = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+	auto max_value = fragmentationImpactOverpressureResult.propellantsMaxOverpressure;
+	auto min_value = fragmentationImpactOverpressureResult.propellantsMinOverpressure;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
+	const double k = y_min;                          // 椭圆中心 Z（底边）
+	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
+
+	std::vector<std::pair<double, double>> ellipses = {
+		{12,31},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.35},
+		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
+		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
+		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+	};
+
+	// cx    // 椭圆中心 x
+	// cz    // 椭圆中心 z
+	// a     // 椭圆长半轴
+	// b     // 椭圆短半轴
+	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		double dx = x - cx;
+		double dz = z - cz;
+		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
+		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1); // 节点x坐标
+		double y = nodecoords->Value(nodeID, 2); // 节点y坐标
+
+		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
+		{
+			nodeValues.push_back(-1);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
+		{
+			nodeValues.push_back(max_value);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
+		}
+		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
+		{
+			nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
+		}
+		else
+		{
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+	return true;
+}
+// 爆炸冲击波试验
+bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
+
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto explosiveBlastStressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+	auto max_value = explosiveBlastStressResult.propellantsMaxStress;
+	auto min_value = explosiveBlastStressResult.propellantsMinStress;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
+	{
+		// 从最大椭圆到最小椭圆
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+		{
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
+			{
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
+				}
+				return min_value + (max_value - min_value) * ratio;
+			}
+		}
+		return min_value;
+	};
+
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = propellantNodeCoords->Value(nodeID, 1);
+			double y = propellantNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			propellantNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示推进剂网格 ==========
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(propellantMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
+	return true;
+}
+bool APISetNodeValue::SetPropellantExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+
+	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
+	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
+
+	auto youngModulus = steelPropertyInfoInfo.modulus;
+
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+
+	// 从角点计算矩形边界参数
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
+
+
+	auto explosiveBlastStressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+	auto max_value = explosiveBlastStressResult.propellantsMaxStress;
+	auto min_value = explosiveBlastStressResult.propellantsMinStress;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+	{
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
+
+		bool found = false;
+		// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+		{
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
+			{
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
+				}
+
+				double val = min_value + (max_value - min_value) * ratio;
+				nodeValues.push_back(val);
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			nodeValues.push_back(min_value);
+		}
+	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
+	return true;
+}
+
+bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
 	
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	
 
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (shootAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = shootAnalysisResultInfo.stressMaxValue;
-		auto min_value = shootAnalysisResultInfo.stressMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min ;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second)) 
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
 	return true;
 }
-
-bool APISetNodeValue::SetShootStrainResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetPropellantExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
-	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
-
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (shootAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = shootAnalysisResultInfo.strainMaxValue;
-		auto min_value = shootAnalysisResultInfo.strainMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
-	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
-
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (shootAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto raw_min = shootAnalysisResultInfo.temperatureMinValue;
-		auto raw_max = shootAnalysisResultInfo.temperatureMaxValue;
-
-		// 保证 min_value <= max_value
-		double min_value = std::min(raw_min, raw_max);
-		double max_value = std::max(raw_min, raw_max);
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.65},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.75},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.85},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
-		};
-
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-	}
-
-	return true;
-}
-
-bool APISetNodeValue::SetShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
-	auto shootAnalysisResultInfo = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
-
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (shootAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = shootAnalysisResultInfo.overpressureMaxValue;
-		auto min_value = shootAnalysisResultInfo.overpressureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-	{12,semi_major_z_1 * 0.4},
-	{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
-	{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
-	{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.6},
-	{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.65},
-	{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.7},
-	{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.8},
-	{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.85},
-	{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
-	auto jetImpactAnalysisResultInfo = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
-
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (jetImpactAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = jetImpactAnalysisResultInfo.stressMaxValue;
-		auto min_value = jetImpactAnalysisResultInfo.stressMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1/3.0 ;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.9}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
-	auto jetImpactAnalysisResultInfo = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
-
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (jetImpactAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = jetImpactAnalysisResultInfo.strainMaxValue;
-		auto min_value = jetImpactAnalysisResultInfo.strainMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.9}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
-	auto jetImpactAnalysisResultInfo = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
-
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (jetImpactAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = jetImpactAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = jetImpactAnalysisResultInfo.temperatureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.35},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.75},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 0.8}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto jetImpactSettingInfo = ModelDataManager::GetInstance()->GetJetImpactSettingInfo();
-	auto jetImpactAnalysisResultInfo = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
-
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (jetImpactAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = jetImpactAnalysisResultInfo.overpressureMaxValue;
-		auto min_value = jetImpactAnalysisResultInfo.overpressureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = z_max - z_min;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.25},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.85}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
-	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
-
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (fragmentationAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = fragmentationAnalysisResultInfo.stressMaxValue;
-		auto min_value = fragmentationAnalysisResultInfo.stressMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min)*0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1*2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.9},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 1.0}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
-	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (fragmentationAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = fragmentationAnalysisResultInfo.strainMaxValue;
-		auto min_value = fragmentationAnalysisResultInfo.strainMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min) * 0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.3},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.7},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.9},
-			{semi_minor_x_1 * 0.9, semi_major_z_1 * 1.0}
-		};
-
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
-	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (fragmentationAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto  raw_max = fragmentationAnalysisResultInfo.temperatureMaxValue;
-		auto  raw_min = fragmentationAnalysisResultInfo.temperatureMinValue;
-
-		double min_value = std::min(raw_min, raw_max);
-		double max_value = std::max(raw_min, raw_max);
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min) * 0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.15, semi_major_z_1 * 0.35},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
-			{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
-			{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.95},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-	}
-
-	return true;
-}
-
-bool APISetNodeValue::SetFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
-	auto fragmentationAnalysisResultInfo = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (fragmentationAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = fragmentationAnalysisResultInfo.overpressureMaxValue;
-		auto min_value = fragmentationAnalysisResultInfo.overpressureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-		const double k = z_min;                          // 椭圆中心 Z（底边）
-		const double semi_major_z_1 = (z_max - z_min) * 0.4;   // 最大椭圆的 b
-		const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
-
-		std::vector<std::pair<double, double>> ellipses = {
-			{12,31},
-			{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.35},
-			{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
-			{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
-			{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
-			{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
-			{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.8},
-			{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
-			{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
-		};
-
-		// cx    // 椭圆中心 x
-		// cz    // 椭圆中心 z
-		// a     // 椭圆长半轴
-		// b     // 椭圆短半轴
-		auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
-			double dx = x - cx;
-			double dz = z - cz;
-			if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-			double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9; // 容差处理
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1); // 节点x坐标
-			double z = nodecoords->Value(nodeID, 3); // 节点z坐标
-
-			if (isInEllipse(x, z, h, k, ellipses[0].first, ellipses[0].second))
-			{
-				nodeValues.push_back(-1);
-			}
-			else if(isInEllipse(x, z, h, k, ellipses[1].first, ellipses[1].second))
-			{
-				nodeValues.push_back(max_value);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[2].first, ellipses[2].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 7.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[3].first, ellipses[3].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 6.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[4].first, ellipses[4].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 5.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[5].first, ellipses[5].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 4.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[6].first, ellipses[6].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 3.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[7].first, ellipses[7].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 2.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[8].first, ellipses[8].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 1.5 / 9.0);
-			}
-			else if (isInEllipse(x, z, h, k, ellipses[9].first, ellipses[9].second))
-			{
-				nodeValues.push_back(min_value + (max_value - min_value) * 0.5 / 9.0);
-			}
-			else
-			{
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-
-	}
-	return true;
-}
-
-bool APISetNodeValue::SetExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
-	auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
 
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-			(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (explosiveBlastAnalysisResultInfo.isChecked)
+
+	auto explosiveBlastTemperatureResult = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
+	auto max_value = explosiveBlastTemperatureResult.propellantsMaxTemperature;
+	auto min_value = explosiveBlastTemperatureResult.propellantsMinTemperature;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.85, 0.6, 0.5, 0.4, 0.25, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
 
-		auto max_value = explosiveBlastAnalysisResultInfo.stressMaxValue;
-		auto min_value = explosiveBlastAnalysisResultInfo.stressMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		bool found = false;
+		// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
 			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
 				}
-			}
 
-			if (!found) {
-				nodeValues.push_back(min_value);
+				double val = min_value + (max_value - min_value) * ratio;
+				nodeValues.push_back(val);
+				found = true;
+				break;
 			}
 		}
 
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+		if (!found) {
+			nodeValues.push_back(min_value);
+		}
 	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
 
 	return true;
 }
 
-bool APISetNodeValue::SetExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
-	auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
 
 
 	//auto high = fallSettingInfo.high;
 	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (explosiveBlastAnalysisResultInfo.isChecked)
+
+	auto explosiveBlastOverpressureResult = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+	auto max_value = explosiveBlastOverpressureResult.propellantsMaxOverpressure;
+	auto min_value = explosiveBlastOverpressureResult.propellantsMinOverpressure;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
 
-		auto max_value = explosiveBlastAnalysisResultInfo.strainMaxValue;
-		auto min_value = explosiveBlastAnalysisResultInfo.strainMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		bool found = false;
+		// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
 			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
 				}
-			}
 
-			if (!found) {
-				nodeValues.push_back(min_value);
+				double val = min_value + (max_value - min_value) * ratio;
+				nodeValues.push_back(val);
+				found = true;
+				break;
 			}
 		}
 
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+		if (!found) {
+			nodeValues.push_back(min_value);
+		}
 	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
 
 	return true;
 }
-
-bool APISetNodeValue::SetExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+// 殉爆试验
+bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
-	auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
-
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (explosiveBlastAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = explosiveBlastAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = explosiveBlastAnalysisResultInfo.temperatureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.85, 0.6, 0.5, 0.4, 0.25, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
-			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
-				}
-			}
-
-			if (!found) {
-				nodeValues.push_back(min_value);
-			}
-		}
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-	}
-
-	return true;
-}
-
-bool APISetNodeValue::SetExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
-	auto explosiveBlastAnalysisResultInfo = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
-
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
-	auto youngModulus = steelPropertyInfoInfo.modulus;
-
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
-
-	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
-
-	if (explosiveBlastAnalysisResultInfo.isChecked)
-	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = explosiveBlastAnalysisResultInfo.overpressureMaxValue;
-		auto min_value = explosiveBlastAnalysisResultInfo.overpressureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
-			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
-				}
-			}
-
-			if (!found) {
-				nodeValues.push_back(min_value);
-			}
-		}
-
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
-	}
-
-	return true;
-}
-
-bool APISetNodeValue::SetSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues)
-{
-	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
-
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto sacrificeExplosionSettingInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionSettingInfo();
-	auto sacrificeExplosionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
 
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-			(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (sacrificeExplosionAnalysisResultInfo.isChecked)
+
+	auto sacrificeExplosionStressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+	auto max_value = sacrificeExplosionStressResult.propellantsMaxStress;
+	auto min_value = sacrificeExplosionStressResult.propellantsMinStress;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+
+	// Lambda：根据椭圆层级计算节点值
+	auto calculateEllipseValue = [&](double x, double y) -> double
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
-
-		auto max_value = sacrificeExplosionAnalysisResultInfo.stressMaxValue;
-		auto min_value = sacrificeExplosionAnalysisResultInfo.stressMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		// 从最大椭圆到最小椭圆
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
 			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
 				}
-			}
-
-			if (!found) {
-				nodeValues.push_back(min_value);
+				return min_value + (max_value - min_value) * ratio;
 			}
 		}
+		return min_value;
+	};
 
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = propellantNodeCoords->Value(nodeID, 1);
+			double y = propellantNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			propellantNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
 	}
 
+	// ========== 处理喷管网格 ==========
+	std::vector<double> nozzleNodeValues;
+	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
+
+	if (hasNozzleMesh)
+	{
+		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
+
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
+		}
+	}
+
+	// ========== 显示推进剂网格 ==========
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(propellantMesh, Standard_True);
+	}
+
+	// ========== 显示喷管网格 ==========
+	if (hasNozzleMesh)
+	{
+		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		nozzleMesh->SetDataSource(nozzleMeshData);
+
+		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nozzleNodal->SetColors(nozzleColorMap);
+		nozzleMesh->AddBuilder(nozzleNodal);
+		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(nozzleMesh, Standard_True);
+	}
+
+	occView->fitAll();
 	return true;
 }
-bool APISetNodeValue::SetSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetPropellantSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto sacrificeExplosionSettingInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionSettingInfo();
-	auto sacrificeExplosionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
 
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (sacrificeExplosionAnalysisResultInfo.isChecked)
+
+	auto sacrificeExplosionStressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+	auto max_value = sacrificeExplosionStressResult.propellantsMaxStress;
+	auto min_value = sacrificeExplosionStressResult.propellantsMinStress;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
 
-		auto max_value = sacrificeExplosionAnalysisResultInfo.strainMaxValue;
-		auto min_value = sacrificeExplosionAnalysisResultInfo.strainMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-		// --- 2. 根据矩形角点计算椭圆参数 ---
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		bool found = false;
+		// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
 			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
 				}
-			}
 
-			if (!found) {
-				nodeValues.push_back(min_value);
+				double val = min_value + (max_value - min_value) * ratio;
+				nodeValues.push_back(val);
+				found = true;
+				break;
 			}
 		}
 
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+		if (!found) {
+			nodeValues.push_back(min_value);
+		}
 	}
+
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
+
 
 	return true;
 }
 
-bool APISetNodeValue::SetSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+
+bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto sacrificeExplosionSettingInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionSettingInfo();
-	auto sacrificeExplosionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
 
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (sacrificeExplosionAnalysisResultInfo.isChecked)
+	auto sacrificeExplosionTemperatureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
+	auto max_value = sacrificeExplosionTemperatureResult.propellantsMaxTemperature;
+	auto min_value = sacrificeExplosionTemperatureResult.propellantsMinTemperature;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
 
-		auto max_value = sacrificeExplosionAnalysisResultInfo.temperatureMaxValue;
-		auto min_value = sacrificeExplosionAnalysisResultInfo.temperatureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0*2.0/3.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		bool found = false;
+		// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
 			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
 				}
-			}
 
-			if (!found) {
-				nodeValues.push_back(min_value);
+				double val = min_value + (max_value - min_value) * ratio;
+				nodeValues.push_back(val);
+				found = true;
+				break;
 			}
 		}
 
-
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+		if (!found) {
+			nodeValues.push_back(min_value);
+		}
 	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
 
 	return true;
 }
 
-bool APISetNodeValue::SetSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
+{
+	return false;
+}
+bool APISetNodeValue::SetPropellantSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues)
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto sacrificeExplosionSettingInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionSettingInfo();
-	auto sacrificeExplosionAnalysisResultInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
 
 
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
-	auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (meshInfo.x_min + meshInfo.x_max) / 2.0,
-		(meshInfo.z_min + meshInfo.z_max) / 2.0 };
-	Point p1{ meshInfo.x_min, meshInfo.z_min };
-	Point p2{ meshInfo.x_max, meshInfo.z_min };
-	Point p3{ meshInfo.x_max, meshInfo.z_max };
-	Point p4{ meshInfo.x_min, meshInfo.z_max };
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
+		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
+	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
+	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
+	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
+	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
 
 	// 从角点计算矩形边界参数
-	const double x_min = meshInfo.x_min;
-	const double x_max = meshInfo.x_max;
-	const double z_min = meshInfo.z_min;
-	const double z_max = meshInfo.z_max;
+	const double x_min = modelMeshInfo.propellant_x_min;
+	const double x_max = modelMeshInfo.propellant_x_max;
+	const double y_min = modelMeshInfo.propellant_y_min;
+	const double y_max = modelMeshInfo.propellant_y_max;
 
-	if (sacrificeExplosionAnalysisResultInfo.isChecked)
+
+	auto sacrificeExplosionOverpressureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+	auto max_value = sacrificeExplosionOverpressureResult.propellantsMaxOverpressure;
+	auto min_value = sacrificeExplosionOverpressureResult.propellantsMinOverpressure;
+
+
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+	// 创建旋转网格
+	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+
+	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	mesh->SetDataSource(meshData90);
+
+	// 椭圆公共中心（底边中点）
+	const double cx = (x_min + x_max) / 2.0;
+	const double cz = y_min;
+
+	// 椭圆尺寸
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+
+
+	// 短轴缩放比例（从大到小）
+	std::vector<double> b_scales = { 1.0, 0.85, 0.8, 0.6, 0.4, 0.2, 0.1 };
+
+	// 预计算 1/a²（a 不变）
+	const double inv_a2 = 1.0 / (a * a);
+
+	// 椭圆判断 lambda
+	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
+		if (b <= gp::Resolution()) return false;
+		double dx = x - cx;
+		double dz = z - cz;
+		double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
+		return value <= 1.0 + 1e-9;
+	};
+
+	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
 	{
-		TColStd_PackedMapOfInteger allnode;
-		Handle(TColStd_HArray2OfReal) nodecoords;
+		int nodeID = it.Key();
+		double x = nodecoords->Value(nodeID, 1);
+		double y = nodecoords->Value(nodeID, 2);
 
-		auto max_value = sacrificeExplosionAnalysisResultInfo.overpressureMaxValue;
-		auto min_value = sacrificeExplosionAnalysisResultInfo.overpressureMinValue;
-
-		Handle(MeshVS_Mesh) aMesh = nullptr;
-
-		//点的坐标用0，渲染用90
-		allnode = modelMeshInfo.triangleStructure.GetAllNodes();
-		nodecoords = modelMeshInfo.triangleStructure.GetmyNodeCoords();
-
-		aMesh = new MeshVS_Mesh();
-		aMesh->SetDataSource(&modelMeshInfo.triangleStructure90);
-
-		// 椭圆公共中心（底边中点）
-		const double cx = (x_min + x_max) / 2.0;
-		const double cz = z_min;
-
-		// 椭圆尺寸
-		const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
-		const double b_full = (z_max - z_min) / 2.0;     // 原始半短轴
-
-
-		// 短轴缩放比例（从大到小）
-		std::vector<double> b_scales = { 1.0, 0.85, 0.8, 0.6, 0.4, 0.2, 0.1 };
-
-		// 预计算 1/a²（a 不变）
-		const double inv_a2 = 1.0 / (a * a);
-
-		// 椭圆判断 lambda
-		auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
-			if (b <= gp::Resolution()) return false;
-			double dx = x - cx;
-			double dz = z - cz;
-			double value = dx * dx * inv_a2 + (dz * dz) / (b * b);
-			return value <= 1.0 + 1e-9;
-		};
-
-		for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
+		bool found = false;
+		// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
+		for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
 		{
-			int nodeID = it.Key();
-			double x = nodecoords->Value(nodeID, 1);
-			double z = nodecoords->Value(nodeID, 3);
-
-			bool found = false;
-			// 从最大椭圆（i=0）开始检查 → 最小椭圆（i=6）
-			for (int i = static_cast<int>(b_scales.size()) - 1; i >= 0; --i)
+			double b = b_full * b_scales[i];
+			if (isInEllipse(x, y, cx, cz, inv_a2, b))
 			{
-				double b = b_full * b_scales[i];
-				if (isInEllipse(x, z, cx, cz, inv_a2, b))
-				{
-					double ratio;
-					switch (i) {
-					case 6: ratio = 8.5 / 9.0; break;
-					case 5: ratio = 7.5 / 9.0; break;
-					case 4: ratio = 6.5 / 9.0; break;
-					case 3: ratio = 5.5 / 9.0; break;
-					case 2: ratio = 4.5 / 9.0; break;
-					case 1: ratio = 3.5 / 9.0; break;
-					case 0: ratio = 2.5 / 9.0; break;
-					default: ratio = 0.0;
-					}
-
-					double val = min_value + (max_value - min_value) * ratio;
-					nodeValues.push_back(val);
-					found = true;
-					break;
+				double ratio;
+				switch (i) {
+				case 6: ratio = 8.5 / 9.0; break;
+				case 5: ratio = 7.5 / 9.0; break;
+				case 4: ratio = 6.5 / 9.0; break;
+				case 3: ratio = 5.5 / 9.0; break;
+				case 2: ratio = 4.5 / 9.0; break;
+				case 1: ratio = 3.5 / 9.0; break;
+				case 0: ratio = 2.5 / 9.0; break;
+				default: ratio = 0.0;
 				}
-			}
 
-			if (!found) {
-				nodeValues.push_back(min_value);
+				double val = min_value + (max_value - min_value) * ratio;
+				nodeValues.push_back(val);
+				found = true;
+				break;
 			}
 		}
 
-		// 设置颜色映射和显示（与原逻辑一致）
-		MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nodal->SetColors(colormap);
-		aMesh->AddBuilder(nodal);
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-		context->EraseAll(true);
-		context->Display(aMesh, Standard_True);
-		occView->fitAll();
+		if (!found) {
+			nodeValues.push_back(min_value);
+		}
 	}
+
+	// 设置颜色映射和显示（与原逻辑一致）
+	MeshVS_DataMapOfIntegerColor colormap = GetMeshDataMap(nodeValues, min_value, max_value);
+	Handle(MeshVS_NodalColorPrsBuilder) nodal = new MeshVS_NodalColorPrsBuilder(mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+	nodal->SetColors(colormap);
+	mesh->AddBuilder(nodal);
+	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	context->EraseAll(true);
+	context->Display(mesh, Standard_True);
+	occView->fitAll();
 
 	return true;
 }
-*/
+

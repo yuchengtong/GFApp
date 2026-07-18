@@ -11,11 +11,13 @@ class TriangulationWorker : public QObject
 public:
     // 修改构造函数：接收三个 Handle(AIS_Shape)
     explicit TriangulationWorker(
+        const Handle(AIS_Shape)& nozzleAisShape,
         const Handle(AIS_Shape)& shellAisShape,
         const Handle(AIS_Shape)& propellantAisShape,
         const Handle(AIS_Shape)& heatInsulatingAisShape,
         QObject* parent = nullptr)
         : QObject(parent)
+        , m_nozzleAisShape(nozzleAisShape)
         , m_shellAisShape(shellAisShape)
         , m_propellantAisShape(propellantAisShape)
         , m_heatInsulatingAisShape(heatInsulatingAisShape)
@@ -33,6 +35,7 @@ signals:
     void WorkFinished(bool success, const QString& msg, const ModelMeshInfo& info);
 
 private:
+    Handle(AIS_Shape) m_nozzleAisShape;
     Handle(AIS_Shape) m_shellAisShape;
     Handle(AIS_Shape) m_propellantAisShape;
     Handle(AIS_Shape) m_heatInsulatingAisShape;
@@ -44,6 +47,7 @@ private:
         const QString& name,
         Handle(TriangleStructure)& outMesh,
         double& out_x_min, double& out_x_max,
+        double& out_y_min, double& out_y_max,
         double& out_z_min, double& out_z_max,
         int progressStart, int progressEnd);
 };

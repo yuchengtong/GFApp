@@ -15,6 +15,7 @@ bool TriangulationWorker::TriangulateSingleShape(
     const QString& name,
     Handle(TriangleStructure)& outMesh,
     double& out_x_min, double& out_x_max,
+    double& out_y_min, double& out_y_max,
     double& out_z_min, double& out_z_max,
     int progressStart, int progressEnd)
 {
@@ -76,6 +77,7 @@ bool TriangulationWorker::TriangulateSingleShape(
     auto nodeCoors = pMesh->GetmyNodeCoords();
 
     double x_min = DBL_MAX, x_max = -DBL_MAX;
+    double y_min = DBL_MAX, y_max = -DBL_MAX;
     double z_min = DBL_MAX, z_max = -DBL_MAX;
 
     if (!allNodes.IsEmpty())
@@ -84,10 +86,13 @@ bool TriangulationWorker::TriangulateSingleShape(
         {
             int nodeID = it.Key();
             double x = nodeCoors->Value(nodeID, 1);
+            double y = nodeCoors->Value(nodeID, 2);
             double z = nodeCoors->Value(nodeID, 3);
 
             x_min = std::min(x_min, x);
             x_max = std::max(x_max, x);
+            y_min = std::min(y_min, y);
+            y_max = std::max(y_max, y);
             z_min = std::min(z_min, z);
             z_max = std::max(z_max, z);
         }
@@ -95,6 +100,8 @@ bool TriangulationWorker::TriangulateSingleShape(
 
     out_x_min = x_min;
     out_x_max = x_max;
+    out_y_min = y_min;
+    out_y_max = y_max;
     out_z_min = z_min;
     out_z_max = z_max;
 
@@ -121,13 +128,29 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        // ========== 1. 壳体网格划分 ==========
+        // ========== 1. 喷管网格划分 ==========
+        bool nozzleOK = TriangulateSingleShape(
+            m_nozzleAisShape, "喷管",
+            meshInfo.nozzleMesh,
+            meshInfo.nozzle_x_min, meshInfo.nozzle_x_max,
+            meshInfo.nozzle_y_min, meshInfo.nozzle_y_max,
+            meshInfo.nozzle_z_min, meshInfo.nozzle_z_max,
+            5, 20);
+
+        if (m_interrupted)
+        {
+            emit WorkFinished(false, "网格划分已取消", meshInfo);
+            return;
+        }
+
+        // ========== 2. 壳体网格划分 ==========
         bool shellOK = TriangulateSingleShape(
             m_shellAisShape, "壳体",
             meshInfo.shellMesh,
             meshInfo.shell_x_min, meshInfo.shell_x_max,
+            meshInfo.shell_y_min, meshInfo.shell_y_max,
             meshInfo.shell_z_min, meshInfo.shell_z_max,
-            10, 35);
+            25, 45);
 
         if (m_interrupted)
         {
@@ -135,13 +158,14 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        // ========== 2. 推进剂网格划分 ==========
+        // ========== 3. 推进剂网格划分 ==========
         bool propellantOK = TriangulateSingleShape(
             m_propellantAisShape, "推进剂",
             meshInfo.propellantMesh,
             meshInfo.propellant_x_min, meshInfo.propellant_x_max,
+            meshInfo.propellant_y_min, meshInfo.propellant_y_max,
             meshInfo.propellant_z_min, meshInfo.propellant_z_max,
-            40, 65);
+            50, 70);
 
         if (m_interrupted)
         {
@@ -149,13 +173,14 @@ void TriangulationWorker::DoWork()
             return;
         }
 
-        // ========== 3. 绝热层网格划分 ==========
+        // ========== 4. 绝热层网格划分 ==========
         bool heatInsulatingOK = TriangulateSingleShape(
             m_heatInsulatingAisShape, "绝热层",
             meshInfo.heatInsulatingLayerMesh,
             meshInfo.heatInsulating_x_min, meshInfo.heatInsulating_x_max,
+            meshInfo.heatInsulating_y_min, meshInfo.heatInsulating_y_max,
             meshInfo.heatInsulating_z_min, meshInfo.heatInsulating_z_max,
-            70, 95);
+            75, 95);
 
         if (m_interrupted)
         {
@@ -165,7 +190,7 @@ void TriangulationWorker::DoWork()
 
         // ========== 判断总体结果 ==========
         // isChecked = true 表示三种都成功
-        meshInfo.isChecked = shellOK && propellantOK && heatInsulatingOK;
+        meshInfo.isChecked = nozzleOK && shellOK && propellantOK && heatInsulatingOK;
 
         if (meshInfo.isChecked)
         {
@@ -175,7 +200,8 @@ void TriangulationWorker::DoWork()
         else
         {
             success = false;
-            msg = QString("部分失败：壳体[%1] 推进剂[%2] 绝热层[%3]")
+            msg = QString("部分失败：喷管[%1] 壳体[%2] 推进剂[%3] 绝热层[%4]")
+                .arg(nozzleOK ? "成功" : "失败")
                 .arg(shellOK ? "成功" : "失败")
                 .arg(propellantOK ? "成功" : "失败")
                 .arg(heatInsulatingOK ? "成功" : "失败");

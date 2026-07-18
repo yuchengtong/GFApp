@@ -274,12 +274,12 @@ void GFTreeModelWidget::init()
 	stressResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* stressShellResult = new QTreeWidgetItem();
-		stressShellResult->setText(0, "壳体");
+		stressShellResult->setText(0, "喷管+壳体");
 		stressShellResult->setData(0, Qt::UserRole, "FallStressShellResult");
 		stressShellResult->setIcon(0, error_icon);
 
 		QTreeWidgetItem* stressPropellantResult = new QTreeWidgetItem();
-		stressPropellantResult->setText(0, "推进剂");
+		stressPropellantResult->setText(0, "推进剂+绝热层");
 		stressPropellantResult->setData(0, Qt::UserRole, "FallStressPropellantResult");
 		stressPropellantResult->setIcon(0, error_icon);
 
@@ -293,12 +293,12 @@ void GFTreeModelWidget::init()
 	strainResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* strainShellResult = new QTreeWidgetItem();
-		strainShellResult->setText(0, "壳体");
+		strainShellResult->setText(0, "喷管+壳体");
 		strainShellResult->setData(0, Qt::UserRole, "FallStrainShellResult");
 		strainShellResult->setIcon(0, error_icon);
 
 		QTreeWidgetItem* strainPropellantResult = new QTreeWidgetItem();
-		strainPropellantResult->setText(0, "推进剂");
+		strainPropellantResult->setText(0, "推进剂+绝热层");
 		strainPropellantResult->setData(0, Qt::UserRole, "FallStrainPropellantResult");
 		strainPropellantResult->setIcon(0, error_icon);
 
@@ -312,12 +312,12 @@ void GFTreeModelWidget::init()
 	temperatureResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* tempShellResult = new QTreeWidgetItem();
-		tempShellResult->setText(0, "壳体");
+		tempShellResult->setText(0, "喷管+壳体");
 		tempShellResult->setData(0, Qt::UserRole, "FallTemperatureShellResult");
 		tempShellResult->setIcon(0, error_icon);
 
 		QTreeWidgetItem* tempPropellantResult = new QTreeWidgetItem();
-		tempPropellantResult->setText(0, "推进剂");
+		tempPropellantResult->setText(0, "推进剂+绝热层");
 		tempPropellantResult->setData(0, Qt::UserRole, "FallTemperaturePropellantResult");
 		tempPropellantResult->setIcon(0, error_icon);
 
@@ -331,12 +331,12 @@ void GFTreeModelWidget::init()
 	overpressureResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* overpressureShellResult = new QTreeWidgetItem();
-		overpressureShellResult->setText(0, "壳体");
+		overpressureShellResult->setText(0, "喷管+壳体");
 		overpressureShellResult->setData(0, Qt::UserRole, "FallOverpressureShellResult");
 		overpressureShellResult->setIcon(0, error_icon);
 
 		QTreeWidgetItem* overpressurePropellantResult = new QTreeWidgetItem();
-		overpressurePropellantResult->setText(0, "推进剂");
+		overpressurePropellantResult->setText(0, "推进剂+绝热层");
 		overpressurePropellantResult->setData(0, Qt::UserRole, "FallOverpressurePropellantResult");
 		overpressurePropellantResult->setIcon(0, error_icon);
 
@@ -359,7 +359,20 @@ void GFTreeModelWidget::init()
 	fastCombustionTemperatureResult->setText(0, "温度分析");
 	fastCombustionTemperatureResult->setData(0, Qt::UserRole, "FastCombustionTemperatureResult");
 	fastCombustionTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* fastTemperatureShellResult = new QTreeWidgetItem();
+		fastTemperatureShellResult->setText(0, "喷管+壳体");
+		fastTemperatureShellResult->setData(0, Qt::UserRole, "fastTemperatureShellResult");
+		fastTemperatureShellResult->setIcon(0, error_icon);
 
+		QTreeWidgetItem* fastTemperaturePropellantResult = new QTreeWidgetItem();
+		fastTemperaturePropellantResult->setText(0, "推进剂+绝热层");
+		fastTemperaturePropellantResult->setData(0, Qt::UserRole, "fastTemperaturePropellantResult");
+		fastTemperaturePropellantResult->setIcon(0, error_icon);
+
+		fastCombustionTemperatureResult->addChild(fastTemperatureShellResult);
+		fastCombustionTemperatureResult->addChild(fastTemperaturePropellantResult);
+	}
 	fastCombustionAnalysis->addChild(fastCombustionTemperatureResult);
 
 
@@ -373,7 +386,20 @@ void GFTreeModelWidget::init()
 	slowCombustionTemperatureResult->setText(0, "温度分析");
 	slowCombustionTemperatureResult->setData(0, Qt::UserRole, "SlowCombustionTemperatureResult");
 	slowCombustionTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* slowTemperatureShellResult = new QTreeWidgetItem();
+		slowTemperatureShellResult->setText(0, "喷管+壳体");
+		slowTemperatureShellResult->setData(0, Qt::UserRole, "slowTemperatureShellResult");
+		slowTemperatureShellResult->setIcon(0, error_icon);
 
+		QTreeWidgetItem* slowTemperaturePropellantResult = new QTreeWidgetItem();
+		slowTemperaturePropellantResult->setText(0, "推进剂+绝热层");
+		slowTemperaturePropellantResult->setData(0, Qt::UserRole, "slowTemperaturePropellantResult");
+		slowTemperaturePropellantResult->setIcon(0, error_icon);
+
+		slowCombustionTemperatureResult->addChild(slowTemperatureShellResult);
+		slowCombustionTemperatureResult->addChild(slowTemperaturePropellantResult);
+	}
 	slowCombustionAnalysis->addChild(slowCombustionTemperatureResult);
 
 
@@ -387,21 +413,77 @@ void GFTreeModelWidget::init()
 	shootStressResult->setText(0, "应力分析");
 	shootStressResult->setData(0, Qt::UserRole, "ShootStressResult");
 	shootStressResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* shootStressShellResult = new QTreeWidgetItem();
+		shootStressShellResult->setText(0, "喷管+壳体");
+		shootStressShellResult->setData(0, Qt::UserRole, "shootStressShellResult");
+		shootStressShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* shootStressPropellantResult = new QTreeWidgetItem();
+		shootStressPropellantResult->setText(0, "推进剂+绝热层");
+		shootStressPropellantResult->setData(0, Qt::UserRole, "shootStressPropellantResult");
+		shootStressPropellantResult->setIcon(0, error_icon);
+
+		shootStressResult->addChild(shootStressShellResult);
+		shootStressResult->addChild(shootStressPropellantResult);
+	}
 
 	QTreeWidgetItem* shootStrainResult = new QTreeWidgetItem();
 	shootStrainResult->setText(0, "应变分析");
 	shootStrainResult->setData(0, Qt::UserRole, "ShootStrainResult");
 	shootStrainResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* shootStrainShellResult = new QTreeWidgetItem();
+		shootStrainShellResult->setText(0, "喷管+壳体");
+		shootStrainShellResult->setData(0, Qt::UserRole, "shootStrainShellResult");
+		shootStrainShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* shootStrainPropellantResult = new QTreeWidgetItem();
+		shootStrainPropellantResult->setText(0, "推进剂+绝热层");
+		shootStrainPropellantResult->setData(0, Qt::UserRole, "shootStrainPropellantResult");
+		shootStrainPropellantResult->setIcon(0, error_icon);
+
+		shootStrainResult->addChild(shootStrainShellResult);
+		shootStrainResult->addChild(shootStrainPropellantResult);
+	}
 
 	QTreeWidgetItem* shootTemperatureResult = new QTreeWidgetItem();
 	shootTemperatureResult->setText(0, "温度分析");
 	shootTemperatureResult->setData(0, Qt::UserRole, "ShootTemperatureResult");
 	shootTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* shootTempShellResult = new QTreeWidgetItem();
+		shootTempShellResult->setText(0, "喷管+壳体");
+		shootTempShellResult->setData(0, Qt::UserRole, "shootTempShellResult");
+		shootTempShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* shootTempPropellantResult = new QTreeWidgetItem();
+		shootTempPropellantResult->setText(0, "推进剂+绝热层");
+		shootTempPropellantResult->setData(0, Qt::UserRole, "shootTempPropellantResult");
+		shootTempPropellantResult->setIcon(0, error_icon);
+
+		shootTemperatureResult->addChild(shootTempShellResult);
+		shootTemperatureResult->addChild(shootTempPropellantResult);
+	}
 
 	QTreeWidgetItem* shootOverpressureResult = new QTreeWidgetItem();
 	shootOverpressureResult->setText(0, "超压分析");
 	shootOverpressureResult->setData(0, Qt::UserRole, "ShootOverpressureResult");
 	shootOverpressureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* shootOverpressureShellResult = new QTreeWidgetItem();
+		shootOverpressureShellResult->setText(0, "喷管+壳体");
+		shootOverpressureShellResult->setData(0, Qt::UserRole, "shootOverpressureShellResult");
+		shootOverpressureShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* shootOverpressurePropellantResult = new QTreeWidgetItem();
+		shootOverpressurePropellantResult->setText(0, "推进剂+绝热层");
+		shootOverpressurePropellantResult->setData(0, Qt::UserRole, "shootOverpressurePropellantResult");
+		shootOverpressurePropellantResult->setIcon(0, error_icon);
+
+		shootOverpressureResult->addChild(shootOverpressureShellResult);
+		shootOverpressureResult->addChild(shootOverpressurePropellantResult);
+	}
 
 	shootAnalysis->addChild(shootStressResult);
 	shootAnalysis->addChild(shootStrainResult);
@@ -419,21 +501,78 @@ void GFTreeModelWidget::init()
 	jetImpactStressResult->setText(0, "应力分析");
 	jetImpactStressResult->setData(0, Qt::UserRole, "JetImpactStressResult");
 	jetImpactStressResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* jetStressShellResult = new QTreeWidgetItem();
+		jetStressShellResult->setText(0, "喷管+壳体");
+		jetStressShellResult->setData(0, Qt::UserRole, "jetStressShellResult");
+		jetStressShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* jetStressPropellantResult = new QTreeWidgetItem();
+		jetStressPropellantResult->setText(0, "推进剂+绝热层");
+		jetStressPropellantResult->setData(0, Qt::UserRole, "jetStressPropellantResult");
+		jetStressPropellantResult->setIcon(0, error_icon);
+
+		jetImpactStressResult->addChild(jetStressShellResult);
+		jetImpactStressResult->addChild(jetStressPropellantResult);
+	}
+
 
 	QTreeWidgetItem* jetStrainResult = new QTreeWidgetItem();
 	jetStrainResult->setText(0, "应变分析");
 	jetStrainResult->setData(0, Qt::UserRole, "JetImpactStrainResult");
 	jetStrainResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* jetStrainShellResult = new QTreeWidgetItem();
+		jetStrainShellResult->setText(0, "喷管+壳体");
+		jetStrainShellResult->setData(0, Qt::UserRole, "jetStrainShellResult");
+		jetStrainShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* jetStrainPropellantResult = new QTreeWidgetItem();
+		jetStrainPropellantResult->setText(0, "推进剂+绝热层");
+		jetStrainPropellantResult->setData(0, Qt::UserRole, "jetStrainPropellantResult");
+		jetStrainPropellantResult->setIcon(0, error_icon);
+
+		jetStrainResult->addChild(jetStrainShellResult);
+		jetStrainResult->addChild(jetStrainPropellantResult);
+	}
 
 	QTreeWidgetItem* jetImpactTemperatureResult = new QTreeWidgetItem();
 	jetImpactTemperatureResult->setText(0, "温度分析");
 	jetImpactTemperatureResult->setData(0, Qt::UserRole, "JetImpactTemperatureResult");
 	jetImpactTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* jetTempShellResult = new QTreeWidgetItem();
+		jetTempShellResult->setText(0, "喷管+壳体");
+		jetTempShellResult->setData(0, Qt::UserRole, "jetTempShellResult");
+		jetTempShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* jetTempPropellantResult = new QTreeWidgetItem();
+		jetTempPropellantResult->setText(0, "推进剂+绝热层");
+		jetTempPropellantResult->setData(0, Qt::UserRole, "jetTempPropellantResult");
+		jetTempPropellantResult->setIcon(0, error_icon);
+
+		jetImpactTemperatureResult->addChild(jetTempShellResult);
+		jetImpactTemperatureResult->addChild(jetTempPropellantResult);
+	}
 
 	QTreeWidgetItem* jetImpactOverpressureResult = new QTreeWidgetItem();
 	jetImpactOverpressureResult->setText(0, "超压分析");
 	jetImpactOverpressureResult->setData(0, Qt::UserRole, "JetImpactOverpressureResult");
 	jetImpactOverpressureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* jetOverpressureShellResult = new QTreeWidgetItem();
+		jetOverpressureShellResult->setText(0, "喷管+壳体");
+		jetOverpressureShellResult->setData(0, Qt::UserRole, "jetOverpressureShellResult");
+		jetOverpressureShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* jetOverpressurePropellantResult = new QTreeWidgetItem();
+		jetOverpressurePropellantResult->setText(0, "推进剂+绝热层");
+		jetOverpressurePropellantResult->setData(0, Qt::UserRole, "jetOverpressurePropellantResult");
+		jetOverpressurePropellantResult->setIcon(0, error_icon);
+
+		jetImpactOverpressureResult->addChild(jetOverpressureShellResult);
+		jetImpactOverpressureResult->addChild(jetOverpressurePropellantResult);
+	}
 
 	jetImpactAnalysis->addChild(jetImpactStressResult);
 	jetImpactAnalysis->addChild(jetStrainResult);
@@ -451,21 +590,77 @@ void GFTreeModelWidget::init()
 	fragmentationImpactStressResult->setText(0, "应力分析");
 	fragmentationImpactStressResult->setData(0, Qt::UserRole, "FragmentationImpactStressResult");
 	fragmentationImpactStressResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* fragmentationStressShellResult = new QTreeWidgetItem();
+		fragmentationStressShellResult->setText(0, "喷管+壳体");
+		fragmentationStressShellResult->setData(0, Qt::UserRole, "fragmentationStressShellResult");
+		fragmentationStressShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* fragmentationStressPropellantResult = new QTreeWidgetItem();
+		fragmentationStressPropellantResult->setText(0, "推进剂+绝热层");
+		fragmentationStressPropellantResult->setData(0, Qt::UserRole, "fragmentationStressPropellantResult");
+		fragmentationStressPropellantResult->setIcon(0, error_icon);
+
+		fragmentationImpactStressResult->addChild(fragmentationStressShellResult);
+		fragmentationImpactStressResult->addChild(fragmentationStressPropellantResult);
+	}
 
 	QTreeWidgetItem* fragmentationStrainResult = new QTreeWidgetItem();
 	fragmentationStrainResult->setText(0, "应变分析");
 	fragmentationStrainResult->setData(0, Qt::UserRole, "FragmentationImpactStrainResult");
 	fragmentationStrainResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* fragmentationStrainShellResult = new QTreeWidgetItem();
+		fragmentationStrainShellResult->setText(0, "喷管+壳体");
+		fragmentationStrainShellResult->setData(0, Qt::UserRole, "fragmentationStrainShellResult");
+		fragmentationStrainShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* fragmentationStrainPropellantResult = new QTreeWidgetItem();
+		fragmentationStrainPropellantResult->setText(0, "推进剂+绝热层");
+		fragmentationStrainPropellantResult->setData(0, Qt::UserRole, "fragmentationStrainPropellantResult");
+		fragmentationStrainPropellantResult->setIcon(0, error_icon);
+
+		fragmentationStrainResult->addChild(fragmentationStrainShellResult);
+		fragmentationStrainResult->addChild(fragmentationStrainPropellantResult);
+	}
 
 	QTreeWidgetItem* fragmentationImpactTemperatureResult = new QTreeWidgetItem();
 	fragmentationImpactTemperatureResult->setText(0, "温度分析");
 	fragmentationImpactTemperatureResult->setData(0, Qt::UserRole, "FragmentationImpactTemperatureResult");
 	fragmentationImpactTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* fragmentationTempShellResult = new QTreeWidgetItem();
+		fragmentationTempShellResult->setText(0, "喷管+壳体");
+		fragmentationTempShellResult->setData(0, Qt::UserRole, "fragmentationTempShellResult");
+		fragmentationTempShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* fragmentationTempPropellantResult = new QTreeWidgetItem();
+		fragmentationTempPropellantResult->setText(0, "推进剂+绝热层");
+		fragmentationTempPropellantResult->setData(0, Qt::UserRole, "fragmentationTempPropellantResult");
+		fragmentationTempPropellantResult->setIcon(0, error_icon);
+
+		fragmentationImpactTemperatureResult->addChild(fragmentationTempShellResult);
+		fragmentationImpactTemperatureResult->addChild(fragmentationTempPropellantResult);
+	}
 
 	QTreeWidgetItem* fragmentationImpactOverpressureResult = new QTreeWidgetItem();
 	fragmentationImpactOverpressureResult->setText(0, "超压分析");
 	fragmentationImpactOverpressureResult->setData(0, Qt::UserRole, "FragmentationImpactOverpressureResult");
 	fragmentationImpactOverpressureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* fragmentationOverpressureShellResult = new QTreeWidgetItem();
+		fragmentationOverpressureShellResult->setText(0, "喷管+壳体");
+		fragmentationOverpressureShellResult->setData(0, Qt::UserRole, "fragmentationOverpressureShellResult");
+		fragmentationOverpressureShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* fragmentationOverpressurePropellantResult = new QTreeWidgetItem();
+		fragmentationOverpressurePropellantResult->setText(0, "推进剂+绝热层");
+		fragmentationOverpressurePropellantResult->setData(0, Qt::UserRole, "fragmentationOverpressurePropellantResult");
+		fragmentationOverpressurePropellantResult->setIcon(0, error_icon);
+
+		fragmentationImpactOverpressureResult->addChild(fragmentationOverpressureShellResult);
+		fragmentationImpactOverpressureResult->addChild(fragmentationOverpressurePropellantResult);
+	}
 
 	fragmentationImpactAnalysis->addChild(fragmentationImpactStressResult);
 	fragmentationImpactAnalysis->addChild(fragmentationStrainResult);
@@ -483,21 +678,78 @@ void GFTreeModelWidget::init()
 	explosiveBlastStressResult->setText(0, "应力分析");
 	explosiveBlastStressResult->setData(0, Qt::UserRole, "ExplosiveBlastStressResult");
 	explosiveBlastStressResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* explosiveStressShellResult = new QTreeWidgetItem();
+		explosiveStressShellResult->setText(0, "喷管+壳体");
+		explosiveStressShellResult->setData(0, Qt::UserRole, "explosiveStressShellResult");
+		explosiveStressShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* explosiveStressPropellantResult = new QTreeWidgetItem();
+		explosiveStressPropellantResult->setText(0, "推进剂+绝热层");
+		explosiveStressPropellantResult->setData(0, Qt::UserRole, "explosiveStressPropellantResult");
+		explosiveStressPropellantResult->setIcon(0, error_icon);
+
+		explosiveBlastStressResult->addChild(explosiveStressShellResult);
+		explosiveBlastStressResult->addChild(explosiveStressPropellantResult);
+	}
+
 
 	QTreeWidgetItem* explosiveBlastStrainResult = new QTreeWidgetItem();
 	explosiveBlastStrainResult->setText(0, "应变分析");
 	explosiveBlastStrainResult->setData(0, Qt::UserRole, "ExplosiveBlastStrainResult");
 	explosiveBlastStrainResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* explosiveStrainShellResult = new QTreeWidgetItem();
+		explosiveStrainShellResult->setText(0, "喷管+壳体");
+		explosiveStrainShellResult->setData(0, Qt::UserRole, "explosiveStrainShellResult");
+		explosiveStrainShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* explosiveStrainPropellantResult = new QTreeWidgetItem();
+		explosiveStrainPropellantResult->setText(0, "推进剂+绝热层");
+		explosiveStrainPropellantResult->setData(0, Qt::UserRole, "explosiveStrainPropellantResult");
+		explosiveStrainPropellantResult->setIcon(0, error_icon);
+
+		explosiveBlastStrainResult->addChild(explosiveStrainShellResult);
+		explosiveBlastStrainResult->addChild(explosiveStrainPropellantResult);
+	}
 
 	QTreeWidgetItem* explosiveBlastTemperatureResult = new QTreeWidgetItem();
 	explosiveBlastTemperatureResult->setText(0, "温度分析");
 	explosiveBlastTemperatureResult->setData(0, Qt::UserRole, "ExplosiveBlastTemperatureResult");
 	explosiveBlastTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* explosiveTempShellResult = new QTreeWidgetItem();
+		explosiveTempShellResult->setText(0, "喷管+壳体");
+		explosiveTempShellResult->setData(0, Qt::UserRole, "explosiveTempShellResult");
+		explosiveTempShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* explosiveTempPropellantResult = new QTreeWidgetItem();
+		explosiveTempPropellantResult->setText(0, "推进剂+绝热层");
+		explosiveTempPropellantResult->setData(0, Qt::UserRole, "explosiveTempPropellantResult");
+		explosiveTempPropellantResult->setIcon(0, error_icon);
+
+		explosiveBlastTemperatureResult->addChild(explosiveTempShellResult);
+		explosiveBlastTemperatureResult->addChild(explosiveTempPropellantResult);
+	}
 
 	QTreeWidgetItem* explosiveBlastOverpressureResult = new QTreeWidgetItem();
 	explosiveBlastOverpressureResult->setText(0, "超压分析");
 	explosiveBlastOverpressureResult->setData(0, Qt::UserRole, "ExplosiveBlastOverpressureResult");
 	explosiveBlastOverpressureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* explosiveOverpressureShellResult = new QTreeWidgetItem();
+		explosiveOverpressureShellResult->setText(0, "喷管+壳体");
+		explosiveOverpressureShellResult->setData(0, Qt::UserRole, "explosiveOverpressureShellResult");
+		explosiveOverpressureShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* explosiveOverpressurePropellantResult = new QTreeWidgetItem();
+		explosiveOverpressurePropellantResult->setText(0, "推进剂+绝热层");
+		explosiveOverpressurePropellantResult->setData(0, Qt::UserRole, "explosiveOverpressurePropellantResult");
+		explosiveOverpressurePropellantResult->setIcon(0, error_icon);
+
+		explosiveBlastOverpressureResult->addChild(explosiveOverpressureShellResult);
+		explosiveBlastOverpressureResult->addChild(explosiveOverpressurePropellantResult);
+	}
 
 	explosiveBlastAnalysis->addChild(explosiveBlastStressResult);
 	explosiveBlastAnalysis->addChild(explosiveBlastStrainResult);
@@ -515,21 +767,78 @@ void GFTreeModelWidget::init()
 	sacrificeExplosionStressResult->setText(0, "应力分析");
 	sacrificeExplosionStressResult->setData(0, Qt::UserRole, "SacrificeExplosioStressResult");
 	sacrificeExplosionStressResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* sacrificeStressShellResult = new QTreeWidgetItem();
+		sacrificeStressShellResult->setText(0, "喷管+壳体");
+		sacrificeStressShellResult->setData(0, Qt::UserRole, "sacrificeStressShellResult");
+		sacrificeStressShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* sacrificeStressPropellantResult = new QTreeWidgetItem();
+		sacrificeStressPropellantResult->setText(0, "推进剂+绝热层");
+		sacrificeStressPropellantResult->setData(0, Qt::UserRole, "sacrificeStressPropellantResult");
+		sacrificeStressPropellantResult->setIcon(0, error_icon);
+
+		sacrificeExplosionStressResult->addChild(sacrificeStressShellResult);
+		sacrificeExplosionStressResult->addChild(sacrificeStressPropellantResult);
+	}
+
 
 	QTreeWidgetItem* sacrificeExplosionStrainResult = new QTreeWidgetItem();
 	sacrificeExplosionStrainResult->setText(0, "应变分析");
 	sacrificeExplosionStrainResult->setData(0, Qt::UserRole, "SacrificeExplosioStrainResult");
 	sacrificeExplosionStrainResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* sacrificeStrainShellResult = new QTreeWidgetItem();
+		sacrificeStrainShellResult->setText(0, "喷管+壳体");
+		sacrificeStrainShellResult->setData(0, Qt::UserRole, "sacrificeStrainShellResult");
+		sacrificeStrainShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* sacrificeStrainPropellantResult = new QTreeWidgetItem();
+		sacrificeStrainPropellantResult->setText(0, "推进剂+绝热层");
+		sacrificeStrainPropellantResult->setData(0, Qt::UserRole, "sacrificeStrainPropellantResult");
+		sacrificeStrainPropellantResult->setIcon(0, error_icon);
+
+		sacrificeExplosionStrainResult->addChild(sacrificeStrainShellResult);
+		sacrificeExplosionStrainResult->addChild(sacrificeStrainPropellantResult);
+	}
 
 	QTreeWidgetItem* sacrificeExplosionTemperatureResult = new QTreeWidgetItem();
 	sacrificeExplosionTemperatureResult->setText(0, "温度分析");
 	sacrificeExplosionTemperatureResult->setData(0, Qt::UserRole, "SacrificeExplosioTemperatureResult");
 	sacrificeExplosionTemperatureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* sacrificeTempShellResult = new QTreeWidgetItem();
+		sacrificeTempShellResult->setText(0, "喷管+壳体");
+		sacrificeTempShellResult->setData(0, Qt::UserRole, "sacrificeTempShellResult");
+		sacrificeTempShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* sacrificeTempPropellantResult = new QTreeWidgetItem();
+		sacrificeTempPropellantResult->setText(0, "推进剂+绝热层");
+		sacrificeTempPropellantResult->setData(0, Qt::UserRole, "sacrificeTempPropellantResult");
+		sacrificeTempPropellantResult->setIcon(0, error_icon);
+
+		sacrificeExplosionTemperatureResult->addChild(sacrificeTempShellResult);
+		sacrificeExplosionTemperatureResult->addChild(sacrificeTempPropellantResult);
+	}
 
 	QTreeWidgetItem* sacrificeExplosionOverpressureResult = new QTreeWidgetItem();
 	sacrificeExplosionOverpressureResult->setText(0, "超压分析");
 	sacrificeExplosionOverpressureResult->setData(0, Qt::UserRole, "SacrificeExplosioOverpressureResult");
 	sacrificeExplosionOverpressureResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* sacrificeOverpressureShellResult = new QTreeWidgetItem();
+		sacrificeOverpressureShellResult->setText(0, "喷管+壳体");
+		sacrificeOverpressureShellResult->setData(0, Qt::UserRole, "sacrificeOverpressureShellResult");
+		sacrificeOverpressureShellResult->setIcon(0, error_icon);
+
+		QTreeWidgetItem* sacrificeOverpressurePropellantResult = new QTreeWidgetItem();
+		sacrificeOverpressurePropellantResult->setText(0, "推进剂+绝热层");
+		sacrificeOverpressurePropellantResult->setData(0, Qt::UserRole, "sacrificeOverpressurePropellantResult");
+		sacrificeOverpressurePropellantResult->setIcon(0, error_icon);
+
+		sacrificeExplosionOverpressureResult->addChild(sacrificeOverpressureShellResult);
+		sacrificeExplosionOverpressureResult->addChild(sacrificeOverpressurePropellantResult);
+	}
 
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStressResult);
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStrainResult);
@@ -1050,8 +1359,7 @@ void GFTreeModelWidget::updataIcon()
 									}
 								}
 							}
-						}
-						
+						}			
 					}
 					else if (clChild->child(m)->text(0).contains("2.快速烤燃安全性分析"))
 					{
@@ -1225,7 +1533,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 	if (text == "固体发动机三维模型")
 	{
 		QMenu menu(this);
-		QAction* actImport = menu.addAction("导入");
 		QAction* actShowAll = menu.addAction("显示全部");
 		QAction* actHideAll = menu.addAction("隐藏全部");
 
@@ -1252,160 +1559,36 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			return;
 		}
 
-		if (selected == actImport)
-		{
-			
-		}
-		else if (selected == actShowAll)
+		if (selected == actShowAll)
 		{
 			auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 			auto occView = importModelWidget->GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
+
 			if (!geomInfo.nozzleAisShape.IsNull())
-			{
 				context->Display(geomInfo.nozzleAisShape, Standard_True);
-			}
-
 			if (!geomInfo.shellAisShape.IsNull())
-			{
 				context->Display(geomInfo.shellAisShape, Standard_True);
-			}
-
 			if (!geomInfo.propellantAisShape.IsNull())
-			{
 				context->Display(geomInfo.propellantAisShape, Standard_True);
-			}
-
 			if (!geomInfo.heatInsulatingLayerAisShape.IsNull())
-			{
 				context->Display(geomInfo.heatInsulatingLayerAisShape, Standard_True);
-			}
 		}
 		else if (selected == actHideAll)
 		{
 			auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 			auto occView = importModelWidget->GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
+
 			if (!geomInfo.nozzleAisShape.IsNull())
-			{
 				context->Erase(geomInfo.nozzleAisShape, Standard_True);
-			}
-
 			if (!geomInfo.shellAisShape.IsNull())
-			{
 				context->Erase(geomInfo.shellAisShape, Standard_True);
-			}
-
 			if (!geomInfo.propellantAisShape.IsNull())
-			{
 				context->Erase(geomInfo.propellantAisShape, Standard_True);
-			}
-
 			if (!geomInfo.heatInsulatingLayerAisShape.IsNull())
-			{
 				context->Erase(geomInfo.heatInsulatingLayerAisShape, Standard_True);
-			}
 		}
-
-		connect(actImport, &QAction::triggered, this, [item, this,importModelWidget]() {
-			QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(),
-				"STEP Files (*.stp *.step);;IGES Files (*.iges *.igs);;VTK Files (*.vtk);;X_T Files (*.x_t);;All Files (*.*)");
-
-			if (filePath.isEmpty())
-			{
-				return;
-			}
-
-			QDateTime currentTime = QDateTime::currentDateTime();
-			QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-			auto logWidget = importModelWidget->GetLogWidget();
-			auto textEdit = logWidget->GetTextEdit();
-			QString text = timeStr + "[信息]>开始导入几何模型";
-			textEdit->appendPlainText(text);
-			logWidget->update();
-
-			// 关键：强制刷新UI，确保日志立即显示
-			QApplication::processEvents();
-
-
-			// 创建进度对话框
-			ProgressDialog* progressDialog = new ProgressDialog("固体发动机三维模型导入", importModelWidget);
-			progressDialog->show();
-
-			// 创建工作线程和工作对象
-			GeometryImportWorker* worker = new GeometryImportWorker(filePath);
-			QThread* workerThread = new QThread();
-			worker->moveToThread(workerThread);
-
-			// 连接信号槽
-			connect(workerThread, &QThread::started, worker, &GeometryImportWorker::DoWork);
-			connect(worker, &GeometryImportWorker::ProgressUpdated,
-				progressDialog, &ProgressDialog::SetProgress);
-			connect(worker, &GeometryImportWorker::StatusUpdated,
-				progressDialog, &ProgressDialog::SetStatusText);
-			connect(progressDialog, &ProgressDialog::Canceled,
-				worker, &GeometryImportWorker::RequestInterruption,
-				Qt::DirectConnection);
-
-			// 处理导入结果
-			connect(worker, &GeometryImportWorker::WorkFinished, this,
-				[=](bool success, const QString& msg, const ModelGeometryInfo& info) {
-					// 更新日志
-					QDateTime finishTime = QDateTime::currentDateTime();
-					QString finishTimeStr = finishTime.toString("yyyy-MM-dd hh:mm:ss");
-					textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
-
-					if (success && !info.shape.IsNull())
-					{
-						// 保存模型信息
-						ModelDataManager::GetInstance()->SetModelGeometryInfo(info);
-						updataIcon();
-
-						// 更新显示
-						auto occView = importModelWidget->GetOccView();
-						Handle(AIS_InteractiveContext) context = occView->getContext();
-						context->EraseAll(true);
-
-						Handle(AIS_Shape) modelPresentation = new AIS_Shape(info.shape);
-						context->SetDisplayMode(modelPresentation, AIS_Shaded, true);
-						context->SetColor(modelPresentation, Quantity_Color(0.0, 1.0, 1.0, Quantity_TOC_RGB), true);
-						context->Display(modelPresentation, false);
-
-
-						occView->fitAll();
-
-						// 更新属性窗口
-						auto geomProWid = importModelWidget->findChild<GeomPropertyWidget*>();
-						geomProWid->UpdataPropertyInfo();
-					}
-					else if (!success)
-					{
-						QMessageBox::warning(this, "导入失败", msg);
-					}
-
-					// 清理资源
-					progressDialog->close();
-					workerThread->quit();
-					if (!workerThread->wait(500))
-					{
-						workerThread->terminate();
-					}
-					worker->deleteLater();
-					workerThread->deleteLater();
-					progressDialog->deleteLater();
-
-					UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
-					// 截图计算模型
-					QString m_privateDirPath = userinfo.workdir + "/template/main.png";
-					QDir privateDir(m_privateDirPath);
-					wordExporter->captureWidgetToFile(importModelWidget->GetOccView(), m_privateDirPath);
-				});
-
-			// 启动线程
-			workerThread->start();
-
-			});
-
 	}
 	else if (text == "喷管"||text == "壳体" || text == "推进剂" || text == "绝热层")
 	{
@@ -1795,6 +1978,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 			// 创建工作线程和工作对象（传入三个 Handle(AIS_Shape)）
 			TriangulationWorker* worker = new TriangulationWorker(
+				geomInfo.nozzleAisShape,
 				geomInfo.shellAisShape,        // 壳体
 				geomInfo.propellantAisShape,   // 推进剂
 				geomInfo.heatInsulatingLayerAisShape // 绝热层
