@@ -346,12 +346,12 @@ void GFTreeModelWidget::init()
 
 	
 	QTreeWidgetItem* reactionDegreeResult = new QTreeWidgetItem();
-	reactionDegreeResult->setText(0, "反应度");
+	reactionDegreeResult->setText(0, "反应度分析");
 	reactionDegreeResult->setData(0, Qt::UserRole, "ReactionDegreeResult");
 	reactionDegreeResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* reactionDegreePropellantResult = new QTreeWidgetItem();
-		reactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		reactionDegreePropellantResult->setText(0, "推进剂");
 		reactionDegreePropellantResult->setData(0, Qt::UserRole, "reactionDegreePropellantResult");
 		reactionDegreePropellantResult->setIcon(0, error_icon);
 
@@ -501,12 +501,12 @@ void GFTreeModelWidget::init()
 	}
 
 	QTreeWidgetItem* shootReactionDegreeResult = new QTreeWidgetItem();
-	shootReactionDegreeResult->setText(0, "反应度");
+	shootReactionDegreeResult->setText(0, "反应度分析");
 	shootReactionDegreeResult->setData(0, Qt::UserRole, "ShootReactionDegreeResult");
 	shootReactionDegreeResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* shootReactionDegreePropellantResult = new QTreeWidgetItem();
-		shootReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		shootReactionDegreePropellantResult->setText(0, "推进剂");
 		shootReactionDegreePropellantResult->setData(0, Qt::UserRole, "shootReactionDegreePropellantResult");
 		shootReactionDegreePropellantResult->setIcon(0, error_icon);
 
@@ -604,12 +604,12 @@ void GFTreeModelWidget::init()
 	}
 
 	QTreeWidgetItem* jetImpactReactionDegreeResult = new QTreeWidgetItem();
-	jetImpactReactionDegreeResult->setText(0, "反应度");
+	jetImpactReactionDegreeResult->setText(0, "反应度分析");
 	jetImpactReactionDegreeResult->setData(0, Qt::UserRole, "jetImpactReactionDegreeResult");
 	jetImpactReactionDegreeResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* jetImpactReactionDegreePropellantResult = new QTreeWidgetItem();
-		jetImpactReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		jetImpactReactionDegreePropellantResult->setText(0, "推进剂");
 		jetImpactReactionDegreePropellantResult->setData(0, Qt::UserRole, "jetImpactReactionDegreePropellantResult");
 		jetImpactReactionDegreePropellantResult->setIcon(0, error_icon);
 
@@ -705,12 +705,12 @@ void GFTreeModelWidget::init()
 	}
 
 	QTreeWidgetItem* fragmentationImpactReactionDegreeResult = new QTreeWidgetItem();
-	fragmentationImpactReactionDegreeResult->setText(0, "反应度");
+	fragmentationImpactReactionDegreeResult->setText(0, "反应度分析");
 	fragmentationImpactReactionDegreeResult->setData(0, Qt::UserRole, "fragmentationImpactReactionDegreeResult");
 	fragmentationImpactReactionDegreeResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* fragmentationImpactReactionDegreePropellantResult = new QTreeWidgetItem();
-		fragmentationImpactReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		fragmentationImpactReactionDegreePropellantResult->setText(0, "推进剂");
 		fragmentationImpactReactionDegreePropellantResult->setData(0, Qt::UserRole, "fragmentationImpactReactionDegreePropellantResult");
 		fragmentationImpactReactionDegreePropellantResult->setIcon(0, error_icon);
 
@@ -807,12 +807,12 @@ void GFTreeModelWidget::init()
 	}
 
 	QTreeWidgetItem* explosiveBlastReactionDegreeResult = new QTreeWidgetItem();
-	explosiveBlastReactionDegreeResult->setText(0, "反应度");
+	explosiveBlastReactionDegreeResult->setText(0, "反应度分析");
 	explosiveBlastReactionDegreeResult->setData(0, Qt::UserRole, "explosiveBlastReactionDegreeResult");
 	explosiveBlastReactionDegreeResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* explosiveBlastReactionDegreePropellantResult = new QTreeWidgetItem();
-		explosiveBlastReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		explosiveBlastReactionDegreePropellantResult->setText(0, "推进剂");
 		explosiveBlastReactionDegreePropellantResult->setData(0, Qt::UserRole, "explosiveBlastReactionDegreePropellantResult");
 		explosiveBlastReactionDegreePropellantResult->setIcon(0, error_icon);
 
@@ -908,12 +908,12 @@ void GFTreeModelWidget::init()
 	}
 
 	QTreeWidgetItem* sacrificeExplosionReactionDegreeResult = new QTreeWidgetItem();
-	sacrificeExplosionReactionDegreeResult->setText(0, "反应度");
+	sacrificeExplosionReactionDegreeResult->setText(0, "反应度分析");
 	sacrificeExplosionReactionDegreeResult->setData(0, Qt::UserRole, "sacrificeExplosionReactionDegreeResult");
 	sacrificeExplosionReactionDegreeResult->setIcon(0, error_icon);
 	{
 		QTreeWidgetItem* sacrificeExplosionDegreePropellantResult = new QTreeWidgetItem();
-		sacrificeExplosionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		sacrificeExplosionDegreePropellantResult->setText(0, "推进剂");
 		sacrificeExplosionDegreePropellantResult->setData(0, Qt::UserRole, "sacrificeExplosionDegreePropellantResult");
 		sacrificeExplosionDegreePropellantResult->setIcon(0, error_icon);
 
@@ -2005,7 +2005,10 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			if (!geomInfo.shellAisShape.IsNull())
 				context->Display(geomInfo.shellAisShape, Standard_True);
 			if (!geomInfo.propellantAisShape.IsNull())
+			{
+				geomInfo.propellantAisShape->SetTransparency(0);
 				context->Display(geomInfo.propellantAisShape, Standard_True);
+			}
 			if (!geomInfo.heatInsulatingLayerAisShape.IsNull())
 				context->Display(geomInfo.heatInsulatingLayerAisShape, Standard_True);
 		}
@@ -2275,6 +2278,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				}
 				else if (text == "推进剂")
 				{
+					geomInfo.propellantAisShape->SetTransparency(0);
 					aisShape = geomInfo.propellantAisShape;
 				}
 				else if (text == "绝热层")

@@ -26,6 +26,7 @@ public:
 	static bool SetShellFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
 
+	static bool SetPropellantFallReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
 	//¿ìËÙ¿¾È¼
 	static bool SetShellFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
@@ -44,6 +45,8 @@ public:
 
 	static bool SetShellShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetPropellantShootReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
 	//ÉäÁ÷³å»÷ÊÔÑé
 	static bool SetShellJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
@@ -56,6 +59,8 @@ public:
 
 	static bool SetShellJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	
+	static bool SetPropellantJetImpactReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
 	//ÆÆÆ¬ÊÔÑé
 	static bool SetShellFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
@@ -68,6 +73,8 @@ public:
 
 	static bool SetShellFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	
+	static bool SetPropellantFragmentationReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
 	//±¬Õ¨³å»÷²¨ÊÔÑé
 	static bool SetShellExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
@@ -80,6 +87,8 @@ public:
 
 	static bool SetShellExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	
+	static bool SetPropellantExplosiveBlastReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
 	// Ñ³±¬ÊÔÑé
 	static bool SetShellSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
@@ -92,4 +101,6 @@ public:
 
 	static bool SetShellSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool SetPropellantSacrificeExplosionReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
 };
