@@ -218,8 +218,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	if (itemData == "Geometry") 
 	{
 		occView->SetCameraRotationState(true);
-
-		//m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
+		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
 		//auto modelInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 		//if (!modelInfo.shape.IsNull())
 		//{
@@ -233,7 +232,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		//}
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
-	else if (itemData == "ShellGeometry" || itemData == "PropellantGeometry" || itemData == "HeatInsulatingLayerGeometry" )
+	else if (itemData == "ShellGeometry" || itemData == "PropellantGeometry" || itemData == "HeatInsulatingLayerGeometry" || itemData == "NozzleGeometry" )
 	{
 		occView->SetCameraRotationState(true);
 		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);

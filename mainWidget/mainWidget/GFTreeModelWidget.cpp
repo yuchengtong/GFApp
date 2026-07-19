@@ -884,13 +884,48 @@ void GFTreeModelWidget::bindConnect()
 void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 {
 	UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+	// 1.跌落
+	auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+	auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
+	auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	// 2.快考
+	auto fastCombustionTemperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
+	// 3.慢烤
+	auto slowCombustionTemperatureResult = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
+	// 4.枪击
+	auto shootStressResult = ModelDataManager::GetInstance()->GetShootStressResult();
+	auto shootStrainResult = ModelDataManager::GetInstance()->GetShootStrainResult();
+	auto shootTemperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
+	auto shootOverpressureResult = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+	// 5.射流冲击
+	auto jetImpactStressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+	auto jetImpactStrainResult = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
+	auto jetImpactTemperatureResult = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
+	auto jetImpactOverpressureResult = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+	// 6.破片撞击
+	auto fragmentationImpactStressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+	auto fragmentationImpactStrainResult = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
+	auto fragmentationImpactTemperatureResult = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
+	auto fragmentationImpactOverpressureResult = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+	// 7.爆炸冲击波
+	auto explosiveBlastStressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+	auto explosiveBlastStrainResult = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
+	auto explosiveBlastTemperatureResult = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
+	auto explosiveBlastOverpressureResult = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+	// 8.殉爆安全性分析
+	auto sacrificeExplosionStressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+	auto sacrificeExplosionStrainResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
+	auto sacrificeExplosionTemperatureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
+	auto sacrificeExplosionOverpressureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+
+
 	QString workdir = userinfo.workdir;
 
 	QString itemData = item->data(0, Qt::UserRole).toString();
 	emit itemClicked(itemData);
 
-	if (itemData.contains("StressResult")|| itemData.contains("StrainResult") || itemData.contains("TemperatureResult") || itemData.contains("OverpressureResult")
-		|| itemData.contains("FallStressShellResult") || itemData.contains("FallStrainShellResult") || itemData.contains("FallTemperatureShellResult") || itemData.contains("FallOverpressureShellResult"))
+	if (itemData.contains("ShellResult")|| itemData.contains("PropellantResult") || itemData.contains("TemperatureResult"))
 	{
 		QWidget* parent = parentWidget();
 		while (parent) {
@@ -899,116 +934,324 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 			{
 				// 截图结果云图
 				QString m_privateDirPath = "";
-				if (itemData == "FallStressShellResult")
+				if (itemData == "FallStressShellResult" && fallStressResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fall/Stress.png";
+					m_privateDirPath = workdir + "/template/fall/ShellStress.png";
+					fallStressResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
 				}
-				else if (itemData == "FallStrainShellResult")
+				else if (itemData == "FallStressPropellantResult" && fallStressResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fall/Strain.png";
+					m_privateDirPath = workdir + "/template/fall/PropellantStress.png";
+					fallStressResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
 				}
-				else if (itemData == "FallTemperatureShellResult")
+				else if (itemData == "FallStrainShellResult" && fallStrainResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fall/Temperature.png";
+					m_privateDirPath = workdir + "/template/fall/ShellStrain.png";
+					fallStrainResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
 				}
-				else if (itemData == "FallOverpressureShellResult")
+				else if (itemData == "FallStrainPropellantResult" && fallStrainResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fall/Overpressure.png";
+					m_privateDirPath = workdir + "/template/fall/PropellantStrain.png";
+					fallStrainResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
 				}
-
-				else if (itemData == "FastCombustionTemperatureResult")
+				else if (itemData == "FallTemperatureShellResult" && fallTemperatureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fastCombustion/Temperature.png";
+					m_privateDirPath = workdir + "/template/fall/ShellTemperature.png";
+					fallTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallTemperatureResult(fallTemperatureResult);
 				}
-
-				else if (itemData == "SlowCombustionTemperatureResult")
+				else if (itemData == "FallTemperaturePropellantResult" && fallTemperatureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/slowCombustion/Temperature.png";
+					m_privateDirPath = workdir + "/template/fall/PropellantTemperature.png";
+					fallTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallTemperatureResult(fallTemperatureResult);
 				}
-
-				if (itemData == "ShootStressResult")
+				else if (itemData == "FallOverpressureShellResult" && fallOverpressureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/shoot/Stress.png";
+					m_privateDirPath = workdir + "/template/fall/ShellOverpressure.png";
+					fallOverpressureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallOverpressureResult(fallOverpressureResult);
 				}
-				else if (itemData == "ShootStrainResult")
+				else if (itemData == "FallOverpressurePropellantResult" && fallOverpressureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/shoot/Strain.png";
+					m_privateDirPath = workdir + "/template/fall//PropellantOverpressure.png";
+					fallOverpressureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallOverpressureResult(fallOverpressureResult);
 				}
-				else if (itemData == "ShootTemperatureResult")
+				// 快烤
+				else if (itemData == "FastCombustionTemperatureResult" && fastCombustionTemperatureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/shoot/Temperature.png";
+					m_privateDirPath = workdir + "/template/fastCombustion/ShellTemperature.png";
+					fastCombustionTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(fastCombustionTemperatureResult);
 				}
-				else if (itemData == "ShootOverpressureResult")
+				else if (itemData == "fastTemperatureShellResult" && fastCombustionTemperatureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/shoot/Overpressure.png";
+					m_privateDirPath = workdir + "/template/fastCombustion/PropellantTemperature.png";
+					fastCombustionTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(fastCombustionTemperatureResult);
 				}
-
-				if (itemData == "JetImpactStressResult")
+				// 慢烤
+				else if (itemData == "SlowCombustionTemperatureResult" && slowCombustionTemperatureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/jetImpact/Stress.png";
+					m_privateDirPath = workdir + "/template/slowCombustion/ShellTemperature.png";
+					slowCombustionTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(slowCombustionTemperatureResult);
 				}
-				else if (itemData == "JetImpactStrainResult")
+				else if (itemData == "slowTemperatureShellResult" && slowCombustionTemperatureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/jetImpact/Strain.png";
+					m_privateDirPath = workdir + "/template/slowCombustion/PropellantTemperature.png";
+					slowCombustionTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(slowCombustionTemperatureResult);
 				}
-				else if (itemData == "JetImpactTemperatureResult")
+				// 枪击
+				else if (itemData == "shootStressShellResult" && shootStressResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/jetImpact/Temperature.png";
+					m_privateDirPath = workdir + "/template/shoot/ShellStress.png";
+					shootStressResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootStressResult(shootStressResult);
 				}
-				else if (itemData == "JetImpactOverpressureResult")
+				else if (itemData == "shootStressPropellantResult" && shootStressResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/jetImpact/Overpressure.png";
+					m_privateDirPath = workdir + "/template/shoot/PropellantStress.png";
+					shootStressResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootStressResult(shootStressResult);
 				}
-
-				if (itemData == "FragmentationImpactStressResult")
+				else if (itemData == "shootStrainShellResult" && shootStrainResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fragmentationImpact/Stress.png";
+					m_privateDirPath = workdir + "/template/shoot/ShellStrain.png";
+					shootStrainResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootStrainResult(shootStrainResult);
 				}
-				else if (itemData == "FragmentationImpactStrainResult")
+				else if (itemData == "shootStrainPropellantResult" && shootStrainResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fragmentationImpact/Strain.png";
+					m_privateDirPath = workdir + "/template/shoot/PropellantStrain.png";
+					shootStrainResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootStrainResult(shootStrainResult);
 				}
-				else if (itemData == "FragmentationImpactTemperatureResult")
+				else if (itemData == "shootTempShellResult" && shootTemperatureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fragmentationImpact/Temperature.png";
+					m_privateDirPath = workdir + "/template/shoot/ShellTemperature.png";
+					shootTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootTemperatureResult(shootTemperatureResult);
 				}
-				else if (itemData == "FragmentationImpactOverpressureResult")
+				else if (itemData == "shootTempPropellantResult" && shootTemperatureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/fragmentationImpact/Overpressure.png";
+					m_privateDirPath = workdir + "/template/shoot/PropellantTemperature.png";
+					shootTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootTemperatureResult(shootTemperatureResult);
 				}
-
-				if (itemData == "ExplosiveBlastStressResult")
+				else if (itemData == "shootOverpressureShellResult" && shootOverpressureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/explosiveBlast/Stress.png";
+					m_privateDirPath = workdir + "/template/shoot/ShellOverpressure.png";
+					shootOverpressureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootOverpressureResult(shootOverpressureResult);
 				}
-				else if (itemData == "ExplosiveBlastStrainResult")
+				else if (itemData == "shootOverpressurePropellantResult" && shootOverpressureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/explosiveBlast/Strain.png";
+					m_privateDirPath = workdir + "/template/shoot/PropellantOverpressure.png";
+					shootOverpressureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootOverpressureResult(shootOverpressureResult);
 				}
-				else if (itemData == "ExplosiveBlastTemperatureResult")
+				// 射流冲击
+				else if (itemData == "jetStressShellResult" && jetImpactStressResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/explosiveBlast/Temperature.png";
+					m_privateDirPath = workdir + "/template/jetImpact/ShellStress.png";
+					jetImpactStressResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactStressResult(jetImpactStressResult);
 				}
-				else if (itemData == "ExplosiveBlastOverpressureResult")
+				else if (itemData == "jetStressPropellantResult" && jetImpactStressResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/explosiveBlast/Overpressure.png";
+					m_privateDirPath = workdir + "/template/jetImpact/PropellantStress.png";
+					jetImpactStressResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactStressResult(jetImpactStressResult);
 				}
-
-				if (itemData == "SacrificeExplosioStressResult")
+				else if (itemData == "jetStrainShellResult" && jetImpactStrainResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/sacrificeExplosio/Stress.png";
+					m_privateDirPath = workdir + "/template/jetImpact/ShellStrain.png";
+					jetImpactStrainResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactStrainResult(jetImpactStrainResult);
 				}
-				else if (itemData == "SacrificeExplosioStrainResult")
+				else if (itemData == "jetStrainPropellantResult" && jetImpactStrainResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/sacrificeExplosio/Strain.png";
+					m_privateDirPath = workdir + "/template/jetImpact/PropellantStrain.png";
+					jetImpactStrainResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactStrainResult(jetImpactStrainResult);
 				}
-				else if (itemData == "SacrificeExplosioTemperatureResult")
+				else if (itemData == "jetTempShellResult" && jetImpactTemperatureResult.shellScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/sacrificeExplosio/Temperature.png";
+					m_privateDirPath = workdir + "/template/jetImpact/ShellTemperature.png";
+					jetImpactTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactTemperatureResult(jetImpactTemperatureResult);
 				}
-				else if (itemData == "SacrificeExplosioOverpressureResult")
+				else if (itemData == "jetTempPropellantResult" && jetImpactTemperatureResult.propellantScreenFlag)
 				{
-					m_privateDirPath = workdir + "/template/sacrificeExplosio/Overpressure.png";
+					m_privateDirPath = workdir + "/template/jetImpact/PropellantTemperature.png";
+					jetImpactTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactTemperatureResult(jetImpactTemperatureResult);
+				}
+				else if (itemData == "jetOverpressureShellResult" && jetImpactOverpressureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/jetImpact/ShellOverpressure.png";
+					jetImpactOverpressureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactOverpressureResult(jetImpactOverpressureResult);
+				}
+				else if (itemData == "jetOverpressurePropellantResult" && jetImpactOverpressureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/jetImpact/PropellantOverpressure.png";
+					jetImpactOverpressureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactOverpressureResult(jetImpactOverpressureResult);
+				}
+				// 破片撞击
+				else if (itemData == "fragmentationStressShellResult" && fragmentationImpactStressResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/ShellStress.png";
+					fragmentationImpactStressResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactStressResult(fragmentationImpactStressResult);
+				}
+				else if (itemData == "fragmentationStressPropellantResult" && fragmentationImpactStressResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/PropellantStress.png";
+					fragmentationImpactStressResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactStressResult(fragmentationImpactStressResult);
+				}
+				else if (itemData == "fragmentationStrainShellResult" && fragmentationImpactStrainResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/ShellStrain.png";
+					fragmentationImpactStrainResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactStrainResult(fragmentationImpactStrainResult);
+				}
+				else if (itemData == "fragmentationStrainPropellantResult" && fragmentationImpactStrainResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/PropellantStrain.png";
+					fragmentationImpactStrainResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactStrainResult(fragmentationImpactStrainResult);
+				}
+				else if (itemData == "fragmentationTempShellResult" && fragmentationImpactTemperatureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/ShellTemperature.png";
+					fragmentationImpactTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactTemperatureResult(fragmentationImpactTemperatureResult);
+				}
+				else if (itemData == "fragmentationTempPropellantResult" && fragmentationImpactTemperatureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/PropellantTemperature.png";
+					fragmentationImpactTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactTemperatureResult(fragmentationImpactTemperatureResult);
+				}
+				else if (itemData == "fragmentationOverpressureShellResult" && fragmentationImpactOverpressureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/ShellOverpressure.png";
+					fragmentationImpactOverpressureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactOverpressureResult(fragmentationImpactOverpressureResult);
+				}
+				else if (itemData == "fragmentationOverpressurePropellantResult" && fragmentationImpactOverpressureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/PropellantOverpressure.png";
+					fragmentationImpactOverpressureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactOverpressureResult(fragmentationImpactOverpressureResult);
+				}
+				// 爆炸冲击波
+				else if (itemData == "explosiveStressShellResult" && explosiveBlastStressResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/ShellStress.png";
+					explosiveBlastStressResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastStressResult(explosiveBlastStressResult);
+				}
+				else if (itemData == "explosiveStressPropellantResult" && explosiveBlastStressResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/PropellantStress.png";
+					explosiveBlastStressResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastStressResult(explosiveBlastStressResult);
+				}
+				else if (itemData == "explosiveStrainShellResult" && explosiveBlastStrainResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/ShellStrain.png";
+					explosiveBlastStrainResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastStrainResult(explosiveBlastStrainResult);
+				}
+				else if (itemData == "explosiveStrainPropellantResult" && explosiveBlastStrainResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/PropellantStrain.png";
+					explosiveBlastStrainResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastStrainResult(explosiveBlastStrainResult);
+				}
+				else if (itemData == "explosiveTempShellResult" && explosiveBlastTemperatureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/ShellTemperature.png";
+					explosiveBlastTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastTemperatureResult(explosiveBlastTemperatureResult);
+				}
+				else if (itemData == "explosiveTempPropellantResult" && explosiveBlastTemperatureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/PropellantTemperature.png";
+					explosiveBlastTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastTemperatureResult(explosiveBlastTemperatureResult);
+				}
+				else if (itemData == "explosiveOverpressureShellResult" && explosiveBlastOverpressureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/ShellOverpressure.png";
+					explosiveBlastOverpressureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastOverpressureResult(explosiveBlastOverpressureResult);
+				}
+				else if (itemData == "explosiveOverpressurePropellantResult" && explosiveBlastOverpressureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/PropellantOverpressure.png";
+					explosiveBlastOverpressureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastOverpressureResult(explosiveBlastOverpressureResult);
+				}
+				// 殉爆
+				else if (itemData == "sacrificeStressShellResult" && sacrificeExplosionStressResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/ShellStress.png";
+					sacrificeExplosionStressResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionStressResult(sacrificeExplosionStressResult);
+				}
+				if (itemData == "sacrificeStressPropellantResult" && sacrificeExplosionStressResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/PropellantStress.png";
+					sacrificeExplosionStressResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionStressResult(sacrificeExplosionStressResult);
+				}
+				else if (itemData == "sacrificeStrainShellResult" && sacrificeExplosionStrainResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/ShellStrain.png";
+					sacrificeExplosionStrainResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionStrainResult(sacrificeExplosionStrainResult);
+				}
+				else if (itemData == "sacrificeStrainPropellantResult" && sacrificeExplosionStrainResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/PropellantStrain.png";
+					sacrificeExplosionStrainResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionStrainResult(sacrificeExplosionStrainResult);
+				}
+				else if (itemData == "sacrificeTempShellResult" && sacrificeExplosionTemperatureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/ShellTemperature.png";
+					sacrificeExplosionTemperatureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionTemperatureResult(sacrificeExplosionTemperatureResult);
+				}
+				else if (itemData == "sacrificeTempPropellantResult" && sacrificeExplosionTemperatureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/PropellantTemperature.png";
+					sacrificeExplosionTemperatureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionTemperatureResult(sacrificeExplosionTemperatureResult);
+				}
+				else if (itemData == "sacrificeOverpressureShellResult" && sacrificeExplosionOverpressureResult.shellScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/ShellOverpressure.png";
+					sacrificeExplosionOverpressureResult.shellScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionOverpressureResult(sacrificeExplosionOverpressureResult);
+				}
+				else if (itemData == "sacrificeOverpressurePropellantResult" && sacrificeExplosionOverpressureResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/PropellantOverpressure.png";
+					sacrificeExplosionOverpressureResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionOverpressureResult(sacrificeExplosionOverpressureResult);
 				}
 				
 				QDir privateDir(m_privateDirPath);
@@ -2935,10 +3178,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir(workdir + "/template/fall/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir(workdir + "/template/fall/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/fall/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir(workdir + "/template/fall/Overpressure.png").absolutePath());
+						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/fall/ShellStress.png").absolutePath());
+						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/fall/PropellantStress.png").absolutePath());
+						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/fall/ShellStrain.png").absolutePath());
+						imagePaths.insert("推进剂应变云图", QDir(workdir + "/template/fall/PropellantStrain.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/fall/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/fall/PropellantTemperature.png").absolutePath());
+						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/fall/ShellOverpressure.png").absolutePath());
+						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/fall/PropellantOverpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3042,7 +3289,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/fastCombustion/Temperature.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/fastCombustion/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/fastCombustion/PropellantTemperature.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3145,7 +3393,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/slowCombustion/Temperature.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/slowCombustion/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/slowCombustion/PropellantTemperature.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3257,10 +3506,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir(workdir + "/template/shoot/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir(workdir + "/template/shoot/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/shoot/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir(workdir + "/template/shoot/Overpressure.png").absolutePath());
+						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/shoot/ShellStress.png").absolutePath());
+						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/shoot/PropellantStress.png").absolutePath());
+						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/shoot/ShellStrain.png").absolutePath());
+						imagePaths.insert("推进剂应变云图", QDir(workdir + "/template/shoot/PropellantStrain.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/shoot/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/shoot/PropellantTemperature.png").absolutePath());
+						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/shoot/ShellOverpressure.png").absolutePath());
+						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/shoot/PropellantOverpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3371,10 +3624,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir(workdir + "/template/jetImpact/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir(workdir + "/template/jetImpact/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/jetImpact/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir(workdir + "/template/jetImpact/Overpressure.png").absolutePath());
+						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/jetImpact/ShellStress.png").absolutePath());
+						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/jetImpact/PropellantStress.png").absolutePath());
+						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/jetImpact/ShellStrain.png").absolutePath());
+						imagePaths.insert("推进剂应变云图", QDir(workdir + "/template/jetImpact/PropellantStrain.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/jetImpact/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/jetImpact/PropellantTemperature.png").absolutePath());
+						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/jetImpact/ShellOverpressure.png").absolutePath());
+						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/jetImpact/PropellantOverpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3483,10 +3740,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir(workdir + "/template/fragmentationImpact/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir(workdir + "/template/fragmentationImpact/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/fragmentationImpact/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir(workdir + "/template/fragmentationImpact/Overpressure.png").absolutePath());
+						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/fragmentationImpact/ShellStress.png").absolutePath());
+						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/fragmentationImpact/PropellantStress.png").absolutePath());
+						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/fragmentationImpact/ShellStrain.png").absolutePath());
+						imagePaths.insert("推进剂应变云图", QDir(workdir + "/template/fragmentationImpact/PropellantStrain.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/fragmentationImpact/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/fragmentationImpact/PropellantTemperature.png").absolutePath());
+						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/fragmentationImpact/ShellOverpressure.png").absolutePath());
+						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/fragmentationImpact/PropellantOverpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3595,10 +3856,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir(workdir + "/template/explosiveBlast/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir(workdir + "/template/explosiveBlast/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/explosiveBlast/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir(workdir + "/template/explosiveBlast/Overpressure.png").absolutePath());
+						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/explosiveBlast/ShellStress.png").absolutePath());
+						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/explosiveBlast/PropellantStress.png").absolutePath());
+						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/explosiveBlast/ShellStrain.png").absolutePath());
+						imagePaths.insert("推进剂应变云图", QDir(workdir + "/template/explosiveBlast/PropellantStrain.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/explosiveBlast/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/explosiveBlast/PropellantTemperature.png").absolutePath());
+						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/explosiveBlast/ShellOverpressure.png").absolutePath());
+						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/explosiveBlast/PropellantOverpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3708,10 +3973,14 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
-						imagePaths.insert("应力云图", QDir(workdir + "/template/sacrificeExplosio/Stress.png").absolutePath());
-						imagePaths.insert("应变云图", QDir(workdir + "/template/sacrificeExplosio/Strain.png").absolutePath());
-						imagePaths.insert("温度云图", QDir(workdir + "/template/sacrificeExplosio/Temperature.png").absolutePath());
-						imagePaths.insert("超压云图", QDir(workdir + "/template/sacrificeExplosio/Overpressure.png").absolutePath());
+						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/sacrificeExplosio/ShellStress.png").absolutePath());
+						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/sacrificeExplosio/PropellantStress.png").absolutePath());
+						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/sacrificeExplosio/ShellStrain.png").absolutePath());
+						imagePaths.insert("推进剂应变云图", QDir(workdir + "/template/sacrificeExplosio/PropellantStrain.png").absolutePath());
+						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/sacrificeExplosio/ShellTemperature.png").absolutePath());
+						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/sacrificeExplosio/PropellantTemperature.png").absolutePath());
+						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/sacrificeExplosio/ShellOverpressure.png").absolutePath());
+						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/sacrificeExplosio/PropellantOverpressure.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框

@@ -318,6 +318,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	fallStressResult.insulatingheatMinStress = propellantStressMinValue * 1.01;
 	fallStressResult.insulatingheatAvgStress = propellantStressAvgValue * 1.01;
 	fallStressResult.insulatingheatStandardStress = propellantStressStandardValue * 1.01;
+	fallStressResult.shellScreenFlag = true;
+	fallStressResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
 
 	// 应变分析结果
@@ -338,6 +340,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	fallStrainResult.insulatingheatMinStrain = fallStressResult.insulatingheatMinStress / steelInfo.modulus ;
 	fallStrainResult.insulatingheatAvgStrain = fallStressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	fallStrainResult.insulatingheatStandardStrain = fallStressResult.insulatingheatStandardStress / steelInfo.modulus;
+	fallStrainResult.shellScreenFlag = true;
+	fallStrainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
     
 
@@ -407,6 +411,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	temperatureResult.insulatingheatMinTemperature = 25;
 	temperatureResult.insulatingheatAvgTemperature = propellantTemperatureAvgValue * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = propellantTemperatureStandardValue * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFallTemperatureResult(temperatureResult);
 
 
@@ -490,6 +496,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	overpressureResult.insulatingheatMinOverpressure = propellantOverpressureMinValue * 1.01;
 	overpressureResult.insulatingheatAvgOverpressure = propellantOverpressureAvgValue * 1.01;
 	overpressureResult.insulatingheatStandardOverpressure = propellantOverpressureStandardValue * 1.01;
+	overpressureResult.shellScreenFlag = true;
+	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFallOverpressureResult(overpressureResult);
 
 
@@ -557,10 +565,14 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	for (int i = 0; i < formulaCal.size(); ++i)
 	{
 		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		res = res * 0.7;
+		res = res * 0.068;
 		if (res > 25)
 		{
 			res = res + res * 0.1 * difference;
+			if (res > fastCombustionSettingInfo.temperature)
+			{
+				res = fastCombustionSettingInfo.temperature * 0.92;
+			}
 			if (!m_steelArray.contains(i + 1))
 			{
 				propellantTemperatureResults.push_back(res);
@@ -637,6 +649,8 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	temperatureResult.insulatingheatMinTemperature = minValue * 1.01;
 	temperatureResult.insulatingheatAvgTemperature = avgValue * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = standardValue * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(temperatureResult);
 
 	FastCombustionAnalysisResultInfo fastCombustionAnalysisResultInfo;
@@ -767,6 +781,8 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	temperatureResult.insulatingheatMinTemperature = minValue;
 	temperatureResult.insulatingheatAvgTemperature = avgValue;
 	temperatureResult.insulatingheatStandardTemperature = standardValue;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(temperatureResult);
 
 	SlowCombustionAnalysisResultInfo slowCombustionAnalysisResultInfo;
@@ -892,6 +908,8 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	stressResult.insulatingheatMinStress = propellantStressMinValue * 1.01;
 	stressResult.insulatingheatAvgStress = propellantStressAvgValue * 1.01;
 	stressResult.insulatingheatStandardStress = propellantStressStandardValue * 1.01;
+	stressResult.shellScreenFlag = true;
+	stressResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetShootStressResult(stressResult);
 
 	// 应变分析结果
@@ -912,6 +930,8 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	strainResult.insulatingheatMinStrain = stressResult.insulatingheatMinStress / steelInfo.modulus ;
 	strainResult.insulatingheatAvgStrain = stressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
+	strainResult.shellScreenFlag = true;
+	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetShootStrainResult(strainResult);
 
 
@@ -975,6 +995,8 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	temperatureResult.insulatingheatMinTemperature = 25;
 	temperatureResult.insulatingheatAvgTemperature = propellantTemperatureAvgValue * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = propellantTemperatureStandardValue * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetShootTemperatureResult(temperatureResult);
 
 
@@ -1048,6 +1070,8 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	overpressureResult.insulatingheatMinOverpressure = propellantOverpressureMinValue * 1.01;
 	overpressureResult.insulatingheatAvgOverpressure = propellantOverpressureAvgValue * 1.01;
 	overpressureResult.insulatingheatStandardOverpressure = propellantOverpressureStandardValue * 1.01;
+	overpressureResult.shellScreenFlag = true;
+	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetShootOverpressureResult(overpressureResult);
 
 
@@ -1179,6 +1203,8 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	stressResult.insulatingheatMinStress = propellantStressMinValue * 1.01;
 	stressResult.insulatingheatAvgStress = propellantStressAvgValue * 1.01;
 	stressResult.insulatingheatStandardStress = propellantStressStandardValue * 1.01;
+	stressResult.shellScreenFlag = true;
+	stressResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetJetImpactStressResult(stressResult);
 
 	// 应变分析结果
@@ -1199,6 +1225,8 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	strainResult.insulatingheatMinStrain = stressResult.insulatingheatMinStress / steelInfo.modulus ;
 	strainResult.insulatingheatAvgStrain = stressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
+	strainResult.shellScreenFlag = true;
+	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetJetImpactStrainResult(strainResult);
 
 
@@ -1261,6 +1289,8 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	temperatureResult.insulatingheatMinTemperature = 25;
 	temperatureResult.insulatingheatAvgTemperature = propellantTemperatureAvgValue * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = propellantTemperatureStandardValue * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetJetImpactTemperatureResult(temperatureResult);
 
 
@@ -1332,6 +1362,8 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	overpressureResult.insulatingheatMinOverpressure = propellantOverpressureMinValue * 1.01;
 	overpressureResult.insulatingheatAvgOverpressure = propellantOverpressureAvgValue * 1.01;
 	overpressureResult.insulatingheatStandardOverpressure = propellantOverpressureStandardValue * 1.01;
+	overpressureResult.shellScreenFlag = true;
+	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetJetImpactOverpressureResult(overpressureResult);
 
 
@@ -1466,6 +1498,8 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	stressResult.insulatingheatMinStress = propellantStressMinValue * 1.01;
 	stressResult.insulatingheatAvgStress = propellantStressAvgValue * 1.01;
 	stressResult.insulatingheatStandardStress = propellantStressStandardValue * 1.01;
+	stressResult.shellScreenFlag = true;
+	stressResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFragmentationImpactStressResult(stressResult);
 
 	// 应变分析结果
@@ -1486,6 +1520,8 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	strainResult.insulatingheatMinStrain = stressResult.insulatingheatMinStress / steelInfo.modulus ;
 	strainResult.insulatingheatAvgStrain = stressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
+	strainResult.shellScreenFlag = true;
+	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFragmentationImpactStrainResult(strainResult);
 
 
@@ -1548,6 +1584,8 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	temperatureResult.insulatingheatMinTemperature = 25;
 	temperatureResult.insulatingheatAvgTemperature = propellantTemperatureAvgValue * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = propellantTemperatureStandardValue * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFragmentationImpactTemperatureResult(temperatureResult);
 
 
@@ -1620,6 +1658,8 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	overpressureResult.insulatingheatMinOverpressure = propellantOverpressureMinValue * 1.01;
 	overpressureResult.insulatingheatAvgOverpressure = propellantOverpressureAvgValue * 1.01;
 	overpressureResult.insulatingheatStandardOverpressure = propellantOverpressureStandardValue * 1.01;
+	overpressureResult.shellScreenFlag = true;
+	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFragmentationImpactOverpressureResult(overpressureResult);
 
 
@@ -1760,6 +1800,8 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	stressResult.insulatingheatMinStress = propellantStressMinValue * 1.01;
 	stressResult.insulatingheatAvgStress = propellantStressAvgValue * 1.01;
 	stressResult.insulatingheatStandardStress = propellantStressStandardValue * 1.01;
+	stressResult.shellScreenFlag = true;
+	stressResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetExplosiveBlastStressResult(stressResult);
 
 	// 应变分析结果
@@ -1780,6 +1822,8 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	strainResult.insulatingheatMinStrain = stressResult.insulatingheatMinStress / steelInfo.modulus ;
 	strainResult.insulatingheatAvgStrain = stressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
+	strainResult.shellScreenFlag = true;
+	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetExplosiveBlastStrainResult(strainResult);
 
 	// 温度分析结果
@@ -1795,6 +1839,8 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	temperatureResult.insulatingheatMinTemperature = 25;
 	temperatureResult.insulatingheatAvgTemperature = temperatureResult.mpropellantsAvgTemperature * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = temperatureResult.outheatStandardTemperature * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetExplosiveBlastTemperatureResult(temperatureResult);
 
 
@@ -1866,6 +1912,8 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	overpressureResult.insulatingheatMinOverpressure = propellantOverpressureMinValue * 1.01;
 	overpressureResult.insulatingheatAvgOverpressure = propellantOverpressureAvgValue * 1.01;
 	overpressureResult.insulatingheatStandardOverpressure = propellantOverpressureStandardValue * 1.01;
+	overpressureResult.shellScreenFlag = true;
+	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetExplosiveBlastOverpressureResult(overpressureResult);
 
 
@@ -1999,6 +2047,8 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	stressResult.insulatingheatMinStress = propellantStressMinValue * 1.01;
 	stressResult.insulatingheatAvgStress = propellantStressAvgValue * 1.01;
 	stressResult.insulatingheatStandardStress = propellantStressStandardValue * 1.01;
+	stressResult.shellScreenFlag = true;
+	stressResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionStressResult(stressResult);
 
 	// 应变分析结果
@@ -2019,6 +2069,8 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	strainResult.insulatingheatMinStrain = stressResult.insulatingheatMinStress / steelInfo.modulus ;
 	strainResult.insulatingheatAvgStrain = stressResult.insulatingheatAvgStress / steelInfo.modulus ;
 	strainResult.insulatingheatStandardStrain = stressResult.insulatingheatStandardStress / steelInfo.modulus ;
+	strainResult.shellScreenFlag = true;
+	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionStrainResult(strainResult);
 
 	// 温度分析结果
@@ -2034,6 +2086,8 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	temperatureResult.insulatingheatMinTemperature = 25;
 	temperatureResult.insulatingheatAvgTemperature = temperatureResult.mpropellantsAvgTemperature * 1.01;
 	temperatureResult.insulatingheatStandardTemperature = temperatureResult.propellantsStandardTemperature * 1.01;
+	temperatureResult.shellScreenFlag = true;
+	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionTemperatureResult(temperatureResult);
 
 	// 超压
@@ -2103,6 +2157,8 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	overpressureResult.insulatingheatMinOverpressure = propellantOverpressureMinValue * 1.01;
 	overpressureResult.insulatingheatAvgOverpressure = propellantOverpressureAvgValue * 1.01;
 	overpressureResult.insulatingheatStandardOverpressure = propellantOverpressureStandardValue * 1.01;
+	overpressureResult.shellScreenFlag = true;
+	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionOverpressureResult(overpressureResult);
 
 
