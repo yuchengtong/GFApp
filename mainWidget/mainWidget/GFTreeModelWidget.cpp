@@ -344,10 +344,25 @@ void GFTreeModelWidget::init()
 		overpressureResult->addChild(overpressurePropellantResult);
 	}
 
+	
+	QTreeWidgetItem* reactionDegreeResult = new QTreeWidgetItem();
+	reactionDegreeResult->setText(0, "反应度");
+	reactionDegreeResult->setData(0, Qt::UserRole, "ReactionDegreeResult");
+	reactionDegreeResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* reactionDegreePropellantResult = new QTreeWidgetItem();
+		reactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		reactionDegreePropellantResult->setData(0, Qt::UserRole, "reactionDegreePropellantResult");
+		reactionDegreePropellantResult->setIcon(0, error_icon);
+
+		reactionDegreeResult->addChild(reactionDegreePropellantResult);
+	}
+
 	fallAnalysis->addChild(stressResult);
 	fallAnalysis->addChild(strainResult);
 	fallAnalysis->addChild(temperatureResult);
 	fallAnalysis->addChild(overpressureResult);
+	fallAnalysis->addChild(reactionDegreeResult);
 
 	QTreeWidgetItem* fastCombustionAnalysis = new QTreeWidgetItem();
 	fastCombustionAnalysis->setText(0, "2.快速烤燃安全性分析");
@@ -485,11 +500,25 @@ void GFTreeModelWidget::init()
 		shootOverpressureResult->addChild(shootOverpressurePropellantResult);
 	}
 
+	QTreeWidgetItem* shootReactionDegreeResult = new QTreeWidgetItem();
+	shootReactionDegreeResult->setText(0, "反应度");
+	shootReactionDegreeResult->setData(0, Qt::UserRole, "ShootReactionDegreeResult");
+	shootReactionDegreeResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* shootReactionDegreePropellantResult = new QTreeWidgetItem();
+		shootReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		shootReactionDegreePropellantResult->setData(0, Qt::UserRole, "shootReactionDegreePropellantResult");
+		shootReactionDegreePropellantResult->setIcon(0, error_icon);
+
+		shootReactionDegreeResult->addChild(shootReactionDegreePropellantResult);
+	}
+
+
 	shootAnalysis->addChild(shootStressResult);
 	shootAnalysis->addChild(shootStrainResult);
 	shootAnalysis->addChild(shootTemperatureResult);
 	shootAnalysis->addChild(shootOverpressureResult);
-
+	shootAnalysis->addChild(shootReactionDegreeResult);
 
 	QTreeWidgetItem* jetImpactAnalysis = new QTreeWidgetItem();
 	jetImpactAnalysis->setText(0, "5.射流冲击安全性分析");
@@ -574,11 +603,24 @@ void GFTreeModelWidget::init()
 		jetImpactOverpressureResult->addChild(jetOverpressurePropellantResult);
 	}
 
+	QTreeWidgetItem* jetImpactReactionDegreeResult = new QTreeWidgetItem();
+	jetImpactReactionDegreeResult->setText(0, "反应度");
+	jetImpactReactionDegreeResult->setData(0, Qt::UserRole, "jetImpactReactionDegreeResult");
+	jetImpactReactionDegreeResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* jetImpactReactionDegreePropellantResult = new QTreeWidgetItem();
+		jetImpactReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		jetImpactReactionDegreePropellantResult->setData(0, Qt::UserRole, "jetImpactReactionDegreePropellantResult");
+		jetImpactReactionDegreePropellantResult->setIcon(0, error_icon);
+
+		jetImpactReactionDegreeResult->addChild(jetImpactReactionDegreePropellantResult);
+	}
+
 	jetImpactAnalysis->addChild(jetImpactStressResult);
 	jetImpactAnalysis->addChild(jetStrainResult);
 	jetImpactAnalysis->addChild(jetImpactTemperatureResult);
 	jetImpactAnalysis->addChild(jetImpactOverpressureResult);
-
+	jetImpactAnalysis->addChild(jetImpactReactionDegreeResult);
 
 	QTreeWidgetItem* fragmentationImpactAnalysis = new QTreeWidgetItem();
 	fragmentationImpactAnalysis->setText(0, "6.破片撞击安全性分析");
@@ -662,11 +704,24 @@ void GFTreeModelWidget::init()
 		fragmentationImpactOverpressureResult->addChild(fragmentationOverpressurePropellantResult);
 	}
 
+	QTreeWidgetItem* fragmentationImpactReactionDegreeResult = new QTreeWidgetItem();
+	fragmentationImpactReactionDegreeResult->setText(0, "反应度");
+	fragmentationImpactReactionDegreeResult->setData(0, Qt::UserRole, "fragmentationImpactReactionDegreeResult");
+	fragmentationImpactReactionDegreeResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* fragmentationImpactReactionDegreePropellantResult = new QTreeWidgetItem();
+		fragmentationImpactReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		fragmentationImpactReactionDegreePropellantResult->setData(0, Qt::UserRole, "fragmentationImpactReactionDegreePropellantResult");
+		fragmentationImpactReactionDegreePropellantResult->setIcon(0, error_icon);
+
+		fragmentationImpactReactionDegreeResult->addChild(fragmentationImpactReactionDegreePropellantResult);
+	}
+
 	fragmentationImpactAnalysis->addChild(fragmentationImpactStressResult);
 	fragmentationImpactAnalysis->addChild(fragmentationStrainResult);
 	fragmentationImpactAnalysis->addChild(fragmentationImpactTemperatureResult);
 	fragmentationImpactAnalysis->addChild(fragmentationImpactOverpressureResult);
-
+	fragmentationImpactAnalysis->addChild(fragmentationImpactReactionDegreeResult);
 
 	QTreeWidgetItem* explosiveBlastAnalysis = new QTreeWidgetItem();
 	explosiveBlastAnalysis->setText(0, "7.爆炸冲击波安全性分析");
@@ -751,11 +806,23 @@ void GFTreeModelWidget::init()
 		explosiveBlastOverpressureResult->addChild(explosiveOverpressurePropellantResult);
 	}
 
+	QTreeWidgetItem* explosiveBlastReactionDegreeResult = new QTreeWidgetItem();
+	explosiveBlastReactionDegreeResult->setText(0, "反应度");
+	explosiveBlastReactionDegreeResult->setData(0, Qt::UserRole, "explosiveBlastReactionDegreeResult");
+	explosiveBlastReactionDegreeResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* explosiveBlastReactionDegreePropellantResult = new QTreeWidgetItem();
+		explosiveBlastReactionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		explosiveBlastReactionDegreePropellantResult->setData(0, Qt::UserRole, "explosiveBlastReactionDegreePropellantResult");
+		explosiveBlastReactionDegreePropellantResult->setIcon(0, error_icon);
+
+		explosiveBlastReactionDegreeResult->addChild(explosiveBlastReactionDegreePropellantResult);
+	}
 	explosiveBlastAnalysis->addChild(explosiveBlastStressResult);
 	explosiveBlastAnalysis->addChild(explosiveBlastStrainResult);
 	explosiveBlastAnalysis->addChild(explosiveBlastTemperatureResult);
 	explosiveBlastAnalysis->addChild(explosiveBlastOverpressureResult);
-
+	explosiveBlastAnalysis->addChild(explosiveBlastReactionDegreeResult);
 
 	QTreeWidgetItem* sacrificeExplosionAnalysis = new QTreeWidgetItem();
 	sacrificeExplosionAnalysis->setText(0, "8.殉爆安全性分析");
@@ -840,11 +907,23 @@ void GFTreeModelWidget::init()
 		sacrificeExplosionOverpressureResult->addChild(sacrificeOverpressurePropellantResult);
 	}
 
+	QTreeWidgetItem* sacrificeExplosionReactionDegreeResult = new QTreeWidgetItem();
+	sacrificeExplosionReactionDegreeResult->setText(0, "反应度");
+	sacrificeExplosionReactionDegreeResult->setData(0, Qt::UserRole, "sacrificeExplosionReactionDegreeResult");
+	sacrificeExplosionReactionDegreeResult->setIcon(0, error_icon);
+	{
+		QTreeWidgetItem* sacrificeExplosionDegreePropellantResult = new QTreeWidgetItem();
+		sacrificeExplosionDegreePropellantResult->setText(0, "推进剂+绝热层");
+		sacrificeExplosionDegreePropellantResult->setData(0, Qt::UserRole, "sacrificeExplosionDegreePropellantResult");
+		sacrificeExplosionDegreePropellantResult->setIcon(0, error_icon);
+
+		sacrificeExplosionReactionDegreeResult->addChild(sacrificeExplosionDegreePropellantResult);
+	}
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStressResult);
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionStrainResult);
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionTemperatureResult);
 	sacrificeExplosionAnalysis->addChild(sacrificeExplosionOverpressureResult);
-
+	sacrificeExplosionAnalysis->addChild(sacrificeExplosionReactionDegreeResult);
 
 	analysisNode->addChild(fallAnalysis);
 	analysisNode->addChild(fastCombustionAnalysis);
@@ -2012,6 +2091,19 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 
 								updataIcon();
 
+								//显示所有shape，便于截图
+								auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+								if (!geomInfo.nozzleAisShape.IsNull() && !geomInfo.shellAisShape.IsNull() &&
+									!geomInfo.propellantAisShape.IsNull() && !geomInfo.heatInsulatingLayerAisShape.IsNull())
+								{								
+									context->Display(geomInfo.nozzleAisShape, Standard_True);
+									context->Display(geomInfo.shellAisShape, Standard_True);
+									context->Display(geomInfo.propellantAisShape, Standard_True);
+									context->Display(geomInfo.heatInsulatingLayerAisShape, Standard_True);
+
+									Handle(V3d_View) view = occView->getView();
+									view->SetProj(V3d_Zneg);
+								}
 
 								occView->fitAll();
 								occView->update();

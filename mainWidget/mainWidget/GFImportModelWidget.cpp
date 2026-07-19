@@ -232,10 +232,45 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		//}
 		m_geomPropertyWidget->UpdataPropertyInfo();
 	}
-	else if (itemData == "ShellGeometry" || itemData == "PropellantGeometry" || itemData == "HeatInsulatingLayerGeometry" || itemData == "NozzleGeometry" )
+	else if (itemData == "NozzleGeometry" || itemData == "ShellGeometry" ||
+		itemData == "PropellantGeometry" || itemData == "HeatInsulatingLayerGeometry")
 	{
 		occView->SetCameraRotationState(true);
 		m_PropertyStackWidget->setCurrentWidget(m_geomPropertyWidget);
+
+		
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		AIS_ListOfInteractive displayedList;
+		context->DisplayedObjects(displayedList);
+
+		for (AIS_ListIteratorOfListOfInteractive it(displayedList); it.More(); it.Next())
+		{
+			Handle(AIS_InteractiveObject) obj = it.Value();
+			if (obj->IsKind(STANDARD_TYPE(MeshVS_Mesh)))
+			{
+				context->Erase(obj, Standard_False);
+			}
+			if (obj->IsKind(STANDARD_TYPE(AIS_ColorScale)))
+			{
+				context->Erase(obj, Standard_False);
+			}
+			if (obj->IsKind(STANDARD_TYPE(AIS_Shape)))
+			{
+				Handle(AIS_Shape) aisShape = Handle(AIS_Shape)::DownCast(obj);
+				if (!aisShape.IsNull())
+				{
+					Standard_Real transparency = aisShape->Transparency();
+					if (std::abs(transparency - 0.9) < 1e-6)
+					{
+						// 透明度为 0.9，执行隐藏
+						context->Erase(obj, Standard_False);
+					}
+				}
+			}	
+		}
+
+		// 循环结束后统一更新视图
+		occView->getView()->Redraw();
 	}
 	else if (itemData == "Material") 
 	{
@@ -296,52 +331,82 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
 
 		auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-		//if (meshInfo.isChecked)
-		//{
-		//	Handle(AIS_InteractiveContext) context = occView->getContext();
-
-		//	BRep_Builder builder;
-		//	TopoDS_Compound compound;
-		//	builder.MakeCompound(compound);
-		//	auto tri = meshInfo.triangleStructure;
-		//	auto myEdges = tri.GetMyEdge();
-
-		//	auto myNodeCoords = tri.GetmyNodeCoords();
-
-		//	for (const auto& edge : myEdges)
-		//	{
-		//		Standard_Integer node1ID = edge.first;
-		//		Standard_Integer node2ID = edge.second;
-
-		//		Standard_Real x1 = myNodeCoords->Value(node1ID, 1);
-		//		Standard_Real y1 = myNodeCoords->Value(node1ID, 2);
-		//		Standard_Real z1 = myNodeCoords->Value(node1ID, 3);
-
-		//		Standard_Real x2 = myNodeCoords->Value(node2ID, 1);
-		//		Standard_Real y2 = myNodeCoords->Value(node2ID, 2);
-		//		Standard_Real z2 = myNodeCoords->Value(node2ID, 3);
-
-		//		gp_Pnt p1(x1, y1, z1);
-		//		gp_Pnt p2(x2, y2, z2);
-
-		//		TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(p1);
-		//		TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(p2);
-
-		//		TopoDS_Edge edgeShape = BRepBuilderAPI_MakeEdge(v1, v2);
-
-		//		builder.Add(compound, edgeShape);
-		//	}
-		//	Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
-		//	context->EraseAll(true);
-		//	context->Display(aisCompound, Standard_True);
-		//}
-
+	
 		m_meshPropertyWidget->UpdataPropertyInfo();
+
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		AIS_ListOfInteractive displayedList;
+		context->DisplayedObjects(displayedList);
+
+		for (AIS_ListIteratorOfListOfInteractive it(displayedList); it.More(); it.Next())
+		{
+			Handle(AIS_InteractiveObject) obj = it.Value();
+			if (obj->IsKind(STANDARD_TYPE(MeshVS_Mesh)))
+			{
+				context->Erase(obj, Standard_False);
+			}
+			if (obj->IsKind(STANDARD_TYPE(AIS_ColorScale)))
+			{
+				context->Erase(obj, Standard_False);
+			}
+			if (obj->IsKind(STANDARD_TYPE(AIS_Shape)))
+			{
+				Handle(AIS_Shape) aisShape = Handle(AIS_Shape)::DownCast(obj);
+				if (!aisShape.IsNull())
+				{
+					Standard_Real transparency = aisShape->Transparency();
+					if (std::abs(transparency - 0.9) < 1e-6)
+					{
+						// 透明度为 0.9，执行隐藏
+						context->Erase(obj, Standard_False);
+					}
+				}
+			}
+		}
+
+		// 循环结束后统一更新视图
+		occView->getView()->Redraw();
+
 	}
-	else if (itemData == "ShellMesh" || itemData == "PropellantMesh" || itemData == "HeatInsulatingLayerMesh" )
+	else if (itemData == "NozzleMesh" || itemData == "ShellMesh" || 
+	itemData == "PropellantMesh" || itemData == "HeatInsulatingLayerMesh" )
 	{
 		occView->SetCameraRotationState(true);
 		m_PropertyStackWidget->setCurrentWidget(m_meshPropertyWidget);
+
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		AIS_ListOfInteractive displayedList;
+		context->DisplayedObjects(displayedList);
+
+		for (AIS_ListIteratorOfListOfInteractive it(displayedList); it.More(); it.Next())
+		{
+			Handle(AIS_InteractiveObject) obj = it.Value();
+			if (obj->IsKind(STANDARD_TYPE(MeshVS_Mesh)))
+			{
+				context->Erase(obj, Standard_False);
+			}
+			if (obj->IsKind(STANDARD_TYPE(AIS_ColorScale)))
+			{
+				context->Erase(obj, Standard_False);
+			}
+			if (obj->IsKind(STANDARD_TYPE(AIS_Shape)))
+			{
+				Handle(AIS_Shape) aisShape = Handle(AIS_Shape)::DownCast(obj);
+				if (!aisShape.IsNull())
+				{
+					Standard_Real transparency = aisShape->Transparency();
+					if (std::abs(transparency - 0.9) < 1e-6)
+					{
+						// 透明度为 0.9，执行隐藏
+						context->Erase(obj, Standard_False);
+					}
+				}
+			}
+		}
+
+		// 循环结束后统一更新视图
+		occView->getView()->Redraw();
+
 	}
 	else if (itemData == "Analysis") 
 	{
@@ -385,36 +450,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		occView->SetCameraRotationState(false);
 
 		m_PropertyStackWidget->setCurrentWidget(m_stressResultWidget);
-
-		//Handle(AIS_InteractiveContext) context = occView->getContext();
-		//Handle(V3d_View) view = occView->getView();
-		//view->SetProj(V3d_Zneg);
-		//std::vector<double> nodeValues;
-		//APISetNodeValue::SetShellFallStressNephogram(occView, nodeValues);
-
-		//auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-		//auto max_value = fallAnalysisResultInfo.stressMaxValue;
-		//auto min_value = fallAnalysisResultInfo.stressMinValue;
-
-
-		//// 颜色条显示（与原逻辑一致）
-		//TCollection_ExtendedString tostr("跌落试验\n应力分析\n单位:MPa", true);
-		//Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-		//aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
-		//aColorScale->SetSize(100, 400);
-		//aColorScale->SetRange(min_value, max_value);
-		//aColorScale->SetNumberOfIntervals(9);
-		//aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
-		//aColorScale->SetTextHeight(14);
-		//aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
-		//aColorScale->SetTitle(tostr);
-		//aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
-		//aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
-		//aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
-		//Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
-		//context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
-		//context->SetDisplayMode(aColorScale, 1, Standard_False);
-		//context->Display(aColorScale, Standard_True);
 	}
 	else if (itemData == "FallStressShellResult")//跌落应力壳体
 	{
@@ -813,7 +848,50 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 		context->SetDisplayMode(aColorScale, 1, Standard_False);
 		context->Display(aColorScale, Standard_True);
 	}
-	
+	else if (itemData == "ReactionDegreeResult")
+	{
+		occView->SetCameraRotationState(false);
+		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	}
+	else if (itemData == "reactionDegreePropellantResult")
+	{
+		occView->SetCameraRotationState(false);
+
+		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
+		Handle(AIS_InteractiveContext) context = occView->getContext();
+		Handle(V3d_View) view = occView->getView();
+		view->SetProj(V3d_Zneg);
+
+		std::vector<double> nodeValues;
+		APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
+		occView->fitAll();
+
+		auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+		auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+		auto min_value = fallOverpressureResult.metalsMinOverpressure;
+
+
+		// 颜色条显示（与原逻辑一致）
+		TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
+		Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+		aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+		aColorScale->SetSize(100, 400);
+		aColorScale->SetRange(min_value, max_value);
+		aColorScale->SetNumberOfIntervals(9);
+		aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+		aColorScale->SetTextHeight(14);
+		aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+		aColorScale->SetTitle(tostr);
+		aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+		aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+		aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+		Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+		context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+		context->SetDisplayMode(aColorScale, 1, Standard_False);
+		context->Display(aColorScale, Standard_True);
+	}
+
 	//快速烤燃
 	else if (itemData == "FastCombustionAnalysis")
 	{
@@ -1328,6 +1406,49 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	context->Display(aColorScale, Standard_True);
 
 	}
+	else if (itemData == "ShootReactionDegreeResult")
+	{
+	occView->SetCameraRotationState(false);
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	}
+	else if (itemData == "shootReactionDegreePropellantResult")
+	{
+	occView->SetCameraRotationState(false);
+
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+	view->SetProj(V3d_Zneg);
+
+	std::vector<double> nodeValues;
+	APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
+	occView->fitAll();
+
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fallOverpressureResult.metalsMinOverpressure;
+
+
+	// 颜色条显示（与原逻辑一致）
+	TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
+	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+	aColorScale->SetSize(100, 400);
+	aColorScale->SetRange(min_value, max_value);
+	aColorScale->SetNumberOfIntervals(9);
+	aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+	aColorScale->SetTextHeight(14);
+	aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+	aColorScale->SetTitle(tostr);
+	aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+	aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+	aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+	Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+	context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+	context->SetDisplayMode(aColorScale, 1, Standard_False);
+	context->Display(aColorScale, Standard_True);
+	}
 	//射流冲击试验
 	else if (itemData == "JetImpactAnalysis") 
 	{
@@ -1607,6 +1728,49 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 	// 颜色条显示（与原逻辑一致）
 	TCollection_ExtendedString tostr("枪击试验\n超压分析\n单位:MPa", true);
+	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+	aColorScale->SetSize(100, 400);
+	aColorScale->SetRange(min_value, max_value);
+	aColorScale->SetNumberOfIntervals(9);
+	aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+	aColorScale->SetTextHeight(14);
+	aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+	aColorScale->SetTitle(tostr);
+	aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+	aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+	aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+	Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+	context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+	context->SetDisplayMode(aColorScale, 1, Standard_False);
+	context->Display(aColorScale, Standard_True);
+	}
+	else if (itemData == "jetImpactReactionDegreeResult")
+	{
+	occView->SetCameraRotationState(false);
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	}
+	else if (itemData == "jetImpactReactionDegreePropellantResult")
+	{
+	occView->SetCameraRotationState(false);
+
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+	view->SetProj(V3d_Zneg);
+
+	std::vector<double> nodeValues;
+	APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
+	occView->fitAll();
+
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fallOverpressureResult.metalsMinOverpressure;
+
+
+	// 颜色条显示（与原逻辑一致）
+	TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
 	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
 	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
 	aColorScale->SetSize(100, 400);
@@ -1932,6 +2096,49 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	context->SetDisplayMode(aColorScale, 1, Standard_False);
 	context->Display(aColorScale, Standard_True);
 	}
+	else if (itemData == "fragmentationImpactReactionDegreeResult")
+	{
+	occView->SetCameraRotationState(false);
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	}
+	else if (itemData == "fragmentationImpactReactionDegreePropellantResult")
+	{
+	occView->SetCameraRotationState(false);
+
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+	view->SetProj(V3d_Zneg);
+
+	std::vector<double> nodeValues;
+	APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
+	occView->fitAll();
+
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fallOverpressureResult.metalsMinOverpressure;
+
+
+	// 颜色条显示（与原逻辑一致）
+	TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
+	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+	aColorScale->SetSize(100, 400);
+	aColorScale->SetRange(min_value, max_value);
+	aColorScale->SetNumberOfIntervals(9);
+	aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+	aColorScale->SetTextHeight(14);
+	aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+	aColorScale->SetTitle(tostr);
+	aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+	aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+	aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+	Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+	context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+	context->SetDisplayMode(aColorScale, 1, Standard_False);
+	context->Display(aColorScale, Standard_True);
+	}
 	//爆炸冲击波试验
 	else if (itemData == "ExplosiveBlastAnalysis")
 	{ 
@@ -2230,6 +2437,49 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	context->SetDisplayMode(aColorScale, 1, Standard_False);
 	context->Display(aColorScale, Standard_True);
 	}
+	else if (itemData == "explosiveBlastReactionDegreeResult")
+	{
+	occView->SetCameraRotationState(false);
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	}
+	else if (itemData == "explosiveBlastReactionDegreePropellantResult")
+	{
+	occView->SetCameraRotationState(false);
+
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+	view->SetProj(V3d_Zneg);
+
+	std::vector<double> nodeValues;
+	APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
+	occView->fitAll();
+
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fallOverpressureResult.metalsMinOverpressure;
+
+
+	// 颜色条显示（与原逻辑一致）
+	TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
+	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+	aColorScale->SetSize(100, 400);
+	aColorScale->SetRange(min_value, max_value);
+	aColorScale->SetNumberOfIntervals(9);
+	aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+	aColorScale->SetTextHeight(14);
+	aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+	aColorScale->SetTitle(tostr);
+	aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+	aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+	aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+	Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+	context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+	context->SetDisplayMode(aColorScale, 1, Standard_False);
+	context->Display(aColorScale, Standard_True);
+	}
 	// 殉爆试验
 	else if (itemData == "SacrificeExplosionAnalysis")
 	{ 
@@ -2509,6 +2759,49 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 
 	// 颜色条显示（与原逻辑一致）
 	TCollection_ExtendedString tostr("殉爆试验\n超压分析\n单位:Mpa", true);
+	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
+	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
+	aColorScale->SetSize(100, 400);
+	aColorScale->SetRange(min_value, max_value);
+	aColorScale->SetNumberOfIntervals(9);
+	aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
+	aColorScale->SetTextHeight(14);
+	aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
+	aColorScale->SetTitle(tostr);
+	aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
+	aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
+	aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+	Graphic3d_Vec2i anoffset(0, Standard_Integer(450));
+	context->SetTransformPersistence(aColorScale, new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, anoffset));
+	context->SetDisplayMode(aColorScale, 1, Standard_False);
+	context->Display(aColorScale, Standard_True);
+	}
+	else if (itemData == "sacrificeExplosionReactionDegreeResult")
+	{
+	occView->SetCameraRotationState(false);
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	}
+	else if (itemData == "sacrificeExplosionDegreePropellantResult")
+	{
+	occView->SetCameraRotationState(false);
+
+	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+
+	Handle(AIS_InteractiveContext) context = occView->getContext();
+	Handle(V3d_View) view = occView->getView();
+	view->SetProj(V3d_Zneg);
+
+	std::vector<double> nodeValues;
+	APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
+	occView->fitAll();
+
+	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fallOverpressureResult.metalsMinOverpressure;
+
+
+	// 颜色条显示（与原逻辑一致）
+	TCollection_ExtendedString tostr("跌落试验\n超压分析\n单位:Mpa", true);
 	Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
 	aColorScale->SetFormat(TCollection_AsciiString("%.2f"));
 	aColorScale->SetSize(100, 400);

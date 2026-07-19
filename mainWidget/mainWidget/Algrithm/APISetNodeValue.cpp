@@ -74,8 +74,16 @@ MeshVS_DataMapOfIntegerColor APISetNodeValue::GetMeshDataMap(std::vector<double>
 	int index = 0;
 
 	// 处理特殊情况：避免除零
-	if (max <= min) {
+	if (max < min) {
 		Quantity_Color defaultColor(0.5, 0.5, 0.5, Quantity_TOC_RGB); // 灰色
+		for (size_t i = 0; i < tt.size(); ++i) {
+			colormap.Bind(i + 1, defaultColor);
+		}
+		return colormap;
+	}
+	else if(max == min)
+	{
+		Quantity_Color defaultColor(0.0, 0.0, 1.0, Quantity_TOC_RGB); // 蓝色
 		for (size_t i = 0; i < tt.size(); ++i) {
 			colormap.Bind(i + 1, defaultColor);
 		}
@@ -2971,9 +2979,9 @@ bool APISetNodeValue::SetPropellantFastCombustionTempNephogram(OccView* occView,
 
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -3072,8 +3080,18 @@ bool APISetNodeValue::SetPropellantFastCombustionTempNephogram(OccView* occView,
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
-	occView->fitAll();
 
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
+	occView->fitAll();
 
 	return true;
 }
@@ -3355,9 +3373,9 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -3490,6 +3508,17 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -3877,9 +3906,9 @@ bool APISetNodeValue::SetPropellantShootTemperatureResult(OccView* occView, std:
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -3976,6 +4005,17 @@ bool APISetNodeValue::SetPropellantShootTemperatureResult(OccView* occView, std:
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 
@@ -4019,9 +4059,9 @@ bool APISetNodeValue::SetPropellantShootOverpressureResult(OccView* occView, std
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -4359,9 +4399,9 @@ bool APISetNodeValue::SetPropellantJetImpactStressResult(OccView* occView, std::
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -4459,6 +4499,17 @@ bool APISetNodeValue::SetPropellantJetImpactStressResult(OccView* occView, std::
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 
@@ -4511,9 +4562,9 @@ bool APISetNodeValue::SetPropellantJetImpactTemperatureResult(OccView* occView, 
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -4609,6 +4660,17 @@ bool APISetNodeValue::SetPropellantJetImpactTemperatureResult(OccView* occView, 
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 
@@ -4651,9 +4713,9 @@ bool APISetNodeValue::SetPropellantJetImpactOverpressureResult(OccView* occView,
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -4749,6 +4811,17 @@ bool APISetNodeValue::SetPropellantJetImpactOverpressureResult(OccView* occView,
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -4988,9 +5061,9 @@ bool APISetNodeValue::SetPropellantFragmentationStressResult(OccView* occView, s
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -5086,6 +5159,17 @@ bool APISetNodeValue::SetPropellantFragmentationStressResult(OccView* occView, s
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 
@@ -5140,9 +5224,9 @@ bool APISetNodeValue::SetPropellantFragmentationTemperatureResult(OccView* occVi
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -5238,6 +5322,17 @@ bool APISetNodeValue::SetPropellantFragmentationTemperatureResult(OccView* occVi
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 
@@ -5281,9 +5376,9 @@ bool APISetNodeValue::SetPropellantFragmentationOverpressureResult(OccView* occV
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -5379,6 +5474,17 @@ bool APISetNodeValue::SetPropellantFragmentationOverpressureResult(OccView* occV
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -5592,9 +5698,9 @@ bool APISetNodeValue::SetPropellantExplosiveBlastStressResult(OccView* occView, 
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -5669,6 +5775,17 @@ bool APISetNodeValue::SetPropellantExplosiveBlastStressResult(OccView* occView, 
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -5725,9 +5842,9 @@ bool APISetNodeValue::SetPropellantExplosiveBlastTemperatureResult(OccView* occV
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -5802,6 +5919,17 @@ bool APISetNodeValue::SetPropellantExplosiveBlastTemperatureResult(OccView* occV
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -5850,9 +5978,9 @@ bool APISetNodeValue::SetPropellantExplosiveBlastOverpressureResult(OccView* occ
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -5927,6 +6055,17 @@ bool APISetNodeValue::SetPropellantExplosiveBlastOverpressureResult(OccView* occ
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -6140,9 +6279,9 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionStressResult(OccView* occVi
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -6218,6 +6357,17 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionStressResult(OccView* occVi
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 
@@ -6271,9 +6421,9 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionTemperatureResult(OccView* 
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -6348,6 +6498,17 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionTemperatureResult(OccView* 
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
@@ -6393,9 +6554,9 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionOverpressureResult(OccView*
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
+	auto shape = RotateAIS_ShapeXY(aisShape, 90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
 	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -6471,6 +6632,17 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionOverpressureResult(OccView*
 	mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 	context->EraseAll(true);
 	context->Display(mesh, Standard_True);
+
+	shape->SetTransparency(0.9);
+	context->Display(shape, Standard_True);
+	Handle(Prs3d_Drawer) drawer = shape->Attributes();
+	if (!drawer.IsNull()) {
+		// 关闭所有线型元素的显示
+		drawer->SetFaceBoundaryDraw(Standard_False);
+		drawer->SetWireDraw(Standard_False);
+		drawer->SetFreeBoundaryDraw(Standard_False);
+	}
+
 	occView->fitAll();
 
 	return true;
