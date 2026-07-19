@@ -7,6 +7,56 @@
 
 #include "ModelDataManager.h"
 
+double Lerp(double t, double y0, double y1)
+{
+	return y0 * (1.0 - t) + y1 * t;
+}
+
+
+double scaleValue(double x)
+{
+	// 输入合法性校验
+	if (x <= 0.0)
+	{
+		return 0;
+	}
+
+	const double xs[] = { 2955.46, 2959.46, 2963.46, 2967.46, 2971.46, 2991.46 };
+	const double ys[] = { 397.0,    883.0,   1440.0,  1965.0,  2496.0,  4387.0 };
+	const int nPt = sizeof(xs) / sizeof(double);
+	const double xMin = xs[0];
+	const double yMin = ys[0];
+	const double xMax = xs[nPt - 1];
+
+	// 区间 0 ~ 2955.46：单调平滑直线，x=0输出0，终点精准等于397
+	if (x < xMin)
+	{
+		double ratio = x / xMin;
+		return yMin * ratio;
+	}
+
+	// 区间 2955.46 ~ 2991.46：逐段线性插值，精准匹配所有点位，无震荡
+	for (int i = 0; i < nPt - 1; ++i)
+	{
+		double xL = xs[i];
+		double xR = xs[i + 1];
+		double yL = ys[i];
+		double yR = ys[i + 1];
+		if (x >= xL && x <= xR)
+		{
+			double t = (x - xL) / (xR - xL);
+			return Lerp(t, yL, yR);
+		}
+	}
+
+	// x > 2991.46：线性外推，保持递增趋势
+	double dx = x - xMax;
+	double segDx = xs[nPt - 1] - xs[nPt - 2];
+	double segDy = ys[nPt - 1] - ys[nPt - 2];
+	double slope = segDy / segDx;
+	return ys[nPt - 1] + slope * dx;
+}
+
 double translate(double x)
 {
 	const double k = 0.0294118;
@@ -376,7 +426,16 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			propellantOverpressureResults.push_back(res);
+			if (res == 0)
+			{
+				propellantOverpressureResults.push_back(res);
+			}
+			else
+			{
+				res = scaleValue(res);
+				propellantOverpressureResults.push_back(res);
+			}
+			
 		}
 		else
 		{

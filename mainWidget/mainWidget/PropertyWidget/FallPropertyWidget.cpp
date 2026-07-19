@@ -596,7 +596,7 @@ void FallPropertyWidget::initWidget()
 		{
 			auto text = item->text();
 			auto heightValue = text.toDouble();
-			if (heightValue >= 20 && heightValue <= 50)
+			if (heightValue >= 5 && heightValue <= 100)
 			{
 				m_highValue = text;
 			}

@@ -418,7 +418,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateStress(res);
+													res = translateStress(res) * 20;
 													if ((J/1000) > 0 && (J / 1000) < 25)
 													{
 														res = res * 0.56;
