@@ -30,6 +30,7 @@
 #include "ExplosiveBlastPropertyWidget.h"
 #include "SacrificeExplosionPropertyWidget.h"
 #include "DatabasePropertyWidget.h"
+#include "ReactionDegreeResultWidget.h"
 
 class GFImportModelWidget :public QWidget
 {
@@ -49,6 +50,7 @@ public:
 	StrainResultWidget* GetStrainResultWidget() { return m_strainResultWidget; }
 	TemperatureResultWidget* GetTemperatureResultWidget() { return m_temperatureResultWidget; }
 	OverpressureResultWidget* GetOverpressureResultWidget() { return m_overpressureResultWidge; }
+	ReactionDegreeResultWidget* GetReactionDegreeResultWidget() { return m_reactionDegreeResultWidget; }
 
 	ProjectPropertyWidge* GetProjectPropertyWidget() { return m_projectPropertyWidge; }
 	GeomPropertyWidget* GetGeomPropertyWidget() { return m_geomPropertyWidget; }
@@ -73,11 +75,13 @@ public:
 	StrainResultWidget* GetShootStrainResultWidget() { return m_shootStrainResultWidget; }
 	TemperatureResultWidget* GetShootTemperatureResultWidget() { return m_shootTemperatureResultWidget; }
 	OverpressureResultWidget* GetShootOverpressureResultWidget() { return m_shootOverpressureResultWidge; }
+	ReactionDegreeResultWidget* GetShootReactionDegreeResultWidget() { return m_shootReactionDegreeResultWidget; }
 
 	StressResultWidget* GetFragmentationImpactStressResultWidget() { return m_fragmentationImpactStressResultWidget; }
 	StrainResultWidget* GetFragmentationImpactStrainResultWidget() { return m_fragmentationImpactStrainResultWidget; }
 	TemperatureResultWidget* GetFragmentationImpactTemperatureResultWidget() { return m_fragmentationImpactTemperatureResultWidget; }
 	OverpressureResultWidget* GetFragmentationImpactOverpressureResultWidget() { return m_fragmentationImpactOverpressureResultWidge; }
+	ReactionDegreeResultWidget* GetFragmentationImpactReactionDegreeResultWidget() { return m_fragmentationImpactReactionDegreeResultWidget; }
 
 	TemperatureResultWidget* GetFastCombustionTemperatureResultWidget() { return m_fastCombustionTemperatureResultWidget; }
 
@@ -87,16 +91,19 @@ public:
 	StrainResultWidget* GetJetImpactStrainResultWidget() { return m_jetImpactStrainResultWidget; }
 	TemperatureResultWidget* GetJetImpactTemperatureResultWidget() { return m_jetImpactTemperatureResultWidget; }
 	OverpressureResultWidget* GetJetImpactOverpressureResultWidget() { return m_jetImpactOverpressureResultWidge; }
+	ReactionDegreeResultWidget* GetJetImpactReactionDegreeResultWidget() { return m_jetImpactReactionDegreeResultWidget; }
 
 	StressResultWidget* GetExplosiveBlastStressResultWidget() { return m_explosiveBlastStressResultWidget; }
 	StrainResultWidget* GetExplosiveBlastStrainResultWidget() { return m_explosiveBlastStrainResultWidget; }
 	TemperatureResultWidget* GetExplosiveBlastTemperatureResultWidget() { return m_explosiveBlastTemperatureResultWidget; }
 	OverpressureResultWidget* GetExplosiveBlastOverpressureResultWidget() { return m_explosiveBlastOverpressureResultWidge; }
+	ReactionDegreeResultWidget* GetExplosiveBlastReactionDegreeResultWidget() { return m_explosiveBlastReactionDegreeResultWidget; }
 
 	StressResultWidget* GetSacrificeExplosionStressResultWidget() { return m_sacrificeExplosionStressResultWidget; }
 	StrainResultWidget* GetSacrificeExplosionStrainResultWidget() { return m_sacrificeExplosionStrainResultWidget; }
 	TemperatureResultWidget* GetSacrificeExplosionTemperatureResultWidget() { return m_sacrificeExplosionTemperatureResultWidget; }
 	OverpressureResultWidget* GetSacrificeExplosionOverpressureResultWidget() { return m_sacrificeExplosionOverpressureResultWidge; }
+	ReactionDegreeResultWidget* GetSacrificeExplosionReactionDegreeResultWidget() { return m_sacrificeExplosionReactionDegreeResultWidget; }
 
 
 
@@ -136,6 +143,7 @@ private:
 	TemperatureResultWidget* m_temperatureResultWidget = nullptr;
 	OverpressureResultWidget* m_overpressureResultWidge = nullptr;
 	StrainResultWidget* m_strainResultWidget = nullptr;
+	ReactionDegreeResultWidget* m_reactionDegreeResultWidget = nullptr;
 
 	// 快烤结果
 	TemperatureResultWidget* m_fastCombustionTemperatureResultWidget = nullptr;
@@ -148,29 +156,34 @@ private:
 	TemperatureResultWidget* m_shootTemperatureResultWidget = nullptr;
 	OverpressureResultWidget* m_shootOverpressureResultWidge = nullptr;
 	StrainResultWidget* m_shootStrainResultWidget = nullptr;
+	ReactionDegreeResultWidget* m_shootReactionDegreeResultWidget = nullptr;
 
 	// 射流冲击结果
 	StressResultWidget* m_jetImpactStressResultWidget = nullptr;
 	TemperatureResultWidget* m_jetImpactTemperatureResultWidget = nullptr;
 	OverpressureResultWidget* m_jetImpactOverpressureResultWidge = nullptr;
 	StrainResultWidget* m_jetImpactStrainResultWidget = nullptr;
+	ReactionDegreeResultWidget* m_jetImpactReactionDegreeResultWidget = nullptr;
 
 	// 破片结果
 	StressResultWidget* m_fragmentationImpactStressResultWidget = nullptr;
 	TemperatureResultWidget* m_fragmentationImpactTemperatureResultWidget = nullptr;
 	OverpressureResultWidget* m_fragmentationImpactOverpressureResultWidge = nullptr;
 	StrainResultWidget* m_fragmentationImpactStrainResultWidget = nullptr;
+	ReactionDegreeResultWidget* m_fragmentationImpactReactionDegreeResultWidget = nullptr;
 
 	// 爆炸冲击波结果
 	StressResultWidget* m_explosiveBlastStressResultWidget = nullptr;
 	TemperatureResultWidget* m_explosiveBlastTemperatureResultWidget = nullptr;
 	OverpressureResultWidget* m_explosiveBlastOverpressureResultWidge = nullptr;
 	StrainResultWidget* m_explosiveBlastStrainResultWidget = nullptr;
+	ReactionDegreeResultWidget* m_explosiveBlastReactionDegreeResultWidget = nullptr;
 
 	// 殉爆结果
 	StressResultWidget* m_sacrificeExplosionStressResultWidget = nullptr;
 	TemperatureResultWidget* m_sacrificeExplosionTemperatureResultWidget = nullptr;
 	OverpressureResultWidget* m_sacrificeExplosionOverpressureResultWidge = nullptr;
 	StrainResultWidget* m_sacrificeExplosionStrainResultWidget = nullptr;
+	ReactionDegreeResultWidget* m_sacrificeExplosionReactionDegreeResultWidget = nullptr;
 };
 

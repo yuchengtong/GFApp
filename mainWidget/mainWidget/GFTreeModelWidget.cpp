@@ -2696,6 +2696,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 													fallOverpressureResult.outheatMaxOverpressure, fallOverpressureResult.outheatMinOverpressure, fallOverpressureResult.outheatAvgOverpressure, fallOverpressureResult.outheatStandardOverpressure,
 													fallOverpressureResult.insulatingheatMaxOverpressure, fallOverpressureResult.insulatingheatMinOverpressure, fallOverpressureResult.insulatingheatAvgOverpressure, fallOverpressureResult.insulatingheatStandardOverpressure);
 
+												auto fallReactionDegreeResult = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
+												gfParent->GetReactionDegreeResultWidget()->updateData(fallReactionDegreeResult.metalsMaxReactionDegree, fallReactionDegreeResult.metalsMinReactionDegree, fallReactionDegreeResult.metalsAvgReactionDegree, fallReactionDegreeResult.metalsStandardReactionDegree,
+													fallReactionDegreeResult.propellantsMaxReactionDegree, fallReactionDegreeResult.propellantsMinReactionDegree, fallReactionDegreeResult.propellantsAvgReactionDegree, fallReactionDegreeResult.propellantsStandardReactionDegree,
+													fallReactionDegreeResult.outheatMaxReactionDegree, fallReactionDegreeResult.outheatMinReactionDegree, fallReactionDegreeResult.outheatAvgReactionDegree, fallReactionDegreeResult.outheatStandardReactionDegree,
+													fallReactionDegreeResult.insulatingheatMaxReactionDegree, fallReactionDegreeResult.insulatingheatMinReactionDegree, fallReactionDegreeResult.insulatingheatAvgReactionDegree, fallReactionDegreeResult.insulatingheatStandardReactionDegree);
+
+
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFallPropertyWidget()->GetQTableWidget();
 												if (resultValue[0]> tensileStrength)
@@ -2847,6 +2854,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
 													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
+												auto reactionDegreeResult = ModelDataManager::GetInstance()->GetShootReactionDegreeResult();
+												gfParent->GetShootReactionDegreeResultWidget()->updateData(reactionDegreeResult.metalsMaxReactionDegree, reactionDegreeResult.metalsMinReactionDegree, reactionDegreeResult.metalsAvgReactionDegree, reactionDegreeResult.metalsStandardReactionDegree,
+													reactionDegreeResult.propellantsMaxReactionDegree, reactionDegreeResult.propellantsMinReactionDegree, reactionDegreeResult.propellantsAvgReactionDegree, reactionDegreeResult.propellantsStandardReactionDegree,
+													reactionDegreeResult.outheatMaxReactionDegree, reactionDegreeResult.outheatMinReactionDegree, reactionDegreeResult.outheatAvgReactionDegree, reactionDegreeResult.outheatStandardReactionDegree,
+													reactionDegreeResult.insulatingheatMaxReactionDegree, reactionDegreeResult.insulatingheatMinReactionDegree, reactionDegreeResult.insulatingheatAvgReactionDegree, reactionDegreeResult.insulatingheatStandardReactionDegree);
+												
 												// 更新判断结果
 												auto tableWidget = gfParent->GetShootPropertyWidget()->GetQTableWidget();
 												if (resultValue[0] > tensileStrength)
@@ -2920,6 +2933,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
 													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
 													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
+
+												auto reactionDegreeResult = ModelDataManager::GetInstance()->GetJetImpactReactionDegreeResult();
+												gfParent->GetJetImpactReactionDegreeResultWidget()->updateData(reactionDegreeResult.metalsMaxReactionDegree, reactionDegreeResult.metalsMinReactionDegree, reactionDegreeResult.metalsAvgReactionDegree, reactionDegreeResult.metalsStandardReactionDegree,
+													reactionDegreeResult.propellantsMaxReactionDegree, reactionDegreeResult.propellantsMinReactionDegree, reactionDegreeResult.propellantsAvgReactionDegree, reactionDegreeResult.propellantsStandardReactionDegree,
+													reactionDegreeResult.outheatMaxReactionDegree, reactionDegreeResult.outheatMinReactionDegree, reactionDegreeResult.outheatAvgReactionDegree, reactionDegreeResult.outheatStandardReactionDegree,
+													reactionDegreeResult.insulatingheatMaxReactionDegree, reactionDegreeResult.insulatingheatMinReactionDegree, reactionDegreeResult.insulatingheatAvgReactionDegree, reactionDegreeResult.insulatingheatStandardReactionDegree);
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetJetImpactPropertyWidget()->GetQTableWidget();
@@ -2998,6 +3017,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
 													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
+												auto reactionDegreeResult = ModelDataManager::GetInstance()->GetFragmentationImpactReactionDegreeResult();
+												gfParent->GetFragmentationImpactReactionDegreeResultWidget()->updateData(reactionDegreeResult.metalsMaxReactionDegree, reactionDegreeResult.metalsMinReactionDegree, reactionDegreeResult.metalsAvgReactionDegree, reactionDegreeResult.metalsStandardReactionDegree,
+													reactionDegreeResult.propellantsMaxReactionDegree, reactionDegreeResult.propellantsMinReactionDegree, reactionDegreeResult.propellantsAvgReactionDegree, reactionDegreeResult.propellantsStandardReactionDegree,
+													reactionDegreeResult.outheatMaxReactionDegree, reactionDegreeResult.outheatMinReactionDegree, reactionDegreeResult.outheatAvgReactionDegree, reactionDegreeResult.outheatStandardReactionDegree,
+													reactionDegreeResult.insulatingheatMaxReactionDegree, reactionDegreeResult.insulatingheatMinReactionDegree, reactionDegreeResult.insulatingheatAvgReactionDegree, reactionDegreeResult.insulatingheatStandardReactionDegree);
+
+
 												// 更新判断结果
 												auto tableWidget = gfParent->GetFragmentationImpactPropertyWidget()->GetQTableWidget();
 												if (resultValue[0] > tensileStrength)
@@ -3072,6 +3098,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
 													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
 
+												auto reactionDegreeResult = ModelDataManager::GetInstance()->GetExplosiveBlastReactionDegreeResult();
+												gfParent->GetExplosiveBlastReactionDegreeResultWidget()->updateData(reactionDegreeResult.metalsMaxReactionDegree, reactionDegreeResult.metalsMinReactionDegree, reactionDegreeResult.metalsAvgReactionDegree, reactionDegreeResult.metalsStandardReactionDegree,
+													reactionDegreeResult.propellantsMaxReactionDegree, reactionDegreeResult.propellantsMinReactionDegree, reactionDegreeResult.propellantsAvgReactionDegree, reactionDegreeResult.propellantsStandardReactionDegree,
+													reactionDegreeResult.outheatMaxReactionDegree, reactionDegreeResult.outheatMinReactionDegree, reactionDegreeResult.outheatAvgReactionDegree, reactionDegreeResult.outheatStandardReactionDegree,
+													reactionDegreeResult.insulatingheatMaxReactionDegree, reactionDegreeResult.insulatingheatMinReactionDegree, reactionDegreeResult.insulatingheatAvgReactionDegree, reactionDegreeResult.insulatingheatStandardReactionDegree);
+
+
 												// 更新判断结果
 												auto tableWidget = gfParent->GetExplosiveBlastPropertyWidget()->GetQTableWidget();
 												if (stressResult.metalsMaxStress > tensileStrength)
@@ -3145,6 +3178,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 													overpressureResult.propellantsMaxOverpressure, overpressureResult.propellantsMinOverpressure, overpressureResult.mpropellantsAvgOverpressure, overpressureResult.propellantsStandardOverpressure,
 													overpressureResult.outheatMaxOverpressure, overpressureResult.outheatMinOverpressure, overpressureResult.outheatAvgOverpressure, overpressureResult.outheatStandardOverpressure,
 													overpressureResult.insulatingheatMaxOverpressure, overpressureResult.insulatingheatMinOverpressure, overpressureResult.insulatingheatAvgOverpressure, overpressureResult.insulatingheatStandardOverpressure);
+
+												auto reactionDegreeResult = ModelDataManager::GetInstance()->GetSacrificeExplosionReactionDegreeResult();
+												gfParent->GetSacrificeExplosionReactionDegreeResultWidget()->updateData(reactionDegreeResult.metalsMaxReactionDegree, reactionDegreeResult.metalsMinReactionDegree, reactionDegreeResult.metalsAvgReactionDegree, reactionDegreeResult.metalsStandardReactionDegree,
+													reactionDegreeResult.propellantsMaxReactionDegree, reactionDegreeResult.propellantsMinReactionDegree, reactionDegreeResult.propellantsAvgReactionDegree, reactionDegreeResult.propellantsStandardReactionDegree,
+													reactionDegreeResult.outheatMaxReactionDegree, reactionDegreeResult.outheatMinReactionDegree, reactionDegreeResult.outheatAvgReactionDegree, reactionDegreeResult.outheatStandardReactionDegree,
+													reactionDegreeResult.insulatingheatMaxReactionDegree, reactionDegreeResult.insulatingheatMinReactionDegree, reactionDegreeResult.insulatingheatAvgReactionDegree, reactionDegreeResult.insulatingheatStandardReactionDegree);
+
 
 												// 更新判断结果
 												auto tableWidget = gfParent->GetSacrificeExplosionPropertyWidget()->GetQTableWidget();

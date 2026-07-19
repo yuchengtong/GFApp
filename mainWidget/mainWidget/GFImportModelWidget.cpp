@@ -53,9 +53,6 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_fastCombustionPropertyWidget = new FastCombustionPropertyWidget();
 	m_slowCombustionPropertyWidget = new SlowCombustionPropertyWidget();
 	m_resultsPropertyWidget = new ResultsPropertyWidget();
-	m_stressResultWidget = new StressResultWidget();
-	m_temperatureResultWidget = new TemperatureResultWidget();
-	m_overpressureResultWidge = new OverpressureResultWidget();
 	m_steelPropertyWidgett = new SteelPropertyWidget();
 	m_propellantPropertyWidget = new PropellantPropertyWidget();
 	m_projectPropertyWidge = new ProjectPropertyWidge();
@@ -63,23 +60,31 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_judgmentPropertyWidget = new JudgmentPropertyWidget();
 	m_insulatingheatPropertyWidget = new InsulatingheatPropertyWidget();
 	m_outheatPropertyWidget = new OutheatPropertyWidget();
-	m_strainResultWidget = new StrainResultWidget();
 	m_shootPropertyWidget = new ShootPropertyWidget();
 	m_jetImpactPropertyWidget = new JetImpactPropertyWidget();
 	m_fragmentationImpactPropertyWidget = new FragmentationImpactPropertyWidget();
 	m_explosiveBlastPropertyWidget = new ExplosiveBlastPropertyWidget();
 	m_sacrificeExplosionPropertyWidget = new SacrificeExplosionPropertyWidget();
 	m_databasePropertyWidget = new DatabasePropertyWidget();
+	// 跌落
+	m_stressResultWidget = new StressResultWidget();
+	m_temperatureResultWidget = new TemperatureResultWidget();
+	m_overpressureResultWidge = new OverpressureResultWidget();
+	m_strainResultWidget = new StrainResultWidget();
+	m_reactionDegreeResultWidget = new ReactionDegreeResultWidget();
+
 	// 枪击结果
 	m_shootStressResultWidget = new StressResultWidget();
 	m_shootTemperatureResultWidget = new TemperatureResultWidget();
 	m_shootOverpressureResultWidge = new OverpressureResultWidget();
 	m_shootStrainResultWidget = new StrainResultWidget();
+	m_shootReactionDegreeResultWidget = new ReactionDegreeResultWidget();
 	// 破片结果
 	m_fragmentationImpactStressResultWidget = new StressResultWidget();
 	m_fragmentationImpactTemperatureResultWidget = new TemperatureResultWidget();
 	m_fragmentationImpactOverpressureResultWidge = new OverpressureResultWidget();
 	m_fragmentationImpactStrainResultWidget = new StrainResultWidget();
+	m_fragmentationImpactReactionDegreeResultWidget = new ReactionDegreeResultWidget();
 	
 	// 快烤结果
 	m_fastCombustionTemperatureResultWidget = new TemperatureResultWidget();
@@ -92,18 +97,21 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_jetImpactTemperatureResultWidget = new TemperatureResultWidget();
 	m_jetImpactOverpressureResultWidge = new OverpressureResultWidget();
 	m_jetImpactStrainResultWidget = new StrainResultWidget();
+	m_jetImpactReactionDegreeResultWidget = new ReactionDegreeResultWidget();
 
 	// 爆炸冲击波结果
 	m_explosiveBlastStressResultWidget = new StressResultWidget();
 	m_explosiveBlastTemperatureResultWidget = new TemperatureResultWidget();
 	m_explosiveBlastOverpressureResultWidge = new OverpressureResultWidget();
 	m_explosiveBlastStrainResultWidget = new StrainResultWidget();
+	m_explosiveBlastReactionDegreeResultWidget = new ReactionDegreeResultWidget();
 
 	// 殉爆结果
 	m_sacrificeExplosionStressResultWidget = new StressResultWidget();
 	m_sacrificeExplosionTemperatureResultWidget = new TemperatureResultWidget();
 	m_sacrificeExplosionOverpressureResultWidge = new OverpressureResultWidget();
 	m_sacrificeExplosionStrainResultWidget = new StrainResultWidget();
+	m_sacrificeExplosionReactionDegreeResultWidget = new ReactionDegreeResultWidget();
 
 
 	// 将所有的 PropertyWidget 添加到 QStackedWidget 中
@@ -159,6 +167,13 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_PropertyStackWidget->addWidget(m_sacrificeExplosionTemperatureResultWidget);
 	m_PropertyStackWidget->addWidget(m_sacrificeExplosionOverpressureResultWidge);
 	m_PropertyStackWidget->addWidget(m_sacrificeExplosionStrainResultWidget);
+
+	m_PropertyStackWidget->addWidget(m_reactionDegreeResultWidget);
+	m_PropertyStackWidget->addWidget(m_shootReactionDegreeResultWidget);
+	m_PropertyStackWidget->addWidget(m_jetImpactReactionDegreeResultWidget);
+	m_PropertyStackWidget->addWidget(m_fragmentationImpactReactionDegreeResultWidget);
+	m_PropertyStackWidget->addWidget(m_explosiveBlastReactionDegreeResultWidget);
+	m_PropertyStackWidget->addWidget(m_sacrificeExplosionReactionDegreeResultWidget);
 
 
 	m_OccView = new OccView(this);
@@ -851,13 +866,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "ReactionDegreeResult")
 	{
 		occView->SetCameraRotationState(false);
-		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+		m_PropertyStackWidget->setCurrentWidget(m_reactionDegreeResultWidget);
 	}
 	else if (itemData == "reactionDegreePropellantResult")
 	{
 		occView->SetCameraRotationState(false);
 
-		m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+		m_PropertyStackWidget->setCurrentWidget(m_reactionDegreeResultWidget);
 
 		Handle(AIS_InteractiveContext) context = occView->getContext();
 		Handle(V3d_View) view = occView->getView();
@@ -1409,13 +1424,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "ShootReactionDegreeResult")
 	{
 	occView->SetCameraRotationState(false);
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_shootReactionDegreeResultWidget);
 	}
 	else if (itemData == "shootReactionDegreePropellantResult")
 	{
 	occView->SetCameraRotationState(false);
 
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_shootReactionDegreeResultWidget);
 
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
@@ -1748,13 +1763,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "jetImpactReactionDegreeResult")
 	{
 	occView->SetCameraRotationState(false);
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_jetImpactReactionDegreeResultWidget);
 	}
 	else if (itemData == "jetImpactReactionDegreePropellantResult")
 	{
 	occView->SetCameraRotationState(false);
 
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_jetImpactReactionDegreeResultWidget);
 
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
@@ -2099,13 +2114,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "fragmentationImpactReactionDegreeResult")
 	{
 	occView->SetCameraRotationState(false);
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactReactionDegreeResultWidget);
 	}
 	else if (itemData == "fragmentationImpactReactionDegreePropellantResult")
 	{
 	occView->SetCameraRotationState(false);
 
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_fragmentationImpactReactionDegreeResultWidget);
 
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
@@ -2440,13 +2455,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "explosiveBlastReactionDegreeResult")
 	{
 	occView->SetCameraRotationState(false);
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastReactionDegreeResultWidget);
 	}
 	else if (itemData == "explosiveBlastReactionDegreePropellantResult")
 	{
 	occView->SetCameraRotationState(false);
 
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_explosiveBlastReactionDegreeResultWidget);
 
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
@@ -2779,13 +2794,13 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	else if (itemData == "sacrificeExplosionReactionDegreeResult")
 	{
 	occView->SetCameraRotationState(false);
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionReactionDegreeResultWidget);
 	}
 	else if (itemData == "sacrificeExplosionDegreePropellantResult")
 	{
 	occView->SetCameraRotationState(false);
 
-	m_PropertyStackWidget->setCurrentWidget(m_overpressureResultWidge);
+	m_PropertyStackWidget->setCurrentWidget(m_sacrificeExplosionReactionDegreeResultWidget);
 
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();

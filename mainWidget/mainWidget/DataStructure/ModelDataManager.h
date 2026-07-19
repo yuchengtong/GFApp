@@ -1214,6 +1214,31 @@ struct OverpressureResult {
 	bool propellantScreenFlag = false; // 推进剂截屏标志
 };
 
+// 反应度分析结果
+struct  ReactionDegreeResult {
+	double metalsMaxReactionDegree = 0; //发动机壳体最大反应度
+	double metalsMinReactionDegree = 0; //发动机壳体最小反应度
+	double metalsAvgReactionDegree = 0; //发动机壳体平均反应度
+	double metalsStandardReactionDegree = 0; //发动机壳体反应度标准差
+
+	double propellantsMaxReactionDegree = 0; //推进剂最大反应度
+	double propellantsMinReactionDegree = 0; //推进剂最小反应度
+	double propellantsAvgReactionDegree = 0; //推进剂平均反应度
+	double propellantsStandardReactionDegree = 0; //推进剂反应度标准差
+
+	double outheatMaxReactionDegree = 0; //外防热最大反应度
+	double outheatMinReactionDegree = 0; //外防热最小反应度
+	double outheatAvgReactionDegree = 0; //外防热平均反应度
+	double outheatStandardReactionDegree = 0; //外防热反应度标准差
+
+	double insulatingheatMaxReactionDegree = 0; //防隔热最大反应度
+	double insulatingheatMinReactionDegree = 0; //防隔热最小反应度
+	double insulatingheatAvgReactionDegree = 0; //防隔热平均反应度
+	double insulatingheatStandardReactionDegree = 0; //防隔热反应度标准差
+
+	bool propellantScreenFlag = false; // 推进剂截屏标志
+};
+
 
 // 评分结果
 struct PointResult {
@@ -1489,7 +1514,10 @@ public:
 	void SetFallOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetFallOverpressureResult() const;
 
-	// 快烤计算结果
+	void SetFallReactionDegreeResult(const ReactionDegreeResult& result);
+	const ReactionDegreeResult& GetFallReactionDegreeResult() const;
+
+		// 快烤计算结果
 	void SetFastCombustionTemperatureResult(const TemperatureResult& result);
 	const TemperatureResult& GetFastCombustionTemperatureResult() const;
 
@@ -1510,6 +1538,9 @@ public:
 	void SetShootOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetShootOverpressureResult() const;
 
+	void SetShootReactionDegreeResult(const ReactionDegreeResult& result);
+	const ReactionDegreeResult& GetShootReactionDegreeResult() const;
+
 	// 射流冲击计算结果
 	void SetJetImpactStressResult(const StressResult& result);
 	const StressResult& GetJetImpactStressResult() const;
@@ -1522,6 +1553,9 @@ public:
 
 	void SetJetImpactOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetJetImpactOverpressureResult() const;
+
+	void SetJetImpactReactionDegreeResult(const ReactionDegreeResult& result);
+	const ReactionDegreeResult& GetJetImpactReactionDegreeResult() const;
 
 	// 破片撞击计算结果
 	void SetFragmentationImpactStressResult(const StressResult& result);
@@ -1536,6 +1570,9 @@ public:
 	void SetFragmentationImpactOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetFragmentationImpactOverpressureResult() const;
 
+	void SetFragmentationImpactReactionDegreeResult(const ReactionDegreeResult& result);
+	const ReactionDegreeResult& GetFragmentationImpactReactionDegreeResult() const;
+
 	// 爆炸冲击波计算结果
 	void SetExplosiveBlastStressResult(const StressResult& result);
 	const StressResult& GetExplosiveBlastStressResult() const;
@@ -1549,6 +1586,9 @@ public:
 	void SetExplosiveBlastOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetExplosiveBlastOverpressureResult() const;
 
+	void SetExplosiveBlastReactionDegreeResult(const ReactionDegreeResult& result);
+	const ReactionDegreeResult& GetExplosiveBlastReactionDegreeResult() const;
+
 	// 殉爆计算结果
 	void SetSacrificeExplosionStressResult(const StressResult& result);
 	const StressResult& GetSacrificeExplosionStressResult() const;
@@ -1561,6 +1601,9 @@ public:
 
 	void SetSacrificeExplosionOverpressureResult(const OverpressureResult& result);
 	const OverpressureResult& GetSacrificeExplosionOverpressureResult() const;
+
+	void SetSacrificeExplosionReactionDegreeResult(const ReactionDegreeResult& result);
+	const ReactionDegreeResult& GetSacrificeExplosionReactionDegreeResult() const;
 
 	void SetPointResult(const PointResult& result);
 	const PointResult& GetPointResult() const;
@@ -1616,6 +1659,7 @@ private:
 	StrainResult m_FallStrainResult;
 	TemperatureResult m_FallTemperatureResult;
 	OverpressureResult m_FallOverpressureResult;
+	ReactionDegreeResult m_FallReactionDegreeResult;
 
 	// 快烤计算结果
 	TemperatureResult m_FastCombustionTemperatureResult;
@@ -1628,30 +1672,35 @@ private:
 	StrainResult m_ShootStrainResult;
 	TemperatureResult m_ShootTemperatureResult;
 	OverpressureResult m_ShootOverpressureResult;
+	ReactionDegreeResult m_ShootReactionDegreeResult;
 
 	// 射流冲击计算结果
 	StressResult m_JetImpactStressResult;
 	StrainResult m_JetImpactStrainResult;
 	TemperatureResult m_JetImpactTemperatureResult;
 	OverpressureResult m_JetImpactOverpressureResult;
+	ReactionDegreeResult m_JetImpactReactionDegreeResult;
 
 	// 破片撞击计算结果
 	StressResult m_FragmentationImpactStressResult;
 	StrainResult m_FragmentationImpactStrainResult;
 	TemperatureResult m_FragmentationImpactTemperatureResult;
 	OverpressureResult m_FragmentationImpactOverpressureResult;
+	ReactionDegreeResult m_FragmentationImpactReactionDegreeResult;
 
 	// 爆炸冲击波计算结果
 	StressResult m_ExplosiveBlastStressResult;
 	StrainResult m_ExplosiveBlastStrainResult;
 	TemperatureResult m_ExplosiveBlastTemperatureResult;
 	OverpressureResult m_ExplosiveBlastOverpressureResult;
+	ReactionDegreeResult m_ExplosiveBlastReactionDegreeResult;
 
 	// 殉爆计算结果
 	StressResult m_SacrificeExplosionStressResult;
 	StrainResult m_SacrificeExplosionStrainResult;
 	TemperatureResult m_SacrificeExplosionTemperatureResult;
 	OverpressureResult m_SacrificeExplosionOverpressureResult;
+	ReactionDegreeResult m_SacrificeExplosionReactionDegreeResult;
 
 	// 评分结果
 	PointResult m_pointResult;

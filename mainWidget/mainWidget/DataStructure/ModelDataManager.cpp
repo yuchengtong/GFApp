@@ -336,6 +336,16 @@ const OverpressureResult& ModelDataManager::GetFallOverpressureResult() const
 	return m_FallOverpressureResult;
 }
 
+void ModelDataManager::SetFallReactionDegreeResult(const ReactionDegreeResult& result)
+{
+	m_FallReactionDegreeResult = result;
+}
+
+const ReactionDegreeResult& ModelDataManager::GetFallReactionDegreeResult() const
+{
+	return m_FallReactionDegreeResult;
+}
+
 void ModelDataManager::SetFastCombustionTemperatureResult(const TemperatureResult& result)
 {
 	m_FastCombustionTemperatureResult = result;
@@ -396,6 +406,16 @@ const OverpressureResult& ModelDataManager::GetShootOverpressureResult() const
 	return m_ShootOverpressureResult;
 }
 
+void ModelDataManager::SetShootReactionDegreeResult(const ReactionDegreeResult& result)
+{
+	m_ShootReactionDegreeResult = result;
+}
+
+const ReactionDegreeResult& ModelDataManager::GetShootReactionDegreeResult() const
+{
+	return m_ShootReactionDegreeResult;
+}
+
 void ModelDataManager::SetJetImpactStressResult(const StressResult& result)
 {
 	m_JetImpactStressResult = result;
@@ -434,6 +454,16 @@ void ModelDataManager::SetJetImpactOverpressureResult(const OverpressureResult& 
 const OverpressureResult& ModelDataManager::GetJetImpactOverpressureResult() const
 {
 	return m_JetImpactOverpressureResult;
+}
+
+void ModelDataManager::SetJetImpactReactionDegreeResult(const ReactionDegreeResult& result)
+{
+	m_JetImpactReactionDegreeResult = result;
+}
+
+const ReactionDegreeResult& ModelDataManager::GetJetImpactReactionDegreeResult() const
+{
+	return m_JetImpactReactionDegreeResult;
 }
 
 void ModelDataManager::SetFragmentationImpactStressResult(const StressResult& result)
@@ -476,6 +506,16 @@ const OverpressureResult& ModelDataManager::GetFragmentationImpactOverpressureRe
 	return m_FragmentationImpactOverpressureResult;
 }
 
+void ModelDataManager::SetFragmentationImpactReactionDegreeResult(const ReactionDegreeResult& result)
+{
+	m_FragmentationImpactReactionDegreeResult = result;
+}
+
+const ReactionDegreeResult& ModelDataManager::GetFragmentationImpactReactionDegreeResult() const
+{
+	return m_FragmentationImpactReactionDegreeResult;
+}
+
 void ModelDataManager::SetExplosiveBlastStressResult(const StressResult& result)
 {
 	m_ExplosiveBlastStressResult = result;
@@ -516,6 +556,16 @@ const OverpressureResult& ModelDataManager::GetExplosiveBlastOverpressureResult(
 	return m_ExplosiveBlastOverpressureResult;
 }
 
+void ModelDataManager::SetExplosiveBlastReactionDegreeResult(const ReactionDegreeResult& result)
+{
+	m_ExplosiveBlastReactionDegreeResult = result;
+}
+
+const ReactionDegreeResult& ModelDataManager::GetExplosiveBlastReactionDegreeResult() const
+{
+	return m_ExplosiveBlastReactionDegreeResult;
+}
+
 void ModelDataManager::SetSacrificeExplosionStressResult(const StressResult& result)
 {
 	m_SacrificeExplosionStressResult = result;
@@ -554,6 +604,16 @@ void ModelDataManager::SetSacrificeExplosionOverpressureResult(const Overpressur
 const OverpressureResult& ModelDataManager::GetSacrificeExplosionOverpressureResult() const
 {
 	return m_SacrificeExplosionOverpressureResult;
+}
+
+void ModelDataManager::SetSacrificeExplosionReactionDegreeResult(const ReactionDegreeResult& result)
+{
+	m_SacrificeExplosionReactionDegreeResult = result;
+}
+
+const ReactionDegreeResult& ModelDataManager::GetSacrificeExplosionReactionDegreeResult() const
+{
+	return m_SacrificeExplosionReactionDegreeResult;
 }
 
 void ModelDataManager::SetPointResult(const PointResult& result)

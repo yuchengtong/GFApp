@@ -165,6 +165,7 @@
     <ClCompile Include="PropertyWidget\OutheatPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\ProjectPropertyWidge.cpp" />
     <ClCompile Include="PropertyWidget\PropellantPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\ReactionDegreeResultWidget.cpp" />
     <ClCompile Include="PropertyWidget\SacrificeExplosionPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\ShootPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\SteelPropertyWidget.cpp" />
@@ -256,6 +257,7 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="PropertyWidget\ReactionDegreeResultWidget.h" />
     <QtMoc Include="StartDialog.h" />
     <QtMoc Include="TriangulationWorker.h" />
     <QtMoc Include="ParamAnalyCalculateWorker.h" />

@@ -421,6 +421,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	auto overpressureCalculation = calInfo.fallOverpressureCalculation;
 	std::vector<double> steelOverpressureResults;
 	std::vector<double> propellantOverpressureResults;
+	// 反应度
+	std::vector<double> propellantReactionDegreeResults;
 	//std::vector<double> overpressureResults;
 	//overpressureResults.reserve(overpressureCalculation.size());
 	for (int i = 0; i < overpressureCalculation.size(); ++i)
@@ -440,6 +442,26 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 			{
 				res = scaleValue(res);
 				propellantOverpressureResults.push_back(res);
+			}
+
+			// 反应度
+			if (propellantInfo.fireOverpressure == 0.0)
+			{
+				propellantReactionDegreeResults.push_back(0.0);
+			}
+			else
+			{
+				auto reactionDegree = res / propellantInfo.fireOverpressure;
+				if (reactionDegree > 1)
+				{
+					propellantReactionDegreeResults.push_back(1);
+				}
+				else
+				{
+					propellantReactionDegreeResults.push_back(reactionDegree);
+
+				}
+
 			}
 			
 		}
@@ -499,6 +521,31 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	overpressureResult.shellScreenFlag = true;
 	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFallOverpressureResult(overpressureResult);
+
+
+	double calPropellantReactionDegreeMinValue = *std::min_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+	double calPropellantReactionDegreeMaxValue = *std::max_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+
+	// 反应度分析结果（超压/推进剂发火超压）
+	ReactionDegreeResult reactionDegreeResult;
+	reactionDegreeResult.metalsMaxReactionDegree = 0;
+	reactionDegreeResult.metalsMinReactionDegree = 0;
+	reactionDegreeResult.metalsAvgReactionDegree = 0;
+	reactionDegreeResult.metalsStandardReactionDegree = 0;
+	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
+	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
+	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.outheatMaxReactionDegree = 0;
+	reactionDegreeResult.outheatMinReactionDegree = 0;
+	reactionDegreeResult.outheatAvgReactionDegree = 0;
+	reactionDegreeResult.outheatStandardReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMaxReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMinReactionDegree = 0;
+	reactionDegreeResult.insulatingheatAvgReactionDegree = 0;
+	reactionDegreeResult.insulatingheatStandardReactionDegree = 0;
+	reactionDegreeResult.propellantScreenFlag = true;
+	ModelDataManager::GetInstance()->SetFallReactionDegreeResult(reactionDegreeResult);
 
 
 
@@ -1005,6 +1052,8 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	auto overpressureCalculation = calInfo.shootOverpressureCalculation;
 	std::vector<double> steelOverpressureResults;
 	std::vector<double> propellantOverpressureResults;
+	// 反应度
+	std::vector<double> propellantReactionDegreeResults;
 	//std::vector<double> overpressureResults;
 	//overpressureResults.reserve(overpressureCalculation.size());
 	for (int i = 0; i < overpressureCalculation.size(); ++i)
@@ -1017,6 +1066,23 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantOverpressureResults.push_back(res);
+			// 反应度
+			if (propellantInfo.fireOverpressure == 0.0)
+			{
+				propellantReactionDegreeResults.push_back(0.0);
+			}
+			else
+			{
+				auto reactionDegree = res / propellantInfo.fireOverpressure;
+				if (reactionDegree > 1)
+				{
+					propellantReactionDegreeResults.push_back(1);
+				}
+				else
+				{
+					propellantReactionDegreeResults.push_back(reactionDegree);
+				}
+			}
 		}
 		else
 		{
@@ -1073,6 +1139,30 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	overpressureResult.shellScreenFlag = true;
 	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetShootOverpressureResult(overpressureResult);
+
+	double calPropellantReactionDegreeMinValue = *std::min_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+	double calPropellantReactionDegreeMaxValue = *std::max_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+
+	// 反应度分析结果（超压/推进剂发火超压）
+	ReactionDegreeResult reactionDegreeResult;
+	reactionDegreeResult.metalsMaxReactionDegree = 0;
+	reactionDegreeResult.metalsMinReactionDegree = 0;
+	reactionDegreeResult.metalsAvgReactionDegree = 0;
+	reactionDegreeResult.metalsStandardReactionDegree = 0;
+	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
+	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
+	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.outheatMaxReactionDegree = 0;
+	reactionDegreeResult.outheatMinReactionDegree = 0;
+	reactionDegreeResult.outheatAvgReactionDegree = 0;
+	reactionDegreeResult.outheatStandardReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMaxReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMinReactionDegree = 0;
+	reactionDegreeResult.insulatingheatAvgReactionDegree = 0;
+	reactionDegreeResult.insulatingheatStandardReactionDegree = 0;
+	reactionDegreeResult.propellantScreenFlag = true;
+	ModelDataManager::GetInstance()->SetShootReactionDegreeResult(reactionDegreeResult);
 
 
 	ShootAnalysisResultInfo shootAnalysisResultInfo;
@@ -1299,6 +1389,8 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	auto overpressureCalculation = calInfo.jetImpactOverpressureCalculation;
 	std::vector<double> steelOverpressureResults;
 	std::vector<double> propellantOverpressureResults;
+	// 反应度
+	std::vector<double> propellantReactionDegreeResults;
 	//std::vector<double> overpressureResults;
 	//overpressureResults.reserve(overpressureCalculation.size());
 	for (int i = 0; i < overpressureCalculation.size(); ++i)
@@ -1311,6 +1403,23 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantOverpressureResults.push_back(res);
+			// 反应度
+			if (propellantInfo.fireOverpressure == 0.0)
+			{
+				propellantReactionDegreeResults.push_back(0.0);
+			}
+			else
+			{
+				auto reactionDegree = res / propellantInfo.fireOverpressure;
+				if (reactionDegree > 1)
+				{
+					propellantReactionDegreeResults.push_back(1);
+				}
+				else
+				{
+					propellantReactionDegreeResults.push_back(reactionDegree);
+				}
+			}
 		}
 		else
 		{
@@ -1365,6 +1474,31 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	overpressureResult.shellScreenFlag = true;
 	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetJetImpactOverpressureResult(overpressureResult);
+
+
+	double calPropellantReactionDegreeMinValue = *std::min_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+	double calPropellantReactionDegreeMaxValue = *std::max_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+
+	// 反应度分析结果（超压/推进剂发火超压）
+	ReactionDegreeResult reactionDegreeResult;
+	reactionDegreeResult.metalsMaxReactionDegree = 0;
+	reactionDegreeResult.metalsMinReactionDegree = 0;
+	reactionDegreeResult.metalsAvgReactionDegree = 0;
+	reactionDegreeResult.metalsStandardReactionDegree = 0;
+	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
+	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
+	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.outheatMaxReactionDegree = 0;
+	reactionDegreeResult.outheatMinReactionDegree = 0;
+	reactionDegreeResult.outheatAvgReactionDegree = 0;
+	reactionDegreeResult.outheatStandardReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMaxReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMinReactionDegree = 0;
+	reactionDegreeResult.insulatingheatAvgReactionDegree = 0;
+	reactionDegreeResult.insulatingheatStandardReactionDegree = 0;
+	reactionDegreeResult.propellantScreenFlag = true;
+	ModelDataManager::GetInstance()->SetJetImpactReactionDegreeResult(reactionDegreeResult);
 
 
 	JetImpactAnalysisResultInfo jetImpactAnalysisResultInfo;
@@ -1594,6 +1728,8 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	auto overpressureCalculation = calInfo.fragmentationImpactOverpressureCalculationO;
 	std::vector<double> steelOverpressureResults;
 	std::vector<double> propellantOverpressureResults;
+	// 反应度
+	std::vector<double> propellantReactionDegreeResults;
 	//std::vector<double> overpressureResults;
 	//overpressureResults.reserve(overpressureCalculation.size());
 	for (int i = 0; i < overpressureCalculation.size(); ++i)
@@ -1606,6 +1742,23 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantOverpressureResults.push_back(res);
+			// 反应度
+			if (propellantInfo.fireOverpressure == 0.0)
+			{
+				propellantReactionDegreeResults.push_back(0.0);
+			}
+			else
+			{
+				auto reactionDegree = res / propellantInfo.fireOverpressure;
+				if (reactionDegree > 1)
+				{
+					propellantReactionDegreeResults.push_back(1);
+				}
+				else
+				{
+					propellantReactionDegreeResults.push_back(reactionDegree);
+				}
+			}
 		}
 		else
 		{
@@ -1661,6 +1814,30 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	overpressureResult.shellScreenFlag = true;
 	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFragmentationImpactOverpressureResult(overpressureResult);
+
+	double calPropellantReactionDegreeMinValue = *std::min_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+	double calPropellantReactionDegreeMaxValue = *std::max_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+
+	// 反应度分析结果（超压/推进剂发火超压）
+	ReactionDegreeResult reactionDegreeResult;
+	reactionDegreeResult.metalsMaxReactionDegree = 0;
+	reactionDegreeResult.metalsMinReactionDegree = 0;
+	reactionDegreeResult.metalsAvgReactionDegree = 0;
+	reactionDegreeResult.metalsStandardReactionDegree = 0;
+	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
+	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
+	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.outheatMaxReactionDegree = 0;
+	reactionDegreeResult.outheatMinReactionDegree = 0;
+	reactionDegreeResult.outheatAvgReactionDegree = 0;
+	reactionDegreeResult.outheatStandardReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMaxReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMinReactionDegree = 0;
+	reactionDegreeResult.insulatingheatAvgReactionDegree = 0;
+	reactionDegreeResult.insulatingheatStandardReactionDegree = 0;
+	reactionDegreeResult.propellantScreenFlag = true;
+	ModelDataManager::GetInstance()->SetFragmentationImpactReactionDegreeResult(reactionDegreeResult);
 
 
 	FragmentationAnalysisResultInfo fragmentationAnalysisResultInfo;
@@ -1849,6 +2026,8 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	auto overpressureCalculation = calInfo.explosiveBlastOverpressureCalculation;
 	std::vector<double> steelOverpressureResults;
 	std::vector<double> propellantOverpressureResults;
+	// 反应度
+	std::vector<double> propellantReactionDegreeResults;
 	//std::vector<double> overpressureResults;
 	//overpressureResults.reserve(overpressureCalculation.size());
 	for (int i = 0; i < overpressureCalculation.size(); ++i)
@@ -1861,6 +2040,24 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantOverpressureResults.push_back(res);
+			// 反应度
+			if (propellantInfo.fireOverpressure == 0.0)
+			{
+				propellantReactionDegreeResults.push_back(0.0);
+			}
+			else
+			{
+				auto reactionDegree = res / propellantInfo.fireOverpressure;
+				if (reactionDegree > 1)
+				{
+					propellantReactionDegreeResults.push_back(1);
+				}
+				else
+				{
+					propellantReactionDegreeResults.push_back(reactionDegree);
+
+				}
+			}
 		}
 		else
 		{
@@ -1915,6 +2112,30 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	overpressureResult.shellScreenFlag = true;
 	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetExplosiveBlastOverpressureResult(overpressureResult);
+
+	double calPropellantReactionDegreeMinValue = *std::min_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+	double calPropellantReactionDegreeMaxValue = *std::max_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+
+	// 反应度分析结果（超压/推进剂发火超压）
+	ReactionDegreeResult reactionDegreeResult;
+	reactionDegreeResult.metalsMaxReactionDegree = 0;
+	reactionDegreeResult.metalsMinReactionDegree = 0;
+	reactionDegreeResult.metalsAvgReactionDegree = 0;
+	reactionDegreeResult.metalsStandardReactionDegree = 0;
+	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
+	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
+	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.outheatMaxReactionDegree = 0;
+	reactionDegreeResult.outheatMinReactionDegree = 0;
+	reactionDegreeResult.outheatAvgReactionDegree = 0;
+	reactionDegreeResult.outheatStandardReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMaxReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMinReactionDegree = 0;
+	reactionDegreeResult.insulatingheatAvgReactionDegree = 0;
+	reactionDegreeResult.insulatingheatStandardReactionDegree = 0;
+	reactionDegreeResult.propellantScreenFlag = true;
+	ModelDataManager::GetInstance()->SetExplosiveBlastReactionDegreeResult(reactionDegreeResult);
 
 
 	ExplosiveBlastAnalysisResultInfo explosiveBlastAnalysisResultInfo;
@@ -2094,8 +2315,9 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	auto overpressureCalculation = calInfo.sacrificeExplosionOverpressureCalculation;
 	std::vector<double> steelOverpressureResults;
 	std::vector<double> propellantOverpressureResults;
-	//std::vector<double> overpressureResults;
-	//overpressureResults.reserve(overpressureCalculation.size());
+	// 反应度
+	std::vector<double> propellantReactionDegreeResults;
+	
 	for (int i = 0; i < overpressureCalculation.size(); ++i)
 	{
 		double res = calculate(overpressureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
@@ -2106,6 +2328,26 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantOverpressureResults.push_back(res);
+
+			// 反应度
+			if (propellantInfo.fireOverpressure == 0.0)
+			{
+				propellantReactionDegreeResults.push_back(0.0);
+			}
+			else
+			{
+				auto reactionDegree = res / propellantInfo.fireOverpressure;
+				if (reactionDegree > 1)
+				{
+					propellantReactionDegreeResults.push_back(1);
+				}
+				else
+				{
+					propellantReactionDegreeResults.push_back(reactionDegree);
+
+				}
+
+			}
 		}
 		else
 		{
@@ -2160,6 +2402,30 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	overpressureResult.shellScreenFlag = true;
 	overpressureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionOverpressureResult(overpressureResult);
+
+	double calPropellantReactionDegreeMinValue = *std::min_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+	double calPropellantReactionDegreeMaxValue = *std::max_element(propellantReactionDegreeResults.begin(), propellantReactionDegreeResults.end());
+
+	// 反应度分析结果（超压/推进剂发火超压）
+	ReactionDegreeResult reactionDegreeResult;
+	reactionDegreeResult.metalsMaxReactionDegree = 0;
+	reactionDegreeResult.metalsMinReactionDegree = 0;
+	reactionDegreeResult.metalsAvgReactionDegree = 0;
+	reactionDegreeResult.metalsStandardReactionDegree = 0;
+	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
+	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
+	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.outheatMaxReactionDegree = 0;
+	reactionDegreeResult.outheatMinReactionDegree = 0;
+	reactionDegreeResult.outheatAvgReactionDegree = 0;
+	reactionDegreeResult.outheatStandardReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMaxReactionDegree = 0;
+	reactionDegreeResult.insulatingheatMinReactionDegree = 0;
+	reactionDegreeResult.insulatingheatAvgReactionDegree = 0;
+	reactionDegreeResult.insulatingheatStandardReactionDegree = 0;
+	reactionDegreeResult.propellantScreenFlag = true;
+	ModelDataManager::GetInstance()->SetSacrificeExplosionReactionDegreeResult(reactionDegreeResult);
 
 
 
