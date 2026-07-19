@@ -1656,7 +1656,7 @@ void GFTreeModelWidget::updataIcon()
 						int clclChildCount = clclChild->childCount();
 						for (int o = 0; o < clclChildCount; ++o)
 						{
-							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 							{
 								if (!fallAnalysisResultInfo.isChecked)
 								{
@@ -1689,7 +1689,7 @@ void GFTreeModelWidget::updataIcon()
 						int clclChildCount = clclChild->childCount();
 						for (int o = 0; o < clclChildCount; ++o)
 						{
-							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 							{
 								if (!fastCombustionAnalysisResultInfo.isChecked)
 								{
@@ -1699,24 +1699,18 @@ void GFTreeModelWidget::updataIcon()
 								{
 									clclChild->child(o)->setIcon(0, checked_icon);
 								}
-							}
-						}
-					}
-					else if (clChild->child(m)->text(0).contains("2.快速烤燃安全性分析"))
-					{
-						QTreeWidgetItem* clclChild = clChild->child(m);
-						int clclChildCount = clclChild->childCount();
-						for (int o = 0; o < clclChildCount; ++o)
-						{
-							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
-							{
-								if (!fastCombustionAnalysisResultInfo.isChecked)
+								QTreeWidgetItem* clclclChild = clclChild->child(o);
+								int clclclChildCount = clclclChild->childCount();
+								for (int p = 0; p < clclclChildCount; ++p)
 								{
-									clclChild->child(o)->setIcon(0, error_icon);
-								}
-								else
-								{
-									clclChild->child(o)->setIcon(0, checked_icon);
+									if (!fastCombustionAnalysisResultInfo.isChecked)
+									{
+										clclclChild->child(p)->setIcon(0, error_icon);
+									}
+									else
+									{
+										clclclChild->child(p)->setIcon(0, checked_icon);
+									}
 								}
 							}
 						}
@@ -1727,7 +1721,7 @@ void GFTreeModelWidget::updataIcon()
 						int clclChildCount = clclChild->childCount();
 						for (int o = 0; o < clclChildCount; ++o)
 						{
-							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 							{
 								if (!slowCombustionAnalysisResultInfo.isChecked)
 								{
@@ -1736,6 +1730,19 @@ void GFTreeModelWidget::updataIcon()
 								else
 								{
 									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+								QTreeWidgetItem* clclclChild = clclChild->child(o);
+								int clclclChildCount = clclclChild->childCount();
+								for (int p = 0; p < clclclChildCount; ++p)
+								{
+									if (!slowCombustionAnalysisResultInfo.isChecked)
+									{
+										clclclChild->child(p)->setIcon(0, error_icon);
+									}
+									else
+									{
+										clclclChild->child(p)->setIcon(0, checked_icon);
+									}
 								}
 							}
 						}
@@ -1746,7 +1753,7 @@ void GFTreeModelWidget::updataIcon()
 						int clclChildCount = clclChild->childCount();
 						for (int o = 0; o < clclChildCount; ++o)
 						{
-							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+							if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 							{
 								if (!shootAnalysisResultInfo.isChecked)
 								{
@@ -1755,6 +1762,19 @@ void GFTreeModelWidget::updataIcon()
 								else
 								{
 									clclChild->child(o)->setIcon(0, checked_icon);
+								}
+								QTreeWidgetItem* clclclChild = clclChild->child(o);
+								int clclclChildCount = clclclChild->childCount();
+								for (int p = 0; p < clclclChildCount; ++p)
+								{
+									if (!shootAnalysisResultInfo.isChecked)
+									{
+										clclclChild->child(p)->setIcon(0, error_icon);
+									}
+									else
+									{
+										clclclChild->child(p)->setIcon(0, checked_icon);
+									}
 								}
 							}
 						}
@@ -1765,7 +1785,7 @@ void GFTreeModelWidget::updataIcon()
 					int clclChildCount = clclChild->childCount();
 					for (int o = 0; o < clclChildCount; ++o)
 					{
-						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 						{
 							if (!jetImpactAnalysisResultInfo.isChecked)
 							{
@@ -1774,6 +1794,19 @@ void GFTreeModelWidget::updataIcon()
 							else
 							{
 								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+							QTreeWidgetItem* clclclChild = clclChild->child(o);
+							int clclclChildCount = clclclChild->childCount();
+							for (int p = 0; p < clclclChildCount; ++p)
+							{
+								if (!jetImpactAnalysisResultInfo.isChecked)
+								{
+									clclclChild->child(p)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclclChild->child(p)->setIcon(0, checked_icon);
+								}
 							}
 						}
 					}
@@ -1784,7 +1817,7 @@ void GFTreeModelWidget::updataIcon()
 					int clclChildCount = clclChild->childCount();
 					for (int o = 0; o < clclChildCount; ++o)
 					{
-						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 						{
 							if (!fragmentationAnalysisResultInfo.isChecked)
 							{
@@ -1793,6 +1826,19 @@ void GFTreeModelWidget::updataIcon()
 							else
 							{
 								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+							QTreeWidgetItem* clclclChild = clclChild->child(o);
+							int clclclChildCount = clclclChild->childCount();
+							for (int p = 0; p < clclclChildCount; ++p)
+							{
+								if (!fragmentationAnalysisResultInfo.isChecked)
+								{
+									clclclChild->child(p)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclclChild->child(p)->setIcon(0, checked_icon);
+								}
 							}
 						}
 					}
@@ -1803,7 +1849,7 @@ void GFTreeModelWidget::updataIcon()
 					int clclChildCount = clclChild->childCount();
 					for (int o = 0; o < clclChildCount; ++o)
 					{
-						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 						{
 							if (!explosiveBlastAnalysisResultInfo.isChecked)
 							{
@@ -1812,6 +1858,19 @@ void GFTreeModelWidget::updataIcon()
 							else
 							{
 								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+							QTreeWidgetItem* clclclChild = clclChild->child(o);
+							int clclclChildCount = clclclChild->childCount();
+							for (int p = 0; p < clclclChildCount; ++p)
+							{
+								if (!explosiveBlastAnalysisResultInfo.isChecked)
+								{
+									clclclChild->child(p)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclclChild->child(p)->setIcon(0, checked_icon);
+								}
 							}
 						}
 					}
@@ -1822,7 +1881,7 @@ void GFTreeModelWidget::updataIcon()
 					int clclChildCount = clclChild->childCount();
 					for (int o = 0; o < clclChildCount; ++o)
 					{
-						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析"))
+						if (clclChild->child(o)->text(0).contains("应力分析") || clclChild->child(o)->text(0).contains("应变分析") || clclChild->child(o)->text(0).contains("温度分析") || clclChild->child(o)->text(0).contains("超压分析") || clclChild->child(o)->text(0).contains("反应度"))
 						{
 							if (!sacrificeExplosionAnalysisResultInfo.isChecked)
 							{
@@ -1831,6 +1890,19 @@ void GFTreeModelWidget::updataIcon()
 							else
 							{
 								clclChild->child(o)->setIcon(0, checked_icon);
+							}
+							QTreeWidgetItem* clclclChild = clclChild->child(o);
+							int clclclChildCount = clclclChild->childCount();
+							for (int p = 0; p < clclclChildCount; ++p)
+							{
+								if (!sacrificeExplosionAnalysisResultInfo.isChecked)
+								{
+									clclclChild->child(p)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clclclChild->child(p)->setIcon(0, checked_icon);
+								}
 							}
 						}
 					}
@@ -2112,6 +2184,19 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								{
 									geomProWid->UpdataPropertyInfo();
 								}
+								// 截图
+								QTimer::singleShot(500, this, [=]() {
+
+									auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+									if (!geomInfo.nozzleAisShape.IsNull() && !geomInfo.shellAisShape.IsNull() && !geomInfo.propellantAisShape.IsNull() && !geomInfo.heatInsulatingLayerAisShape.IsNull())
+									{
+										UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+										// 截图计算模型
+										QString m_privateDirPath = userinfo.workdir + "/template/main.png";
+										QDir privateDir(m_privateDirPath);
+										wordExporter->captureWidgetToFile(importModelWidget->GetOccView(), m_privateDirPath);
+									}
+								});
 							}
 						}
 						else if (!success)
@@ -2132,16 +2217,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 							workerThread->deleteLater();
 							});
 
-						QTimer::singleShot(500, this, [=]() {
-							if (text == "壳体")
-							{
-								UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
-								// 截图计算模型
-								QString m_privateDirPath = userinfo.workdir + "/template/main.png";
-								QDir privateDir(m_privateDirPath);
-								wordExporter->captureWidgetToFile(importModelWidget->GetOccView(), m_privateDirPath);
-							}
-							});
 					}, Qt::QueuedConnection);
 				workerThread->start();
 			}
