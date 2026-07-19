@@ -968,6 +968,7 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 	auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
 	auto fallTemperatureResult = ModelDataManager::GetInstance()->GetFallTemperatureResult();
 	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+	auto fallReactionDegreeResult = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
 	// 2.快考
 	auto fastCombustionTemperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
 	// 3.慢烤
@@ -977,27 +978,31 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 	auto shootStrainResult = ModelDataManager::GetInstance()->GetShootStrainResult();
 	auto shootTemperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
 	auto shootOverpressureResult = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+	auto shootReactionDegreeResult = ModelDataManager::GetInstance()->GetShootReactionDegreeResult();
 	// 5.射流冲击
 	auto jetImpactStressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
 	auto jetImpactStrainResult = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
 	auto jetImpactTemperatureResult = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
 	auto jetImpactOverpressureResult = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+	auto jetImpactReactionDegreeResult = ModelDataManager::GetInstance()->GetJetImpactReactionDegreeResult();
 	// 6.破片撞击
 	auto fragmentationImpactStressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
 	auto fragmentationImpactStrainResult = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
 	auto fragmentationImpactTemperatureResult = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
 	auto fragmentationImpactOverpressureResult = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+	auto fragmentationImpactReactionDegreeResult = ModelDataManager::GetInstance()->GetFragmentationImpactReactionDegreeResult();
 	// 7.爆炸冲击波
 	auto explosiveBlastStressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
 	auto explosiveBlastStrainResult = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
 	auto explosiveBlastTemperatureResult = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
 	auto explosiveBlastOverpressureResult = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+	auto explosiveBlastReactionDegreeResult = ModelDataManager::GetInstance()->GetExplosiveBlastReactionDegreeResult();
 	// 8.殉爆安全性分析
 	auto sacrificeExplosionStressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
 	auto sacrificeExplosionStrainResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
 	auto sacrificeExplosionTemperatureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
 	auto sacrificeExplosionOverpressureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
-
+	auto sacrificeExplosionReactionDegreeResult = ModelDataManager::GetInstance()->GetSacrificeExplosionReactionDegreeResult();
 
 	QString workdir = userinfo.workdir;
 
@@ -1060,6 +1065,12 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					m_privateDirPath = workdir + "/template/fall//PropellantOverpressure.png";
 					fallOverpressureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetFallOverpressureResult(fallOverpressureResult);
+				}
+				else if (itemData == "reactionDegreePropellantResult" && fallReactionDegreeResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fall//PropellantReactionDegree.png";
+					fallReactionDegreeResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFallReactionDegreeResult(fallReactionDegreeResult);
 				}
 				// 快烤
 				else if (itemData == "FastCombustionTemperatureResult" && fastCombustionTemperatureResult.shellScreenFlag)
@@ -1136,6 +1147,12 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					shootOverpressureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetShootOverpressureResult(shootOverpressureResult);
 				}
+				else if (itemData == "shootReactionDegreePropellantResult" && shootReactionDegreeResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/shoot//PropellantReactionDegree.png";
+					shootReactionDegreeResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetShootReactionDegreeResult(shootReactionDegreeResult);
+				}
 				// 射流冲击
 				else if (itemData == "jetStressShellResult" && jetImpactStressResult.shellScreenFlag)
 				{
@@ -1184,6 +1201,12 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					m_privateDirPath = workdir + "/template/jetImpact/PropellantOverpressure.png";
 					jetImpactOverpressureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetJetImpactOverpressureResult(jetImpactOverpressureResult);
+				}
+				else if (itemData == "jetImpactReactionDegreePropellantResult" && jetImpactReactionDegreeResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/jetImpact/PropellantReactionDegree.png";
+					jetImpactReactionDegreeResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetJetImpactReactionDegreeResult(jetImpactReactionDegreeResult);
 				}
 				// 破片撞击
 				else if (itemData == "fragmentationStressShellResult" && fragmentationImpactStressResult.shellScreenFlag)
@@ -1234,6 +1257,12 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					fragmentationImpactOverpressureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetFragmentationImpactOverpressureResult(fragmentationImpactOverpressureResult);
 				}
+				else if (itemData == "fragmentationImpactReactionDegreePropellantResult" && fragmentationImpactReactionDegreeResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/fragmentationImpact/PropellantReactionDegree.png";
+					fragmentationImpactReactionDegreeResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetFragmentationImpactReactionDegreeResult(fragmentationImpactReactionDegreeResult);
+				}
 				// 爆炸冲击波
 				else if (itemData == "explosiveStressShellResult" && explosiveBlastStressResult.shellScreenFlag)
 				{
@@ -1283,6 +1312,12 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					explosiveBlastOverpressureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetExplosiveBlastOverpressureResult(explosiveBlastOverpressureResult);
 				}
+				else if (itemData == "explosiveBlastReactionDegreePropellantResult" && explosiveBlastReactionDegreeResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/explosiveBlast/PropellantReactionDegree.png";
+					explosiveBlastReactionDegreeResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetExplosiveBlastReactionDegreeResult(explosiveBlastReactionDegreeResult);
+				}
 				// 殉爆
 				else if (itemData == "sacrificeStressShellResult" && sacrificeExplosionStressResult.shellScreenFlag)
 				{
@@ -1331,6 +1366,12 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					m_privateDirPath = workdir + "/template/sacrificeExplosio/PropellantOverpressure.png";
 					sacrificeExplosionOverpressureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetSacrificeExplosionOverpressureResult(sacrificeExplosionOverpressureResult);
+				}
+				else if (itemData == "sacrificeExplosionDegreePropellantResult" && sacrificeExplosionReactionDegreeResult.propellantScreenFlag)
+				{
+					m_privateDirPath = workdir + "/template/sacrificeExplosio/PropellantReactionDegree.png";
+					sacrificeExplosionReactionDegreeResult.propellantScreenFlag = false;
+					ModelDataManager::GetInstance()->SetSacrificeExplosionReactionDegreeResult(sacrificeExplosionReactionDegreeResult);
 				}
 				
 				QDir privateDir(m_privateDirPath);
@@ -3348,6 +3389,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetOverpressureResultWidget();
 						QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
+						ReactionDegreeResultWidget* m_reactionDegreeResultWidget = gfParent->GetReactionDegreeResultWidget();
+
 
 
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
@@ -3358,6 +3401,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_strainResultWidget,
 							m_temperatureResultWidget,
 							m_overpressureResultWidge,
+							m_reactionDegreeResultWidget,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
 							m_insulatingheatPropertyWidget,
@@ -3393,6 +3437,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/fall/PropellantTemperature.png").absolutePath());
 						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/fall/ShellOverpressure.png").absolutePath());
 						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/fall/PropellantOverpressure.png").absolutePath());
+						imagePaths.insert("反应度云图", QDir(workdir + "/template/fall/PropellantReactionDegree.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3472,6 +3517,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							nullptr,
 							nullptr,
 							m_temperatureResultWidget,
+							nullptr,
 							nullptr,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
@@ -3576,6 +3622,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							nullptr,
 							nullptr,
 							m_temperatureResultWidget,
+							nullptr,
 							nullptr,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
@@ -3682,6 +3729,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetShootOverpressureResultWidget();
 						QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
+						ReactionDegreeResultWidget* m_reactionDegreeResultWidget = gfParent->GetShootReactionDegreeResultWidget();
+
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
 							m_geomPropertyWidget,
 							m_materialPropertyWidget,
@@ -3690,6 +3739,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_strainResultWidget,
 							m_temperatureResultWidget,
 							m_overpressureResultWidge,
+							m_reactionDegreeResultWidget,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
 							m_insulatingheatPropertyWidget,
@@ -3721,6 +3771,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/shoot/PropellantTemperature.png").absolutePath());
 						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/shoot/ShellOverpressure.png").absolutePath());
 						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/shoot/PropellantOverpressure.png").absolutePath());
+						imagePaths.insert("反应度云图", QDir(workdir + "/template/shoot/PropellantReactionDegree.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3801,6 +3852,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetJetImpactOverpressureResultWidget();
 						QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
+						ReactionDegreeResultWidget* m_reactionDegreeResultWidget = gfParent->GetJetImpactReactionDegreeResultWidget();
+
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
 							m_geomPropertyWidget,
 							m_materialPropertyWidget,
@@ -3809,6 +3862,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_strainResultWidget,
 							m_temperatureResultWidget,
 							m_overpressureResultWidge,
+							m_reactionDegreeResultWidget,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
 							m_insulatingheatPropertyWidget,
@@ -3839,6 +3893,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/jetImpact/PropellantTemperature.png").absolutePath());
 						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/jetImpact/ShellOverpressure.png").absolutePath());
 						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/jetImpact/PropellantOverpressure.png").absolutePath());
+						imagePaths.insert("反应度云图", QDir(workdir + "/template/jetImpact/PropellantReactionDegree.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -3915,6 +3970,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetFragmentationImpactOverpressureResultWidget();
 
+						ReactionDegreeResultWidget* m_reactionDegreeResultWidget = gfParent->GetFragmentationImpactReactionDegreeResultWidget();
+
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
 							m_geomPropertyWidget,
 							m_materialPropertyWidget,
@@ -3923,6 +3980,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_strainResultWidget,
 							m_temperatureResultWidget,
 							m_overpressureResultWidge,
+							m_reactionDegreeResultWidget,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
 							m_insulatingheatPropertyWidget,
@@ -3955,6 +4013,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/fragmentationImpact/PropellantTemperature.png").absolutePath());
 						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/fragmentationImpact/ShellOverpressure.png").absolutePath());
 						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/fragmentationImpact/PropellantOverpressure.png").absolutePath());
+						imagePaths.insert("反应度云图", QDir(workdir + "/template/fragmentationImpact/PropellantReactionDegree.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -4035,6 +4094,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetExplosiveBlastOverpressureResultWidget();
 						QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
+						ReactionDegreeResultWidget* m_reactionDegreeResultWidget = gfParent->GetExplosiveBlastReactionDegreeResultWidget();
+
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
 							m_geomPropertyWidget,
 							m_materialPropertyWidget,
@@ -4043,6 +4104,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_strainResultWidget,
 							m_temperatureResultWidget,
 							m_overpressureResultWidge,
+							m_reactionDegreeResultWidget,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
 							m_insulatingheatPropertyWidget,
@@ -4071,6 +4133,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/explosiveBlast/PropellantTemperature.png").absolutePath());
 						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/explosiveBlast/ShellOverpressure.png").absolutePath());
 						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/explosiveBlast/PropellantOverpressure.png").absolutePath());
+						imagePaths.insert("反应度云图", QDir(workdir + "/template/explosiveBlast/PropellantReactionDegree.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -4151,6 +4214,8 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						OverpressureResultWidget* m_overpressureResultWidge = gfParent->GetSacrificeExplosionOverpressureResultWidget();
 						QTableWidget* m_overpressureTableWid = m_overpressureResultWidge->GetQTableWidget();
 
+						ReactionDegreeResultWidget* m_reactionDegreeResultWidget = gfParent->GetSacrificeExplosionReactionDegreeResultWidget();
+
 						QMap<QString, QVariant> data = convertTextData(m_projectPropertyWidge,
 							m_geomPropertyWidget,
 							m_materialPropertyWidget,
@@ -4159,6 +4224,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 							m_strainResultWidget,
 							m_temperatureResultWidget,
 							m_overpressureResultWidge,
+							m_reactionDegreeResultWidget,
 							m_steelPropertyWidget,
 							m_propellantPropertyWidget,
 							m_insulatingheatPropertyWidget,
@@ -4188,6 +4254,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/sacrificeExplosio/PropellantTemperature.png").absolutePath());
 						imagePaths.insert("壳体超压云图", QDir(workdir + "/template/sacrificeExplosio/ShellOverpressure.png").absolutePath());
 						imagePaths.insert("推进剂超压云图", QDir(workdir + "/template/sacrificeExplosio/PropellantOverpressure.png").absolutePath());
+						imagePaths.insert("反应度云图", QDir(workdir + "/template/sacrificeExplosio/PropellantReactionDegree.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
 
 						// 创建进度对话框
@@ -4264,6 +4331,7 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	StrainResultWidget* strainResultWidget,
 	TemperatureResultWidget* temperatureResultWidget,
 	OverpressureResultWidget* overpressureResultWidge,
+	ReactionDegreeResultWidget* reactionDegreeResultWidget,
 	SteelPropertyWidget* steelPropertyWidget,
 	PropellantPropertyWidget* propellantPropertyWidget,
 	InsulatingheatPropertyWidget* insulatingheatPropertyWidget,
@@ -4450,6 +4518,15 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 		data.insert("外防热超压标准差", m_overpressureTableWid->item(16, 2)->text());
 	}
 	
+	if (reactionDegreeResultWidget != nullptr)
+	{
+		QTableWidget* m_reactionDegreeTableWid = reactionDegreeResultWidget->GetQTableWidget();
+		data.insert("固体推进剂最大反应度", m_reactionDegreeTableWid->item(1, 2)->text());
+		data.insert("固体推进剂最小反应度", m_reactionDegreeTableWid->item(2, 2)->text());
+		data.insert("固体推进剂平均反应度", m_reactionDegreeTableWid->item(3, 2)->text());
+		data.insert("固体推进剂反应度标准差", m_reactionDegreeTableWid->item(4, 2)->text());
+			
+	}
 
 	return data;
 }

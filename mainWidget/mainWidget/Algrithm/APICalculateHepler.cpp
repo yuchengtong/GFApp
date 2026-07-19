@@ -780,6 +780,7 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	}
 
 	steelTemperatureResults.push_back(slowCombustionSettingInfo.temperature);
+	propellantTemperatureResults.push_back(slowCombustionSettingInfo.temperature * 0.87);
 
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());

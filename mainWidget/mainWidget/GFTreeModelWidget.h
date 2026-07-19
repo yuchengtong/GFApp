@@ -24,6 +24,7 @@
 #include "InsulatingheatPropertyWidget.h"
 #include "OutheatPropertyWidget.h"
 #include "ParamAnalyWidget.h"
+#include "ReactionDegreeResultWidget.h"
 
 
 
@@ -62,6 +63,7 @@ private slots:
 		StrainResultWidget* strainResultWidget,
 		TemperatureResultWidget* temperatureResultWidget,
 		OverpressureResultWidget* overpressureResultWidge,
+		ReactionDegreeResultWidget* reactionDegreeResultWidget,
 		SteelPropertyWidget* steelPropertyWidget,
 		PropellantPropertyWidget* propellantPropertyWidget,
 		InsulatingheatPropertyWidget* insulatingheatPropertyWidget,
