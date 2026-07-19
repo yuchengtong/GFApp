@@ -184,6 +184,7 @@ int main(int argc, char* argv[])
     QFont font("Arial", 10);
     QApplication::setFont(font);
 
+    QCoreApplication::setOrganizationName("GF");
     QCoreApplication::setApplicationName("固体发动机安全性分析与评估系统");
 
     mainWidget w;

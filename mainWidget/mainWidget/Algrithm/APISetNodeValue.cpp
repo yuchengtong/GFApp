@@ -4471,7 +4471,7 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
 	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+	const double semi_minor_x_1 = semi_major_z_1 / 2.0;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12, semi_major_z_1 * 0.4},
@@ -4673,7 +4673,7 @@ bool APISetNodeValue::SetPropellantShootTemperatureResult(OccView* occView, std:
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
 	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+	const double semi_minor_x_1 = semi_major_z_1 / 2.0;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12,semi_major_z_1 * 0.4},
@@ -4788,7 +4788,7 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
 	const double semi_major_z_1 = y_max - y_min;
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;
+	const double semi_minor_x_1 = semi_major_z_1 / 1.5;
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12, semi_major_z_1 * 0.4},
@@ -4943,7 +4943,7 @@ bool APISetNodeValue::SetPropellantShootOverpressureResult(OccView* occView, std
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
 	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+	const double semi_minor_x_1 = semi_major_z_1 / 1.5;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
 {12,semi_major_z_1 * 0.4},
@@ -5080,15 +5080,15 @@ bool APISetNodeValue::SetPropellantShootReactionDegreeNephogram(OccView* occView
 	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
-{12,semi_major_z_1 * 0.4},
-{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
-{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
+{12,semi_major_z_1 * 0.45},
+{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.5},
+{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.55},
 {semi_minor_x_1 * 0.3, semi_major_z_1 * 0.6},
 {semi_minor_x_1 * 0.35, semi_major_z_1 * 0.65},
 {semi_minor_x_1 * 0.4, semi_major_z_1 * 0.7},
 {semi_minor_x_1 * 0.45, semi_major_z_1 * 0.8},
-{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.85},
-{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
+{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.9},
+{semi_minor_x_1 * 0.55, semi_major_z_1 * 1.0}
 	};
 
 	// cx    // 椭圆中心 x
@@ -5895,7 +5895,7 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
 	const double semi_major_z_1 = y_max - y_min;
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;
+	const double semi_minor_x_1 = semi_major_z_1 / 2.0;
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12, 31},
@@ -6050,7 +6050,7 @@ bool APISetNodeValue::SetPropellantJetImpactTemperatureResult(OccView* occView, 
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
 	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+	const double semi_minor_x_1 = semi_major_z_1 / 2.0;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12,31},
@@ -6174,7 +6174,7 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
 	const double semi_major_z_1 = y_max - y_min;
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;
+	const double semi_minor_x_1 = semi_major_z_1 / 1.5;
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12, 31},
@@ -6328,7 +6328,7 @@ bool APISetNodeValue::SetPropellantJetImpactOverpressureResult(OccView* occView,
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
 	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
-	const double semi_minor_x_1 = semi_major_z_1 / 2.5;    // 最大椭圆的 a
+	const double semi_minor_x_1 = semi_major_z_1 / 1.5;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12,31},
@@ -6480,11 +6480,11 @@ bool APISetNodeValue::SetPropellantJetImpactReactionDegreeNephogram(OccView* occ
 		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.2},
 		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.25},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.3},
-		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.4},
-		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.55},
-		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.7},
-		{semi_minor_x_1 * 1.0, semi_major_z_1 * 0.85}
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
 	};
 
 	// cx    // 椭圆中心 x
@@ -7294,7 +7294,7 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
-	const double semi_major_z_1 = (y_max - y_min) * 0.4;
+	const double semi_major_z_1 = (y_max - y_min) * 0.5;
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;
 
 	std::vector<std::pair<double, double>> ellipses = {
@@ -7451,7 +7451,7 @@ bool APISetNodeValue::SetPropellantFragmentationTemperatureResult(OccView* occVi
 
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
-	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_major_z_1 = (y_max - y_min) * 0.5;   // 最大椭圆的 b
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
@@ -7575,7 +7575,7 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
-	const double semi_major_z_1 = (y_max - y_min) * 0.4;
+	const double semi_major_z_1 = (y_max - y_min) * 0.55;
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;
 
 	std::vector<std::pair<double, double>> ellipses = {
@@ -7730,7 +7730,7 @@ bool APISetNodeValue::SetPropellantFragmentationOverpressureResult(OccView* occV
 
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
-	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_major_z_1 = (y_max - y_min) * 0.55;   // 最大椭圆的 b
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
@@ -7874,17 +7874,17 @@ bool APISetNodeValue::SetPropellantFragmentationReactionDegreeNephogram(OccView*
 
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
-	const double semi_major_z_1 = (y_max - y_min) * 0.4;   // 最大椭圆的 b
+	const double semi_major_z_1 = (y_max - y_min) * 0.55;   // 最大椭圆的 b
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;    // 最大椭圆的 a
 
 	std::vector<std::pair<double, double>> ellipses = {
 		{12,31},
-		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.35},
+		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
 		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
 		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
-		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.85},
 		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
 		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
 	};
@@ -8608,7 +8608,7 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 	const double a = (x_max - x_min) / 2.0;
 	const double b_full = (y_max - y_min) / 2.0;
 
-	std::vector<double> b_scales = { 1.0, 0.85, 0.6, 0.5, 0.4, 0.25, 0.1 };
+	std::vector<double> b_scales = { 1.2, 0.95, 0.8, 0.6, 0.45, 0.25, 0.1 };
 	const double inv_a2 = 1.0 / (a * a);
 
 	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
@@ -8767,8 +8767,7 @@ bool APISetNodeValue::SetPropellantExplosiveBlastTemperatureResult(OccView* occV
 	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
 
 	// 短轴缩放比例（从大到小）
-	std::vector<double> b_scales = { 1.0, 0.85, 0.6, 0.5, 0.4, 0.25, 0.1 };
-
+	std::vector<double> b_scales = { 1.2, 0.95, 0.8, 0.6, 0.45, 0.25, 0.1 };
 	// 预计算 1/a²（a 不变）
 	const double inv_a2 = 1.0 / (a * a);
 
@@ -8868,7 +8867,7 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 	const double a = (x_max - x_min) / 2.0;
 	const double b_full = (y_max - y_min) / 2.0;
 
-	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
+	std::vector<double> b_scales = { 1.5, 1.2, 1.0, 0.7, 0.5, 0.3, 0.1 };
 	const double inv_a2 = 1.0 / (a * a);
 
 	auto isInEllipse = [](double x, double z, double cx, double cz, double inv_a2, double b) -> bool {
@@ -9031,7 +9030,7 @@ bool APISetNodeValue::SetPropellantExplosiveBlastOverpressureResult(OccView* occ
 	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
 
 	// 短轴缩放比例（从大到小）
-	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
+	std::vector<double> b_scales = { 1.5, 1.2, 1.0, 0.7, 0.5, 0.3, 0.1 };
 
 	// 预计算 1/a²（a 不变）
 	const double inv_a2 = 1.0 / (a * a);
@@ -9162,8 +9161,7 @@ bool APISetNodeValue::SetPropellantExplosiveBlastReactionDegreeNephogram(OccView
 	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
 
 	// 短轴缩放比例（从大到小）
-	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
-
+	std::vector<double> b_scales = { 1.4, 1.2, 1.0, 0.7, 0.5, 0.4, 0.2 };
 	// 预计算 1/a²（a 不变）
 	const double inv_a2 = 1.0 / (a * a);
 
@@ -9866,8 +9864,8 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 
 	const double cx = (x_min + x_max) / 2.0;
 	const double cz = y_min;
-	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;
-	const double b_full = (y_max - y_min) / 2.0;
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 2.7;
+	const double b_full = (y_max - y_min) /1.7;
 
 	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
 	const double inv_a2 = 1.0 / (a * a);
@@ -10023,8 +10021,8 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionTemperatureResult(OccView* 
 	const double cz = y_min;
 
 	// 椭圆尺寸
-	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
-	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 2.7;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 1.7;     // 原始半短轴
 
 	// 短轴缩放比例（从大到小）
 	std::vector<double> b_scales = { 1.0, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1 };
@@ -10125,8 +10123,8 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 
 	const double cx = (x_min + x_max) / 2.0;
 	const double cz = y_min;
-	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;
-	const double b_full = (y_max - y_min) / 2.0;
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 2.5;
+	const double b_full = (y_max - y_min) / 1.5;
 
 	std::vector<double> b_scales = { 1.0, 0.85, 0.8, 0.6, 0.4, 0.2, 0.1 };
 	const double inv_a2 = 1.0 / (a * a);
@@ -10284,8 +10282,8 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionOverpressureResult(OccView*
 	const double cz = y_min;
 
 	// 椭圆尺寸
-	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
-	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 2.5;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 1.5;     // 原始半短轴
 
 
 	// 短轴缩放比例（从大到小）
@@ -10415,12 +10413,12 @@ bool APISetNodeValue::SetPropellantSacrificeExplosionReactionDegreeNephogram(Occ
 	const double cz = y_min;
 
 	// 椭圆尺寸
-	const double a = (x_max - x_min) / 2.0 * 2.0 / 3.0;          // 半长轴（固定）
-	const double b_full = (y_max - y_min) / 2.0;     // 原始半短轴
+	const double a = (x_max - x_min) / 2.0 * 2.0 / 2.5;          // 半长轴（固定）
+	const double b_full = (y_max - y_min) / 1.5;     // 原始半短轴
 
 
 	// 短轴缩放比例（从大到小）
-	std::vector<double> b_scales = { 1.0, 0.85, 0.8, 0.6, 0.4, 0.2, 0.1 };
+	std::vector<double> b_scales = { 1.2, 0.95, 0.85, 0.6, 0.45, 0.3, 0.1 };
 
 	// 预计算 1/a²（a 不变）
 	const double inv_a2 = 1.0 / (a * a);

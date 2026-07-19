@@ -1965,6 +1965,20 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 	}
 
 	QString text = item->text(0);
+
+	auto getImportWidget = [this]() -> GFImportModelWidget* {
+		QWidget* parent = parentWidget();
+		while (parent) {
+			if (auto* w = qobject_cast<GFImportModelWidget*>(parent)) return w;
+			parent = parent->parentWidget();
+		}
+		return nullptr;
+	};
+
+	auto getContext = [&](GFImportModelWidget* w)->Handle(AIS_InteractiveContext) {
+		return w ? w->GetOccView()->getContext() : Handle(AIS_InteractiveContext)();
+	};
+
 	if (text == "固体发动机三维模型")
 	{
 		QMenu menu(this);
@@ -1977,29 +1991,17 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			return;
 		}
 
-		QWidget* parent = parentWidget();
-		GFImportModelWidget* importModelWidget = nullptr;
-		while (parent)
-		{
-			importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
-			if (importModelWidget)
-			{
-				break;
-			}
-			parent = parent->parentWidget();
-		}
-
+		auto* importModelWidget = getImportWidget();
 		if (!importModelWidget)
 		{
 			return;
 		}
 
+		auto context = getContext(importModelWidget);
+		auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+
 		if (selected == actShowAll)
 		{
-			auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-			auto occView = importModelWidget->GetOccView();
-			Handle(AIS_InteractiveContext) context = occView->getContext();
-
 			if (!geomInfo.nozzleAisShape.IsNull())
 				context->Display(geomInfo.nozzleAisShape, Standard_True);
 			if (!geomInfo.shellAisShape.IsNull())
@@ -2014,10 +2016,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 		}
 		else if (selected == actHideAll)
 		{
-			auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-			auto occView = importModelWidget->GetOccView();
-			Handle(AIS_InteractiveContext) context = occView->getContext();
-
 			if (!geomInfo.nozzleAisShape.IsNull())
 				context->Erase(geomInfo.nozzleAisShape, Standard_True);
 			if (!geomInfo.shellAisShape.IsNull())
@@ -2031,7 +2029,13 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 	else if (text == "喷管"||text == "壳体" || text == "推进剂" || text == "绝热层")
 	{
 		QTreeWidgetItem* parentItem = item->parent();
-		if (parentItem && parentItem->data(0, Qt::UserRole).toString() == "Geometry")
+		if (!parentItem) return;
+
+		QString parentRole = parentItem->data(0, Qt::UserRole).toString();
+		auto* importModelWidget = getImportWidget();
+		if (!importModelWidget) return;
+
+		if (parentRole == "Geometry")
 		{
 			QMenu menu(this);
 			QAction* actImport = menu.addAction("导入");
@@ -2044,29 +2048,19 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				return;
 			}
 
-			QWidget* parent = parentWidget();
-			GFImportModelWidget* importModelWidget = nullptr;
-			while (parent)
-			{
-				importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
-				if (importModelWidget)
-				{
-					break;
-				}
-				parent = parent->parentWidget();
-			}
+			auto context = getContext(importModelWidget);
+			auto& geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 
-			if (!importModelWidget)
-			{
-				return;
-			}
 
 			if (selected == actImport)
 			{
+				QSettings settings("GF", "固体发动机安全性分析与评估系统");
+				QString lastDir = settings.value("LastImportDir", QDir::homePath()).toString();
+
 				QString filePath = QFileDialog::getOpenFileName(
 					importModelWidget,
 					"Open File",
-					QDir::homePath(),
+					lastDir,
 					"STEP Files (*.stp *.step);;"
 					"IGES Files (*.iges *.igs);;"
 					"VTK Files (*.vtk);;"
@@ -2077,6 +2071,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				{
 					return;
 				}
+
+				QFileInfo fileInfo(filePath);
+				settings.setValue("LastImportDir", fileInfo.absolutePath());
 
 				// 写日志
 				auto logWidget = importModelWidget->GetLogWidget();
@@ -2135,7 +2132,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 						if (success && !info.shape.IsNull())
 						{
 							auto occView = importModelWidget->GetOccView();
-							Handle(AIS_InteractiveContext) context = occView->getContext();
 
 							Handle(AIS_Shape) aisShape;
 							if (text == "喷管" && !info.nozzleAisShape.IsNull())
@@ -2398,6 +2394,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 	{
 		contextMenu = new QMenu(this);
 		QAction* meshAction = new QAction("网格划分", this);
+		QAction* showMesh = new QAction("显示全部网格", this);
+		QAction* hideMesh = new QAction("隐藏全部网格", this);
 		QAction* showPoints = new QAction("显示观测点", this);
 		QAction* hidePoints = new QAction("隐藏观测点", this);
 		connect(meshAction, &QAction::triggered, this, [item, this]() {
@@ -2673,10 +2671,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 						});
 
 					}
-					else
-					{
-						QMessageBox::warning(this, "网格划分失败", msg);
-					}
 
 					// 清理资源
 					progressDialog->close();
@@ -2691,7 +2685,91 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			workerThread->start();
 
 			});
-		
+
+		connect(showMesh, &QAction::triggered, this, [this]() {
+			QWidget* parent = parentWidget();
+			GFImportModelWidget* importModelWidget = nullptr;
+			while (parent)
+			{
+				importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+				if (importModelWidget)
+				{
+					break;
+				}
+
+				parent = parent->parentWidget();
+			}
+
+			if (!importModelWidget)
+			{
+				return;
+			}
+
+			auto occView = importModelWidget->GetOccView();
+			Handle(AIS_InteractiveContext) context = occView->getContext();
+
+			auto ModelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+			if (!ModelMeshInfo.nozzleAisMesh.IsNull())
+			{			
+				context->Display(ModelMeshInfo.nozzleAisMesh, Standard_True);
+			}
+			if (!ModelMeshInfo.shellAisMesh.IsNull())
+			{
+				context->Display(ModelMeshInfo.shellAisMesh, Standard_True);
+			}
+			if (!ModelMeshInfo.propellantAisMesh.IsNull())
+			{
+				context->Display(ModelMeshInfo.propellantAisMesh, Standard_True);
+			}
+			if (!ModelMeshInfo.heatInsulatingLayerAisMesh.IsNull())
+			{
+				context->Display(ModelMeshInfo.heatInsulatingLayerAisMesh, Standard_True);
+			}
+
+			});
+
+		connect(hideMesh, &QAction::triggered, this, [this]() {
+			QWidget* parent = parentWidget();
+			GFImportModelWidget* importModelWidget = nullptr;
+			while (parent)
+			{
+				importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+				if (importModelWidget)
+				{
+					break;
+				}
+
+				parent = parent->parentWidget();
+			}
+
+			if (!importModelWidget)
+			{
+				return;
+			}
+
+			auto occView = importModelWidget->GetOccView();
+			Handle(AIS_InteractiveContext) context = occView->getContext();
+
+			auto ModelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+			if (!ModelMeshInfo.nozzleAisMesh.IsNull())
+			{
+				context->Erase(ModelMeshInfo.nozzleAisMesh, Standard_True);
+			}
+			if (!ModelMeshInfo.shellAisMesh.IsNull())
+			{
+				context->Erase(ModelMeshInfo.shellAisMesh, Standard_True);
+			}
+			if (!ModelMeshInfo.propellantAisMesh.IsNull())
+			{
+				context->Erase(ModelMeshInfo.propellantAisMesh, Standard_True);
+			}
+			if (!ModelMeshInfo.heatInsulatingLayerAisMesh.IsNull())
+			{
+				context->Erase(ModelMeshInfo.heatInsulatingLayerAisMesh, Standard_True);
+			}
+
+			});
+
 		connect(showPoints, &QAction::triggered, this, [this]() {
 			auto ModelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 			if (!ModelMeshInfo.samplingPoint.IsNull())
@@ -2719,6 +2797,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				context->Display(ModelMeshInfo.samplingPoint, Standard_True);
 			}
 			});
+
 		connect(hidePoints, &QAction::triggered, this, [this]() {
 			auto ModelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 			if (!ModelMeshInfo.samplingPoint.IsNull())
@@ -2746,7 +2825,10 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				context->Erase(ModelMeshInfo.samplingPoint, Standard_True);
 			}
 			});
+
 		contextMenu->addAction(meshAction);
+		contextMenu->addAction(showMesh);
+		contextMenu->addAction(hideMesh);
 		contextMenu->addAction(showPoints);
 		contextMenu->addAction(hidePoints);
 		contextMenu->exec(event->globalPos());

@@ -138,8 +138,6 @@ void StartDialog::onConfirmClicked()
         return;
     }
 
-    // 路径有效，发送 accept 信号并关闭弹窗
-    QMessageBox::information(this, "成功", "数据存储路径设置完成：\n" + m_selectedPath);
     // 保存账号信息
     auto ins = ModelDataManager::GetInstance();
     UserInfo info;
