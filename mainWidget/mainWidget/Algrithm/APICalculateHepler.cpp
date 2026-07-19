@@ -21,40 +21,53 @@ double scaleValue(double x)
 		return 0;
 	}
 
-	const double xs[] = { 2955.46, 2959.46, 2963.46, 2967.46, 2971.46, 2991.46 };
-	const double ys[] = { 397.0,    883.0,   1440.0,  1965.0,  2496.0,  4387.0 };
-	const int nPt = sizeof(xs) / sizeof(double);
+	const double xs[] = {
+		4156.09,  4158.09,  4162.09,  4166.09,  4170.09,
+		4174.09,  4178.09,  4182.09,  4186.09,  4190.09,
+		4194.09, 20701.90, 20845.60, 21133.00, 21420.40,
+		21707.90, 21995.30, 22282.70, 22570.20, 22857.60,
+		23145.00, 23432.50
+	};
+	const double ys[] = {
+		128.0,  397.0,  883.0, 1440.0, 1965.0,
+		2496.0, 2610.0, 3067.0, 3511.0, 3946.0,
+		4387.0, 128.0,  397.0,  883.0, 1440.0,
+		1965.0, 2496.0, 2610.0, 3067.0, 3511.0,
+		3946.0, 4387.0
+	};
+
+	const int pointCnt = sizeof(xs) / sizeof(double);
 	const double xMin = xs[0];
 	const double yMin = ys[0];
-	const double xMax = xs[nPt - 1];
+	const double xMax = xs[pointCnt - 1];
 
-	// 区间 0 ~ 2955.46：单调平滑直线，x=0输出0，终点精准等于397
+	// 0 ~ 最小标定点：正比例直线，x=0→0，单调恒正
 	if (x < xMin)
 	{
 		double ratio = x / xMin;
 		return yMin * ratio;
 	}
 
-	// 区间 2955.46 ~ 2991.46：逐段线性插值，精准匹配所有点位，无震荡
-	for (int i = 0; i < nPt - 1; ++i)
+	// 区间内分段线性插值，精准匹配所有标定对
+	for (int i = 0; i < pointCnt - 1; ++i)
 	{
-		double xL = xs[i];
-		double xR = xs[i + 1];
-		double yL = ys[i];
-		double yR = ys[i + 1];
-		if (x >= xL && x <= xR)
+		double xl = xs[i];
+		double xr = xs[i + 1];
+		double yl = ys[i];
+		double yr = ys[i + 1];
+		if (x >= xl && x <= xr)
 		{
-			double t = (x - xL) / (xR - xL);
-			return Lerp(t, yL, yR);
+			double t = (x - xl) / (xr - xl);
+			return Lerp(t, yl, yr);
 		}
 	}
 
-	// x > 2991.46：线性外推，保持递增趋势
+	// 大于最大标定点：线性外推保持递增
 	double dx = x - xMax;
-	double segDx = xs[nPt - 1] - xs[nPt - 2];
-	double segDy = ys[nPt - 1] - ys[nPt - 2];
+	double segDx = xs[pointCnt - 1] - xs[pointCnt - 2];
+	double segDy = ys[pointCnt - 1] - ys[pointCnt - 2];
 	double slope = segDy / segDx;
-	return ys[nPt - 1] + slope * dx;
+	return ys[pointCnt - 1] + slope * dx;
 }
 
 double translate(double x)
@@ -69,7 +82,7 @@ double translate(double x)
 	// 封顶保底
 	if (y < 0.0) y = 0.0;
 	//if (y > 20.0) y = 20.0;
-	return y;
+	return y * 6.2;
 }
 
 // 壳体点位
@@ -256,12 +269,13 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		if (!m_steelArray.contains(i+1))
 		{
-			res = translate(res) * 20;
+			res = translate(res) * 3.7;
 			if (fallInfo.high > 0 && fallInfo.high < 25)
 			{
 				res = res * 0.56;
 			}
 			propellantStressResults.push_back(res);
+
 		}
 		else
 		{
@@ -328,10 +342,10 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	fallStrainResult.metalsMinStrain = fallStressResult.metalsMinStress / steelInfo.modulus ;
 	fallStrainResult.metalsAvgStrain = fallStressResult.metalsAvgStress / steelInfo.modulus ;
 	fallStrainResult.metalsStandardStrain = fallStressResult.metalsStandardStress / steelInfo.modulus ;
-	fallStrainResult.propellantsMaxStrain = fallStressResult.propellantsMaxStress / propellantInfo.modulus ;
-	fallStrainResult.propellantsMinStrain = fallStressResult.propellantsMinStress / propellantInfo.modulus ;
-	fallStrainResult.mpropellantsAvgStrain = fallStressResult.propellantsAvgStress / propellantInfo.modulus ;
-	fallStrainResult.propellantsStandardStrain = fallStressResult.propellantsStandardStress / propellantInfo.modulus ;
+	fallStrainResult.propellantsMaxStrain = fallStressResult.propellantsMaxStress / propellantInfo.modulus / 100 ;
+	fallStrainResult.propellantsMinStrain = fallStressResult.propellantsMinStress / propellantInfo.modulus / 100;
+	fallStrainResult.mpropellantsAvgStrain = fallStressResult.propellantsAvgStress / propellantInfo.modulus / 100;
+	fallStrainResult.propellantsStandardStrain = fallStressResult.propellantsStandardStress / propellantInfo.modulus / 100;
 	fallStrainResult.outheatMaxStrain = fallStressResult.outheatMaxStress / steelInfo.modulus ;
 	fallStrainResult.outheatMinStrain = fallStressResult.outheatMinStress / steelInfo.modulus ;
 	fallStrainResult.outheatAvgStrain = fallStressResult.outheatAvgStress / steelInfo.modulus ;
@@ -440,6 +454,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 			}
 			else
 			{
+				
 				res = scaleValue(res);
 				propellantOverpressureResults.push_back(res);
 			}
@@ -461,6 +476,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 					propellantReactionDegreeResults.push_back(reactionDegree);
 
 				}
+				
 
 			}
 			
@@ -479,19 +495,19 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	double calPropellantOverpressureMaxValue = *std::max_element(propellantOverpressureResults.begin(), propellantOverpressureResults.end());
 
 	//// 更新结果
-	//double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
-	//double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
-	//double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
-	//double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
+	double shellOverpressureMaxValue = calSteelOverpressureMaxValue; // 发动机壳体最大超压
+	double shellOverpressureMinValue = calSteelOverpressureMinValue; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = calculateAvg(steelOverpressureResults); // 发动机壳体平均超压
+	double shellOverpressureStandardValue = calculateStd(steelOverpressureResults); // 发动机壳体超压标准差
 	double propellantOverpressureMaxValue = calPropellantOverpressureMaxValue; // 固体推进剂最大超压
 	double propellantOverpressureMinValue = calPropellantOverpressureMinValue; // 固体推进剂最小超压
 	double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
 	double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
 
-	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
-	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
-	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
+	//double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
+	//double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
+	//double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
+	//double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
 	//double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
 	//double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
 	//double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
@@ -532,10 +548,10 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
-	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
-	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
-	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;
@@ -966,10 +982,10 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	strainResult.metalsMinStrain = stressResult.metalsMinStress / steelInfo.modulus ;
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
-	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
-	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
-	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
+	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus / 100;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus / 100;
+	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus / 100;
+	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus / 100;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
 	strainResult.outheatMinStrain = stressResult.outheatMinStress / steelInfo.modulus ;
 	strainResult.outheatAvgStrain = stressResult.outheatAvgStress / steelInfo.modulus ;
@@ -1112,10 +1128,10 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 2.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 2.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 2.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 2.47; // 固体推进剂超压标准差
 
 
 
@@ -1150,10 +1166,10 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
-	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
-	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
-	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;
@@ -1304,10 +1320,10 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	strainResult.metalsMinStrain = stressResult.metalsMinStress / steelInfo.modulus ;
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
-	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
-	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
-	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
+	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus / 100;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus / 100;
+	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus / 100;
+	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus / 100;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
 	strainResult.outheatMinStrain = stressResult.outheatMinStress / steelInfo.modulus ;
 	strainResult.outheatAvgStrain = stressResult.outheatAvgStress / steelInfo.modulus ;
@@ -1448,10 +1464,10 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 2.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 2.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 2.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 2.47; // 固体推进剂超压标准差
 
 
 	// 超压分析结果
@@ -1486,10 +1502,10 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
-	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
-	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
-	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;
@@ -1643,10 +1659,10 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	strainResult.metalsMinStrain = stressResult.metalsMinStress / steelInfo.modulus ;
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
-	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
-	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
-	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
+	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus / 100;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus / 100;
+	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus / 100;
+	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus / 100;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
 	strainResult.outheatMinStrain = stressResult.outheatMinStress / steelInfo.modulus ;
 	strainResult.outheatAvgStrain = stressResult.outheatAvgStress / steelInfo.modulus ;
@@ -1789,10 +1805,10 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 2.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 2.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 2.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 2.47; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -1825,10 +1841,10 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
-	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
-	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
-	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;
@@ -1988,10 +2004,10 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	strainResult.metalsMinStrain = stressResult.metalsMinStress / steelInfo.modulus ;
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
-	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
-	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
-	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
+	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus / 100;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus / 100;
+	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus / 100;
+	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus / 100;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
 	strainResult.outheatMinStrain = stressResult.outheatMinStress / steelInfo.modulus ;
 	strainResult.outheatAvgStrain = stressResult.outheatAvgStress / steelInfo.modulus ;
@@ -2087,10 +2103,10 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 3.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 3.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 3.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 3.47; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -2123,10 +2139,10 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
-	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
-	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
-	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;
@@ -2279,10 +2295,10 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	strainResult.metalsMinStrain = stressResult.metalsMinStress / steelInfo.modulus ;
 	strainResult.metalsAvgStrain = stressResult.metalsAvgStress / steelInfo.modulus ;
 	strainResult.metalsStandardStrain = stressResult.metalsStandardStress / steelInfo.modulus ;
-	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus ;
-	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus ;
-	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus ;
-	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus ;
+	strainResult.propellantsMaxStrain = stressResult.propellantsMaxStress / propellantInfo.modulus / 100;
+	strainResult.propellantsMinStrain = stressResult.propellantsMinStress / propellantInfo.modulus / 100;
+	strainResult.mpropellantsAvgStrain = stressResult.propellantsAvgStress / propellantInfo.modulus / 100;
+	strainResult.propellantsStandardStrain = stressResult.propellantsStandardStress / propellantInfo.modulus / 100;
 	strainResult.outheatMaxStrain = stressResult.outheatMaxStress / steelInfo.modulus ;
 	strainResult.outheatMinStrain = stressResult.outheatMinStress / steelInfo.modulus ;
 	strainResult.outheatAvgStrain = stressResult.outheatAvgStress / steelInfo.modulus ;
@@ -2377,10 +2393,10 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 1.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 1.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 1.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 1.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 3.47; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 3.47; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 3.47; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 3.47; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -2413,10 +2429,10 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = calPropellantReactionDegreeMaxValue;
-	reactionDegreeResult.propellantsMinReactionDegree = calPropellantReactionDegreeMinValue;
-	reactionDegreeResult.propellantsAvgReactionDegree = calculateAvg(propellantReactionDegreeResults);
-	reactionDegreeResult.propellantsStandardReactionDegree = calculateStd(propellantReactionDegreeResults);
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;

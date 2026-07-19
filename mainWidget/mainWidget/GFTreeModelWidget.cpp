@@ -1073,26 +1073,26 @@ void GFTreeModelWidget::onTreeItemClicked(QTreeWidgetItem* item, int column)
 					ModelDataManager::GetInstance()->SetFallReactionDegreeResult(fallReactionDegreeResult);
 				}
 				// 快烤
-				else if (itemData == "FastCombustionTemperatureResult" && fastCombustionTemperatureResult.shellScreenFlag)
+				else if (itemData == "fastTemperatureShellResult" && fastCombustionTemperatureResult.shellScreenFlag)
 				{
 					m_privateDirPath = workdir + "/template/fastCombustion/ShellTemperature.png";
 					fastCombustionTemperatureResult.shellScreenFlag = false;
 					ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(fastCombustionTemperatureResult);
 				}
-				else if (itemData == "fastTemperatureShellResult" && fastCombustionTemperatureResult.propellantScreenFlag)
+				else if (itemData == "fastTemperaturePropellantResult" && fastCombustionTemperatureResult.propellantScreenFlag)
 				{
 					m_privateDirPath = workdir + "/template/fastCombustion/PropellantTemperature.png";
 					fastCombustionTemperatureResult.propellantScreenFlag = false;
 					ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(fastCombustionTemperatureResult);
 				}
 				// 慢烤
-				else if (itemData == "SlowCombustionTemperatureResult" && slowCombustionTemperatureResult.shellScreenFlag)
+				else if (itemData == "slowTemperatureShellResult" && slowCombustionTemperatureResult.shellScreenFlag)
 				{
 					m_privateDirPath = workdir + "/template/slowCombustion/ShellTemperature.png";
 					slowCombustionTemperatureResult.shellScreenFlag = false;
 					ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(slowCombustionTemperatureResult);
 				}
-				else if (itemData == "slowTemperatureShellResult" && slowCombustionTemperatureResult.propellantScreenFlag)
+				else if (itemData == "slowTemperaturePropellantResult" && slowCombustionTemperatureResult.propellantScreenFlag)
 				{
 					m_privateDirPath = workdir + "/template/slowCombustion/PropellantTemperature.png";
 					slowCombustionTemperatureResult.propellantScreenFlag = false;
@@ -2662,6 +2662,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 						{
 							meshProWid->UpdataPropertyInfo();
 						}
+
+						// 截图
+						QTimer::singleShot(500, this, [=]() {
+							UserInfo userinfo = ModelDataManager::GetInstance()->GetUserInfo();
+							// 截图计算模型
+							QString m_privateDirPath = userinfo.workdir + "/template/observation.png";
+							QDir privateDir(m_privateDirPath);
+							wordExporter->captureWidgetToFile(importModelWidget->GetOccView(), m_privateDirPath);
+						});
+
 					}
 					else
 					{
@@ -3604,6 +3614,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/fall/ShellStress.png").absolutePath());
 						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/fall/PropellantStress.png").absolutePath());
 						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/fall/ShellStrain.png").absolutePath());
@@ -3717,6 +3728,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/fastCombustion/ShellTemperature.png").absolutePath());
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/fastCombustion/PropellantTemperature.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
@@ -3822,6 +3834,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体温度云图", QDir(workdir + "/template/slowCombustion/ShellTemperature.png").absolutePath());
 						imagePaths.insert("推进剂温度云图", QDir(workdir + "/template/slowCombustion/PropellantTemperature.png").absolutePath());
 						QMap<QString, QVector<QVector<QVariant>>> tableData;
@@ -3937,6 +3950,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/shoot/ShellStress.png").absolutePath());
 						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/shoot/PropellantStress.png").absolutePath());
 						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/shoot/ShellStrain.png").absolutePath());
@@ -4059,6 +4073,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/jetImpact/ShellStress.png").absolutePath());
 						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/jetImpact/PropellantStress.png").absolutePath());
 						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/jetImpact/ShellStrain.png").absolutePath());
@@ -4179,6 +4194,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/fragmentationImpact/ShellStress.png").absolutePath());
 						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/fragmentationImpact/PropellantStress.png").absolutePath());
 						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/fragmentationImpact/ShellStrain.png").absolutePath());
@@ -4299,6 +4315,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/explosiveBlast/ShellStress.png").absolutePath());
 						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/explosiveBlast/PropellantStress.png").absolutePath());
 						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/explosiveBlast/ShellStrain.png").absolutePath());
@@ -4420,6 +4437,7 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 
 						QMap<QString, QString> imagePaths;
 						imagePaths.insert("计算模型", QDir(workdir + "/template/main.png").absolutePath());
+						imagePaths.insert("观测点分布图", QDir(workdir + "/template/observation.png").absolutePath());
 						imagePaths.insert("壳体应力云图", QDir(workdir + "/template/sacrificeExplosio/ShellStress.png").absolutePath());
 						imagePaths.insert("推进剂应力云图", QDir(workdir + "/template/sacrificeExplosio/PropellantStress.png").absolutePath());
 						imagePaths.insert("壳体应变云图", QDir(workdir + "/template/sacrificeExplosio/ShellStrain.png").absolutePath());
