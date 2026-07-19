@@ -42,7 +42,14 @@ void GeomPropertyWidget::UpdataPropertyInfo()
 
 	if (path_item && length_item && width_item )
 	{
-		path_item->setText(modelInfo.path);
+		QString allPaths = QString("喷管:%1 | 壳体:%2 | 推进剂:%3 | 隔热层:%4")
+			.arg(modelInfo.nozzlePath)
+			.arg(modelInfo.shellPath)
+			.arg(modelInfo.propellantPath)
+			.arg(modelInfo.heatInsulatingLayerPath);
+
+		path_item->setText(allPaths);
+
 		length_item->setText(QString::number(modelInfo.length, 'f', 3));
 		width_item->setText(QString::number(modelInfo.width, 'f', 3));
 		//height_item->setText(QString::number(modelInfo.height, 'f', 3));

@@ -2168,6 +2168,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 								if (text == "喷管")
 								{
 									existingInfo.nozzleAisShape = info.nozzleAisShape;
+									existingInfo.nozzlePath = info.nozzlePath;   // ← 新增
 								}
 								else if (text == "壳体")
 								{
@@ -2364,11 +2365,11 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			{
 				aisMesh = meshInfo.shellAisMesh;
 			}
-			else if (role == "Propellant")
+			else if (role == "PropellantMesh")
 			{
 				aisMesh = meshInfo.propellantAisMesh;
 			}
-			else if (role == "HeatInsulatingLayer")
+			else if (role == "HeatInsulatingLayerMesh")
 			{
 				aisMesh = meshInfo.heatInsulatingLayerAisMesh;
 			}
@@ -2397,6 +2398,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 	{
 		contextMenu = new QMenu(this);
 		QAction* meshAction = new QAction("网格划分", this);
+		QAction* showPoints = new QAction("显示观测点", this);
+		QAction* hidePoints = new QAction("隐藏观测点", this);
 		connect(meshAction, &QAction::triggered, this, [item, this]() {
 			QWidget* parent = parentWidget();
 			GFImportModelWidget* importModelWidget = nullptr;
@@ -2518,12 +2521,138 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 						Handle(AIS_Shape) propAis = displayMesh(info.propellantMesh, "推进剂", QColor(230, 97, 38));   // 砖红
 						Handle(AIS_Shape) heatAis = displayMesh(info.heatInsulatingLayerMesh, "绝热层", QColor(51, 153, 191));   // 青蓝
 
-						// 保存网格数据及显示对象到数据管理器
+   // ========== 空间均匀采样函数 ==========
+						auto sampleMeshUniform = [&](const Handle(TriangleStructure)& meshData, int targetPoints)
+							-> std::vector<gp_Pnt>
+						{
+							std::vector<gp_Pnt> result;
+							if (meshData.IsNull() || meshData->GetAllNodes().IsEmpty())
+								return result;
+
+							auto myNodeCoords = meshData->GetmyNodeCoords();
+							Standard_Integer numNodes = meshData->GetAllNodes().Extent();
+
+							// 1. 收集所有节点，计算包围盒
+							std::vector<gp_Pnt> allPoints;
+							allPoints.reserve(numNodes);
+
+							double xMin = DBL_MAX, xMax = -DBL_MAX;
+							double yMin = DBL_MAX, yMax = -DBL_MAX;
+							double zMin = DBL_MAX, zMax = -DBL_MAX;
+
+							for (Standard_Integer i = 1; i <= numNodes; ++i)
+							{
+								gp_Pnt pt(
+									myNodeCoords->Value(i, 1),
+									myNodeCoords->Value(i, 2),
+									myNodeCoords->Value(i, 3)
+								);
+								allPoints.push_back(pt);
+
+								xMin = std::min(xMin, pt.X()); xMax = std::max(xMax, pt.X());
+								yMin = std::min(yMin, pt.Y()); yMax = std::max(yMax, pt.Y());
+								zMin = std::min(zMin, pt.Z()); zMax = std::max(zMax, pt.Z());
+							}
+
+							// 2. 计算空间网格维度（近似立方体分块）
+							double dx = xMax - xMin, dy = yMax - yMin, dz = zMax - zMin;
+							double volume = dx * dy * dz;
+
+							// 计算每个维度的分块数，使总块数 ≈ targetPoints
+							double blockSize = std::cbrt(volume / targetPoints);
+							int nx = std::max(1, (int)(dx / blockSize));
+							int ny = std::max(1, (int)(dy / blockSize));
+							int nz = std::max(1, (int)(dz / blockSize));
+
+							// 3. 将节点分配到空间网格中
+							struct Block {
+								std::vector<std::pair<gp_Pnt, size_t>> points; // (point, originalIndex)
+							};
+							std::vector<std::vector<std::vector<Block>>> grid(
+								nx, std::vector<std::vector<Block>>(ny, std::vector<Block>(nz)));
+
+							for (size_t i = 0; i < allPoints.size(); ++i)
+							{
+								const gp_Pnt& pt = allPoints[i];
+								int ix = std::min((int)((pt.X() - xMin) / dx * nx), nx - 1);
+								int iy = std::min((int)((pt.Y() - yMin) / dy * ny), ny - 1);
+								int iz = std::min((int)((pt.Z() - zMin) / dz * nz), nz - 1);
+								grid[ix][iy][iz].points.push_back({ pt, i });
+							}
+
+							// 4. 从每个非空块中取一个代表点（取离块中心最近的点）
+							for (int ix = 0; ix < nx && (int)result.size() < targetPoints; ++ix)
+							{
+								for (int iy = 0; iy < ny && (int)result.size() < targetPoints; ++iy)
+								{
+									for (int iz = 0; iz < nz && (int)result.size() < targetPoints; ++iz)
+									{
+										auto& block = grid[ix][iy][iz];
+										if (block.points.empty()) continue;
+
+										// 计算块中心
+										double cx = xMin + (ix + 0.5) * dx / nx;
+										double cy = yMin + (iy + 0.5) * dy / ny;
+										double cz = zMin + (iz + 0.5) * dz / nz;
+										gp_Pnt blockCenter(cx, cy, cz);
+
+										// 找离中心最近的点
+										gp_Pnt bestPt = block.points[0].first;
+										double bestDist = blockCenter.SquareDistance(bestPt);
+
+										for (size_t j = 1; j < block.points.size(); ++j)
+										{
+											double dist = blockCenter.SquareDistance(block.points[j].first);
+											if (dist < bestDist)
+											{
+												bestDist = dist;
+												bestPt = block.points[j].first;
+											}
+										}
+										result.push_back(bestPt);
+									}
+								}
+							}
+
+							return result;
+						};
+
+						// ========== 创建采样点球体 ==========
+						BRep_Builder sphereBuilder;
+						TopoDS_Compound allSpheres;
+						sphereBuilder.MakeCompound(allSpheres);
+
+						auto addSpheres = [&](const std::vector<gp_Pnt>& points, double radius)
+						{
+							for (const auto& pt : points)
+							{
+								gp_Ax2 sphereAxis(pt, gp_Dir(0, 0, 1));
+								TopoDS_Shape sphere = BRepPrimAPI_MakeSphere(sphereAxis, radius).Shape();
+								sphereBuilder.Add(allSpheres, sphere);
+							}
+						};
+
+						// shellMesh: 100个点
+						auto shellPoints = sampleMeshUniform(info.shellMesh, 100);
+						addSpheres(shellPoints, 20.0);
+
+						// nozzleMesh: 20个点
+						auto nozzlePoints = sampleMeshUniform(info.nozzleMesh, 20);
+						addSpheres(nozzlePoints, 20.0);
+
+						// 显示
+						Handle(AIS_Shape) samplingAis = new AIS_Shape(allSpheres);
+						samplingAis->SetColor(Quantity_Color(0.0, 1.0, 0.0, Quantity_TOC_RGB));
+						samplingAis->SetMaterial(Graphic3d_NOM_PLASTIC);
+						context->Display(samplingAis, Standard_True);
+
+						// ========== 保存到数据管理器 ==========
 						ModelMeshInfo updatedInfo = info;
 						updatedInfo.nozzleAisMesh = nozzleAis;
 						updatedInfo.shellAisMesh = shellAis;
 						updatedInfo.propellantAisMesh = propAis;
 						updatedInfo.heatInsulatingLayerAisMesh = heatAis;
+						updatedInfo.samplingPoint = samplingAis;  // 存到 samplingPoint
 						ModelDataManager::GetInstance()->SetModelMeshInfo(updatedInfo);
 
 						updataIcon();
@@ -2552,7 +2681,64 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			workerThread->start();
 
 			});
+		
+		connect(showPoints, &QAction::triggered, this, [this]() {
+			auto ModelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+			if (!ModelMeshInfo.samplingPoint.IsNull())
+			{
+				QWidget* parent = parentWidget();
+				GFImportModelWidget* importModelWidget = nullptr;
+				while (parent)
+				{
+					importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+					if (importModelWidget)
+					{
+						break;
+					}
+
+					parent = parent->parentWidget();
+				}
+
+				if (!importModelWidget)
+				{
+					return;
+				}
+
+				auto occView = importModelWidget->GetOccView();
+				Handle(AIS_InteractiveContext) context = occView->getContext();
+				context->Display(ModelMeshInfo.samplingPoint, Standard_True);
+			}
+			});
+		connect(hidePoints, &QAction::triggered, this, [this]() {
+			auto ModelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+			if (!ModelMeshInfo.samplingPoint.IsNull())
+			{
+				QWidget* parent = parentWidget();
+				GFImportModelWidget* importModelWidget = nullptr;
+				while (parent)
+				{
+					importModelWidget = qobject_cast<GFImportModelWidget*>(parent);
+					if (importModelWidget)
+					{
+						break;
+					}
+
+					parent = parent->parentWidget();
+				}
+
+				if (!importModelWidget)
+				{
+					return;
+				}
+
+				auto occView = importModelWidget->GetOccView();
+				Handle(AIS_InteractiveContext) context = occView->getContext();
+				context->Erase(ModelMeshInfo.samplingPoint, Standard_True);
+			}
+			});
 		contextMenu->addAction(meshAction);
+		contextMenu->addAction(showPoints);
+		contextMenu->addAction(hidePoints);
 		contextMenu->exec(event->globalPos());
 	}
 	else if (text == "安全特性参数分析")
@@ -2622,7 +2808,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 				}
 			}
 		}
-
 
 		connect(calAction, &QAction::triggered, this, [item, processedNameList, this]() {
 
@@ -3295,7 +3480,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 			}
 			});
 			
-	
 		connect(exportAction, &QAction::triggered, [this, item]() {
 			QString directory = QFileDialog::getExistingDirectory(nullptr,
 				tr("选择文件夹"),

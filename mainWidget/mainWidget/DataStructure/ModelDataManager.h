@@ -75,6 +75,8 @@ struct ModelMeshInfo {
 	Handle(AIS_Shape) propellantAisMesh;
 	Handle(AIS_Shape) heatInsulatingLayerAisMesh;
 
+	Handle(AIS_Shape) samplingPoint;
+
 	double nozzle_x_min = 0, nozzle_x_max = 0, nozzle_y_min = 0, nozzle_y_max = 0,nozzle_z_min = 0, nozzle_z_max = 0;
 	double shell_x_min = 0, shell_x_max = 0, shell_y_min = 0, shell_y_max = 0, shell_z_min = 0, shell_z_max = 0;
 	double propellant_x_min = 0, propellant_x_max = 0, propellant_y_min = 0, propellant_y_max = 0, propellant_z_min = 0, propellant_z_max = 0;
