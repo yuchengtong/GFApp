@@ -2521,7 +2521,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 						Handle(AIS_Shape) propAis = displayMesh(info.propellantMesh, "推进剂", QColor(230, 97, 38));   // 砖红
 						Handle(AIS_Shape) heatAis = displayMesh(info.heatInsulatingLayerMesh, "绝热层", QColor(51, 153, 191));   // 青蓝
 
-   // ========== 空间均匀采样函数 ==========
+						//观测点
 						auto sampleMeshUniform = [&](const Handle(TriangleStructure)& meshData, int targetPoints)
 							-> std::vector<gp_Pnt>
 						{
@@ -2895,9 +2895,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												QString text = timeStr + "[信息]>跌落安全性分析计算完成";
 												textEdit->appendPlainText(text);
 
-												context->EraseAll(true);
-												view->SetProj(V3d_Yneg);
-												view->Redraw();
+												//context->EraseAll(true);
+												//view->SetProj(V3d_Yneg);
+												//view->Redraw();
 
 												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 												auto oriShape = geomInfo.shape;
@@ -3008,7 +3008,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 											resultValue.reserve(8);
 											bool success = APICalculateHepler::CalculateSlowCombustionAnalysisResult(occView, resultValue);
 
-
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 											if (success)
@@ -3052,9 +3051,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												QString text = timeStr + "[信息]>枪击安全性分析计算完成";
 												textEdit->appendPlainText(text);
 
-												context->EraseAll(true);
-												view->SetProj(V3d_Yneg);
-												view->Redraw();
+												//context->EraseAll(true);
+												//view->SetProj(V3d_Yneg);
+												//view->Redraw();
 
 												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 												auto oriShape = geomInfo.shape;
@@ -3125,11 +3124,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "射流冲击安全性分析")
 										{
-
 											std::vector<double> resultValue;
 											resultValue.reserve(8);
 											bool success = APICalculateHepler::CalculateJetImpactingAnalysisResult(occView, resultValue);
-
 
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -3137,9 +3134,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 											{
 												QString text = timeStr + "[信息]>射流冲击安全性分析计算完成";
 												textEdit->appendPlainText(text);
-
-										
-
+								
 												auto stressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
 												gfParent->GetJetImpactStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
 													stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
@@ -3216,9 +3211,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 												QString text = timeStr + "[信息]>破片安全性分析计算完成";
 												textEdit->appendPlainText(text);
 
-												context->EraseAll(true);
-												view->SetProj(V3d_Yneg);
-												view->Redraw();
+												//context->EraseAll(true);
+												//view->SetProj(V3d_Yneg);
+												//view->Redraw();
 
 												auto geomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 												auto oriShape = geomInfo.shape;
@@ -3289,11 +3284,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 										}
 										else if (processedName == "爆炸冲击波安全性分析")
 										{
-
 											std::vector<double> resultValue;
 											resultValue.reserve(8);
 											bool success = APICalculateHepler::CalculateExplosiveBlastAnalysisResult(occView, resultValue);
-
 
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -3301,8 +3294,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 											{
 												QString text = timeStr + "[信息]>爆炸冲击波安全性分析计算完成";
 												textEdit->appendPlainText(text);
-
-
 
 												auto stressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
 												gfParent->GetExplosiveBlastStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
@@ -3369,12 +3360,10 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 											}
 										}
 										else if (processedName == "殉爆安全性分析")
-										{
-											
+										{										
 											std::vector<double> resultValue;
 											resultValue.reserve(8);
 											bool success = APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(occView, resultValue);
-
 
 											QDateTime currentTime = QDateTime::currentDateTime();
 											QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -3382,8 +3371,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent *event)
 											{
 												QString text = timeStr + "[信息]>殉爆安全性分析计算完成";
 												textEdit->appendPlainText(text);
-
-
 
 												auto stressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
 												gfParent->GetSacrificeExplosionStressResultWidget()->updateData(stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
@@ -3873,7 +3860,6 @@ void GFTreeModelWidget::exportWord(const QString& directory, QTreeWidgetItem* it
 										// 关键：强制刷新UI，确保日志立即显示
 										QApplication::processEvents();
 									}
-
 								}
 								else if (!success)
 								{

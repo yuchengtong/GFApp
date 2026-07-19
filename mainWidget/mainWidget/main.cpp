@@ -176,51 +176,23 @@ namespace nglib {
 #endif
 
 
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-	QApplication a(argc, argv);
-	// 设置全局字体大小
-	QFont font = QFont("Arial", 10);
-	QApplication::setFont(font);
+    QApplication a(argc, argv);
 
-	QString tempPath = QDir::tempPath();
-	QDir tempDir(tempPath);
+    // 设置全局字体
+    QFont font("Arial", 10);
+    QApplication::setFont(font);
 
-	//if (!tempDir.exists("NEW_GF"))
-	//{
-	//	if (!tempDir.mkdir("NEW_GF")) 
-	//	{
-	//		QMessageBox::critical(nullptr,"错误","软件启动失败");
-	//		return -1;
-	//	}
-	//}
+    QCoreApplication::setApplicationName("固体发动机安全性分析与评估系统");
 
-	//QDir newGfDir(tempDir.filePath("NEW_GF"));
-	//if (!newGfDir.exists("Geom")) {
-	//	if (!newGfDir.mkdir("Geom")) {
-	//		QMessageBox::critical(nullptr, "错误", "软件启动失败");
-	//		return -1;
-	//	}
-	//}
+    mainWidget w;
+    StartDialog startDialog;
+    if (startDialog.exec() != QDialog::Accepted) 
+    {
+        return 0;
+    }
 
-	//if (!newGfDir.exists("Mesh")) {
-	//	if (!newGfDir.mkdir("Mesh")) {
-	//		QMessageBox::critical(nullptr, "错误", "软件启动失败");
-	//		return -1;
-	//	}
-	//}
-
-	mainWidget w;
-	QCoreApplication::setApplicationName("固体发动机安全性分析与评估系统");
-	//w.hide();
-	//StartDialog startDialog;
-	//if (startDialog.exec() == QDialog::Accepted) {
-	//	w.show();
-	//	w.showMaximized();
-	//	return a.exec();
-	//}
-	w.show();
-	w.showMaximized();
-	return a.exec();
+    w.showMaximized();
+    return a.exec();
 }

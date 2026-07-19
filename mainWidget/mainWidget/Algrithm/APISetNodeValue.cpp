@@ -3589,11 +3589,7 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
 
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
-	auto slowCombustionSettingInfo = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo();
 	auto slowCombustionTemperatureResult = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
-
-	auto youngModulus = steelPropertyInfoInfo.modulus;
 
 	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
@@ -3610,13 +3606,11 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 	const double y_min = modelMeshInfo.propellant_y_min;
 	const double y_max = modelMeshInfo.propellant_y_max;
 
-
 	auto max_value = slowCombustionTemperatureResult.propellantsMaxTemperature;
 	auto min_value = slowCombustionTemperatureResult.propellantsMinTemperature;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
-
 
 	// 创建旋转网格
 	Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -3628,7 +3622,6 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
-
 	const double rect_width = x_max - x_min;
 	const double rect_height = y_max - y_min;
 	const double h = (x_min + x_max) / 2.0; // 矩形/主椭圆中心 X
@@ -3639,19 +3632,23 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 	// 上边线三个椭圆的参数（中心在顶部中点）
 	const double top_center_z = k + rect_height / 2.0;
 	std::vector<std::pair<double, double>> top_ellipses = {
-		{a_main * 0.6, b_main * 0.3}, // 椭圆1
-		{a_main * 0.7, b_main * 0.4}, // 椭圆2
-		{a_main * 0.8, b_main * 0.5}, // 椭圆3
-		{a_main * 0.9, b_main * 0.6}  // 椭圆4
+		{a_main * 0.5, b_main * 0.2}, // 椭圆1 - 最内层
+		{a_main * 0.6, b_main * 0.3}, // 椭圆2
+		{a_main * 0.7, b_main * 0.4}, // 椭圆3
+		{a_main * 0.8, b_main * 0.5}, // 椭圆4
+		{a_main * 0.9, b_main * 0.6}, // 椭圆5
+		{a_main * 1.0, b_main * 0.7}  // 椭圆6 - 最外层
 	};
 
 	// 下边线三个椭圆
 	const double bottom_center_z = k - rect_height / 2.0;
 	std::vector<std::pair<double, double>> bottom_ellipses = {
+		{a_main * 0.5, b_main * 0.2},
 		{a_main * 0.6, b_main * 0.3},
 		{a_main * 0.7, b_main * 0.4},
 		{a_main * 0.8, b_main * 0.5},
-		{a_main * 0.9, b_main * 0.6}
+		{a_main * 0.9, b_main * 0.6},
+		{a_main * 1.0, b_main * 0.7}
 	};
 
 	// 左右对称圆（实际是 a = b 的椭圆）
@@ -3671,6 +3668,10 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 			return false;
 		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
 		return value <= 1.0 + 1e-9; // 容差处理
+	};
+
+	auto getValueByLevel = [&](int level) -> double {
+		return min_value + (max_value - min_value) * (9.0 - level) / 9.0;
 	};
 
 	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
