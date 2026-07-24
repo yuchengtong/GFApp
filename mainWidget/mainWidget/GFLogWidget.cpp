@@ -2,6 +2,8 @@
 #include "GFLogWidget.h"
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QDateTime>
+
 GFLogWidget::GFLogWidget(QWidget*parent) 
 	:QWidget(parent)
 {
@@ -18,3 +20,23 @@ GFLogWidget::GFLogWidget(QWidget*parent)
 GFLogWidget::~GFLogWidget()
 {
 }
+
+void GFLogWidget::PrintInfo(QString info, bool valid)
+{
+	QString timeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+	QString prefix = valid ? "[ÐÅÏ¢]>" : "[´íÎó]>";
+	QColor color = valid ? Qt::black : Qt::red;
+
+	QTextCharFormat oldFormat = m_TextEdit->currentCharFormat();
+	QTextCharFormat newFormat = oldFormat;
+	newFormat.setForeground(color);
+
+	m_TextEdit->setCurrentCharFormat(newFormat);
+	m_TextEdit->appendPlainText(timeStr + prefix + info);
+	m_TextEdit->setCurrentCharFormat(oldFormat);
+
+	update();
+}
+
+
+

@@ -54,8 +54,6 @@ private:
     bool ImportSTL(ModelGeometryInfo& info);
     // 解析IGES文件
     bool ImportIGES(ModelGeometryInfo& info);
-    // 计算边界盒
-    void CalculateBoundingBox(ModelGeometryInfo& info);
 
 private:
 

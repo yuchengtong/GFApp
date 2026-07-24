@@ -12,13 +12,9 @@
 IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	: QWidget(parent)
 {
-
 	m_treeModelWidget = new IntelligentAnalyTreeWidget();
 	m_propertyStackWidget = new QStackedWidget();
 	m_tableStackWidget = new QStackedWidget();
-
-	
-
 
 	// 设置m_PropertyStackWidget的背景为白色
 	m_propertyStackWidget->setStyleSheet("background-color: white;");
@@ -515,9 +511,6 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 
 	// 三维图形
-
-	
-
 	QLabel* grapgicLabel = new QLabel("结果集：");
 	m_grapgicComboBox = new QComboBox();
 	m_grapgicComboBox->addItems({ "壳体最大应力 ", "推进剂最大应力", "壳体最高温度", "推进剂最高温度" });
@@ -570,11 +563,6 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	graphicLayout->addLayout(m_leftLayout, 1);
 	graphicLayout->addLayout(m_rightLayout, 1);
 	graphicWid->setLayout(graphicLayout);
-
-
-
-	
-
 
 
 	// ------ 左侧垂直分割器（树结构与属性表） ------
@@ -731,8 +719,8 @@ void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
 {
 	x_comboBox->currentIndex();
 	dataChange(0);
-	
 }
+
 void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 {
 	int z = 3;
@@ -795,13 +783,9 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 	yCoords.append(m_tableWidget->item(16, 2)->text().toDouble());
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
-
-
 	updateGraphicData("", "", zName, xCoords, yCoords, newData,
 		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
-
-
 }
 
 void IntelligentAnalyWidget::dataChange(int index)
@@ -869,7 +853,6 @@ void IntelligentAnalyWidget::dataChange(int index)
 		}
 	}
 	updateChartData(data1, data2, data3, x_comboBox->currentText(), y_comboBox->currentText());
-
 }
 
 
@@ -923,7 +906,6 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 	m_axisX->setTickCount(4);
 	m_axisY->setTickCount(4);
 	m_chartView->update();
-
 }
 
 

@@ -188,5 +188,9 @@ private:
 	OverpressureResultWidget* m_sacrificeExplosionOverpressureResultWidge = nullptr;
 	StrainResultWidget* m_sacrificeExplosionStrainResultWidget = nullptr;
 	ReactionDegreeResultWidget* m_sacrificeExplosionReactionDegreeResultWidget = nullptr;
+
+private:
+	QString m_lastClickedItemKey;
+
 };
 

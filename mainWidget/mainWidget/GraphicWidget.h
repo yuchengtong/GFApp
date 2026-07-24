@@ -85,27 +85,17 @@ public:
     QPair<double, double> calculateZRange(const QVector<QVector<double>>& newData);
 
 private slots:
-    
-    /**
-     * @brief on_scaleSlider_sliderMoved 缩放功能槽函数
-     * @param position 缩放值
-     */
     void on_scaleSlider_sliderMoved(int position);
 
- 
-
-
 private:
-    Q3DSurface* surface = nullptr; //三维曲面图对象
-    QSurface3DSeries* series = nullptr; // 数据
+    Q3DSurface* m_surface = nullptr; //三维曲面图对象
+    QSurface3DSeries* m_series = nullptr; // 数据
     QAbstract3DGraph* m_graph = nullptr;    // 图表容器指针
     QSurfaceDataArray* m_array = nullptr;  //数据集
 
     QValue3DAxis* m_axisX = nullptr;  // 坐标轴
     QValue3DAxis* m_axisY = nullptr;
     QValue3DAxis* m_axisZ = nullptr;
-
-
 
 };
 

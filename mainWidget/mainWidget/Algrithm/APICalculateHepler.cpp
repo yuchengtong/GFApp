@@ -1,9 +1,9 @@
 #include "APICalculateHepler.h"
-
 #include <V3d_View.hxx>
+#include <BRepBndLib.hxx>
+#include <BRep_Builder.hxx>
 
 #include <QMap>
-#include <QRandomGenerator>
 
 #include "ModelDataManager.h"
 
@@ -207,6 +207,93 @@ double calculateAvg(const std::vector<double> data)
 	return mean;
 }
 
+
+void APICalculateHepler::APICalculateBoundingBox(ModelGeometryInfo& info)
+{
+	info.shape = TopoDS_Shape();
+
+	std::vector<TopoDS_Shape> shapes;
+
+	if (!info.nozzleAisShape.IsNull())
+	{
+		shapes.push_back(info.nozzleAisShape->Shape());
+	}
+
+	if (!info.shellAisShape.IsNull())
+	{
+		shapes.push_back(info.shellAisShape->Shape());
+	}
+
+	if (!info.propellantAisShape.IsNull())
+	{
+		shapes.push_back(info.propellantAisShape->Shape());
+	}
+
+	if (!info.heatInsulatingLayerAisShape.IsNull())
+	{
+		shapes.push_back(info.heatInsulatingLayerAisShape->Shape());
+	}
+
+	if (shapes.empty())
+	{
+		return;
+	}
+
+	// 只有一个部件时，直接用该部件的 shape
+	if (shapes.size() == 1)
+	{
+		info.shape = shapes[0];
+
+		Bnd_Box bbox;
+		BRepBndLib::Add(info.shape, bbox);
+		bbox.SetGap(0.0);
+
+		Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
+		bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+
+		info.theXmin = xmin;
+		info.theYmin = ymin;
+		info.theZmin = zmin;
+		info.theXmax = xmax;
+		info.theYmax = ymax;
+		info.theZmax = zmax;
+
+		info.length = xmax - xmin;
+		info.width = ymax - ymin;
+		info.height = zmax - zmin;
+		return;
+	}
+
+
+	BRep_Builder builder;
+	TopoDS_Compound compound;
+	builder.MakeCompound(compound);
+
+	for (const auto& s : shapes)
+	{
+		builder.Add(compound, s);
+	}
+
+	Bnd_Box bbox;
+	BRepBndLib::Add(compound, bbox);
+	bbox.SetGap(0.0);
+
+	Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
+	bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+
+	info.theXmin = xmin;
+	info.theYmin = ymin;
+	info.theZmin = zmin;
+	info.theXmax = xmax;
+	info.theYmax = ymax;
+	info.theZmax = zmax;
+
+	info.length = xmax - xmin;
+	info.width = ymax - ymin;
+	info.height = zmax - zmin;
+
+	info.shape = compound;
+}
 
 bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vector<double>& propertyValue)
 {  

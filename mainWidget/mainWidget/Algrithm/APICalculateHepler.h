@@ -1,9 +1,13 @@
 #pragma once
 #include "OccView.h"
+#include "ModelDataManager.h"
 
 class APICalculateHepler
 {
 public:
+	static void APICalculateBoundingBox(ModelGeometryInfo& info);
+
+
 
 	static bool CalculateFallAnalysisResult(OccView* occView,std::vector<double>& propertyValue);
 

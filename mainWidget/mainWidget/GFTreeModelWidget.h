@@ -73,11 +73,8 @@ private slots:
 
 
 private:
-	QMenu *contextMenu; // ÓÒ¼ü²Ëµ¥¶ÔÏó
-
 	GFTreeWidget* m_treeWidget = nullptr;
-	TopoDS_Shape m_aShape;
+	WordExporter* m_wordExporter;
 
-	WordExporter* wordExporter;
 };
 

@@ -148,10 +148,13 @@ void OccView::fitAll( void )
 
 void OccView::reset( void )
 {
-    myView->Reset();
-	myView->FitAll();
-	myView->ZFitAll();
-	myView->Redraw();
+    if (b_IsRatotion)
+    {
+        myView->Reset();
+        myView->FitAll();
+        myView->ZFitAll();
+        myView->Redraw();
+    }
 }
 
 void OccView::pan( void )

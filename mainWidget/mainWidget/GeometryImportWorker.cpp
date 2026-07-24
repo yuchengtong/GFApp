@@ -17,7 +17,7 @@
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <BRepAdaptor_Curve.hxx>
-
+#include "APICalculateHepler.h"
 
 
 void GeometryImportWorker::DoWork()
@@ -78,7 +78,7 @@ void GeometryImportWorker::DoWork()
                 return;
             }
 
-            CalculateBoundingBox(info);
+            APICalculateHepler::APICalculateBoundingBox(info);
 
 
             if (m_partType == PartType::Shell)
@@ -295,93 +295,6 @@ bool GeometryImportWorker::ImportIGES(ModelGeometryInfo& info)
     return true;
 }
 
-void GeometryImportWorker::CalculateBoundingBox(ModelGeometryInfo& info)
-{
-    // 先清空原有整体 shape
-    info.shape = TopoDS_Shape();
-
-    std::vector<TopoDS_Shape> shapes;
-
-    if (!info.nozzleAisShape.IsNull())
-    {
-        shapes.push_back(info.nozzleAisShape->Shape());
-    }
-    
-    if (!info.shellAisShape.IsNull())
-    {
-        shapes.push_back(info.shellAisShape->Shape());
-    }
-
-    if (!info.propellantAisShape.IsNull())
-    {
-        shapes.push_back(info.propellantAisShape->Shape());
-    }
-
-    if (!info.heatInsulatingLayerAisShape.IsNull())
-    {
-        shapes.push_back(info.heatInsulatingLayerAisShape->Shape());
-    }
-
-    if (shapes.empty())
-    {
-        return;
-    }
-
-    // 只有一个部件时，直接用该部件的 shape
-    if (shapes.size() == 1)
-    {
-        info.shape = shapes[0];
-
-        Bnd_Box bbox;
-        BRepBndLib::Add(info.shape, bbox);
-        bbox.SetGap(0.0);
-
-        Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
-        bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
-
-        info.theXmin = xmin;
-        info.theYmin = ymin;
-        info.theZmin = zmin;
-        info.theXmax = xmax;
-        info.theYmax = ymax;
-        info.theZmax = zmax;
-
-        info.length = xmax - xmin;
-        info.width = ymax - ymin;
-        info.height = zmax - zmin;
-        return;
-    }
-
-    // 多个部件时，合并成 Compound
-    BRep_Builder builder;
-    TopoDS_Compound compound;
-    builder.MakeCompound(compound);
-
-    for (const auto& s : shapes)
-    {
-        builder.Add(compound, s);
-    }
-
-    Bnd_Box bbox;
-    BRepBndLib::Add(compound, bbox);
-    bbox.SetGap(0.0);
-
-    Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
-    bbox.Get(xmin, ymin, zmin, xmax, ymax, zmax);
-
-    info.theXmin = xmin;
-    info.theYmin = ymin;
-    info.theZmin = zmin;
-    info.theXmax = xmax;
-    info.theYmax = ymax;
-    info.theZmax = zmax;
-
-    info.length = xmax - xmin;
-    info.width = ymax - ymin;
-    info.height = zmax - zmin;
-
-    info.shape = compound;
-}
 
 void GeometryImportWorker::SetPartType(PartType type)
 {

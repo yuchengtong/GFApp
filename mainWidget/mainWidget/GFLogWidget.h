@@ -11,6 +11,8 @@ public:
 
 	QPlainTextEdit*GetTextEdit() { return m_TextEdit; }
 
+	void PrintInfo(QString info, bool valid = true);
+
 private:
 	QPlainTextEdit*m_TextEdit = nullptr;
 };
