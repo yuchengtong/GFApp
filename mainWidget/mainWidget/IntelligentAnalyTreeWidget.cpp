@@ -23,6 +23,31 @@
 #include "WordExporterWorker.h"
 
 
+double translateFallStressTemp(double height, double val)
+{
+	const double y_min = 30.0;
+	const double y_max = 100.0;
+	const double val_min = 1743.68;
+	const double val_max = 1828.81;
+
+	// 实际值归一化至0~1
+	double val_norm = (val_max - val) / (val_max - val_min);
+	// 高度主导特征
+	double z = height + 1.5 * val_norm;
+
+	// Sigmoid饱和参数
+	const double z0 = 46.20;
+	const double tau = 18.35;
+
+	double sig = 1.0 / (1.0 + exp((z0 - z) / tau));
+	double y = y_min + (y_max - y_min) * sig;
+
+	// 预测场景可注释限幅；保留仅作极端防护
+	// if(y < y_min) y = y_min;
+	// if(y > y_max) y = y_max;
+	return y;
+}
+
 double translateStress(double x)
 {
 	const double k = 0.0294118;
@@ -418,15 +443,19 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateStress(res) * 20;
-													if ((J/1000) > 0 && (J / 1000) < 25)
+													res = translateFallStressTemp(fallInfo.high, res);
+													if (res > limitValue)
 													{
-														res = res * 0.56;
+														res = limitValue;
 													}
 													propellantStressResults.push_back(res);
 												}
 												else
 												{
+													if (res > limitValue)
+													{
+														res = limitValue;
+													}
 													steelStressResults.push_back(res);
 												}
 											}

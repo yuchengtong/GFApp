@@ -309,20 +309,53 @@ void SteelPropertyWidget::showTableDialog()
                 int colcount = table->columnCount();
                 QString materialName;
                 // 先回填当前窗口表格
-                for (int col = 1; col < colcount; ++col)
+                if (isMetal)
                 {
-                    QTableWidgetItem* srcItem = table->item(row, col);
-                    if (!srcItem) continue;
-                    QString content = srcItem->text();
-                    if (col == 1)
-                        materialName = content;
+                    // 金属
+                    for (int col = 1; col < colcount; ++col)
+                    {
+                        QTableWidgetItem* srcItem = table->item(row, col);
+                        if (!srcItem) continue;
+                        QString content = srcItem->text();
+                        if (col == 1)
+                            materialName = content;
 
-                    QTableWidgetItem* valueItem = new QTableWidgetItem(content);
-                    valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-                    valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
-                    valueItem->setBackground(QBrush(QColor(230, 230, 230)));
-                    m_tableWidget->setItem(col, 2, valueItem);
+                        QTableWidgetItem* valueItem = new QTableWidgetItem(content);
+                        valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+                        valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+                        valueItem->setBackground(QBrush(QColor(230, 230, 230)));
+                        m_tableWidget->setItem(col, 2, valueItem);
+                    }
                 }
+                else
+                {
+                    int tabCol = 1;
+                    // 非金属
+                    for (int col = 1; col < colcount; ++col)
+                    {
+                        QTableWidgetItem* srcItem = table->item(row, col);
+                        if (!srcItem) continue;
+                        QString content = srcItem->text();
+                        if (col == 1)
+                            materialName = content;
+
+                        QTableWidgetItem* valueItem = new QTableWidgetItem(content);
+                        valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+                        valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+                        valueItem->setBackground(QBrush(QColor(230, 230, 230)));
+                        m_tableWidget->setItem(tabCol, 2, valueItem);
+                        if ((col >= 5 && col <= 6) || (col >= 8 && col <= 9) || (col >= 11 && col <= 12))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            tabCol = tabCol + 1;
+                        }
+                    }
+                }
+
+                
 
                 auto ins = ModelDataManager::GetInstance();
                 SteelPropertyInfo info;

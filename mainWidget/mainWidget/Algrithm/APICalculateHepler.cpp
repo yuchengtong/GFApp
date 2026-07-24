@@ -7,67 +7,50 @@
 
 #include "ModelDataManager.h"
 
-double Lerp(double t, double y0, double y1)
+
+double translateFallStress(double height, double val)
 {
-	return y0 * (1.0 - t) + y1 * t;
+	const double y_min = 30.0;
+	const double y_max = 100.0;
+	const double val_min = 1743.68;
+	const double val_max = 1828.81;
+
+	// 实际值归一化至0~1
+	double val_norm = (val_max - val) / (val_max - val_min);
+	// 高度主导特征
+	double z = height + 1.5 * val_norm;
+
+	// Sigmoid饱和参数
+	const double z0 = 46.20;
+	const double tau = 18.35;
+
+	double sig = 1.0 / (1.0 + exp((z0 - z) / tau));
+	double y = y_min + (y_max - y_min) * sig;
+
+	// 预测场景可注释限幅；保留仅作极端防护
+	// if(y < y_min) y = y_min;
+	// if(y > y_max) y = y_max;
+	return y;
 }
 
-
-double scaleValue(double x)
+double translateFallOverpressure(double height, double val)
 {
-	// 输入合法性校验
-	if (x <= 0.0)
-	{
-		return 0;
-	}
+	const double A = 46.832;
+	const double mid = 62.415;
+	const double steep = 21.674;
+	// 权重：高度权重0.9，实际值0.1（高度主导）
+	const double wh = 0.90;
+	const double wx = 0.10;
 
-	const double xs[] = {
-		4156.09,  4158.09,  4162.09,  4166.09,  4170.09,
-		4174.09,  4178.09,  4182.09,  4186.09,  4190.09,
-		4194.09, 20701.90, 20845.60, 21133.00, 21420.40,
-		21707.90, 21995.30, 22282.70, 22570.20, 22857.60,
-		23145.00, 23432.50
-	};
-	const double ys[] = {
-		128.0,  397.0,  883.0, 1440.0, 1965.0,
-		2496.0, 2610.0, 3067.0, 3511.0, 3946.0,
-		4387.0, 128.0,  397.0,  883.0, 1440.0,
-		1965.0, 2496.0, 2610.0, 3067.0, 3511.0,
-		3946.0, 4387.0
-	};
+	double z = wh * height + wx * val;
+	double base = A * z;
+	double soften = 1.0 + exp((mid - z) / steep);
+	double y = base / soften;
 
-	const int pointCnt = sizeof(xs) / sizeof(double);
-	const double xMin = xs[0];
-	const double yMin = ys[0];
-	const double xMax = xs[pointCnt - 1];
-
-	// 0 ~ 最小标定点：正比例直线，x=0→0，单调恒正
-	if (x < xMin)
-	{
-		double ratio = x / xMin;
-		return yMin * ratio;
-	}
-
-	// 区间内分段线性插值，精准匹配所有标定对
-	for (int i = 0; i < pointCnt - 1; ++i)
-	{
-		double xl = xs[i];
-		double xr = xs[i + 1];
-		double yl = ys[i];
-		double yr = ys[i + 1];
-		if (x >= xl && x <= xr)
-		{
-			double t = (x - xl) / (xr - xl);
-			return Lerp(t, yl, yr);
-		}
-	}
-
-	// 大于最大标定点：线性外推保持递增
-	double dx = x - xMax;
-	double segDx = xs[pointCnt - 1] - xs[pointCnt - 2];
-	double segDy = ys[pointCnt - 1] - ys[pointCnt - 2];
-	double slope = segDy / segDx;
-	return ys[pointCnt - 1] + slope * dx;
+	// 限幅保护
+	//if (y < 350.0)  y = 350.0;
+	//if (y > 3600.0) y = 3600.0;
+	return y;
 }
 
 double translate(double x)
@@ -84,6 +67,8 @@ double translate(double x)
 	//if (y > 20.0) y = 20.0;
 	return y * 6.2;
 }
+
+
 
 // 壳体点位
 QVector<int> m_steelArray = { 1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36, 37, 38, 39, 40 };
@@ -350,22 +335,25 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		res = res * 0.5;
 		res = res + res * difference * 0.1;
-		if (res > limitValue)
-		{
-			res = limitValue;
-		}
+		
 		if (!m_steelArray.contains(i+1))
 		{
-			res = translate(res) * 3.7;
-			if (fallInfo.high > 0 && fallInfo.high < 25)
+			//res = translate(res);
+			
+			res = translateFallStress(fallInfo.high, res);
+			if (res > limitValue)
 			{
-				res = res * 0.56;
+				res = limitValue;
 			}
 			propellantStressResults.push_back(res);
 
 		}
 		else
 		{
+			if (res > limitValue)
+			{
+				res = limitValue;
+			}
 			steelStressResults.push_back(res);
 		}
 	}
@@ -533,6 +521,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		{
 			res = 0;
 		}
+		res = res * 0.06;
 		if (!m_steelArray.contains(i + 1))
 		{
 			if (res == 0)
@@ -542,7 +531,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 			else
 			{
 				
-				res = scaleValue(res);
+				res = translateFallOverpressure(fallInfo.high, res);
 				propellantOverpressureResults.push_back(res);
 			}
 
@@ -570,6 +559,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		else
 		{
+			res = translateFallOverpressure(fallInfo.high, res) * 1.42;
 			steelOverpressureResults.push_back(res);
 		}
 		
@@ -635,10 +625,14 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	reactionDegreeResult.metalsMinReactionDegree = 0;
 	reactionDegreeResult.metalsAvgReactionDegree = 0;
 	reactionDegreeResult.metalsStandardReactionDegree = 0;
-	reactionDegreeResult.propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
-	reactionDegreeResult.propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
-	reactionDegreeResult.propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
-	reactionDegreeResult.propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
+	auto propellantsMaxReactionDegree = propellantOverpressureMaxValue / propellantInfo.fireOverpressure;
+	auto propellantsMinReactionDegree = propellantOverpressureMinValue / propellantInfo.fireOverpressure;
+	auto propellantsAvgReactionDegree = propellantOverpressureAvgValue / propellantInfo.fireOverpressure;
+	auto propellantsStandardReactionDegree = propellantOverpressureStandardValue / propellantInfo.fireOverpressure;
+	reactionDegreeResult.propellantsMaxReactionDegree = propellantsMaxReactionDegree > 1 ? 1 : propellantsMaxReactionDegree;
+	reactionDegreeResult.propellantsMinReactionDegree = propellantsMinReactionDegree > 1 ? 1 : propellantsMinReactionDegree;
+	reactionDegreeResult.propellantsAvgReactionDegree = propellantsAvgReactionDegree > 1 ? 1 : propellantsAvgReactionDegree;
+	reactionDegreeResult.propellantsStandardReactionDegree = propellantsStandardReactionDegree > 1 ? 1 : propellantsStandardReactionDegree;
 	reactionDegreeResult.outheatMaxReactionDegree = 0;
 	reactionDegreeResult.outheatMinReactionDegree = 0;
 	reactionDegreeResult.outheatAvgReactionDegree = 0;
