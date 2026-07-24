@@ -189,6 +189,7 @@ void OutheatPropertyWidget::showTableDialog() {
 	diaTableWidget->verticalHeader()->setVisible(false);
 	// 隐藏列号
 	diaTableWidget->horizontalHeader()->setVisible(false);
+	diaTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	QDir dir;
 	int m_rowCount = 0;
 

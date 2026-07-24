@@ -48,21 +48,38 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 
 	m_fallTableWidget = new QTableWidget();
-	m_fallTableWidget->setRowCount(10); // 行数
+	m_fallTableWidget->setRowCount(26); // 行数
 	m_fallTableWidget->setColumnCount(7); // 列数
 	m_fallTableWidget->verticalHeader()->setVisible(false);
 	m_fallTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_fallData = {
 		{ "设计点", "壳体厚度[mm]", "跌落高度[m]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "10", " ", " ", " ", " " },
-		{ "2", "2", "10", " ", " ", " ", " " },
-		{ "3", "3", "10", " ", " ", " ", " " },
-		{ "4", "1", "20", " ", " ", " ", " " },
-		{ "5", "2", "20", " ", " ", " ", " " },
-		{ "6", "3", "20", " ", " ", " ", " " },
-		{ "7", "1", "30", " ", " ", " ", " " },
-		{ "8", "2", "30", " ", " ", " ", " " },
-		{ "9", "3", "30", " ", " ", " ", " " },
+		{ "2", "1.5", "10", " ", " ", " ", " " },
+		{ "3", "2", "10", " ", " ", " ", " " },
+		{ "4", "2.5", "10", " ", " ", " ", " " },
+		{ "5", "3", "10", " ", " ", " ", " " },
+		{ "6", "1", "15", " ", " ", " ", " " },
+		{ "7", "1.5", "15", " ", " ", " ", " " },
+		{ "8", "2", "15", " ", " ", " ", " " },
+		{ "9", "2.5", "15", " ", " ", " ", " " },
+		{ "10", "3", "15", " ", " ", " ", " " },
+		{ "11", "1", "20", " ", " ", " ", " " },
+		{ "12", "1.5", "20", " ", " ", " ", " " },
+		{ "13", "2", "20", " ", " ", " ", " " },
+		{ "14", "2.5", "20", " ", " ", " ", " " },
+		{ "15", "3", "20", " ", " ", " ", " " },
+		{ "16", "1", "25", " ", " ", " ", " " },
+		{ "17", "1.5", "25", " ", " ", " ", " " },
+		{ "18", "2", "25", " ", " ", " ", " " },
+		{ "19", "2.5", "25", " ", " ", " ", " " },
+		{ "20", "3", "25", " ", " ", " ", " " },
+		{ "21", "1", "30", " ", " ", " ", " " },
+		{ "22", "1.5", "30", " ", " ", " ", " " },
+		{ "23", "2", "30", " ", " ", " ", " " },
+		{ "24", "2.5", "30", " ", " ", " ", " " },
+		{ "25", "3", "30", " ", " ", " ", " " },
+
 	};
 	for (int i = 0; i < m_fallData.size(); ++i) {
 		for (int j = 0; j < m_fallData[i].size(); ++j) {
@@ -78,21 +95,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_fallTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_fastCombustionTableWidget = new QTableWidget();
-	m_fastCombustionTableWidget->setRowCount(10); // 行数
+	m_fastCombustionTableWidget->setRowCount(26); // 行数
 	m_fastCombustionTableWidget->setColumnCount(7); // 列数
 	m_fastCombustionTableWidget->verticalHeader()->setVisible(false);
 	m_fastCombustionTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_fastCombustionData = {
 		{ "设计点", "壳体厚度[mm]", "快烤平均温度[℃]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "600", " ", " ", " ", " " },
-		{ "2", "2", "600", " ", " ", " ", " " },
-		{ "3", "3", "600", " ", " ", " ", " " },
-		{ "4", "1", "700", " ", " ", " ", " " },
-		{ "5", "2", "700", " ", " ", " ", " " },
-		{ "6", "3", "700", " ", " ", " ", " " },
-		{ "7", "1", "800", " ", " ", " ", " " },
-		{ "8", "2", "800", " ", " ", " ", " " },
-		{ "9", "3", "800", " ", " ", " ", " " },
+		{ "2", "1.5", "600", " ", " ", " ", " " },
+		{ "3", "2", "600", " ", " ", " ", " " },
+		{ "4", "2.5", "600", " ", " ", " ", " " },
+		{ "5", "3", "600", " ", " ", " ", " " },
+		{ "6", "1", "650", " ", " ", " ", " " },
+		{ "7", "1.5", "650", " ", " ", " ", " " },
+		{ "8", "2", "650", " ", " ", " ", " " },
+		{ "9", "2.5", "650", " ", " ", " ", " " },
+		{ "10", "3", "650", " ", " ", " ", " " },
+		{ "11", "1", "700", " ", " ", " ", " " },
+		{ "12", "1.5", "700", " ", " ", " ", " " },
+		{ "13", "2", "700", " ", " ", " ", " " },
+		{ "14", "2.5", "700", " ", " ", " ", " " },
+		{ "15", "3", "700", " ", " ", " ", " " },
+		{ "16", "1", "750", " ", " ", " ", " " },
+		{ "17", "1.5", "750", " ", " ", " ", " " },
+		{ "18", "2", "750", " ", " ", " ", " " },
+		{ "19", "2.5", "750", " ", " ", " ", " " },
+		{ "20", "3", "750", " ", " ", " ", " " },
+		{ "21", "1", "800", " ", " ", " ", " " },
+		{ "22", "1.5", "800", " ", " ", " ", " " },
+		{ "23", "2", "800", " ", " ", " ", " " },
+		{ "24", "2.5", "800", " ", " ", " ", " " },
+		{ "25", "3", "800", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_fastCombustionData.size(); ++i) {
 		for (int j = 0; j < m_fastCombustionData[i].size(); ++j) {
@@ -108,21 +141,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_fastCombustionTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_slowCombustionTableWidget = new QTableWidget();
-	m_slowCombustionTableWidget->setRowCount(10); // 行数
+	m_slowCombustionTableWidget->setRowCount(26); // 行数
 	m_slowCombustionTableWidget->setColumnCount(7); // 列数
 	m_slowCombustionTableWidget->verticalHeader()->setVisible(false);
 	m_slowCombustionTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_slowCombustionData = {
 		{ "设计点", "壳体厚度[mm]", "烘箱终止温度[℃]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "315", " ", " ", " ", " " },
-		{ "2", "2", "315", " ", " ", " ", " " },
-		{ "3", "3", "315", " ", " ", " ", " " },
-		{ "4", "1", "330", " ", " ", " ", " " },
-		{ "5", "2", "330", " ", " ", " ", " " },
-		{ "6", "3", "330", " ", " ", " ", " " },
-		{ "7", "1", "345", " ", " ", " ", " " },
-		{ "8", "2", "345", " ", " ", " ", " " },
-		{ "9", "3", "345", " ", " ", " ", " " },
+		{ "2", "1.5", "315", " ", " ", " ", " " },
+		{ "3", "2", "315", " ", " ", " ", " " },
+		{ "4", "2.5", "315", " ", " ", " ", " " },
+		{ "5", "3", "315", " ", " ", " ", " " },
+		{ "6", "1", "320", " ", " ", " ", " " },
+		{ "7", "1.5", "320", " ", " ", " ", " " },
+		{ "8", "2", "320", " ", " ", " ", " " },
+		{ "9", "2.5", "320", " ", " ", " ", " " },
+		{ "10", "3", "320", " ", " ", " ", " " },
+		{ "11", "1", "325", " ", " ", " ", " " },
+		{ "12", "1.5", "325", " ", " ", " ", " " },
+		{ "13", "2", "325", " ", " ", " ", " " },
+		{ "14", "2.5", "325", " ", " ", " ", " " },
+		{ "15", "3", "325", " ", " ", " ", " " },
+		{ "16", "1", "330", " ", " ", " ", " " },
+		{ "17", "1.5", "330", " ", " ", " ", " " },
+		{ "18", "2", "330", " ", " ", " ", " " },
+		{ "19", "2.5", "330", " ", " ", " ", " " },
+		{ "20", "3", "330", " ", " ", " ", " " },
+		{ "21", "1", "345", " ", " ", " ", " " },
+		{ "22", "1.5", "345", " ", " ", " ", " " },
+		{ "23", "2", "345", " ", " ", " ", " " },
+		{ "24", "2.5", "345", " ", " ", " ", " " },
+		{ "25", "3", "345", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_slowCombustionData.size(); ++i) {
 		for (int j = 0; j < m_slowCombustionData[i].size(); ++j) {
@@ -138,21 +187,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_slowCombustionTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_shootTableWidget = new QTableWidget();
-	m_shootTableWidget->setRowCount(10); // 行数
+	m_shootTableWidget->setRowCount(26); // 行数
 	m_shootTableWidget->setColumnCount(7); // 列数
 	m_shootTableWidget->verticalHeader()->setVisible(false);
 	m_shootTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_shootData = {
 		{ "设计点", "壳体厚度[mm]", "撞击速度[m/s]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "620", " ", " ", " ", " " },
-		{ "2", "2", "620", " ", " ", " ", " " },
-		{ "3", "3", "620", " ", " ", " ", " " },
-		{ "4", "1", "720", " ", " ", " ", " " },
-		{ "5", "2", "720", " ", " ", " ", " " },
-		{ "6", "3", "720", " ", " ", " ", " " },
-		{ "7", "1", "820", " ", " ", " ", " " },
-		{ "8", "2", "820", " ", " ", " ", " " },
-		{ "9", "3", "820", " ", " ", " ", " " },
+		{ "2", "1.5", "620", " ", " ", " ", " " },
+		{ "3", "2", "620", " ", " ", " ", " " },
+		{ "4", "2.5", "620", " ", " ", " ", " " },
+		{ "5", "3", "620", " ", " ", " ", " " },
+		{ "6", "1", "670", " ", " ", " ", " " },
+		{ "7", "1.5", "670", " ", " ", " ", " " },
+		{ "8", "2", "670", " ", " ", " ", " " },
+		{ "9", "2.5", "670", " ", " ", " ", " " },
+		{ "10", "3", "670", " ", " ", " ", " " },
+		{ "11", "1", "720", " ", " ", " ", " " },
+		{ "12", "1.5", "720", " ", " ", " ", " " },
+		{ "13", "2", "720", " ", " ", " ", " " },
+		{ "14", "2.5", "720", " ", " ", " ", " " },
+		{ "15", "3", "720", " ", " ", " ", " " },
+		{ "16", "1", "770", " ", " ", " ", " " },
+		{ "17", "1.5", "770", " ", " ", " ", " " },
+		{ "18", "2", "770", " ", " ", " ", " " },
+		{ "19", "2.5", "770", " ", " ", " ", " " },
+		{ "20", "3", "770", " ", " ", " ", " " },
+		{ "21", "1", "820", " ", " ", " ", " " },
+		{ "22", "1.5", "820", " ", " ", " ", " " },
+		{ "23", "2", "820", " ", " ", " ", " " },
+		{ "24", "2.5", "820", " ", " ", " ", " " },
+		{ "25", "3", "820", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_shootData.size(); ++i) {
 		for (int j = 0; j < m_shootData[i].size(); ++j) {
@@ -168,21 +233,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_shootTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_jetImpactTableWidget = new QTableWidget();
-	m_jetImpactTableWidget->setRowCount(10); // 行数
+	m_jetImpactTableWidget->setRowCount(26); // 行数
 	m_jetImpactTableWidget->setColumnCount(7); // 列数
 	m_jetImpactTableWidget->verticalHeader()->setVisible(false);
 	m_jetImpactTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_jetImpactData = {
 		{ "设计点", "壳体厚度[mm]", "聚能装药口径[mm]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "30", " ", " ", " ", " " },
-		{ "2", "2", "30", " ", " ", " ", " " },
-		{ "3", "3", "30", " ", " ", " ", " " },
-		{ "4", "1", "40", " ", " ", " ", " " },
-		{ "5", "2", "40", " ", " ", " ", " " },
-		{ "6", "3", "40", " ", " ", " ", " " },
-		{ "7", "1", "50", " ", " ", " ", " " },
-		{ "8", "2", "50", " ", " ", " ", " " },
-		{ "9", "3", "50", " ", " ", " ", " " },
+		{ "2", "1.5", "30", " ", " ", " ", " " },
+		{ "3", "2", "30", " ", " ", " ", " " },
+		{ "4", "2.5", "30", " ", " ", " ", " " },
+		{ "5", "3", "30", " ", " ", " ", " " },
+		{ "6", "1", "35", " ", " ", " ", " " },
+		{ "7", "1.5", "35", " ", " ", " ", " " },
+		{ "8", "2", "35", " ", " ", " ", " " },
+		{ "9", "2.5", "35", " ", " ", " ", " " },
+		{ "10", "3", "35", " ", " ", " ", " " },
+		{ "11", "1", "40", " ", " ", " ", " " },
+		{ "12", "1.5", "40", " ", " ", " ", " " },
+		{ "13", "2", "40", " ", " ", " ", " " },
+		{ "14", "2.5", "40", " ", " ", " ", " " },
+		{ "15", "3", "40", " ", " ", " ", " " },
+		{ "16", "1", "45", " ", " ", " ", " " },
+		{ "17", "1.5", "45", " ", " ", " ", " " },
+		{ "18", "2", "45", " ", " ", " ", " " },
+		{ "19", "2.5", "45", " ", " ", " ", " " },
+		{ "20", "3", "45", " ", " ", " ", " " },
+		{ "21", "1", "50", " ", " ", " ", " " },
+		{ "22", "1.5", "50", " ", " ", " ", " " },
+		{ "23", "2", "50", " ", " ", " ", " " },
+		{ "24", "2.5", "50", " ", " ", " ", " " },
+		{ "25", "3", "50", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_jetImpactData.size(); ++i) {
 		for (int j = 0; j < m_jetImpactData[i].size(); ++j) {
@@ -198,21 +279,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_jetImpactTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_fragmentationImpactTableWidget = new QTableWidget();
-	m_fragmentationImpactTableWidget->setRowCount(10); // 行数
+	m_fragmentationImpactTableWidget->setRowCount(26); // 行数
 	m_fragmentationImpactTableWidget->setColumnCount(7); // 列数
 	m_fragmentationImpactTableWidget->verticalHeader()->setVisible(false);
 	m_fragmentationImpactTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_fragmentationImpactData = {
 		{ "设计点", "壳体厚度[mm]", "撞击速度[m/s]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "1630", " ", " ", " ", " " },
-		{ "2", "2", "1630", " ", " ", " ", " " },
-		{ "3", "3", "1630", " ", " ", " ", " " },
-		{ "4", "1", "1730", " ", " ", " ", " " },
-		{ "5", "2", "1730", " ", " ", " ", " " },
-		{ "6", "3", "1730", " ", " ", " ", " " },
-		{ "7", "1", "1830", " ", " ", " ", " " },
-		{ "8", "2", "1830", " ", " ", " ", " " },
-		{ "9", "3", "1830", " ", " ", " ", " " },
+		{ "2", "1.5", "1630", " ", " ", " ", " " },
+		{ "3", "2", "1630", " ", " ", " ", " " },
+		{ "4", "2.5", "1630", " ", " ", " ", " " },
+		{ "5", "3", "1630", " ", " ", " ", " " },
+		{ "6", "1", "1680", " ", " ", " ", " " },
+		{ "7", "1.5", "1680", " ", " ", " ", " " },
+		{ "8", "2", "1680", " ", " ", " ", " " },
+		{ "9", "2.5", "1680", " ", " ", " ", " " },
+		{ "10", "3", "1680", " ", " ", " ", " " },
+		{ "11", "1", "1730", " ", " ", " ", " " },
+		{ "12", "1.5", "1730", " ", " ", " ", " " },
+		{ "13", "2", "1730", " ", " ", " ", " " },
+		{ "14", "2.5", "1730", " ", " ", " ", " " },
+		{ "15", "3", "1730", " ", " ", " ", " " },
+		{ "16", "1", "1780", " ", " ", " ", " " },
+		{ "17", "1.5", "1780", " ", " ", " ", " " },
+		{ "18", "2", "1780", " ", " ", " ", " " },
+		{ "19", "2.5", "1780", " ", " ", " ", " " },
+		{ "20", "3", "1780", " ", " ", " ", " " },
+		{ "21", "1", "1830", " ", " ", " ", " " },
+		{ "22", "1.5", "1830", " ", " ", " ", " " },
+		{ "23", "2", "1830", " ", " ", " ", " " },
+		{ "24", "2.5", "1830", " ", " ", " ", " " },
+		{ "25", "3", "1830", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_fragmentationImpactData.size(); ++i) {
 		for (int j = 0; j < m_fragmentationImpactData[i].size(); ++j) {
@@ -228,21 +325,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_fragmentationImpactTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_explosiveBlastTableWidget = new QTableWidget();
-	m_explosiveBlastTableWidget->setRowCount(10); // 行数
+	m_explosiveBlastTableWidget->setRowCount(26); // 行数
 	m_explosiveBlastTableWidget->setColumnCount(7); // 列数
 	m_explosiveBlastTableWidget->verticalHeader()->setVisible(false);
 	m_explosiveBlastTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_explosiveBlastData = {
 		{ "设计点", "壳体厚度[mm]", "TNT当量[g]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "30", " ", " ", " ", " " },
-		{ "2", "2", "30", " ", " ", " ", " " },
-		{ "3", "3", "30", " ", " ", " ", " " },
-		{ "4", "1", "40", " ", " ", " ", " " },
-		{ "5", "2", "40", " ", " ", " ", " " },
-		{ "6", "3", "40", " ", " ", " ", " " },
-		{ "7", "1", "50", " ", " ", " ", " " },
-		{ "8", "2", "50", " ", " ", " ", " " },
-		{ "9", "3", "50", " ", " ", " ", " " },
+		{ "2", "1.5", "30", " ", " ", " ", " " },
+		{ "3", "2", "30", " ", " ", " ", " " },
+		{ "4", "2.5", "30", " ", " ", " ", " " },
+		{ "5", "3", "30", " ", " ", " ", " " },
+		{ "6", "1", "35", " ", " ", " ", " " },
+		{ "7", "1.5", "35", " ", " ", " ", " " },
+		{ "8", "2", "35", " ", " ", " ", " " },
+		{ "9", "2.5", "35", " ", " ", " ", " " },
+		{ "10", "3", "35", " ", " ", " ", " " },
+		{ "11", "1", "40", " ", " ", " ", " " },
+		{ "12", "1.5", "40", " ", " ", " ", " " },
+		{ "13", "2", "40", " ", " ", " ", " " },
+		{ "14", "2.5", "40", " ", " ", " ", " " },
+		{ "15", "3", "40", " ", " ", " ", " " },
+		{ "16", "1", "45", " ", " ", " ", " " },
+		{ "17", "1.5", "45", " ", " ", " ", " " },
+		{ "18", "2", "45", " ", " ", " ", " " },
+		{ "19", "2.5", "45", " ", " ", " ", " " },
+		{ "20", "3", "45", " ", " ", " ", " " },
+		{ "21", "1", "50", " ", " ", " ", " " },
+		{ "22", "1.5", "50", " ", " ", " ", " " },
+		{ "23", "2", "50", " ", " ", " ", " " },
+		{ "24", "2.5", "50", " ", " ", " ", " " },
+		{ "25", "3", "50", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_explosiveBlastData.size(); ++i) {
 		for (int j = 0; j < m_explosiveBlastData[i].size(); ++j) {
@@ -258,21 +371,37 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_explosiveBlastTableWidget->resizeColumnsToContents(); // 根据内容调整列宽
 
 	m_sacrificeExplosionTableWidget = new QTableWidget();
-	m_sacrificeExplosionTableWidget->setRowCount(10); // 行数
+	m_sacrificeExplosionTableWidget->setRowCount(26); // 行数
 	m_sacrificeExplosionTableWidget->setColumnCount(7); // 列数
 	m_sacrificeExplosionTableWidget->verticalHeader()->setVisible(false);
 	m_sacrificeExplosionTableWidget->horizontalHeader()->setVisible(false);
 	std::vector<std::vector<QString>> m_sacrificeExplosionData = {
 		{ "设计点", "壳体厚度[mm]", "殉爆距离[mm]", "壳体最大应力[MPa]", "推进剂最大应力[MPa]", "壳体最高温度[℃]", "推进剂最高温度[℃]" },
 		{ "1", "1", "80", " ", " ", " ", " " },
-		{ "2", "2", "80", " ", " ", " ", " " },
-		{ "3", "3", "80", " ", " ", " ", " " },
-		{ "4", "1", "90", " ", " ", " ", " " },
-		{ "5", "2", "90", " ", " ", " ", " " },
-		{ "6", "3", "90", " ", " ", " ", " " },
-		{ "7", "1", "100", " ", " ", " ", " " },
-		{ "8", "2", "100", " ", " ", " ", " " },
-		{ "9", "3", "100", " ", " ", " ", " " },
+		{ "2", "1.5", "80", " ", " ", " ", " " },
+		{ "3", "2", "80", " ", " ", " ", " " },
+		{ "4", "2.5", "80", " ", " ", " ", " " },
+		{ "5", "3", "80", " ", " ", " ", " " },
+		{ "6", "1", "85", " ", " ", " ", " " },
+		{ "7", "1.5", "85", " ", " ", " ", " " },
+		{ "8", "2", "85", " ", " ", " ", " " },
+		{ "9", "2.5", "85", " ", " ", " ", " " },
+		{ "10", "3", "85", " ", " ", " ", " " },
+		{ "11", "1", "90", " ", " ", " ", " " },
+		{ "12", "1.5", "90", " ", " ", " ", " " },
+		{ "13", "2", "90", " ", " ", " ", " " },
+		{ "14", "2.5", "90", " ", " ", " ", " " },
+		{ "15", "3", "90", " ", " ", " ", " " },
+		{ "16", "1", "95", " ", " ", " ", " " },
+		{ "17", "1.5", "95", " ", " ", " ", " " },
+		{ "18", "2", "95", " ", " ", " ", " " },
+		{ "19", "2.5", "95", " ", " ", " ", " " },
+		{ "20", "3", "95", " ", " ", " ", " " },
+		{ "21", "1", "100", " ", " ", " ", " " },
+		{ "22", "1.5", "100", " ", " ", " ", " " },
+		{ "23", "2", "100", " ", " ", " ", " " },
+		{ "24", "2.5", "100", " ", " ", " ", " " },
+		{ "25", "3", "100", " ", " ", " ", " " },
 	};
 	for (int i = 0; i < m_sacrificeExplosionData.size(); ++i) {
 		for (int j = 0; j < m_sacrificeExplosionData[i].size(); ++j) {
@@ -298,15 +427,15 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_tableStackWidget->addWidget(m_sacrificeExplosionTableWidget);
 	m_tableWidget = m_fallTableWidget;
 
-	m_dataMap["壳体厚度"] = QStringList() << "1" << "2" << "3";
-	m_dataMap["跌落高度"] = QStringList() << "10" << "20" << "30";
-	m_dataMap["快烤平均温度"] = QStringList() << "600" << "700" << "800";
-	m_dataMap["慢烤平均温度"] = QStringList() << "315" << "330" << "345";
-	m_dataMap["枪击速度"] = QStringList() << "620" << "720" << "820";
-	m_dataMap["破片撞击速度"] = QStringList() << "1630" << "1730" << "1830";
-	m_dataMap["聚能装药口径"] = QStringList() << "30" << "40" << "50";
-	m_dataMap["TNT当量"] = QStringList() << "3" << "4" << "5";
-	m_dataMap["殉爆距离"] = QStringList() << "80" << "90" << "100";
+	m_dataMap["壳体厚度"] = QStringList() << "1" << "1.5"  "2" << "2.5" << "3";
+	m_dataMap["跌落高度"] = QStringList() << "10" << "15" << "20" << "25" << "30";
+	m_dataMap["快烤平均温度"] = QStringList() << "600" << "650" << "700" << "750" << "800";
+	m_dataMap["慢烤平均温度"] = QStringList() << "315" << "320" << "325" << "330" << "345";
+	m_dataMap["枪击速度"] = QStringList() << "620" << "670" << "720" << "770" << "820";
+	m_dataMap["破片撞击速度"] = QStringList() << "1630" << "1680" << "1730" << "1780" << "1830";
+	m_dataMap["聚能装药口径"] = QStringList() << "30" << "35" << "40" << "45" << "50";
+	m_dataMap["TNT当量"] = QStringList() << "30" << "35" << "40" << "45" << "50";
+	m_dataMap["殉爆距离"] = QStringList() << "80" << "85" << "90" << "95" << "100";
 
 	graphicWid = new QWidget();
 	graphicLayout = new QHBoxLayout();
@@ -632,35 +761,45 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 	QVector<QVector<double>> newData;
 	QVector<double> data1;
 	data1.append(m_tableWidget->item(1, z)->text().toDouble());
-	data1.append(m_tableWidget->item(4, z)->text().toDouble());
-	data1.append(m_tableWidget->item(7, z)->text().toDouble());
+	data1.append(m_tableWidget->item(6, z)->text().toDouble());
+	data1.append(m_tableWidget->item(11, z)->text().toDouble());
+	data1.append(m_tableWidget->item(16, z)->text().toDouble());
+	data1.append(m_tableWidget->item(21, z)->text().toDouble());
 	newData.append(data1);
 	QVector<double> data2;
-	data2.append(m_tableWidget->item(2, z)->text().toDouble());
-	data2.append(m_tableWidget->item(5, z)->text().toDouble());
+	data2.append(m_tableWidget->item(3, z)->text().toDouble());
 	data2.append(m_tableWidget->item(8, z)->text().toDouble());
+	data2.append(m_tableWidget->item(13, z)->text().toDouble());
+	data2.append(m_tableWidget->item(18, z)->text().toDouble());
+	data2.append(m_tableWidget->item(23, z)->text().toDouble());
 	newData.append(data2);
 	QVector<double> data3;
-	data3.append(m_tableWidget->item(3, z)->text().toDouble());
-	data3.append(m_tableWidget->item(6, z)->text().toDouble());
-	data3.append(m_tableWidget->item(9, z)->text().toDouble());
+	data3.append(m_tableWidget->item(5, z)->text().toDouble());
+	data3.append(m_tableWidget->item(10, z)->text().toDouble());
+	data3.append(m_tableWidget->item(15, z)->text().toDouble());
+	data3.append(m_tableWidget->item(20, z)->text().toDouble());
+	data3.append(m_tableWidget->item(25, z)->text().toDouble());
 	newData.append(data3);
 
 	QVector<double> xCoords;
 	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
 	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
 	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble());
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
-	yCoords.append(m_tableWidget->item(4, 2)->text().toDouble());
-	yCoords.append(m_tableWidget->item(7, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(6, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(11, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(16, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
 
 
 	updateGraphicData("", "", zName, xCoords, yCoords, newData,
-		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(3, 1)->text().toDouble(),
-		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(7, 2)->text().toDouble());
+		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
+		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
 
 }
@@ -677,16 +816,16 @@ void IntelligentAnalyWidget::dataChange(int index)
 	int y_index = y_comboBox->currentIndex();
 	if (x_index == 0)
 	{
-		rowList1 = { 1,2,3 };
-		rowList2 = { 4,5,6 };
-		rowList3 = { 7,8,9 };
+		rowList1 = { 1,2,3,4,5 };
+		rowList2 = { 11,12,13,14,15 };
+		rowList3 = { 21,22,23,24,25 };
 		x_col = 1;
 	}
 	else
 	{
-		rowList1 = { 1,4,7 };
-		rowList2 = { 2,5,8 };
-		rowList3 = { 3,6,9 };
+		rowList1 = { 1,6,11,16,21 };
+		rowList2 = { 3,8,13,18,23  };
+		rowList3 = { 5,10,15,20,25 };
 		x_col = 2;
 	}
 
@@ -823,11 +962,11 @@ qreal IntelligentAnalyWidget::calculateMinValue(const QVector<QPointF>& series, 
 }
 
 //创建一组数据（曲线 + 圆点），统一配置样式
-void IntelligentAnalyWidget::createChartDataGroup(QLineSeries * &lineSeries, QScatterSeries * &scatterSeries,
+void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries* &lineSeries, QScatterSeries * &scatterSeries,
 	const QString & name, const QColor & color)
 {
 	// 1. 创建曲线系列（只负责线条）
-	lineSeries = new QLineSeries();
+	lineSeries = new QSplineSeries();
 	lineSeries->setName(name);  // 系列名称（与散点共享，图例只显示1次）
 	QPen linePen(color);
 	linePen.setWidth(2);        // 曲线宽度
@@ -881,4 +1020,58 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 	}
 	m_3dGraphicWid->axisTitleChange(xName, yName, zName);
 	m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
+}
+
+QVector<QPointF> IntelligentAnalyWidget::bezierSmooth(const QVector<QPointF>& src, int subdiv)
+{
+	QVector<QPointF> res;
+	if (src.size() <= 1)
+		return src;
+
+	res << src[0];
+	int n = src.size();
+
+	for (int i = 0; i < n - 1; i++)
+	{
+		QPointF p0 = src[i];
+		QPointF p3 = src[i + 1];
+
+		// 计算控制点，实现平滑过渡
+		QPointF p1, p2;
+		if (i == 0)
+		{
+			// 第一段
+			p1 = p0 + (p3 - p0) * 0.33;
+		}
+		else
+		{
+			QPointF prev = src[i - 1];
+			p1 = p0 + (p3 - prev) * 0.2;
+		}
+
+		if (i == n - 2)
+		{
+			// 最后一段
+			p2 = p3 - (p3 - p0) * 0.33;
+		}
+		else
+		{
+			QPointF next = src[i + 2];
+			p2 = p3 - (next - p0) * 0.2;
+		}
+
+		// 细分采样贝塞尔曲线
+		for (int s = 1; s <= subdiv; s++)
+		{
+			qreal t = qreal(s) / subdiv;
+			qreal mt = 1 - t;
+
+			QPointF pt = mt * mt * mt * p0
+				+ 3 * mt * mt * t * p1
+				+ 3 * mt * t * t * p2
+				+ t * t * t * p3;
+			res << pt;
+		}
+	}
+	return res;
 }

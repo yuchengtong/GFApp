@@ -392,7 +392,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.fallStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.fallTemperatureCalculation;
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											M = fallTableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -496,36 +496,66 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											data1.append(QPointF(3, fallTableWidget->item(3, 3)->text().toDouble()));
 
 										}
-										QVector<QPointF> data2;
 										if (fallTableWidget->item(4, 3))
 										{
-											data2.append(QPointF(1, fallTableWidget->item(4, 3)->text().toDouble()));
+											data1.append(QPointF(4, fallTableWidget->item(4, 3)->text().toDouble()));
 
 										}
 										if (fallTableWidget->item(5, 3))
 										{
-											data2.append(QPointF(2, fallTableWidget->item(5, 3)->text().toDouble()));
+											data1.append(QPointF(5, fallTableWidget->item(5, 3)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(6, 3))
+										QVector<QPointF> data2;
+										if (fallTableWidget->item(11, 3))
 										{
-											data2.append(QPointF(3, fallTableWidget->item(6, 3)->text().toDouble()));
+											data2.append(QPointF(1, fallTableWidget->item(11, 3)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(12, 3))
+										{
+											data2.append(QPointF(2, fallTableWidget->item(12, 3)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(13, 3))
+										{
+											data2.append(QPointF(3, fallTableWidget->item(13, 3)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(14, 3))
+										{
+											data2.append(QPointF(4, fallTableWidget->item(14, 3)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(15, 3))
+										{
+											data2.append(QPointF(5, fallTableWidget->item(15, 3)->text().toDouble()));
 
 										}
 										QVector<QPointF> data3;
-										if (fallTableWidget->item(7, 3))
+										if (fallTableWidget->item(21, 3))
 										{
-											data3.append(QPointF(1, fallTableWidget->item(7, 3)->text().toDouble()));
+											data3.append(QPointF(1, fallTableWidget->item(21, 3)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(8, 3))
+										if (fallTableWidget->item(22, 3))
 										{
-											data3.append(QPointF(2, fallTableWidget->item(8, 3)->text().toDouble()));
+											data3.append(QPointF(2, fallTableWidget->item(22, 3)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(9, 3))
+										if (fallTableWidget->item(23, 3))
 										{
-											data3.append(QPointF(3, fallTableWidget->item(9, 3)->text().toDouble()));
+											data3.append(QPointF(3, fallTableWidget->item(23, 3)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(24, 3))
+										{
+											data3.append(QPointF(4, fallTableWidget->item(24, 3)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(25, 3))
+										{
+											data3.append(QPointF(5, fallTableWidget->item(25, 3)->text().toDouble()));
 
 										}
 
@@ -535,33 +565,58 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										QVector<QVector<double>> newData;
 										QVector<double> graphicData1;
 										graphicData1.append(fallTableWidget->item(1, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(4, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(7, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(6, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(11, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(16, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(21, 3)->text().toDouble());
 										newData.append(graphicData1);
 										QVector<double> graphicData2;
-										graphicData2.append(fallTableWidget->item(2, 3)->text().toDouble());
-										graphicData2.append(fallTableWidget->item(5, 3)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(3, 3)->text().toDouble());
 										graphicData2.append(fallTableWidget->item(8, 3)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(13, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(18, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(23, 3)->text().toDouble());
 										newData.append(graphicData2);
 										QVector<double> graphicData3;
-										graphicData3.append(fallTableWidget->item(3, 3)->text().toDouble());
-										graphicData3.append(fallTableWidget->item(6, 3)->text().toDouble());
-										graphicData3.append(fallTableWidget->item(9, 3)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(5, 3)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(10, 3)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(15, 3)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(20, 3)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(25, 3)->text().toDouble());
 										newData.append(graphicData3);
+										QVector<double> graphicData4;
+										graphicData4.append(fallTableWidget->item(2, 3)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(7, 3)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(12, 3)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(17, 3)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(22, 3)->text().toDouble());
+										newData.append(graphicData4);
+										QVector<double> graphicData5;
+										graphicData5.append(fallTableWidget->item(4, 3)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(9, 3)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(14, 3)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(19, 3)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(24, 3)->text().toDouble());
+										newData.append(graphicData5);
 
 										QVector<double> xCoords;
 										xCoords.append(fallTableWidget->item(1, 1)->text().toDouble());
 										xCoords.append(fallTableWidget->item(2, 1)->text().toDouble());
 										xCoords.append(fallTableWidget->item(3, 1)->text().toDouble());
+										xCoords.append(fallTableWidget->item(4, 1)->text().toDouble());
+										xCoords.append(fallTableWidget->item(5, 1)->text().toDouble());
 
 										QVector<double> yCoords;
 										yCoords.append(fallTableWidget->item(1, 2)->text().toDouble());
-										yCoords.append(fallTableWidget->item(4, 2)->text().toDouble());
-										yCoords.append(fallTableWidget->item(7, 2)->text().toDouble());
+										yCoords.append(fallTableWidget->item(6, 2)->text().toDouble());
+										yCoords.append(fallTableWidget->item(11, 2)->text().toDouble());
+										yCoords.append(fallTableWidget->item(16, 2)->text().toDouble());
+										yCoords.append(fallTableWidget->item(21, 2)->text().toDouble());
 
-										paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最大应力", xCoords, yCoords, newData,
-											fallTableWidget->item(1, 1)->text().toDouble(), fallTableWidget->item(3, 1)->text().toDouble(),
-											fallTableWidget->item(1, 2)->text().toDouble(), fallTableWidget->item(7, 2)->text().toDouble());
+
+										/*paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最大应力", xCoords, yCoords, newData,
+											fallTableWidget->item(1, 1)->text().toDouble(), fallTableWidget->item(5, 1)->text().toDouble(),
+											fallTableWidget->item(1, 2)->text().toDouble(), fallTableWidget->item(25, 2)->text().toDouble());*/
 
 									}
 									else if (data == "FastCombustionIntelligentAnaly" && Qt::Checked == check)
@@ -588,7 +643,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto temperatureCalculation = calInfo.fastCombustionCalculation;
 
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -645,7 +700,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										auto temperatureCalculation = calInfo.slowCombustionCalculation;
 
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -712,7 +767,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.shootStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.shootTemperatureCalculation;
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -804,7 +859,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.jetImpactStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.jetImpactTemperatureCalculation;
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -893,7 +948,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.fragmentationImpactStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.fragmentationImpactTemperatureCalculation;
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -986,7 +1041,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.explosiveBlastStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.explosiveBlastTemperatureCalculation;
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
@@ -1007,7 +1062,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = limitValue;
 												}
-												if (res < 4000)
+												if (res < 4000000)
 												{
 													if (!m_array.contains(i + 1))
 													{
@@ -1061,7 +1116,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.sacrificeExplosionStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.sacrificeExplosionTemperatureCalculation;
-										for (size_t i = 1; i < 10; i++)
+										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
 											L = tableWidget->item(i, 1)->text().toInt();	// 厚度

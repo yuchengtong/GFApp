@@ -98,7 +98,7 @@ mainWidget::mainWidget(QWidget* parent)
 
 	// 定义Action
 	m_ImportModelWidAct = new QAction("安全性特性参数分析", this);
-	m_DataBaseWidAct = new QAction("数据库", this);
+	m_DataBaseWidAct = new QAction("数据管理", this);
 	m_IntelligentAnalyWidAct = new QAction("数据智能分析", this);
 	m_AnalyEvalWidAct = new QAction("安全性分析与评估", this);
 	m_AuxiliaryAnalyWidAct = new QAction("安全性指标预计、权衡和辅助分析", this);

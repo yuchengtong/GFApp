@@ -66,6 +66,7 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_explosiveBlastPropertyWidget = new ExplosiveBlastPropertyWidget();
 	m_sacrificeExplosionPropertyWidget = new SacrificeExplosionPropertyWidget();
 	m_databasePropertyWidget = new DatabasePropertyWidget();
+	m_nozzlePropertyWidget = new NozzlePropertyWidget();
 	// 跌落
 	m_stressResultWidget = new StressResultWidget();
 	m_temperatureResultWidget = new TemperatureResultWidget();
@@ -140,6 +141,8 @@ GFImportModelWidget::GFImportModelWidget(QWidget*parent)
 	m_PropertyStackWidget->addWidget(m_explosiveBlastPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_sacrificeExplosionPropertyWidget);
 	m_PropertyStackWidget->addWidget(m_databasePropertyWidget);
+	m_PropertyStackWidget->addWidget(m_nozzlePropertyWidget);
+	
 
 	m_PropertyStackWidget->addWidget(m_shootStressResultWidget);
 	m_PropertyStackWidget->addWidget(m_shootTemperatureResultWidget);
@@ -332,6 +335,11 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 	{
 		occView->SetCameraRotationState(true);
 		m_PropertyStackWidget->setCurrentWidget(m_outheatPropertyWidget);
+	}
+	else if (itemData == "Nozzle")
+	{
+	occView->SetCameraRotationState(true);
+	m_PropertyStackWidget->setCurrentWidget(m_nozzlePropertyWidget);
 	}
 	else if (itemData == "Database") 
 	{

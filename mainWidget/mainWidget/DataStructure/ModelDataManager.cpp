@@ -214,6 +214,16 @@ void ModelDataManager::SetOutheatPropertyInfo(const OutheatPropertyInfo& info)
 	m_OutheatPropertyInfo = info;
 }
 
+const NozzlePropertyInfo& ModelDataManager::GetNozzlePropertyInfo() const
+{
+	return m_NozzlePropertyInfo;
+}
+
+void ModelDataManager::SetNozzlePropertyInfo(const NozzlePropertyInfo& info)
+{
+	m_NozzlePropertyInfo = info;
+}
+
 const CalculationPropertyInfo & ModelDataManager::GetCalculationPropertyInfo() const
 {
 	return m_CalculationPropertyInfo;

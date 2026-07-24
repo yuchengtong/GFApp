@@ -247,6 +247,9 @@
     <ClCompile Include="PropertyWidget\ReactionDegreeResultWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PropertyWidget\NozzlePropertyWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -436,6 +439,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="PropertyWidget\ReactionDegreeResultWidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="PropertyWidget\NozzlePropertyWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

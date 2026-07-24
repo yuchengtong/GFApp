@@ -1,21 +1,22 @@
-ï»¿#pragma once
+#pragma once
 #pragma execution_character_set("utf-8")
-#include "InsulatingheatPropertyWidget.h"
+#include "NozzlePropertyWidget.h"
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QComboBox>
-#include "xlsxdocument.h"
 #include <QDir>
 #include <QPushButton>
 #include <QDialog>
 #include "ModelDataManager.h"
-#include "GFTreeModelWidget.h"
-#include "GFImportModelWidget.h"
+#include "../GFTreeModelWidget.h"
+#include "../GFImportModelWidget.h"
+#include "xlsxdocument.h"
+
 
 #include <QDateTime>
 #include <QApplication>
 
-InsulatingheatPropertyWidget::InsulatingheatPropertyWidget(QWidget* parent)
+NozzlePropertyWidget::NozzlePropertyWidget(QWidget* parent)
 	:BasePropertyWidget(parent)
 {
 	initWidget();
@@ -42,8 +43,9 @@ InsulatingheatPropertyWidget::InsulatingheatPropertyWidget(QWidget* parent)
 	);
 }
 
-void InsulatingheatPropertyWidget::initWidget()
+void NozzlePropertyWidget::initWidget()
 {
+
 	QVBoxLayout* vlayout = new QVBoxLayout(this);
 	vlayout->setContentsMargins(0, 0, 0, 0);
 
@@ -51,11 +53,11 @@ void InsulatingheatPropertyWidget::initWidget()
 
 	m_tableWidget->setRowCount(11);
 	m_tableWidget->setColumnCount(4);
-	// éšè—è¡¨å¤´ï¼ˆå¦‚æœä¸éœ€è¦æ˜¾ç¤ºè¡¨å¤´æ–‡å­—ï¼Œå¯æ ¹æ®éœ€æ±‚å†³å®šæ˜¯å¦éšè—ï¼‰
+	// Òş²Ø±íÍ·£¨Èç¹û²»ĞèÒªÏÔÊ¾±íÍ·ÎÄ×Ö£¬¿É¸ù¾İĞèÇó¾ö¶¨ÊÇ·ñÒş²Ø£©
 	m_tableWidget->horizontalHeader()->setVisible(false);
 	m_tableWidget->verticalHeader()->setVisible(false);
 
-	// è®¾ç½®ç¬¬ä¸€åˆ—å›ºå®šå®½åº¦ï¼ˆä¾‹å¦‚100åƒç´ ï¼‰
+	// ÉèÖÃµÚÒ»ÁĞ¹Ì¶¨¿í¶È£¨ÀıÈç100ÏñËØ£©
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
 	m_tableWidget->horizontalHeader()->resizeSection(0, 5);
@@ -63,51 +65,51 @@ void InsulatingheatPropertyWidget::initWidget()
 	m_tableWidget->horizontalHeader()->resizeSection(3, 80);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
 	m_tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
-	// è®©è¡¨æ ¼å……æ»¡å¸ƒå±€ï¼Œè‡ªåŠ¨è°ƒæ•´è¡Œåˆ—å¤§å°
+	// ÈÃ±í¸ñ³äÂú²¼¾Ö£¬×Ô¶¯µ÷ÕûĞĞÁĞ´óĞ¡
 	m_tableWidget->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 	m_tableWidget->setColumnWidth(0, 5);
-	// åˆå¹¶ç¬¬ä¸€è¡Œçš„ç¬¬ä¸€å’Œç¬¬äºŒåˆ—
+	// ºÏ²¢µÚÒ»ĞĞµÄµÚÒ»ºÍµÚ¶şÁĞ
 	m_tableWidget->setSpan(0, 0, 1, 2);
 
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "ææ–™å±æ€§","ææ–™ç‰Œå·", "å¯†åº¦", "çƒ­è†¨èƒ€ç³»æ•°", "å¼¹æ€§æ¨¡é‡","åˆ‡çº¿æ¨¡é‡","æ³Šæ¾æ¯”","å±ˆæœå¼ºåº¦","æŠ—æ‹‰å¼ºåº¦","çƒ­å¯¼ç‡","æ¯”çƒ­å®¹" };
+	QStringList labels = { "²ÄÁÏÊôĞÔ","²ÄÁÏÅÆºÅ", "ÃÜ¶È", "ÈÈÅòÕÍÏµÊı", "µ¯ĞÔÄ£Á¿","ÇĞÏßÄ£Á¿","²´ËÉ±È","Çü·şÇ¿¶È","¿¹À­Ç¿¶È","ÈÈµ¼ÂÊ","±ÈÈÈÈİ" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
-			serialItem = new QTableWidgetItem("ææ–™å±æ€§");
+			serialItem = new QTableWidgetItem("²ÄÁÏÊôĞÔ");
 		}
-		serialItem->setFlags(serialItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
+		serialItem->setFlags(serialItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 		m_tableWidget->setItem(row, 0, serialItem);
 
 		QTableWidgetItem* labelItem = new QTableWidgetItem(labels[row]);
-		labelItem->setTextAlignment(Qt::AlignCenter); // æ–‡æœ¬å±…ä¸­
-		labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
+		labelItem->setTextAlignment(Qt::AlignCenter); // ÎÄ±¾¾ÓÖĞ
+		labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 		m_tableWidget->setItem(row, 1, labelItem);
 
 		if (row != 0)
 		{
 			QTableWidgetItem* valueItem = new QTableWidgetItem("");
-			valueItem->setTextAlignment(Qt::AlignCenter); // æ–‡æœ¬å±…ä¸­
-			valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
+			valueItem->setTextAlignment(Qt::AlignCenter); // ÎÄ±¾¾ÓÖĞ
+			valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 			m_tableWidget->setItem(row, 2, valueItem);
 		}
 
 	}
 
-	// è®¾ç½®åˆ—å®½åº¦
-	QTableWidgetItem *colimnItem = m_tableWidget->item(3, 1);
+	// ÉèÖÃÁĞ¿í¶È
+	QTableWidgetItem* colimnItem = m_tableWidget->item(3, 1);
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	// å•ä½åˆ—
-	QStringList unitLabels = { " "," ", "kg/m^3", "/â„ƒ", "MPa","MPa"," ","MPa","MPa","W/(mâˆ™â„ƒ)","J/(kgâˆ™â„ƒ)" };
+	// µ¥Î»ÁĞ
+	QStringList unitLabels = { " "," ", "kg/m^3", "/¡æ", "MPa","MPa"," ","MPa","MPa","W/(m?¡æ)","J/(kg?¡æ)" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
 			QTableWidgetItem* labelItem = new QTableWidgetItem(unitLabels[row]);
-			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
+			labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 			m_tableWidget->setItem(row, 3, labelItem);
 		}
 
@@ -117,27 +119,27 @@ void InsulatingheatPropertyWidget::initWidget()
 	int unitItemWidth = QFontMetrics(m_tableWidget->font()).width(unitColimnItem->text());
 	m_tableWidget->setColumnWidth(3, unitItemWidth + m_tableWidget->verticalHeader()->width());
 
-	// å°†ç¬¬0è¡Œ0åˆ—çš„å•å…ƒæ ¼æ–‡æœ¬å­—ä½“åŠ ç²—
-	QTableWidgetItem *headerItem = m_tableWidget->item(0, 0);
+	// ½«µÚ0ĞĞ0ÁĞµÄµ¥Ôª¸ñÎÄ±¾×ÖÌå¼Ó´Ö
+	QTableWidgetItem* headerItem = m_tableWidget->item(0, 0);
 	if (headerItem) {
 		QFont font = headerItem->font();
 		font.setBold(true);
 		headerItem->setFont(font);
 	}
 
-	// å¯¼å…¥æŒ‰é’®
-	QPushButton* importButton = new QPushButton("å¯¼å…¥");
+	// µ¼Èë°´Å¥
+	QPushButton* importButton = new QPushButton("µ¼Èë");
 	importButton->setIcon(QIcon(":/tree/Tree/import.svg"));
 	const int btnSize = 20;
 	QSize iconSize(btnSize, btnSize);
 	importButton->setIconSize(iconSize);
 	m_tableWidget->setCellWidget(0, 2, importButton);
 
-	connect(importButton, &QPushButton::clicked, this, &InsulatingheatPropertyWidget::showTableDialog);
-	// åˆå¹¶ç¬¬ä¸€è¡Œçš„ç¬¬ä¸‰å’Œç¬¬å››åˆ—
+	connect(importButton, &QPushButton::clicked, this, &NozzlePropertyWidget::showTableDialog);
+	// ºÏ²¢µÚÒ»ĞĞµÄµÚÈıºÍµÚËÄÁĞ
 	m_tableWidget->setSpan(0, 2, 1, 2);
 
-	//æ–‡æœ¬å·¦å¯¹é½
+	//ÎÄ±¾×ó¶ÔÆë
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
 		for (int col = 0; col < m_tableWidget->columnCount(); ++col) {
 			QTableWidgetItem* item = m_tableWidget->item(row, col);
@@ -155,36 +157,37 @@ void InsulatingheatPropertyWidget::initWidget()
 		}
 	}
 
-	// éå†ç¬¬2åˆ—ï¼ˆç´¢å¼•ä¸º1ï¼‰ï¼Œå°†ä¸å¯ç¼–è¾‘å•å…ƒæ ¼èƒŒæ™¯è®¾ç½®ä¸ºæµ…ç°è‰²
+	// ±éÀúµÚ2ÁĞ£¨Ë÷ÒıÎª1£©£¬½«²»¿É±à¼­µ¥Ôª¸ñ±³¾°ÉèÖÃÎªÇ³»ÒÉ«
 	for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
-		// éå†è¡Œï¼Œè®¾ç½®è¡Œé«˜
+		// ±éÀúĞĞ£¬ÉèÖÃĞĞ¸ß
 		m_tableWidget->setRowHeight(row, 10);
-		QTableWidgetItem *item = m_tableWidget->item(row, 2);
+		QTableWidgetItem* item = m_tableWidget->item(row, 2);
 		if (item && !(item->flags() & Qt::ItemIsEditable))
 		{
 			item->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 		if (row != 0)
 		{
-			QTableWidgetItem *unitItem = m_tableWidget->item(row, 3);
+			QTableWidgetItem* unitItem = m_tableWidget->item(row, 3);
 			unitItem->setBackground(QBrush(QColor(230, 230, 230)));
 		}
 	}
 
 }
 
-void InsulatingheatPropertyWidget::showTableDialog()
-{
-	QDialog *dialog = new QDialog();
-	dialog->setWindowIcon(QIcon(":/src/engine.svg"));
-	dialog->setWindowTitle("ç»çƒ­å±‚ææ–™");
-	dialog->resize(1000, 500);
-	QVBoxLayout *layout = new QVBoxLayout(this);
+void NozzlePropertyWidget::showTableDialog() {
 
-	QTableWidget *diaTableWidget = new QTableWidget();
-	// éšè—è¡Œå·
+
+	QDialog* dialog = new QDialog();
+	dialog->setWindowIcon(QIcon(":/src/engine.svg"));
+	dialog->setWindowTitle("Åç¹Ü²ÄÁÏ");
+	dialog->resize(1000, 500);
+	QVBoxLayout* layout = new QVBoxLayout(this);
+
+	QTableWidget* diaTableWidget = new QTableWidget();
+	// Òş²ØĞĞºÅ
 	diaTableWidget->verticalHeader()->setVisible(false);
-	// éšè—åˆ—å·
+	// Òş²ØÁĞºÅ
 	diaTableWidget->horizontalHeader()->setVisible(false);
 	diaTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	QDir dir;
@@ -192,10 +195,10 @@ void InsulatingheatPropertyWidget::showTableDialog()
 
 	auto ins = ModelDataManager::GetInstance();
 	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
-	QVector<QVector<QString>> m_data = databaseInfo.m_insulatingheatData;
+	QVector<QVector<QString>> m_data = databaseInfo.m_metalData;
 
-	int rowcount = m_data.size(); // è·å–æ€»è¡Œæ•°
-	int colcount = m_data.first().size(); // è·å–æ€»åˆ—æ•°
+	int rowcount = m_data.size(); // »ñÈ¡×ÜĞĞÊı
+	int colcount = m_data.first().size(); // »ñÈ¡×ÜÁĞÊı
 	m_rowCount = rowcount;
 
 	diaTableWidget->setRowCount(rowcount);
@@ -204,36 +207,36 @@ void InsulatingheatPropertyWidget::showTableDialog()
 	for (int row = 0; row < rowcount; ++row) {
 		for (int col = 0; col < colcount; ++col) {
 			QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
-			item->setFlags(item->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
-			diaTableWidget->setItem(row , col , item);
+			item->setFlags(item->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
+			diaTableWidget->setItem(row, col, item);
 		}
 	}
 
-	// ç§æœ‰åº“
+	// Ë½ÓĞ¿â
 	UserInfo info = ins->GetUserInfo();
-	QString privateFilePath = dir.absoluteFilePath(info.workdir + "/database/ç»çƒ­å±‚ææ–™.xlsx");
+	QString privateFilePath = dir.absoluteFilePath(info.workdir + "/database/Åç¹Ü²ÄÁÏ.xlsx");
 
 
 	QFile file(privateFilePath);
 
 	if (!privateFilePath.isEmpty() && file.exists()) {
 		QXlsx::Document xlsx(privateFilePath);
-		int rowcount = xlsx.dimension().lastRow(); // è·å–æ€»è¡Œæ•°
-		int colcount = xlsx.dimension().lastColumn(); // è·å–æ€»åˆ—æ•°
+		int rowcount = xlsx.dimension().lastRow(); // »ñÈ¡×ÜĞĞÊı
+		int colcount = xlsx.dimension().lastColumn(); // »ñÈ¡×ÜÁĞÊı
 
 		diaTableWidget->setRowCount(m_rowCount + rowcount - 1);
 
 		int xlsxrow = m_rowCount;
 		for (int row = 2; row <= rowcount; ++row) {
 			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem *item = new QTableWidgetItem(xlsx.read(row, col).toString());
+				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
 				diaTableWidget->setItem(xlsxrow, col - 1, item);
 			}
 			xlsxrow++;
 		}
 	}
 
-	//è®¾ç½®ç‚¹å‡»äº‹ä»¶ï¼ŒåŒå‡»å•å…ƒæ ¼
+	//ÉèÖÃµã»÷ÊÂ¼ş£¬Ë«»÷µ¥Ôª¸ñ
 	connect(diaTableWidget, &QTableWidget::cellDoubleClicked, this, [this, dialog, diaTableWidget](int row, int column) {
 		if (row != 0)
 		{
@@ -248,13 +251,13 @@ void InsulatingheatPropertyWidget::showTableDialog()
 				}
 				QTableWidgetItem* valueItem = new QTableWidgetItem(content);
 				valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-				valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
+				valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 				valueItem->setBackground(QBrush(QColor(230, 230, 230)));
 				m_tableWidget->setItem(col, 2, valueItem);
 			}
 			auto ins = ModelDataManager::GetInstance();
 
-			InsulatingheatPropertyInfo info;
+			NozzlePropertyInfo info;
 			info.materialGrade = m_tableWidget->item(1, 2)->text();
 			info.density = m_tableWidget->item(2, 2)->text().toDouble();
 			info.thermalExpansion = m_tableWidget->item(3, 2)->text().toDouble();
@@ -266,33 +269,34 @@ void InsulatingheatPropertyWidget::showTableDialog()
 			info.thermalConductivity = m_tableWidget->item(9, 2)->text().toDouble();
 			info.specificHeatCapacity = m_tableWidget->item(10, 2)->text().toDouble();
 			info.isChecked = true;
-			ins->SetInsulatingheatPropertyInfo(info);
+			ins->SetNozzlePropertyInfo(info);
 
-			// æ›´æ–°icon
+			// ¸üĞÂicon
 			QWidget* parent = parentWidget();
 			while (parent) {
 				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
 				if (gfParent)
 				{
 					gfParent->GetGFTreeModelWidget()->updataIcon();
-					// å†™å…¥æ—¥å¿—
+					// Ğ´ÈëÈÕÖ¾
 					QDateTime currentTime = QDateTime::currentDateTime();
 					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
 					auto logWidget = gfParent->GetLogWidget();
 					auto textEdit = logWidget->GetTextEdit();
-					QString text = timeStr + "[ä¿¡æ¯]>å¼€å§‹å¯¼å…¥ç»çƒ­å±‚ææ–™æ•°æ®";
+					QString text = timeStr + "[ĞÅÏ¢]>¿ªÊ¼µ¼ÈëÅç¹Ü²ÄÁÏÊı¾İ";
 					textEdit->appendPlainText(text);
 					logWidget->update();
 
-					// å…³é”®ï¼šå¼ºåˆ¶åˆ·æ–°UIï¼Œç¡®ä¿æ—¥å¿—ç«‹å³æ˜¾ç¤º
+					// ¹Ø¼ü£ºÇ¿ÖÆË¢ĞÂUI£¬È·±£ÈÕÖ¾Á¢¼´ÏÔÊ¾
 					QApplication::processEvents();
-					// å†™å…¥æ•°æ®åº“æ¨¡å—
+
+					// Ğ´ÈëÊı¾İ¿âÄ£¿é
 					MaterialPropertyWidget* m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
 					QTableWidget* materialTableWid = m_materialPropertyWidget->GetQTableWidget();
 					QTableWidgetItem* valueItem = new QTableWidgetItem(value);
-					valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ä¸å¯ç¼–è¾‘
+					valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // ²»¿É±à¼­
 					valueItem->setBackground(QBrush(QColor(230, 230, 230)));
-					materialTableWid->setItem(4, 2, valueItem);
+					materialTableWid->setItem(5, 2, valueItem);
 					break;
 				}
 				else
@@ -303,14 +307,14 @@ void InsulatingheatPropertyWidget::showTableDialog()
 		}
 		dialog->close();
 
-	});
-	//åŒå‡»å•å…ƒæ ¼é€‰ä¸­ä¸€è¡Œ
-	 //è®¾ç½®é€‰ä¸­æ•´è¡Œ
+		});
+	//Ë«»÷µ¥Ôª¸ñÑ¡ÖĞÒ»ĞĞ
+	 //ÉèÖÃÑ¡ÖĞÕûĞĞ
 	diaTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
 	diaTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
 	layout->addWidget(diaTableWidget);
 	dialog->setLayout(layout);
-	dialog->setAttribute(Qt::WA_DeleteOnClose); // å…³é—­æ—¶è‡ªåŠ¨åˆ é™¤
+	dialog->setAttribute(Qt::WA_DeleteOnClose); // ¹Ø±ÕÊ±×Ô¶¯É¾³ı
 	dialog->exec();
 }

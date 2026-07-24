@@ -31,6 +31,8 @@
 #include "SacrificeExplosionPropertyWidget.h"
 #include "DatabasePropertyWidget.h"
 #include "ReactionDegreeResultWidget.h"
+#include "NozzlePropertyWidget.h"
+
 
 class GFImportModelWidget :public QWidget
 {
@@ -137,6 +139,7 @@ private:
 	ExplosiveBlastPropertyWidget* m_explosiveBlastPropertyWidget = nullptr;
 	SacrificeExplosionPropertyWidget* m_sacrificeExplosionPropertyWidget = nullptr;
 	DatabasePropertyWidget* m_databasePropertyWidget = nullptr;
+	NozzlePropertyWidget* m_nozzlePropertyWidget = nullptr;
 
 	// µøÂä½á¹û
 	StressResultWidget* m_stressResultWidget = nullptr;

@@ -175,145 +175,206 @@ void SteelPropertyWidget::initWidget()
 
 }
 
-void SteelPropertyWidget::showTableDialog() {
+void SteelPropertyWidget::showTableDialog()
+{
+    QDialog* dialog = new QDialog();
+    dialog->setWindowIcon(QIcon(":/src/engine.svg"));
+    dialog->setWindowTitle("壳体材料库");
+    dialog->resize(1000, 550);
+    QVBoxLayout* dialogLayout = new QVBoxLayout(dialog); // 父对象修正为dialog
 
+    QTabWidget* tabWidget = new QTabWidget(dialog);
 
-	QDialog* dialog = new QDialog();
-	dialog->setWindowIcon(QIcon(":/src/engine.svg"));
-	dialog->setWindowTitle("壳体材料");
-	dialog->resize(1000, 500);
-	QVBoxLayout* layout = new QVBoxLayout(this);
+    // ========== Tab1：金属材料页面 ==========
+    QWidget* metalTabPage = new QWidget();
+    QVBoxLayout* metalLayout = new QVBoxLayout(metalTabPage);
+    QTableWidget* metalTable = new QTableWidget();
+    metalTable->verticalHeader()->setVisible(false);
+    metalTable->horizontalHeader()->setVisible(false);
+    metalTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    metalTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    metalTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    metalLayout->addWidget(metalTable);
+    tabWidget->addTab(metalTabPage, "金属材料");
 
-	QTableWidget* diaTableWidget = new QTableWidget();
-	// 隐藏行号
-	diaTableWidget->verticalHeader()->setVisible(false);
-	// 隐藏列号
-	diaTableWidget->horizontalHeader()->setVisible(false);
-	QDir dir;
-	int m_rowCount = 0;
+    // ========== Tab2：非金属材料页面 ==========
+    QWidget* nonMetalTabPage = new QWidget();
+    QVBoxLayout* nonMetalLayout = new QVBoxLayout(nonMetalTabPage);
+    QTableWidget* nonMetalTable = new QTableWidget();
+    nonMetalTable->verticalHeader()->setVisible(false);
+    nonMetalTable->horizontalHeader()->setVisible(false);
+    nonMetalTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    nonMetalTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    nonMetalTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    nonMetalLayout->addWidget(nonMetalTable);
+    tabWidget->addTab(nonMetalTabPage, "非金属材料");
 
-	auto ins = ModelDataManager::GetInstance();
-	DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
-	QVector<QVector<QString>> m_data = databaseInfo.m_metalData;
+    dialogLayout->addWidget(tabWidget);
 
-	int rowcount = m_data.size(); // 获取总行数
-	int colcount = m_data.first().size(); // 获取总列数
-	m_rowCount = rowcount;
+    auto ins = ModelDataManager::GetInstance();
+    DatabaseInfo databaseInfo = ins->GetDatabaseInfo();
+    UserInfo info = ins->GetUserInfo();
+    QDir dir;
+    QString workDir = info.workdir;
 
-	diaTableWidget->setRowCount(rowcount);
-	diaTableWidget->setColumnCount(colcount);
+    // ===================== 填充金属材料表格 =====================
+    const QVector<QVector<QString>>& metalData = databaseInfo.m_metalData;
+    int metalBaseRowCnt = metalData.size();
+    if (!metalData.isEmpty())
+    {
+        int colCnt = metalData.first().size();
+        metalTable->setRowCount(metalBaseRowCnt);
+        metalTable->setColumnCount(colCnt);
+        for (int row = 0; row < metalBaseRowCnt; ++row)
+        {
+            for (int col = 0; col < colCnt; ++col)
+            {
+                QTableWidgetItem* item = new QTableWidgetItem(metalData[row][col]);
+                item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+                metalTable->setItem(row, col, item);
+            }
+        }
+    }
 
-	for (int row = 0; row < rowcount; ++row) {
-		for (int col = 0; col < colcount; ++col) {
-			QTableWidgetItem* item = new QTableWidgetItem(m_data[row][col]);
-			item->setFlags(item->flags() & ~Qt::ItemIsEditable); // 不可编辑
-			diaTableWidget->setItem(row , col, item);
-		}
-	}
+    // 追加私有金属Excel
+    QString metalXlsxPath = dir.absoluteFilePath(workDir + "/database/壳体金属材料.xlsx");
+    QFile metalXlsxFile(metalXlsxPath);
+    if (!metalXlsxPath.isEmpty() && metalXlsxFile.exists())
+    {
+        QXlsx::Document xlsx(metalXlsxPath);
+        auto dim = xlsx.dimension();
+        int xlsxRowCnt = dim.lastRow();
+        int xlsxColCnt = dim.lastColumn();
+        metalTable->setRowCount(metalBaseRowCnt + xlsxRowCnt - 1);
+        int insertRow = metalBaseRowCnt;
+        for (int row = 2; row <= xlsxRowCnt; ++row)
+        {
+            for (int col = 1; col <= xlsxColCnt; ++col)
+            {
+                QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
+                metalTable->setItem(insertRow, col - 1, item);
+            }
+            insertRow++;
+        }
+    }
 
-	// 私有库
-	UserInfo info = ins->GetUserInfo();
-	QString privateFilePath = dir.absoluteFilePath(info.workdir + "/database/壳体金属材料.xlsx");
+    // ===================== 填充非金属材料表格 =====================
+    const QVector<QVector<QString>>& nonMetalData = databaseInfo.m_nonmetallicData;
+    int nonMetalBaseRowCnt = nonMetalData.size();
+    if (!nonMetalData.isEmpty())
+    {
+        int colCnt = nonMetalData.first().size();
+        nonMetalTable->setRowCount(nonMetalBaseRowCnt);
+        nonMetalTable->setColumnCount(colCnt);
+        for (int row = 0; row < nonMetalBaseRowCnt; ++row)
+        {
+            for (int col = 0; col < colCnt; ++col)
+            {
+                QTableWidgetItem* item = new QTableWidgetItem(nonMetalData[row][col]);
+                item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+                nonMetalTable->setItem(row, col, item);
+            }
+        }
+    }
 
+    // 追加私有非金属Excel
+    QString nonMetalXlsxPath = dir.absoluteFilePath(workDir + "/database/壳体非金属材料.xlsx");
+    QFile nonMetalXlsxFile(nonMetalXlsxPath);
+    if (!nonMetalXlsxPath.isEmpty() && nonMetalXlsxFile.exists())
+    {
+        QXlsx::Document xlsx(nonMetalXlsxPath);
+        auto dim = xlsx.dimension();
+        int xlsxRowCnt = dim.lastRow();
+        int xlsxColCnt = dim.lastColumn();
+        nonMetalTable->setRowCount(nonMetalBaseRowCnt + xlsxRowCnt - 1);
+        int insertRow = nonMetalBaseRowCnt;
+        for (int row = 2; row <= xlsxRowCnt; ++row)
+        {
+            for (int col = 1; col <= xlsxColCnt; ++col)
+            {
+                QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
+                nonMetalTable->setItem(insertRow, col - 1, item);
+            }
+            insertRow++;
+        }
+    }
 
-	QFile file(privateFilePath);
+    // ===================== 双击槽函数封装（金属） =====================
+    auto slotCellDoubleClick = [this, dialog](QTableWidget* table, bool isMetal)
+    {
+        connect(table, &QTableWidget::cellDoubleClicked, this, [this, dialog, table, isMetal](int row, int column)
+            {
+                if (row == 0) return; // 跳过表头
 
-	if (!privateFilePath.isEmpty() && file.exists()) {
-		QXlsx::Document xlsx(privateFilePath);
-		int rowcount = xlsx.dimension().lastRow(); // 获取总行数
-		int colcount = xlsx.dimension().lastColumn(); // 获取总列数
+                int colcount = table->columnCount();
+                QString materialName;
+                // 先回填当前窗口表格
+                for (int col = 1; col < colcount; ++col)
+                {
+                    QTableWidgetItem* srcItem = table->item(row, col);
+                    if (!srcItem) continue;
+                    QString content = srcItem->text();
+                    if (col == 1)
+                        materialName = content;
 
-		diaTableWidget->setRowCount(m_rowCount + rowcount - 1);
+                    QTableWidgetItem* valueItem = new QTableWidgetItem(content);
+                    valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+                    valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+                    valueItem->setBackground(QBrush(QColor(230, 230, 230)));
+                    m_tableWidget->setItem(col, 2, valueItem);
+                }
 
-		int xlsxrow = m_rowCount;
-		for (int row = 2; row <= rowcount; ++row) {
-			for (int col = 1; col <= colcount; ++col) {
-				QTableWidgetItem* item = new QTableWidgetItem(xlsx.read(row, col).toString());
-				diaTableWidget->setItem(xlsxrow, col - 1, item);
-			}
-			xlsxrow++;
-		}
-	}
+                auto ins = ModelDataManager::GetInstance();
+                SteelPropertyInfo info;
+                info.materialGrade = m_tableWidget->item(1, 2)->text();
+                info.density = m_tableWidget->item(2, 2)->text().toDouble();
+                info.thermalExpansion = m_tableWidget->item(3, 2)->text().toDouble();
+                info.modulus = m_tableWidget->item(4, 2)->text().toDouble();
+                info.tangentModulus = m_tableWidget->item(5, 2)->text().toDouble();
+                info.poisonby = m_tableWidget->item(6, 2)->text().toDouble();
+                info.yieldStrength = m_tableWidget->item(7, 2)->text().toDouble();
+                info.tensileStrength = m_tableWidget->item(8, 2)->text().toDouble();
+                info.thermalConductivity = m_tableWidget->item(9, 2)->text().toDouble();
+                info.specificHeatCapacity = m_tableWidget->item(10, 2)->text().toDouble();
+                info.isChecked = true;
+                ins->SetSteelPropertyInfo(info);
 
-	//设置点击事件，双击单元格
-	connect(diaTableWidget, &QTableWidget::cellDoubleClicked, this, [this, dialog, diaTableWidget](int row, int column) {
-		if (row != 0)
-		{
-			int colcount = diaTableWidget->columnCount();
-			QString value = "";
-			for (int col = 1; col < colcount; ++col) {
+                // 向上遍历父窗口，更新树、日志、材料属性表格（原有逻辑不变）
+                QWidget* parent = parentWidget();
+                while (parent)
+                {
+                    GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
+                    if (gfParent)
+                    {
+                        gfParent->GetGFTreeModelWidget()->updataIcon();
+                        QDateTime currentTime = QDateTime::currentDateTime();
+                        QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
+                        auto logWidget = gfParent->GetLogWidget();
+                        auto textEdit = logWidget->GetTextEdit();
+                        QString typeStr = isMetal ? "金属" : "非金属";
+                        QString text = timeStr + QString("[信息]>开始导入壳体%1材料数据").arg(typeStr);
+                        textEdit->appendPlainText(text);
+                        logWidget->update();
+                        QApplication::processEvents();
 
-				QString content = diaTableWidget->item(row, col)->text();
-				if (col == 1)
-				{
-					value = content;
-				}
-				QTableWidgetItem* valueItem = new QTableWidgetItem(content);
-				valueItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-				valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-				valueItem->setBackground(QBrush(QColor(230, 230, 230)));
-				m_tableWidget->setItem(col, 2, valueItem);
-			}
-			auto ins = ModelDataManager::GetInstance();
+                        MaterialPropertyWidget* m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
+                        QTableWidget* materialTableWid = m_materialPropertyWidget->GetQTableWidget();
+                        QTableWidgetItem* valueItem = new QTableWidgetItem(materialName);
+                        valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+                        valueItem->setBackground(QBrush(QColor(230, 230, 230)));
+                        materialTableWid->setItem(1, 2, valueItem);
+                        break;
+                    }
+                    parent = parent->parentWidget();
+                }
+                dialog->close();
+            });
+    };
 
-			SteelPropertyInfo info;
-			info.materialGrade = m_tableWidget->item(1, 2)->text();
-			info.density = m_tableWidget->item(2, 2)->text().toDouble();
-			info.thermalExpansion = m_tableWidget->item(3, 2)->text().toDouble();
-			info.modulus = m_tableWidget->item(4, 2)->text().toDouble();
-			info.tangentModulus = m_tableWidget->item(5, 2)->text().toDouble();
-			info.poisonby = m_tableWidget->item(6, 2)->text().toDouble();
-			info.yieldStrength = m_tableWidget->item(7, 2)->text().toDouble();
-			info.tensileStrength = m_tableWidget->item(8, 2)->text().toDouble();
-			info.thermalConductivity = m_tableWidget->item(9, 2)->text().toDouble();
-			info.specificHeatCapacity = m_tableWidget->item(10, 2)->text().toDouble();
-			info.isChecked = true;
-			ins->SetSteelPropertyInfo(info);
+    // 绑定两个表格双击信号
+    slotCellDoubleClick(metalTable, true);
+    slotCellDoubleClick(nonMetalTable, false);
 
-			// 更新icon
-			QWidget* parent = parentWidget();
-			while (parent) {
-				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
-				if (gfParent)
-				{
-					gfParent->GetGFTreeModelWidget()->updataIcon();
-					// 写入日志
-					QDateTime currentTime = QDateTime::currentDateTime();
-					QString timeStr = currentTime.toString("yyyy-MM-dd hh:mm:ss");
-					auto logWidget = gfParent->GetLogWidget();
-					auto textEdit = logWidget->GetTextEdit();
-					QString text = timeStr + "[信息]>开始导入壳体材料数据";
-					textEdit->appendPlainText(text);
-					logWidget->update();
-
-					// 关键：强制刷新UI，确保日志立即显示
-					QApplication::processEvents();
-
-					// 写入数据库模块
-					MaterialPropertyWidget* m_materialPropertyWidget = gfParent->GetMaterialPropertyWidget();
-					QTableWidget* materialTableWid = m_materialPropertyWidget->GetQTableWidget();
-					QTableWidgetItem* valueItem = new QTableWidgetItem(value);
-					valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
-					valueItem->setBackground(QBrush(QColor(230, 230, 230)));
-					materialTableWid->setItem(1, 2, valueItem);
-					break;
-				}
-				else
-				{
-					parent = parent->parentWidget();
-				}
-			}
-		}
-		dialog->close();
-
-		});
-	//双击单元格选中一行
-	 //设置选中整行
-	diaTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-	diaTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
-
-	layout->addWidget(diaTableWidget);
-	dialog->setLayout(layout);
-	dialog->setAttribute(Qt::WA_DeleteOnClose); // 关闭时自动删除
-	dialog->exec();
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->exec();
 }

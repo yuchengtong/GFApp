@@ -162,6 +162,7 @@
     <ClCompile Include="PropertyWidget\JudgmentPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\MaterialPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\MeshPropertyWidget.cpp" />
+    <ClCompile Include="PropertyWidget\NozzlePropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\OutheatPropertyWidget.cpp" />
     <ClCompile Include="PropertyWidget\ProjectPropertyWidge.cpp" />
     <ClCompile Include="PropertyWidget\PropellantPropertyWidget.cpp" />
@@ -257,6 +258,7 @@
     <QtMoc Include="PropertyWidget\ProjectPropertyWidge.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="PropertyWidget\NozzlePropertyWidget.h" />
     <QtMoc Include="PropertyWidget\ReactionDegreeResultWidget.h" />
     <QtMoc Include="StartDialog.h" />
     <QtMoc Include="TriangulationWorker.h" />

@@ -48,6 +48,7 @@
         <file>src/import_model.svg</file>
         <file>src/intelligent_analy.svg</file>
         <file>src/engine.svg</file>
+        <file>src/data_nozzle.svg</file>
     </qresource>
     <qresource prefix="/tree">
         <file alias="Tree/import.svg">src/icon/Tree/import.svg</file>

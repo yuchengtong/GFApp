@@ -167,13 +167,13 @@ void GFTreeModelWidget::init()
 	}
 	// 材料节点
 	QTreeWidgetItem* databaseNode = new QTreeWidgetItem(rootItem);
-	databaseNode->setText(0, "数据库");
+	databaseNode->setText(0, "数据管理");
 	databaseNode->setData(0, Qt::UserRole, "Database");
 	databaseNode->setIcon(0, error_icon);
 	databaseNode->setExpanded(true);
 
 	QTreeWidgetItem* materialNode = new QTreeWidgetItem();
-	materialNode->setText(0, "材料数据库");
+	materialNode->setText(0, "材料数据管理");
 	materialNode->setData(0, Qt::UserRole, "Material");
 	materialNode->setIcon(0, error_icon);
 
@@ -200,20 +200,26 @@ void GFTreeModelWidget::init()
 	insulatingheat->setData(0, Qt::UserRole, "Insulatingheat");
 	insulatingheat->setIcon(0, error_icon);
 
+	QTreeWidgetItem* nozzle = new QTreeWidgetItem();
+	nozzle->setText(0, "喷管材料");
+	nozzle->setData(0, Qt::UserRole, "Nozzle");
+	nozzle->setIcon(0, error_icon);
+
 	materialNode->addChild(steel);
 	materialNode->addChild(propellant);
 	materialNode->addChild(outheat);
 	materialNode->addChild(insulatingheat);
+	materialNode->addChild(nozzle);
 
 	materialNode->setExpanded(true);
 
 	QTreeWidgetItem* judgment = new QTreeWidgetItem();
-	judgment->setText(0, "标准数据库");
+	judgment->setText(0, "标准数据管理");
 	judgment->setData(0, Qt::UserRole, "Judgment");
 	judgment->setIcon(0, error_icon);
 
 	QTreeWidgetItem* calculation = new QTreeWidgetItem();
-	calculation->setText(0, "计算模型数据库");
+	calculation->setText(0, "计算模型数据管理");
 	calculation->setData(0, Qt::UserRole, "Calculation");
 	calculation->setIcon(0, checked_icon);
 
@@ -1401,6 +1407,7 @@ void GFTreeModelWidget::updataIcon()
 	auto judgementPropertyInfo = ins->GetJudgementPropertyInfo();
 	auto insulatingheatPropertyInfo = ins->GetInsulatingheatPropertyInfo();
 	auto outheatPropertyInfo = ins->GetOutheatPropertyInfo();
+	auto nozzlePropertyInfo = ins->GetNozzlePropertyInfo();
 	auto fallAnalysisResultInfo = ins->GetFallAnalysisResultInfo();
 	auto fastCombustionAnalysisResultInfo = ins->GetFastCombustionAnalysisResultInfo();
 	auto slowCombustionAnalysisResultInfo = ins->GetSlowCombustionAnalysisResultInfo();
@@ -1545,13 +1552,13 @@ void GFTreeModelWidget::updataIcon()
 					}
 				}
 			}
-			else if (child->child(j)->text(0).contains("数据库"))
+			else if (child->child(j)->text(0).contains("数据管理"))
 			{
 				QTreeWidgetItem *clChild = child->child(j);
 				int clChildCount = clChild->childCount();
 				for (int m = 0; m < clChildCount; ++m) {
 
-					if (clChild->child(m)->text(0).contains("标准数据库"))
+					if (clChild->child(m)->text(0).contains("标准数据管理"))
 					{
 						if (!judgementPropertyInfo.isChecked)
 						{
@@ -1562,7 +1569,7 @@ void GFTreeModelWidget::updataIcon()
 							clChild->child(m)->setIcon(0, checked_icon);
 						}
 					}
-					else if (clChild->child(m)->text(0).contains("材料数据库"))
+					else if (clChild->child(m)->text(0).contains("材料数据管理"))
 					{
 						QTreeWidgetItem *clChild_child = clChild->child(m);
 						int clChildCount = clChild_child->childCount();
@@ -1611,8 +1618,19 @@ void GFTreeModelWidget::updataIcon()
 									clChild_child->child(n)->setIcon(0, checked_icon);
 								}
 							}
+							if (clChild_child->child(n)->text(0).contains("喷管材料"))
+							{
+								if (!nozzlePropertyInfo.isChecked)
+								{
+									clChild_child->child(n)->setIcon(0, error_icon);
+								}
+								else
+								{
+									clChild_child->child(n)->setIcon(0, checked_icon);
+								}
+							}
 						}
-						if (outheatPropertyInfo.isChecked && insulatingheatPropertyInfo.isChecked && propellantInfo.isChecked && steelInfo.isChecked)
+						if (outheatPropertyInfo.isChecked && insulatingheatPropertyInfo.isChecked && propellantInfo.isChecked && steelInfo.isChecked && nozzlePropertyInfo.isChecked)
 						{
 							clChild_child->setIcon(0, checked_icon);
 						}

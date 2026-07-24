@@ -80,8 +80,11 @@ public:
 
 	qreal calculateMinValue(const QVector<QPointF>& series, bool isX);
 
-	void createChartDataGroup(QLineSeries*& lineSeries, QScatterSeries*& scatterSeries,
+	void createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries,
 		const QString& name, const QColor& color);
+
+	// 插值平滑
+	QVector<QPointF> bezierSmooth(const QVector<QPointF>& src, int subdiv = 8);
 
 
 private slots:
@@ -138,11 +141,11 @@ private:
 	QChartView* m_chartView = nullptr;
 	QChart* m_chart = nullptr;              // 图表核心
 	// 每组数据：1条曲线 + 1个散点集（关键修改）
-	QLineSeries* m_lineSeries1 = nullptr;   // 第一组曲线
+	QSplineSeries* m_lineSeries1 = nullptr;   // 第一组曲线
 	QScatterSeries* m_scatter1 = nullptr;   // 第一组圆点
-	QLineSeries* m_lineSeries2 = nullptr;   // 第二组曲线
+	QSplineSeries* m_lineSeries2 = nullptr;   // 第二组曲线
 	QScatterSeries* m_scatter2 = nullptr;   // 第二组圆点
-	QLineSeries* m_lineSeries3 = nullptr;   // 第三组曲线
+	QSplineSeries* m_lineSeries3 = nullptr;   // 第三组曲线
 	QScatterSeries* m_scatter3 = nullptr;   // 第三组圆点
 	QValueAxis* m_axisX = nullptr;          // X轴
 	QValueAxis* m_axisY = nullptr;
