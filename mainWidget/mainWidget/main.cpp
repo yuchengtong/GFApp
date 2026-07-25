@@ -188,11 +188,11 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationName("固体发动机安全性分析与评估系统");
 
     mainWidget w;
-    StartDialog startDialog;
-    if (startDialog.exec() != QDialog::Accepted) 
-    {
-        return 0;
-    }
+    //StartDialog startDialog;
+    //if (startDialog.exec() != QDialog::Accepted) 
+    //{
+    //    return 0;
+    //}
 
     w.showMaximized();
     return a.exec();

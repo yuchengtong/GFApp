@@ -3112,7 +3112,7 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 	};
 
 	// ========== 处理壳体网格 ==========
-	std::vector<double> shellNodeValues;
+	std::vector<double> shellMeshNodeValues;
 	{
 		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -3124,12 +3124,12 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			shellNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 处理喷管网格 ==========
+	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
@@ -3150,26 +3150,41 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 		}
 	}
 
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
 	// ========== 显示壳体网格 ==========
 	{
 		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
-		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		shellMesh->SetDataSource(shellMeshData);
+		shellMesh->SetDataSource(meshData90);
 
-		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
 			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		shellNodal->SetColors(shellColorMap);
-		shellMesh->AddBuilder(shellNodal);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
 		context->Display(shellMesh, Standard_True);
 	}
 
-	// ========== 显示喷管网格 ==========
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
@@ -3186,6 +3201,25 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -3774,199 +3808,139 @@ bool APISetNodeValue::SetPropellantSlowCombustionTempNephogram(OccView* occView,
 //枪击试验
 bool APISetNodeValue::SetShellShootStressResult(OccView* occView, std::vector<double>& nodeValues)
 {
+	nodeValues.clear();
+
 	Handle(AIS_InteractiveContext) context = occView->getContext();
-	Handle(V3d_View) view = occView->getView();
 
-	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
+	const auto& shootStressResult = ModelDataManager::GetInstance()->GetShootStressResult();
+	const double max_value = shootStressResult.metalsMaxStress;
+	const double min_value = shootStressResult.metalsMinStress;
 
-	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-	Point p0{ (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0,
-		(modelMeshInfo.propellant_y_min + modelMeshInfo.propellant_y_max) / 2.0 };
-	Point p1{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_min };
-	Point p2{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_min };
-	Point p3{ modelMeshInfo.propellant_x_max, modelMeshInfo.propellant_y_max };
-	Point p4{ modelMeshInfo.propellant_x_min, modelMeshInfo.propellant_y_max };
+	const auto& modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	const auto& modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 
-	// 从角点计算矩形边界参数
-	const double x_min = modelMeshInfo.propellant_x_min;
-	const double x_max = modelMeshInfo.propellant_x_max;
-	const double y_min = modelMeshInfo.propellant_y_min;
-	const double y_max = modelMeshInfo.propellant_y_max;
+	// 预计算旋转中心
+	const double rotCenterX = (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0;
+	const double rotCenterY = (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0;
 
+	// 椭圆参数
+	const double h = (modelMeshInfo.propellant_x_min + modelMeshInfo.propellant_x_max) / 2.0;
+	const double k = modelMeshInfo.propellant_y_min;
+	const double semi_major_z_1 = modelMeshInfo.propellant_y_max - modelMeshInfo.propellant_y_min;
+	const double semi_minor_x_1 = semi_major_z_1 / 3.0;
 
-	auto shootStressResult = ModelDataManager::GetInstance()->GetShootStressResult();
-	auto max_value = shootStressResult.propellantsMaxStress;
-	auto min_value = shootStressResult.propellantsMinStress;
-
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
-
-	// 创建旋转网格
-	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
-	//auto shape = RotateAIS_ShapeXY(aisShape, angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-
-	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-	mesh->SetDataSource(meshData90);
-
-	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
-	const double k = y_min;                          // 椭圆中心 Z（底边）
-	const double semi_major_z_1 = y_max - y_min;   // 最大椭圆的 b
-	const double semi_minor_x_1 = semi_major_z_1 / 3.0;    // 最大椭圆的 a
-
-	std::vector<std::pair<double, double>> ellipses = {
-		{12,semi_major_z_1 * 0.4},
-		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.45},
-		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.5},
-		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
-		{semi_minor_x_1 * 0.35, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.4, semi_major_z_1 * 0.65},
-		{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.7},
-		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
-		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.9}
+	// ========== 椭圆层级定义（从内到外） =========
+	const std::vector<std::pair<double, double>> ellipses = {
+		{12.0,                    semi_major_z_1 * 0.4},
+		{semi_minor_x_1 * 0.2,    semi_major_z_1 * 0.45},
+		{semi_minor_x_1 * 0.25,   semi_major_z_1 * 0.5},
+		{semi_minor_x_1 * 0.3,    semi_major_z_1 * 0.55},
+		{semi_minor_x_1 * 0.35,   semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.4,    semi_major_z_1 * 0.65},
+		{semi_minor_x_1 * 0.45,   semi_major_z_1 * 0.7},
+		{semi_minor_x_1 * 0.5,    semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.55,   semi_major_z_1 * 0.9},
+		{semi_minor_x_1 * 0.6,    semi_major_z_1 * 1.0}   // 新增：第10层，修复越界
 	};
 
-	// cx    // 椭圆中心 x
-	// cz    // 椭圆中心 y
-	// a     // 椭圆长半轴
-	// b     // 椭圆短半轴
 	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
+		if (a <= gp::Resolution() || b <= gp::Resolution())
+			return false;
 		double dx = x - cx;
 		double dz = z - cz;
-		if (a <= gp::Resolution() || b <= gp::Resolution()) return false;
-		double value = (dx * dx) / (a * a) + (dz * dz) / (b * b);
-		return value <= 1.0 + 1e-9; // 容差处理
+		return (dx * dx) / (a * a) + (dz * dz) / (b * b) <= 1.0 + 1e-9;
 	};
 
-
-	// Lambda：根据椭圆层级计算节点值
-	auto calculateEllipseValue = [&](double x, double y) -> double
-	{
-		if (isInEllipse(x, y, h, k, ellipses[0].first, ellipses[0].second))
-		{
-			return -1;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[1].first, ellipses[1].second))
-		{
-			return max_value;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[2].first, ellipses[2].second))
-		{
-			return min_value + (max_value - min_value) * 7.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[3].first, ellipses[3].second))
-		{
-			return min_value + (max_value - min_value) * 6.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[4].first, ellipses[4].second))
-		{
-			return min_value + (max_value - min_value) * 5.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[5].first, ellipses[5].second))
-		{
-			return min_value + (max_value - min_value) * 4.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[6].first, ellipses[6].second))
-		{
-			return min_value + (max_value - min_value) * 3.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[7].first, ellipses[7].second))
-		{
-			return min_value + (max_value - min_value) * 2.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[8].first, ellipses[8].second))
-		{
-			return min_value + (max_value - min_value) * 1.5 / 9.0;
-		}
-		else if (isInEllipse(x, y, h, k, ellipses[9].first, ellipses[9].second))
-		{
-			return min_value + (max_value - min_value) * 0.5 / 9.0;
-		}
-		else
-		{
-			return min_value;
-		}
-
+	// 公式化计算层级值，替代 10 层 if-else
+	auto getLevelValue = [&](size_t level) -> double {
+		if (level == 0) return -1.0;        // 最内层特殊标记
+		if (level == 1) return max_value;   // 第1层取最大值
+		return min_value + (max_value - min_value) * (9.5 - static_cast<double>(level)) / 9.0;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
-	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	auto calculateEllipseValue = [&](double x, double y) -> double {
+		for (size_t i = 0; i < ellipses.size(); ++i) {
+			if (isInEllipse(x, y, h, k, ellipses[i].first, ellipses[i].second))
+				return getLevelValue(i);
+		}
+		return min_value;
+	};
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
-		{
+	// ========== 通用：从网格提取节点应力值 ==========
+	auto extractMeshValues = [&](const auto& meshPtr, std::vector<double>& outValues) -> bool {
+		if (meshPtr.IsNull())
+			return false;
+
+		TColStd_PackedMapOfInteger nodes = meshPtr->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) coords = meshPtr->GetmyNodeCoords();
+
+		outValues.reserve(nodes.Extent());
+
+		for (TColStd_PackedMapOfInteger::Iterator it(nodes); it.More(); it.Next()) {
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
-
-			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
-			nodeValues.push_back(value);
+			double x = coords->Value(nodeID, 1);
+			double y = coords->Value(nodeID, 2);
+			outValues.push_back(calculateEllipseValue(x, y));
 		}
-	}
+		return true;
+	};
+
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
+	extractMeshValues(modelMeshInfo.shellMesh, shellMeshNodeValues);
+	nodeValues.insert(nodeValues.end(), shellMeshNodeValues.begin(), shellMeshNodeValues.end());
 
 	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
-	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
-
-	if (hasNozzleMesh)
-	{
-		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
-
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
-		{
-			int nodeID = it.Key();
-			double x = nozzleNodeCoords->Value(nodeID, 1);
-			double y = nozzleNodeCoords->Value(nodeID, 2);
-
-			double value = calculateEllipseValue(x, y);
-			nozzleNodeValues.push_back(value);
-			nodeValues.push_back(value);
-		}
+	bool hasNozzleMesh = extractMeshValues(modelMeshInfo.nozzleMesh, nozzleNodeValues);
+	if (hasNozzleMesh) {
+		nodeValues.insert(nodeValues.end(), nozzleNodeValues.begin(), nozzleNodeValues.end());
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
-
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+	// ========== 处理推进剂网格（固定值 -1.0） ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+	if (hasPropellantMesh) {
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		size_t nodeCount = propellantNodes.Extent();
+		propellantNodeValues.assign(nodeCount, -1.0);
+		nodeValues.insert(nodeValues.end(), nodeCount, -1.0);
 	}
 
-	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh)
-	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
-		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		nozzleMesh->SetDataSource(nozzleMeshData);
+	// ========== 通用：创建带节点颜色的网格对象 ==========
+	auto buildColoredMesh = [&](const auto& meshPtr, const std::vector<double>& values)->Handle(MeshVS_Mesh) {
+		if (meshPtr.IsNull() || values.empty())
+			return nullptr;
 
-		MeshVS_DataMapOfIntegerColor nozzleColorMap = GetMeshDataMap(nozzleNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
-			nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		nozzleNodal->SetColors(nozzleColorMap);
-		nozzleMesh->AddBuilder(nozzleNodal);
-		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
+		auto meshData = meshPtr->RotateXY(90, rotCenterX, rotCenterY);
+		mesh->SetDataSource(meshData);
 
+		MeshVS_DataMapOfIntegerColor colorMap = GetMeshDataMap(values, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) nodalBuilder = new MeshVS_NodalColorPrsBuilder(
+			mesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		nodalBuilder->SetColors(colorMap);
+		mesh->AddBuilder(nodalBuilder);
+		mesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		return mesh;
+	};
+
+	// ========== 构建网格对象 ==========
+	// BUGFIX: 原代码 mesh 变量定义在内部作用域，末尾 Display 时已经失效，导致编译错误
+	Handle(MeshVS_Mesh) shellMesh = buildColoredMesh(modelMeshInfo.shellMesh, shellMeshNodeValues);
+	Handle(MeshVS_Mesh) nozzleMesh = buildColoredMesh(modelMeshInfo.nozzleMesh, nozzleNodeValues);
+	Handle(MeshVS_Mesh) propellantMesh = buildColoredMesh(modelMeshInfo.propellantMesh, propellantNodeValues);
+
+	// ========== 显示 ==========
+	context->EraseAll(true);
+
+	if (!shellMesh.IsNull())
+		context->Display(shellMesh, Standard_True);
+	if (!nozzleMesh.IsNull())
 		context->Display(nozzleMesh, Standard_True);
-	}
+	if (!propellantMesh.IsNull())
+		context->Display(propellantMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -4129,8 +4103,8 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 
 
 	auto shootStrainResult = ModelDataManager::GetInstance()->GetShootStrainResult();
-	auto max_value = shootStrainResult.propellantsMaxStrain;
-	auto min_value = shootStrainResult.propellantsMinStrain;
+	auto max_value = shootStrainResult.metalsMaxStrain;
+	auto min_value = shootStrainResult.metalsMinStrain;
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
 	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
@@ -4225,20 +4199,20 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -4264,22 +4238,39 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -4299,6 +4290,23 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -4546,20 +4554,20 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		}
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1); // 节点x坐标
-			double y = propellantNodeCoords->Value(nodeID, 2); // 节点z坐标
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -4585,22 +4593,38 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -4620,6 +4644,25 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -4649,12 +4692,8 @@ bool APISetNodeValue::SetPropellantShootTemperatureResult(OccView* occView, std:
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto shootTemperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
-	auto raw_min = shootTemperatureResult.metalsMaxTemperature;
-	auto raw_max = shootTemperatureResult.metalsMinTemperature;
-
-	// 保证 min_value <= max_value
-	double min_value = std::min(raw_min, raw_max);
-	double max_value = std::max(raw_min, raw_max);
+	auto max_value = shootTemperatureResult.propellantsMaxTemperature;
+	auto min_value = shootTemperatureResult.propellantsMinTemperature;
 
 
 	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
@@ -4782,8 +4821,8 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto shootOverpressureResult = ModelDataManager::GetInstance()->GetShootOverpressureResult();
-	auto max_value = shootOverpressureResult.propellantsMaxOverpressure;
-	auto min_value = shootOverpressureResult.propellantsMinOverpressure;
+	auto max_value = shootOverpressureResult.metalsMaxOverpressure;
+	auto min_value = shootOverpressureResult.metalsMinOverpressure;
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
@@ -4824,18 +4863,20 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 		else return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -4858,23 +4899,38 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -4895,6 +4951,25 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 		context->Display(nozzleMesh, Standard_True);
 	}
 
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
+	}
+
 	occView->fitAll();
 	return true;
 }
@@ -4904,7 +4979,6 @@ bool APISetNodeValue::SetPropellantShootOverpressureResult(OccView* occView, std
 	Handle(V3d_View) view = occView->getView();
 
 	auto shootSettingInfo = ModelDataManager::GetInstance()->GetShootSettingInfo();
-
 
 	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
@@ -5194,11 +5268,11 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 
 
 	auto jetImpactStressResult = ModelDataManager::GetInstance()->GetJetImpactStressResult();
-	auto max_value = jetImpactStressResult.propellantsMaxStress;
-	auto min_value = jetImpactStressResult.propellantsMinStress;
+	auto max_value = jetImpactStressResult.metalsMaxStress;
+	auto min_value = jetImpactStressResult.metalsMinStress;
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -5206,7 +5280,7 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -5291,23 +5365,21 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 	};
 
 
-		// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
-			{
-				int nodeID = it.Key();
-				double x = propellantNodeCoords->Value(nodeID, 1);
-				double y = propellantNodeCoords->Value(nodeID, 2);
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
-				double value = calculateEllipseValue(x, y);
-				propellantNodeValues.push_back(value);
-				nodeValues.push_back(value);
-			}
+			double value = calculateEllipseValue(x, y);
+			shellMeshNodeValues.push_back(value);
+			nodeValues.push_back(value);
 		}
 	}
 
@@ -5334,22 +5406,38 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -5369,6 +5457,25 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -5546,11 +5653,11 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 
 
 	auto jetImpactStrainResult = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
-	auto max_value = jetImpactStrainResult.propellantsMaxStrain;
-	auto min_value = jetImpactStrainResult.propellantsMinStrain;
+	auto max_value = jetImpactStrainResult.metalsMaxStrain;
+	auto min_value = jetImpactStrainResult.metalsMinStrain;
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -5558,7 +5665,7 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -5643,23 +5750,21 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 	};
 
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
-			{
-				int nodeID = it.Key();
-				double x = propellantNodeCoords->Value(nodeID, 1);
-				double y = propellantNodeCoords->Value(nodeID, 2);
+			int nodeID = it.Key();
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
-				double value = calculateEllipseValue(x, y);
-				propellantNodeValues.push_back(value);
-				nodeValues.push_back(value);
-			}
+			double value = calculateEllipseValue(x, y);
+			shellMeshNodeValues.push_back(value);
+			nodeValues.push_back(value);
 		}
 	}
 
@@ -5674,34 +5779,48 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 
 		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
 		{
-			{
-				int nodeID = it.Key();
-				double x = nozzleNodeCoords->Value(nodeID, 1);
-				double y = nozzleNodeCoords->Value(nodeID, 2);
+			int nodeID = it.Key();
+			double x = nozzleNodeCoords->Value(nodeID, 1);
+			double y = nozzleNodeCoords->Value(nodeID, 2);
 
-				double value = calculateEllipseValue(x, y);
-				nozzleNodeValues.push_back(value);
-				nodeValues.push_back(value);
-			}
+			double value = calculateEllipseValue(x, y);
+			nozzleNodeValues.push_back(value);
+			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -5721,6 +5840,25 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -5889,8 +6027,8 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto jetImpactTemperatureResult = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
-	auto max_value = jetImpactTemperatureResult.propellantsMaxTemperature;
-	auto min_value = jetImpactTemperatureResult.propellantsMinTemperature;
+	auto max_value = jetImpactTemperatureResult.metalsMaxTemperature;
+	auto min_value = jetImpactTemperatureResult.metalsMinTemperature;
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
@@ -5931,18 +6069,20 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 		else return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -5951,41 +6091,60 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -6000,6 +6159,25 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -6168,8 +6346,8 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto jetImpactOverpressureResult = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
-	auto max_value = jetImpactOverpressureResult.propellantsMaxOverpressure;
-	auto min_value = jetImpactOverpressureResult.propellantsMinOverpressure;
+	auto max_value = jetImpactOverpressureResult.metalsMaxOverpressure;
+	auto min_value = jetImpactOverpressureResult.metalsMinOverpressure;
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
@@ -6210,18 +6388,20 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 		else return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -6230,41 +6410,60 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -6279,6 +6478,25 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -6600,12 +6818,12 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 
 
 	auto fragmentationImpactStressResult = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
-	auto max_value = fragmentationImpactStressResult.propellantsMaxStress;
-	auto min_value = fragmentationImpactStressResult.propellantsMinStress;
+	auto max_value = fragmentationImpactStressResult.metalsMaxStress;
+	auto min_value = fragmentationImpactStressResult.metalsMinStress;
 
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -6613,7 +6831,7 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -6697,20 +6915,20 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -6736,22 +6954,38 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -6771,7 +7005,25 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
 
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -6948,12 +7200,12 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 
 
 	auto fragmentationImpactStrainResult = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
-	auto max_value = fragmentationImpactStrainResult.propellantsMaxStrain;
-	auto min_value = fragmentationImpactStrainResult.propellantsMinStrain;
+	auto max_value = fragmentationImpactStrainResult.metalsMaxStrain;
+	auto min_value = fragmentationImpactStrainResult.metalsMinStrain;
 
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -6961,7 +7213,7 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -7045,20 +7297,20 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -7084,22 +7336,38 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
@@ -7119,7 +7387,25 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
 
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -7287,10 +7573,8 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto fastCombustionTemperatureResult = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
-	auto raw_max = fastCombustionTemperatureResult.propellantsMaxTemperature;
-	auto raw_min = fastCombustionTemperatureResult.propellantsMinTemperature;
-	double min_value = std::min(raw_min, raw_max);
-	double max_value = std::max(raw_min, raw_max);
+	auto max_value = fastCombustionTemperatureResult.metalsMaxTemperature;
+	auto min_value = fastCombustionTemperatureResult.metalsMinTemperature;
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
@@ -7331,18 +7615,20 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 		else return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -7351,41 +7637,60 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -7400,6 +7705,25 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -7570,8 +7894,8 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto fragmentationImpactOverpressureResult = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
-	auto max_value = fragmentationImpactOverpressureResult.propellantsMaxOverpressure;
-	auto min_value = fragmentationImpactOverpressureResult.propellantsMinOverpressure;
+	auto max_value = fragmentationImpactOverpressureResult.metalsMaxOverpressure;
+	auto min_value = fragmentationImpactOverpressureResult.metalsMinOverpressure;
 
 	const double h = (x_min + x_max) / 2.0;
 	const double k = y_min;
@@ -7612,18 +7936,20 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 		else return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -7632,41 +7958,60 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -7683,6 +8028,25 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 		context->Display(nozzleMesh, Standard_True);
 	}
 
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
+	}
+
 	occView->fitAll();
 	return true;
 }
@@ -7690,7 +8054,6 @@ bool APISetNodeValue::SetPropellantFragmentationOverpressureResult(OccView* occV
 {
 	Handle(AIS_InteractiveContext) context = occView->getContext();
 	Handle(V3d_View) view = occView->getView();
-
 
 	auto fragmentationSettingInfo = ModelDataManager::GetInstance()->GetFragmentationSettingInfo();
 
@@ -8004,12 +8367,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 
 
 	auto explosiveBlastStressResult = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
-	auto max_value = explosiveBlastStressResult.propellantsMaxStress;
-	auto min_value = explosiveBlastStressResult.propellantsMinStress;
+	auto max_value = explosiveBlastStressResult.metalsMaxStress;
+	auto min_value = explosiveBlastStressResult.metalsMinStress;
 
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -8017,7 +8380,7 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -8071,25 +8434,25 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 处理喷管网格 ==========
+	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
@@ -8110,25 +8473,41 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
@@ -8145,6 +8524,25 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -8305,12 +8703,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 
 
 	auto explosiveBlastStrainResult = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
-	auto max_value = explosiveBlastStrainResult.propellantsMaxStrain;
-	auto min_value = explosiveBlastStrainResult.propellantsMinStrain;
+	auto max_value = explosiveBlastStrainResult.metalsMaxStrain;
+	auto min_value = explosiveBlastStrainResult.metalsMinStrain;
 
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -8318,7 +8716,7 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -8372,25 +8770,25 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 处理喷管网格 ==========
+	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
@@ -8411,25 +8809,41 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
@@ -8446,6 +8860,25 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -8597,8 +9030,8 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto explosiveBlastTemperatureResult = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
-	auto max_value = explosiveBlastTemperatureResult.propellantsMaxTemperature;
-	auto min_value = explosiveBlastTemperatureResult.propellantsMinTemperature;
+	auto max_value = explosiveBlastTemperatureResult.metalsMaxTemperature;
+	auto min_value = explosiveBlastTemperatureResult.metalsMinTemperature;
 
 	// 椭圆公共中心（底边中点）
 	const double cx = (x_min + x_max) / 2.0;
@@ -8640,18 +9073,20 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -8660,41 +9095,60 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -8709,6 +9163,25 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -8859,8 +9332,8 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto explosiveBlastOverpressureResult = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
-	auto max_value = explosiveBlastOverpressureResult.propellantsMaxOverpressure;
-	auto min_value = explosiveBlastOverpressureResult.propellantsMinOverpressure;
+	auto max_value = explosiveBlastOverpressureResult.metalsMaxOverpressure;
+	auto min_value = explosiveBlastOverpressureResult.metalsMinOverpressure;
 
 	const double cx = (x_min + x_max) / 2.0;
 	const double cz = y_min;
@@ -8899,18 +9372,20 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -8919,41 +9394,60 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -8970,6 +9464,25 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 		context->Display(nozzleMesh, Standard_True);
 	}
 
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
+	}
+
 	occView->fitAll();
 	return true;
 }
@@ -8982,9 +9495,6 @@ bool APISetNodeValue::SetPropellantExplosiveBlastOverpressureResult(OccView* occ
 	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
 
-
-	//auto high = fallSettingInfo.high;
-	//auto angle = fallSettingInfo.angle;
 	auto youngModulus = steelPropertyInfoInfo.modulus;
 
 	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
@@ -9262,12 +9772,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 
 
 	auto sacrificeExplosionStressResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
-	auto max_value = sacrificeExplosionStressResult.propellantsMaxStress;
-	auto min_value = sacrificeExplosionStressResult.propellantsMinStress;
+	auto max_value = sacrificeExplosionStressResult.metalsMaxStress;
+	auto min_value = sacrificeExplosionStressResult.metalsMinStress;
 
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -9275,7 +9785,7 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -9329,25 +9839,25 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 处理喷管网格 ==========
+	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
@@ -9368,25 +9878,41 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
@@ -9403,6 +9929,25 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -9565,12 +10110,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 
 
 	auto sacrificeExplosionStrainResult = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
-	auto max_value = sacrificeExplosionStrainResult.propellantsMaxStrain;
-	auto min_value = sacrificeExplosionStrainResult.propellantsMinStrain;
+	auto max_value = sacrificeExplosionStrainResult.metalsMaxStrain;
+	auto min_value = sacrificeExplosionStrainResult.metalsMinStrain;
 
 
-	TColStd_PackedMapOfInteger allnode = modelMeshInfo.propellantMesh->GetAllNodes();
-	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+	TColStd_PackedMapOfInteger allnode = modelMeshInfo.shellMesh->GetAllNodes();
+	Handle(TColStd_HArray2OfReal) nodecoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
 	// 创建旋转网格
 	//Handle(AIS_Shape) aisShape = modelGeometryInfo.propellantAisShape;
@@ -9578,7 +10123,7 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 	//	(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData90);
 
@@ -9632,25 +10177,25 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
 		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 处理喷管网格 ==========
+	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
@@ -9671,25 +10216,41 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->EraseAll(true);
+		context->Display(shellMesh, Standard_True);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
@@ -9706,6 +10267,25 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -9859,8 +10439,8 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto sacrificeExplosionTemperatureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
-	auto max_value = sacrificeExplosionTemperatureResult.propellantsMaxTemperature;
-	auto min_value = sacrificeExplosionTemperatureResult.propellantsMinTemperature;
+	auto max_value = sacrificeExplosionTemperatureResult.metalsMaxTemperature;
+	auto min_value = sacrificeExplosionTemperatureResult.metalsMinTemperature;
 
 	const double cx = (x_min + x_max) / 2.0;
 	const double cz = y_min;
@@ -9899,18 +10479,20 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -9919,41 +10501,60 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -9968,6 +10569,25 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
@@ -10118,8 +10738,8 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto sacrificeExplosionOverpressureResult = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
-	auto max_value = sacrificeExplosionOverpressureResult.propellantsMaxOverpressure;
-	auto min_value = sacrificeExplosionOverpressureResult.propellantsMinOverpressure;
+	auto max_value = sacrificeExplosionOverpressureResult.metalsMaxOverpressure;
+	auto min_value = sacrificeExplosionOverpressureResult.metalsMinOverpressure;
 
 	const double cx = (x_min + x_max) / 2.0;
 	const double cz = y_min;
@@ -10158,18 +10778,20 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 		return min_value;
 	};
 
-	// ========== 处理推进剂网格 ==========
-	std::vector<double> propellantNodeValues;
+	// ========== 处理壳体网格 ==========
+	std::vector<double> shellMeshNodeValues;
 	{
-		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
-		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
-			double x = propellantNodeCoords->Value(nodeID, 1);
-			double y = propellantNodeCoords->Value(nodeID, 2);
+			double x = shellNodeCoords->Value(nodeID, 1);
+			double y = shellNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
-			propellantNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -10178,41 +10800,60 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
 
-		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next()) {
+		for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+		{
 			int nodeID = it.Key();
 			double x = nozzleNodeCoords->Value(nodeID, 1);
 			double y = nozzleNodeCoords->Value(nodeID, 2);
+
 			double value = calculateEllipseValue(x, y);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示推进剂网格 ==========
-	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
-		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		propellantMesh->SetDataSource(meshData90);
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
 
-		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+	if (hasPropellantMesh)
+	{
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
+	}
+
+	// ========== 显示壳体网格 ==========
+	{
+		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
 		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
 		propellantNodal->SetColors(propellantColorMap);
-		propellantMesh->AddBuilder(propellantNodal);
-		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->EraseAll(true);
-		context->Display(propellantMesh, Standard_True);
+		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
-	if (hasNozzleMesh) {
+	if (hasNozzleMesh)
+	{
 		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
@@ -10227,6 +10868,25 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
 
 		context->Display(nozzleMesh, Standard_True);
+	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+
+		context->Display(propellantMesh, Standard_True);
 	}
 
 	occView->fitAll();
