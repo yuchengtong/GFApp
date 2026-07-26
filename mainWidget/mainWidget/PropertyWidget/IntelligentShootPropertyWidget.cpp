@@ -94,7 +94,7 @@ void IntelligentShootPropertyWidget::initWidget()
 
 	}
 
-	QStringList valueLabels = { " ","วนป๗สิั้","1", "3", "3", "620","820","3" };
+	QStringList valueLabels = { " ","วนป๗สิั้","1", "3", "5", "620","820","5" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{

@@ -94,7 +94,7 @@ void IntelligentFastCombustionPropertyWidget::initWidget()
 
 	}
 
-	QStringList valueLabels = { " ","快速烤燃试验","1", "3", "3", "600","800","3" };
+	QStringList valueLabels = { " ","快速烤燃试验","1", "3", "5", "600","800","5" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{

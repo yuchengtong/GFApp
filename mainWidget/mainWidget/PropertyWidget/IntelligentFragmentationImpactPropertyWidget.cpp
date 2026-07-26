@@ -94,7 +94,7 @@ void IntelligentFragmentationImpactPropertyWidget::initWidget()
 
 	}
 
-	QStringList valueLabels = { " ","ÆÆÆ¬×²»÷ÊÔÑé","1", "3", "3", "1630","1830","3" };
+	QStringList valueLabels = { " ","ÆÆÆ¬×²»÷ÊÔÑé","1", "3", "5", "1630","1830","5" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{

@@ -8,6 +8,16 @@
 #include <QSplitter>
 #include <QHeaderView>
 
+QLegendMarker* getSeriesMarker(QChart* chart, QAbstractSeries* series)
+{
+	for (auto marker : chart->legend()->markers())
+	{
+		if (marker->series() == series)
+			return marker;
+	}
+	return nullptr;
+}
+
 
 IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	: QWidget(parent)
@@ -455,9 +465,9 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_chart = new QChart();
 	m_chart->setTitle("正交试验");
 	m_chart->setMargins(QMargins(15, 15, 15, 80));
-	createChartDataGroup(m_lineSeries1, m_scatter1, "数据组1", Qt::red);
-	createChartDataGroup(m_lineSeries2, m_scatter2, "数据组2", Qt::blue);
-	createChartDataGroup(m_lineSeries3, m_scatter3, "数据组3", Qt::green);
+	createChartDataGroup(m_lineSeries1, m_scatter1, "壳体厚度:1mm", Qt::red);
+	createChartDataGroup(m_lineSeries2, m_scatter2, "壳体厚度:2mm", Qt::blue);
+	createChartDataGroup(m_lineSeries3, m_scatter3, "壳体厚度:3mm", Qt::green);
 
 	m_chart->addSeries(m_lineSeries1);
 	m_chart->addSeries(m_scatter1);
@@ -465,9 +475,18 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_chart->addSeries(m_scatter2);
 	m_chart->addSeries(m_lineSeries3);
 	m_chart->addSeries(m_scatter3);
+	if (auto marker = getSeriesMarker(m_chart, m_scatter1))
+		marker->setVisible(false);
+	if (auto marker = getSeriesMarker(m_chart, m_scatter2))
+		marker->setVisible(false);
+	if (auto marker = getSeriesMarker(m_chart, m_scatter3))
+		marker->setVisible(false);
 
-	m_chart->legend()->hide();
+	//m_chart->legend()->hide();
 	//m_chart->legend()->setAlignment(Qt::AlignBottom);
+	m_chart->legend()->setVisible(true);
+	m_chart->legend()->setAlignment(Qt::AlignBottom);
+	m_chart->legend()->setFont(QFont("Microsoft YaHei", 9));
 
 	// 4. 创建X轴和Y轴（初始范围适配空数据）
 	m_axisX = new QValueAxis();
@@ -852,6 +871,36 @@ void IntelligentAnalyWidget::dataChange(int index)
 			data3.append(QPointF(m_tableWidget->item(row, x_col)->text().toDouble(), m_tableWidget->item(row, y_col)->text().toDouble()));
 		}
 	}
+
+	if (x_index == 0)
+	{
+
+		QString text = m_tableWidget->item(0, 2)->text();
+		int startIndex = text.indexOf('['); // 找到 '[' 的位置
+		int endIndex = text.indexOf(']'); // 找到 ']' 的位置
+
+		if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+			QString titleText = text.mid(0, startIndex) + ":";
+			QString extractedText = text.mid(startIndex + 1, endIndex - startIndex - 1);
+
+			QString leg1 = m_tableWidget->item(1, 2)->text();
+			QString leg2 = m_tableWidget->item(11, 2)->text();
+			QString leg3 = m_tableWidget->item(21, 2)->text();
+
+			m_lineSeries1->setName(titleText + leg1 + extractedText);
+			m_lineSeries2->setName(titleText + leg2 + extractedText);
+			m_lineSeries3->setName(titleText + leg3 + extractedText);
+
+		}
+	}
+	else
+	{
+		QString leg1, leg2, leg3;
+		m_lineSeries1->setName("壳体厚度:1mm");
+		m_lineSeries2->setName("壳体厚度:2mm");
+		m_lineSeries3->setName("壳体厚度:3mm");
+	}
+
 	updateChartData(data1, data2, data3, x_comboBox->currentText(), y_comboBox->currentText());
 }
 
@@ -905,6 +954,14 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 	m_axisY->setRange(minY * 0.9, maxY * 1.1);
 	m_axisX->setTickCount(4);
 	m_axisY->setTickCount(4);
+
+	// 全局过滤：隐藏所有散点图例，兜底防止切换工况出现空方块
+	auto legend = m_chart->legend();
+	for (auto marker : legend->markers())
+	{
+		if (qobject_cast<QScatterSeries*>(marker->series()))
+			marker->setVisible(false);
+	} 
 	m_chartView->update();
 }
 
@@ -956,7 +1013,7 @@ void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries* &lineSeries, QS
 
 	// 2. 创建散点系列（只负责圆点）
 	scatterSeries = new QScatterSeries();
-	scatterSeries->setName(name);  // 与曲线同名，图例合并显示
+	//scatterSeries->setName(name);  // 与曲线同名，图例合并显示
 	scatterSeries->setMarkerShape(QScatterSeries::MarkerShapeCircle);  // 圆点（原生支持）
 	scatterSeries->setMarkerSize(8);                                  // 圆点大小（8px）
 	scatterSeries->setBrush(QBrush(color));                            // 圆点填充色

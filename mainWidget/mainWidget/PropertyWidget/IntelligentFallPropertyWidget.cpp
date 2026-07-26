@@ -94,7 +94,7 @@ void IntelligentFallPropertyWidget::initWidget()
 
 	}
 
-	QStringList valueLabels = { " ","ต๘ยไสิั้","1", "3", "3", "10","30","3" };
+	QStringList valueLabels = { " ","ต๘ยไสิั้","1", "3", "5", "10","90","5" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{

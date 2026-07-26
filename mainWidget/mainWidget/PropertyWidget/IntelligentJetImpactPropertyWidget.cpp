@@ -93,7 +93,7 @@ void IntelligentJetImpactPropertyWidget::initWidget()
 		}
 
 	}
-	QStringList valueLabels = { " ","射流冲击试验","1", "3", "3", "30","50","3" };
+	QStringList valueLabels = { " ","射流冲击试验","1", "3", "5", "30","50","5" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{
