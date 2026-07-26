@@ -2377,19 +2377,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 						Handle(AIS_InteractiveContext) context = occView->getContext();
 						context->EraseAll(true);
 
-
-						//info.nozzleMesh.Nullify();
-						//info.shellMesh.Nullify();
-						//info.propellantMesh.Nullify();
-						//info.heatInsulatingLayerMesh.Nullify();
-
-						//info.nozzleAisMesh.Nullify();
-						//info.shellAisMesh.Nullify();
-						//info.propellantAisMesh.Nullify();
-						//info.heatInsulatingLayerAisMesh.Nullify();
-
-
-
 						auto displayMesh = [&](const Handle(TriangleStructure)& meshData,
 							const QString& name,
 							const QColor& color)->Handle(AIS_Shape)
@@ -2421,7 +2408,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 
 							Handle(AIS_Shape) aisCompound = new AIS_Shape(compound);
 							aisCompound->SetColor(Quantity_Color(color.redF(), color.greenF(), color.blueF(), Quantity_TOC_RGB));
-							context->Display(aisCompound, Standard_True);
 							return aisCompound;
 						};
 
@@ -2429,7 +2415,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 						Handle(AIS_Shape) shellAis = displayMesh(info.shellMesh, "壳体", QColor(209, 214, 219));
 						Handle(AIS_Shape) propAis = displayMesh(info.propellantMesh, "推进剂", QColor(230, 97, 38));
 						Handle(AIS_Shape) heatAis = displayMesh(info.heatInsulatingLayerMesh, "绝热层", QColor(51, 153, 191));
-
+						
 						// 观测点采样
 						auto sampleMeshUniform = [&](const Handle(TriangleStructure)& meshData, int targetPoints) -> std::vector<gp_Pnt>
 						{
@@ -2511,12 +2497,216 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 							}
 						};
 
-						addSpheres(sampleMeshUniform(info.shellMesh, 100), 20.0);
-						addSpheres(sampleMeshUniform(info.nozzleMesh, 20), 20.0);
+						// 推进剂网格采样后，统一将 Z 坐标压平到指定平面
+						std::vector<gp_Pnt> propPoints = sampleMeshUniform(info.propellantMesh, 140);
+						for (auto& pt : propPoints)
+						{
+							pt.SetZ(info.propellant_z_min);
+						}
+						addSpheres(propPoints, 20.0);
+
+						// 喷嘴网格保持原样
+						addSpheres(sampleMeshUniform(info.nozzleMesh, 50), 20.0);
+
+						// ========== 1. 提取 shellMesh 底部点 + 四个角点 ==========
+						std::vector<gp_Pnt> shellBottomPoints;
+						double zTolerance = 2.0;  // Z 方向容差
+						double yTolerance = 2.0;  // Y 方向容差（找角点用）
+
+						// 四个角点
+						gp_Pnt corner_yMin_xMin, corner_yMin_xMax, corner_yMax_xMin, corner_yMax_xMax;
+						bool has_yMin_xMin = false, has_yMin_xMax = false, has_yMax_xMin = false, has_yMax_xMax = false;
+
+						{
+							auto shellNodes = info.shellMesh->GetAllNodes();
+							auto shellCoords = info.shellMesh->GetmyNodeCoords();
+
+							for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+							{
+								int nodeID = it.Key();
+								gp_Pnt pt(shellCoords->Value(nodeID, 1),
+									shellCoords->Value(nodeID, 2),
+									shellCoords->Value(nodeID, 3));
+
+								// 收集底部点
+								if (std::abs(pt.Z() - info.shell_z_min) < zTolerance)
+								{
+									shellBottomPoints.push_back(pt);
+
+									// 找 y = shell_y_min 时 x 最小/最大的点
+									if (std::abs(pt.Y() - info.shell_y_min) < yTolerance)
+									{
+										if (!has_yMin_xMin || pt.X() < corner_yMin_xMin.X())
+										{
+											corner_yMin_xMin = pt; has_yMin_xMin = true;
+										}
+										if (!has_yMin_xMax || pt.X() > corner_yMin_xMax.X())
+										{
+											corner_yMin_xMax = pt; has_yMin_xMax = true;
+										}
+									}
+
+									// 找 y = shell_y_max 时 x 最小/最大的点
+									if (std::abs(pt.Y() - info.shell_y_max) < yTolerance)
+									{
+										if (!has_yMax_xMin || pt.X() < corner_yMax_xMin.X())
+										{
+											corner_yMax_xMin = pt; has_yMax_xMin = true;
+										}
+										if (!has_yMax_xMax || pt.X() > corner_yMax_xMax.X())
+										{
+											corner_yMax_xMax = pt; has_yMax_xMax = true;
+										}
+									}
+								}
+							}
+						}
+
+						// ========== 2. 对底部点做 XY 空间均匀采样 ==========
+						std::vector<gp_Pnt> shellBottomSampled;
+						{
+							int targetPoints = 80;
+							if (!shellBottomPoints.empty() && targetPoints > 0)
+							{
+								double xMin = DBL_MAX, xMax = -DBL_MAX, yMin = DBL_MAX, yMax = -DBL_MAX;
+								for (const auto& pt : shellBottomPoints)
+								{
+									xMin = std::min(xMin, pt.X()); xMax = std::max(xMax, pt.X());
+									yMin = std::min(yMin, pt.Y()); yMax = std::max(yMax, pt.Y());
+								}
+
+								double dx = xMax - xMin, dy = yMax - yMin;
+								if (dx < Precision::Confusion() || dy < Precision::Confusion())
+								{
+									for (size_t i = 0; i < shellBottomPoints.size() && (int)shellBottomSampled.size() < targetPoints; ++i)
+										shellBottomSampled.push_back(shellBottomPoints[i]);
+								}
+								else
+								{
+									double area = dx * dy;
+									double blockSize = std::sqrt(area / targetPoints);
+									int nx = std::max(1, (int)(dx / blockSize));
+									int ny = std::max(1, (int)(dy / blockSize));
+
+									struct Block { std::vector<gp_Pnt> points; };
+									std::vector<std::vector<Block>> grid(nx, std::vector<Block>(ny));
+
+									for (const auto& pt : shellBottomPoints)
+									{
+										int ix = std::min((int)((pt.X() - xMin) / dx * nx), nx - 1);
+										int iy = std::min((int)((pt.Y() - yMin) / dy * ny), ny - 1);
+										grid[ix][iy].points.push_back(pt);
+									}
+
+									for (int ix = 0; ix < nx && (int)shellBottomSampled.size() < targetPoints; ++ix)
+										for (int iy = 0; iy < ny && (int)shellBottomSampled.size() < targetPoints; ++iy)
+										{
+											auto& block = grid[ix][iy];
+											if (block.points.empty()) continue;
+
+											double cx = xMin + (ix + 0.5) * dx / nx;
+											double cy = yMin + (iy + 0.5) * dy / ny;
+											gp_Pnt blockCenter(cx, cy, 0);
+
+											gp_Pnt bestPt = block.points[0];
+											double bestDist = blockCenter.SquareDistance(bestPt);
+
+											for (size_t j = 1; j < block.points.size(); ++j)
+											{
+												double dist = blockCenter.SquareDistance(block.points[j]);
+												if (dist < bestDist) { bestDist = dist; bestPt = block.points[j]; }
+											}
+											shellBottomSampled.push_back(bestPt);
+										}
+								}
+							}
+						}
+
+						// ========== 3. 强制加入四个角点（自动去重）==========
+						auto isDuplicate = [&](const gp_Pnt& pt, const std::vector<gp_Pnt>& list) -> bool {
+							for (const auto& existing : list)
+								if (existing.Distance(pt) < 0.5) return true;  // 0.5 为去重容差，按需调整
+							return false;
+						};
+
+						auto addCornerIfValid = [&](const gp_Pnt& pt, bool has) {
+							if (has && !isDuplicate(pt, shellBottomSampled))
+								shellBottomSampled.push_back(pt);
+						};
+
+						addCornerIfValid(corner_yMin_xMin, has_yMin_xMin);
+						addCornerIfValid(corner_yMin_xMax, has_yMin_xMax);
+						addCornerIfValid(corner_yMax_xMin, has_yMax_xMin);
+						addCornerIfValid(corner_yMax_xMax, has_yMax_xMax);
+
+
+						// ========== 5. 提取 nozzleMesh 底部角点（Z ≈ nozzle_z_min，X 最大时 Y 最大/最小）==========
+						gp_Pnt nozzleCorner_xMax_yMin, nozzleCorner_xMax_yMax;
+						bool has_nozzle_xMax_yMin = false, has_nozzle_xMax_yMax = false;
+
+						{
+							auto nozzleNodes = info.nozzleMesh->GetAllNodes();
+							auto nozzleCoords = info.nozzleMesh->GetmyNodeCoords();
+							double zTolerance = 2.0;  // Z 方向容差，按需调整
+
+							// 第一遍：找 Z ≈ nozzle_z_min 的点中 X 的最大值
+							double maxX = -DBL_MAX;
+							for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+							{
+								int nodeID = it.Key();
+								gp_Pnt pt(nozzleCoords->Value(nodeID, 1),
+									nozzleCoords->Value(nodeID, 2),
+									nozzleCoords->Value(nodeID, 3));
+								if (std::abs(pt.Z() - info.nozzle_z_min) < zTolerance)
+								{
+									maxX = std::max(maxX, pt.X());
+								}
+							}
+
+							// 第二遍：在 X ≈ maxX 的底部点中找 Y 最大和最小
+							double xTolerance = 2.0;  // X 方向容差，按需调整
+							for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+							{
+								int nodeID = it.Key();
+								gp_Pnt pt(nozzleCoords->Value(nodeID, 1),
+									nozzleCoords->Value(nodeID, 2),
+									nozzleCoords->Value(nodeID, 3));
+								if (std::abs(pt.Z() - info.nozzle_z_min) < zTolerance &&
+									std::abs(pt.X() - maxX) < xTolerance)
+								{
+									if (!has_nozzle_xMax_yMin || pt.Y() < nozzleCorner_xMax_yMin.Y())
+									{
+										nozzleCorner_xMax_yMin = pt; has_nozzle_xMax_yMin = true;
+									}
+									if (!has_nozzle_xMax_yMax || pt.Y() > nozzleCorner_xMax_yMax.Y())
+									{
+										nozzleCorner_xMax_yMax = pt; has_nozzle_xMax_yMax = true;
+									}
+								}
+							}
+						}
+
+						// 强制加入 nozzle 角点（复用之前的去重 lambda）
+						addCornerIfValid(nozzleCorner_xMax_yMin, has_nozzle_xMax_yMin);
+						addCornerIfValid(nozzleCorner_xMax_yMax, has_nozzle_xMax_yMax);
+
+
+						// ========== 4. Z 压平并生成球体 ==========
+						for (auto& pt : shellBottomSampled)
+						{
+							pt.SetZ(info.shell_z_min);
+						}
+						addSpheres(shellBottomSampled, 20.0);
+
 
 						Handle(AIS_Shape) samplingAis = new AIS_Shape(allSpheres);
 						samplingAis->SetColor(Quantity_Color(0.0, 1.0, 0.0, Quantity_TOC_RGB));
 						samplingAis->SetMaterial(Graphic3d_NOM_PLASTIC);
+
+						context->Display(nozzleAis, Standard_True);
+						context->Display(shellAis, Standard_True);
+						context->Display(propAis, Standard_True);
+						context->Display(heatAis, Standard_True);
 						context->Display(samplingAis, Standard_True);
 
 						ModelMeshInfo updatedInfo = info;

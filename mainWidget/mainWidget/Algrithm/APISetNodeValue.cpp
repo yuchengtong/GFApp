@@ -408,7 +408,7 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 	};
 
 	// ========== 处理壳体网格 ==========
-	std::vector<double> shellNodeValues;
+	std::vector<double> shellMeshNodeValues;
 	{
 		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -422,7 +422,7 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 			gp_Pnt currentNode(x, y, z);
 
 			double value = calculateStress(currentNode);
-			shellNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -450,29 +450,44 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 		}
 	}
 
-	// ========== 显示壳体网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
-		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		shellMesh->SetDataSource(shellMeshData);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
-			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		shellNodal->SetColors(shellColorMap);
-		shellMesh->AddBuilder(shellNodal);
-		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
+	// ========== 显示壳体网格 ==========
+	{
+		shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -484,9 +499,29 @@ bool APISetNodeValue::SetShellFallStressNephogram(OccView* occView, std::vector<
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -1218,7 +1253,7 @@ bool APISetNodeValue::SetShellFallStrainNephogram(OccView* occView, std::vector<
 	};
 
 	// ========== 处理壳体网格 ==========
-	std::vector<double> shellNodeValues;
+	std::vector<double> shellMeshNodeValues;
 	{
 		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -1232,7 +1267,7 @@ bool APISetNodeValue::SetShellFallStrainNephogram(OccView* occView, std::vector<
 			gp_Pnt currentNode(x, y, z);
 
 			double value = calculateStress(currentNode);
-			shellNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -1260,29 +1295,44 @@ bool APISetNodeValue::SetShellFallStrainNephogram(OccView* occView, std::vector<
 		}
 	}
 
-	// ========== 显示壳体网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
-		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		shellMesh->SetDataSource(shellMeshData);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
-			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		shellNodal->SetColors(shellColorMap);
-		shellMesh->AddBuilder(shellNodal);
-		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
+	// ========== 显示壳体网格 ==========
+	{
+		shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -1294,9 +1344,29 @@ bool APISetNodeValue::SetShellFallStrainNephogram(OccView* occView, std::vector<
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -1965,7 +2035,7 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 	};
 
 	// ========== 处理壳体网格 ==========
-	std::vector<double> shellNodeValues;
+	std::vector<double> shellMeshNodeValues;
 	{
 		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -1979,7 +2049,7 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 			gp_Pnt currentNode(x, y, z);
 
 			double value = calculateTemp(currentNode);
-			shellNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -2007,29 +2077,45 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 		}
 	}
 
-	// ========== 显示壳体网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
-		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		shellMesh->SetDataSource(shellMeshData);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
-			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		shellNodal->SetColors(shellColorMap);
-		shellMesh->AddBuilder(shellNodal);
-		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
+	// ========== 显示壳体网格 ==========
+	{
+		shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -2041,9 +2127,29 @@ bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<do
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -2313,11 +2419,9 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 
 	auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-	auto steelPropertyInfoInfo = ModelDataManager::GetInstance()->GetSteelPropertyInfo();
 
 	auto high = fallSettingInfo.high;
 	auto angle = fallSettingInfo.angle;
-	auto youngModulus = steelPropertyInfoInfo.modulus;
 
 	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
@@ -2326,7 +2430,6 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 	{
 		return false;
 	}
-
 	auto fallOverpressureResult = ModelDataManager::GetInstance()->GetFallOverpressureResult();
 	auto max_value = fallOverpressureResult.metalsMaxOverpressure;
 	auto min_value = fallOverpressureResult.metalsMinOverpressure;
@@ -2336,80 +2439,255 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 
 	// 创建旋转网格
 	Handle(MeshVS_Mesh) mesh = new MeshVS_Mesh();
-	auto meshData = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+	auto meshData = modelMeshInfo.shellMesh->RotateXY(angle,
+		(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 		(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 	mesh->SetDataSource(meshData);
 
 	gp_Pnt ptShellLeftBottom = modelGeometryInfo.ptShellLeftBottom;
 	gp_Pnt ptShellRightBottom = modelGeometryInfo.ptShellRightBottom;
-
-	const double maxDistance = 400.0;
-	const int layerCount = 9;
-	const double layerWidth = maxDistance / layerCount;
+	gp_Pnt ptNozzleInletBottom = modelGeometryInfo.ptNozzleInletBottom;
+	gp_Pnt ptNozzleOutletBottom = modelGeometryInfo.ptNozzleOutletBottom;
 
 
-	// Lambda：计算单个节点的压力值
-	auto calculatePressure = [&](const gp_Pnt& currentNode) -> double
+	// Lambda：计算单个节点的跌落应力值
+	auto calculateStress = [&](const gp_Pnt& currentNode) -> double
 	{
 		double value = min_value;
+		const int layerCount = 9;
+
+		const std::vector<double> thresholds = {
+			10.0, 25.0, 50.0, 90.0, 160.0, 260.0, 300.0, 330.0, 400.0, 500.0
+		};
+
+		const std::vector<double> thresholds90 = {
+			40.0, 100.0, 150.0, 200.0, 300.0, 350.0,
+			1000.0, 2000.0, 3000.0, 3500.0
+		};
 
 		if (angle == 0)
 		{
 			double dist1 = currentNode.Distance(ptShellLeftBottom);
 			double dist2 = currentNode.Distance(ptShellRightBottom);
 			double minDist = std::min(dist1, dist2);
+			if (minDist > 700.0)
+			{
+				value = min_value;
 
-			double c_value = min_value + (max_value - min_value) * 0.4;
-			// ptShellRightBottom 影响
-			if (minDist < 200.0)
-				c_value = min_value + (max_value - min_value) * 0.6;
 
-			value = c_value;
+				if (abs(currentNode.Y() - ptShellLeftBottom.Y()) < 10)
+				{
+					value = min_value + (max_value - min_value) * 0.25;
+				}
+				
+			}
+			else
+			{
+				int layer = layerCount - 1;  // 默认最后一层
+				for (int i = 0; i < layerCount; ++i)
+				{
+					if (minDist <= thresholds[i])
+					{
+						layer = i;
 
+						if (layer >= 6)
+						{
+							layer = 6;
+						}
+						break;
+					}
+				}
+
+				double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+				value = min_value + (max_value - min_value) * ratio;
+			}
 		}
 		else if (angle > 0 && angle <= 15)
 		{
-			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			double valueShellRight = min_value + (max_value - min_value) * 0.4;
-			// ptShellRightBottom 影响
-			if (distToShellRight < 200.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			gp_Pnt cor_ptShellRightBottom(ptShellRightBottom.X() + 30, ptShellRightBottom.Y(), ptShellRightBottom.Z());
+			double distToShellRight = currentNode.Distance(cor_ptShellRightBottom);
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 30, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
 
-			value = valueShellRight;
+			// 计算每个点的独立影响值
+			double valueShellRight = min_value;
+			double valueNozzleInlet = min_value;
+			double valueNozzleOutlet = min_value;
+
+			// ptShellRightBottom 影响
+			if (distToShellRight < 100.0)
+				valueShellRight = max_value;
+			else if (distToShellRight < 150.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			else if (distToShellRight < 200.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			else if (distToShellRight < 350.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.5;
+			else if (distToShellRight < 550.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.4;
+			else if (distToShellRight < 600.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+			else if (distToShellRight < 800.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+			// ptNozzleInletBottom 影响
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 350.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 500.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 600.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 800.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+			// ptNozzleOutletBottom 
+			if (distToNozzleOutlet < 50.0)
+				valueNozzleOutlet = max_value;
+			else if (distToNozzleOutlet < 100.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleOutlet < 150.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleOutlet < 250.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleOutlet < 300.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleOutlet < 500.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+			else if (distToNozzleOutlet < 800.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+
+			value = std::max({ valueShellRight, valueNozzleInlet, valueNozzleOutlet });
 		}
 		else if (angle > 15 && angle <= 60)
 		{
-			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			double valueShellRight = min_value + (max_value - min_value) * 0.4;
-			// ptShellRightBottom 影响
-			if (distToShellRight < 400.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
 
-			value = valueShellRight;
+			// 计算每个点的独立影响值
+			double valueNozzleInlet = min_value;
+			double valueNozzleOutlet = min_value;
+
+			// ptNozzleInletBottom 影响
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 400.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 550.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 700.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 900.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+			// ptNozzleOutletBottom 
+			if (distToNozzleOutlet < 50.0)
+				valueNozzleOutlet = max_value;
+			else if (distToNozzleOutlet < 100.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleOutlet < 200.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleOutlet < 300.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleOutlet < 500.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+			/*else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;*/
+
+			value = std::max({ valueNozzleInlet, valueNozzleOutlet });
 		}
 		else if (angle > 60 && angle < 90)
 		{
-			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			double valueShellRight = min_value + (max_value - min_value) * 0.4;
-			// ptShellRightBottom 影响
-			if (distToShellRight < 200.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+			double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
 
-			value = valueShellRight;
+			// 计算每个点的独立影响值
+			double valueNozzleInlet = min_value;
+			double valueNozzleOutlet = min_value;
+
+			// ptNozzleInletBottom 影响
+			if (cor_ptNozzleInletBottom.X() - currentNode.X() < 400)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 350.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 450.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 600.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 700.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+
+
+			// ptNozzleOutletBottom 
+			if (distToNozzleOutlet < 50.0)
+				valueNozzleOutlet = max_value;
+			else if (distToNozzleOutlet < 100.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleOutlet < 200.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleOutlet < 250.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleOutlet < 300.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleOutlet < 600.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+			else if (distToNozzleOutlet < 900.0)
+				valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+
+			value = std::max({ valueNozzleInlet, valueNozzleOutlet });
 		}
 		else if (angle == 90)
 		{
-			//double distToShellRight = currentNode.Distance(ptShellRightBottom);
+			double startX = ptNozzleInletBottom.X();
 
-			value = min_value + (max_value - min_value) * 0.3;
+			double xDist = std::abs(currentNode.X() - startX);
+
+			if (xDist > 3000)
+			{
+				value = min_value;
+			}
+			else
+			{
+				int layer = layerCount - 1;
+				for (int i = 0; i < layerCount; ++i)
+				{
+					if (xDist <= thresholds90[i])
+					{
+						layer = i;
+						break;
+					}
+				}
+				double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+				value = min_value + (max_value - min_value) * ratio;
+			}
 		}
-
 
 		return value;
 	};
 
 	// ========== 处理壳体网格 ==========
-	std::vector<double> shellNodeValues;
+	std::vector<double> shellMeshNodeValues;
 	{
 		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -2422,8 +2700,8 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 			double z = shellNodeCoords->Value(nodeID, 3);
 			gp_Pnt currentNode(x, y, z);
 
-			double value = calculatePressure(currentNode);
-			shellNodeValues.push_back(value);
+			double value = calculateStress(currentNode);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
@@ -2445,35 +2723,50 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 			double z = nozzleNodeCoords->Value(nodeID, 3);
 			gp_Pnt currentNode(x, y, z);
 
-			double value = calculatePressure(currentNode);
+			double value = calculateStress(currentNode);
 			nozzleNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 显示壳体网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
-		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(angle,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		shellMesh->SetDataSource(shellMeshData);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
-			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		shellNodal->SetColors(shellColorMap);
-		shellMesh->AddBuilder(shellNodal);
-		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
+	// ========== 显示壳体网格 ==========
+	{
+		shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -2485,9 +2778,29 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(angle,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -3166,9 +3479,13 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 		}
 	}
 
+
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	// ========== 显示壳体网格 ==========
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -3179,15 +3496,12 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -3199,14 +3513,12 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -3218,9 +3530,12 @@ bool APISetNodeValue::SetShellFastCombustionTempNephogram(OccView* occView, std:
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
+
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -3539,7 +3854,7 @@ bool APISetNodeValue::SetShellSlowCombustionTempNephogram(OccView* occView, std:
 	};
 
 	// ========== 处理壳体网格 ==========
-	std::vector<double> shellNodeValues;
+	std::vector<double> shellMeshNodeValues;
 	{
 		TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
 		Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
@@ -3551,12 +3866,12 @@ bool APISetNodeValue::SetShellSlowCombustionTempNephogram(OccView* occView, std:
 			double y = shellNodeCoords->Value(nodeID, 2);
 
 			double value = calculateEllipseValue(x, y);
-			shellNodeValues.push_back(value);
+			shellMeshNodeValues.push_back(value);
 			nodeValues.push_back(value);
 		}
 	}
 
-	// ========== 处理喷管网格 ==========
+	// ========== 处理喷嘴网格 ==========
 	std::vector<double> nozzleNodeValues;
 	bool hasNozzleMesh = !modelMeshInfo.nozzleMesh.IsNull();
 
@@ -3577,29 +3892,45 @@ bool APISetNodeValue::SetShellSlowCombustionTempNephogram(OccView* occView, std:
 		}
 	}
 
-	// ========== 显示壳体网格 ==========
+	// ========== 处理推进剂网格 ==========
+	std::vector<double> propellantNodeValues;
+	bool hasPropellantMesh = !modelMeshInfo.propellantMesh.IsNull();
+
+	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
-		auto shellMeshData = modelMeshInfo.shellMesh->RotateXY(90,
-			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-		shellMesh->SetDataSource(shellMeshData);
+		TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+		Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
 
-		MeshVS_DataMapOfIntegerColor shellColorMap = GetMeshDataMap(shellNodeValues, min_value, max_value);
-		Handle(MeshVS_NodalColorPrsBuilder) shellNodal = new MeshVS_NodalColorPrsBuilder(
-			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-		shellNodal->SetColors(shellColorMap);
-		shellMesh->AddBuilder(shellNodal);
-		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
+		for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+		{
+			propellantNodeValues.push_back(-1.0);
+			nodeValues.push_back(-1.0);
+		}
 	}
 
-	// ========== 显示喷管网格 ==========
+
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
+	// ========== 显示壳体网格 ==========
+	{
+		shellMesh = new MeshVS_Mesh();
+		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		shellMesh->SetDataSource(meshData90);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(shellMeshNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		shellMesh->AddBuilder(propellantNodal);
+		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -3611,9 +3942,29 @@ bool APISetNodeValue::SetShellSlowCombustionTempNephogram(OccView* occView, std:
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
+
+	// ========== 显示推进剂网格 ==========
+	if (hasPropellantMesh)
+	{
+		propellantMesh = new MeshVS_Mesh();
+		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
+			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+		propellantMesh->SetDataSource(propellantMeshData);
+
+		MeshVS_DataMapOfIntegerColor propellantColorMap = GetMeshDataMap(propellantNodeValues, min_value, max_value);
+		Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+			propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+		propellantNodal->SetColors(propellantColorMap);
+		propellantMesh->AddBuilder(propellantNodal);
+		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+	}
+
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -3935,12 +4286,13 @@ bool APISetNodeValue::SetShellShootStressResult(OccView* occView, std::vector<do
 	// ========== 显示 ==========
 	context->EraseAll(true);
 
+	if (!propellantMesh.IsNull())
+		context->Display(propellantMesh, Standard_True);
 	if (!shellMesh.IsNull())
 		context->Display(shellMesh, Standard_True);
 	if (!nozzleMesh.IsNull())
 		context->Display(nozzleMesh, Standard_True);
-	if (!propellantMesh.IsNull())
-		context->Display(propellantMesh, Standard_True);
+
 
 	occView->fitAll();
 	return true;
@@ -4254,10 +4606,12 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 		}
 	}
 
-
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	// ========== 显示壳体网格 ==========
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -4268,15 +4622,12 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -4288,13 +4639,11 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.propellantMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		propellantMesh->SetDataSource(meshData90);
@@ -4305,9 +4654,14 @@ bool APISetNodeValue::SetShellShootStrainResult(OccView* occView, std::vector<do
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
+
+	context->EraseAll(true);
+	if (hasPropellantMesh)
+		context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	if (hasNozzleMesh)
+		context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 	return true;
@@ -4469,12 +4823,8 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 	const double y_max = modelMeshInfo.propellant_y_max;
 
 	auto shootTemperatureResult = ModelDataManager::GetInstance()->GetShootTemperatureResult();
-	auto raw_min = shootTemperatureResult.metalsMaxTemperature;
-	auto raw_max = shootTemperatureResult.metalsMinTemperature;
-
-	// 保证 min_value <= max_value
-	double min_value = std::min(raw_min, raw_max);
-	double max_value = std::max(raw_min, raw_max);
+	auto max_value = shootTemperatureResult.metalsMaxTemperature;
+	auto min_value = shootTemperatureResult.metalsMinTemperature;
 
 	const double h = (x_min + x_max) / 2.0;          // 椭圆中心 X（底边中点）
 	const double k = y_min;                          // 椭圆中心 Z（底边）
@@ -4609,9 +4959,14 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		}
 	}
 
+
+
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	// ========== 显示壳体网格 ==========
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -4622,15 +4977,12 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -4642,14 +4994,12 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -4661,9 +5011,11 @@ bool APISetNodeValue::SetShellShootTemperatureResult(OccView* occView, std::vect
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 
 	occView->fitAll();
 
@@ -4916,8 +5268,12 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
+
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -4928,14 +5284,11 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh) {
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -4947,14 +5300,12 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -4966,10 +5317,11 @@ bool APISetNodeValue::SetShellShootOverpressureResult(OccView* occView, std::vec
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
-
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -5423,8 +5775,11 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -5435,15 +5790,12 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -5455,14 +5807,12 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -5474,10 +5824,12 @@ bool APISetNodeValue::SetShellJetImpactStressResult(OccView* occView, std::vecto
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -5806,8 +6158,11 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -5818,15 +6173,12 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -5838,14 +6190,12 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -5857,10 +6207,12 @@ bool APISetNodeValue::SetShellJetImpactStrainResult(OccView* occView, std::vecto
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -6125,8 +6477,11 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -6137,15 +6492,12 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -6157,14 +6509,12 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -6176,10 +6526,12 @@ bool APISetNodeValue::SetShellJetImpactTemperatureResult(OccView* occView, std::
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -6444,8 +6796,11 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -6456,15 +6811,12 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -6476,14 +6828,12 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -6495,10 +6845,12 @@ bool APISetNodeValue::SetShellJetImpactOverpressureResult(OccView* occView, std:
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -6971,8 +7323,11 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -6983,15 +7338,12 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -7003,14 +7355,12 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -7022,10 +7372,12 @@ bool APISetNodeValue::SetShellFragmentationStressResult(OccView* occView, std::v
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -7353,8 +7705,11 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -7365,15 +7720,12 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -7385,14 +7737,12 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -7404,10 +7754,12 @@ bool APISetNodeValue::SetShellFragmentationStrainResult(OccView* occView, std::v
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -7582,15 +7934,15 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;
 
 	std::vector<std::pair<double, double>> ellipses = {
-		{12, 31},
+		{12,31},
 		{semi_minor_x_1 * 0.15, semi_major_z_1 * 0.35},
 		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
 		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
-		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.95},
-		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.70},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.75, semi_major_z_1 * 0.80},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.85}
 	};
 
 	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
@@ -7671,8 +8023,11 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -7683,15 +8038,12 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -7703,14 +8055,12 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -7722,10 +8072,12 @@ bool APISetNodeValue::SetShellFragmentationTemperatureResult(OccView* occView, s
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -7784,10 +8136,10 @@ bool APISetNodeValue::SetPropellantFragmentationTemperatureResult(OccView* occVi
 		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.55},
 		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
-		{semi_minor_x_1 * 0.8, semi_major_z_1 * 0.8},
-		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.95},
-		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.70},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.75, semi_major_z_1 * 0.80},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.85}
 	};
 
 	// cx    // 椭圆中心 x
@@ -7903,15 +8255,15 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 	const double semi_minor_x_1 = semi_major_z_1 * 2.5;
 
 	std::vector<std::pair<double, double>> ellipses = {
-		{12, 31},
+		{12,31},
 		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.35},
 		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
 		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
-		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.8},
-		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
-		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.70},
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.75, semi_major_z_1 * 0.80},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.85}
 	};
 
 	auto isInEllipse = [](double x, double z, double cx, double cz, double a, double b) -> bool {
@@ -7992,8 +8344,11 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -8004,15 +8359,12 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -8024,14 +8376,12 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -8043,10 +8393,12 @@ bool APISetNodeValue::SetShellFragmentationOverpressureResult(OccView* occView, 
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -8102,10 +8454,10 @@ bool APISetNodeValue::SetPropellantFragmentationOverpressureResult(OccView* occV
 		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
 		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.75},
-		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.8},
-		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
-		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+		{semi_minor_x_1 * 0.6, semi_major_z_1 * 0.70},
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.75},
+		{semi_minor_x_1 * 0.75, semi_major_z_1 * 0.80},
+		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.85}
 	};
 
 	// cx    // 椭圆中心 x
@@ -8490,8 +8842,11 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -8502,15 +8857,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -8522,14 +8874,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -8541,10 +8891,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStressResult(OccView* occView, std::
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -8826,8 +9178,11 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -8838,15 +9193,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -8858,14 +9210,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -8877,10 +9227,12 @@ bool APISetNodeValue::SetShellExplosiveBlastStrainResult(OccView* occView, std::
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -9129,8 +9481,11 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -9141,15 +9496,12 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -9161,14 +9513,12 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -9180,10 +9530,12 @@ bool APISetNodeValue::SetShellExplosiveBlastTemperatureResult(OccView* occView, 
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -9428,8 +9780,11 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -9440,15 +9795,12 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -9460,14 +9812,12 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -9479,10 +9829,12 @@ bool APISetNodeValue::SetShellExplosiveBlastOverpressureResult(OccView* occView,
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -9895,8 +10247,11 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -9907,15 +10262,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -9927,14 +10279,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -9946,10 +10296,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStressResult(OccView* occView, s
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -10233,8 +10585,11 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -10245,15 +10600,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -10265,14 +10617,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -10284,10 +10634,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionStrainResult(OccView* occView, s
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -10535,8 +10887,11 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 	}
 
 	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -10547,15 +10902,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -10567,14 +10919,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -10586,10 +10936,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(OccView* occVi
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
@@ -10833,9 +11185,11 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 		}
 	}
 
-	// ========== 显示壳体网格 ==========
+	Handle(MeshVS_Mesh) shellMesh;
+	Handle(MeshVS_Mesh) nozzleMesh;
+	Handle(MeshVS_Mesh) propellantMesh;
 	{
-		Handle(MeshVS_Mesh) shellMesh = new MeshVS_Mesh();
+		shellMesh = new MeshVS_Mesh();
 		auto meshData90 = modelMeshInfo.shellMesh->RotateXY(90, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
 		shellMesh->SetDataSource(meshData90);
@@ -10846,15 +11200,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 		propellantNodal->SetColors(propellantColorMap);
 		shellMesh->AddBuilder(propellantNodal);
 		shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->EraseAll(true);
-		context->Display(shellMesh, Standard_True);
 	}
 
 	// ========== 显示喷嘴网格 ==========
 	if (hasNozzleMesh)
 	{
-		Handle(MeshVS_Mesh) nozzleMesh = new MeshVS_Mesh();
+		nozzleMesh = new MeshVS_Mesh();
 		auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -10866,14 +11217,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 		nozzleNodal->SetColors(nozzleColorMap);
 		nozzleMesh->AddBuilder(nozzleNodal);
 		nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(nozzleMesh, Standard_True);
 	}
 
 	// ========== 显示推进剂网格 ==========
 	if (hasPropellantMesh)
 	{
-		Handle(MeshVS_Mesh) propellantMesh = new MeshVS_Mesh();
+		propellantMesh = new MeshVS_Mesh();
 		auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(90,
 			(modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
 			(modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
@@ -10885,10 +11234,12 @@ bool APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(OccView* occV
 		propellantNodal->SetColors(propellantColorMap);
 		propellantMesh->AddBuilder(propellantNodal);
 		propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-
-		context->Display(propellantMesh, Standard_True);
 	}
 
+	context->EraseAll(true);
+	context->Display(propellantMesh, Standard_True);
+	context->Display(shellMesh, Standard_True);
+	context->Display(nozzleMesh, Standard_True);
 	occView->fitAll();
 	return true;
 }
