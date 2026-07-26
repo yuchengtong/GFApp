@@ -10,47 +10,50 @@
 
 double translateFallStress(double height, double val)
 {
-	const double y_min = 30.0;
-	const double y_max = 100.0;
-	const double val_min = 1743.68;
-	const double val_max = 1828.81;
-
-	// 实际值归一化至0~1
+	const double val_min = 1733.79;
+	const double val_max = 1842.88;
 	double val_norm = (val_max - val) / (val_max - val_min);
-	// 高度主导特征
-	double z = height + 1.5 * val_norm;
 
-	// Sigmoid饱和参数
-	const double z0 = 46.20;
-	const double tau = 18.35;
+	const double Wh = 1.0;
+	const double Wv = 0.2;
+	double S = Wh * height + Wv * val_norm;
 
-	double sig = 1.0 / (1.0 + exp((z0 - z) / tau));
-	double y = y_min + (y_max - y_min) * sig;
+	// 优化后二次多项式参数
+	const double p0 = 24.10;
+	const double p1 = 1.045;
+	const double p2 = 0.0274;
 
-	// 预测场景可注释限幅；保留仅作极端防护
-	// if(y < y_min) y = y_min;
-	// if(y > y_max) y = y_max;
+	double y = p0 + p1 * S + p2 * S * S;
+
+	// 限幅保护
+	//if (y < y_min) y = y_min;
+	//if (y > y_max) y = y_max;
 	return y;
 }
 
 double translateFallOverpressure(double height, double val)
 {
-	const double A = 46.832;
-	const double mid = 62.415;
-	const double steep = 21.674;
-	// 权重：高度权重0.9，实际值0.1（高度主导）
-	const double wh = 0.90;
-	const double wx = 0.10;
+	double H = height;
 
-	double z = wh * height + wx * val;
-	double base = A * z;
-	double soften = 1.0 + exp((mid - z) / steep);
-	double y = base / soften;
+	// 三段基础线性函数
+	double f1 = 65.0 + 16.818 * (H - 9.0);
+	double f2 = 250.0 + 17.500 * (H - 20.0);
+	double f3 = 950.0 + 7.500 * (H - 60.0);
 
-	// 限幅保护
-	//if (y < 350.0)  y = 350.0;
-	//if (y > 3600.0) y = 3600.0;
-	return y;
+	// tanh平滑权重
+	double w1 = 0.5 * (1.0 - std::tanh((H - 14.0) / 4.0));
+	double w2 = 0.5 * (std::tanh((H - 14.0) / 4.0) - std::tanh((H - 40.0) / 12.0));
+	double w3 = 0.5 * (1.0 + std::tanh((H - 40.0) / 12.0));
+
+	double Y_base = w1 * f1 + w2 * f2 + w3 * f3;
+
+	// 实测值比例修正
+	double res = Y_base * val / 250.0;
+
+	// 建议恢复限幅
+	//if (y < 60.0)   y = 60.0;
+	//if (y > 1500.0) y = 1500.0;
+	return res;
 }
 
 double translate(double x)
@@ -191,6 +194,27 @@ double calculateAvg(const std::vector<double> data)
 	double mean = sum / data.size();
 	return mean;
 }
+
+double calculateAvgTemp(double a, double b)
+{
+	std::vector<double> data;
+	data.push_back(a);
+	data.push_back(b);
+	data.push_back(calculateAvg(data));
+	return calculateAvg(data);
+}
+
+double calculateStdTemp(double a, double b)
+{
+	std::vector<double> data;
+	data.push_back(a);
+	data.push_back(b);
+	data.push_back(calculateAvg(data));
+	data.push_back(calculateAvgTemp(a, b));
+	return calculateStd(data);
+}
+
+
 
 
 void APICalculateHepler::APICalculateBoundingBox(ModelGeometryInfo& info)
@@ -338,7 +362,6 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		
 		if (!m_steelArray.contains(i+1))
 		{
-			//res = translate(res);
 			
 			res = translateFallStress(fallInfo.high, res);
 			if (res > limitValue)
@@ -468,6 +491,11 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 
+	propellantTemperatureResults.erase(
+		std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+			[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+		propellantTemperatureResults.end());
+
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
@@ -559,7 +587,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		else
 		{
-			res = translateFallOverpressure(fallInfo.high, res) * 1.42;
+			//res = translateFallOverpressure(fallInfo.high, res) * 1.42;
 			steelOverpressureResults.push_back(res);
 		}
 		
@@ -710,6 +738,7 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	{
 		double res = calculate(formulaCal[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
 		res = res * 0.068;
+
 		if (res > 25)
 		{
 			res = res + res * 0.1 * difference;
@@ -732,36 +761,51 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	steelTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.4);
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-
-	propellantTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.85);
-	double randomValue = QRandomGenerator::global()->bounded(1000) / 1000.0;
-	randomValue = 0.1 + randomValue * (0.2 - 0.1);
-	propellantTemperatureResults.push_back(35 * (1 + randomValue));
-	
-
-	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-	
-	// 更新结果
-	double shellMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
-	double shellMinValue = calSteelTemperatureMinValue; // 发动机壳体最小温度
-	double shellAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
-	double shellStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
-	double maxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
-	double minValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
-	double avgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
-	double standardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
-
-
 	if (calSteelTemperatureMaxValue > fastCombustionSettingInfo.temperature)
 	{
 		double max = fastCombustionSettingInfo.temperature * 0.82;
 		double coefficient = max / calSteelTemperatureMaxValue; //系数
 
-		
+
 		calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 		calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	}
+
+	propellantTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.85);
+	double randomValue = QRandomGenerator::global()->bounded(1000) / 1000.0;
+	randomValue = 0.1 + randomValue * (0.2 - 0.1);
+	propellantTemperatureResults.push_back(35 * (1 + randomValue));
+
+	propellantTemperatureResults.erase(
+		std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+			[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+		propellantTemperatureResults.end());
+
+	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	
+	
+
+	// 更新结果
+	double outheatMaxValue = calSteelTemperatureMaxValue * 1.01; // 发动机外放热最大温度
+	double outheatMinValue = calSteelTemperatureMaxValue; // 发动机外放热最小温度
+	double outheatAvgValue = calculateAvgTemp(outheatMaxValue, outheatMinValue); // 发动机外放热平均温度
+	double outheatStandardValue = calculateStdTemp(outheatMaxValue, outheatMinValue); // 发动机外放热温度标准差
+
+	double shellMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
+	double shellMinValue = calPropellantTemperatureMaxValue * 1.01; // 发动机壳体最小温度
+	double shellAvgValue = calculateAvgTemp(shellMaxValue, shellMinValue); // 发动机壳体平均温度
+	double shellStandardValue = calculateStdTemp(shellMaxValue, shellMinValue); // 发动机壳体温度标准差
+
+	double insulatingheatMaxValue = shellMinValue; // 发动机绝热层最大温度
+	double insulatingheatMinValue = calPropellantTemperatureMaxValue; // 发动机绝热层最小温度
+	double insulatingheatAvgValue = calculateAvgTemp(insulatingheatMaxValue, insulatingheatMinValue); // 发动机绝热层平均温度
+	double insulatingheatStandardValue = calculateStdTemp(insulatingheatMaxValue, insulatingheatMinValue); // 发动机绝热层温度标准差
+
+	double maxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
+	double minValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
+	double avgValue = calculateAvgTemp(maxValue, minValue); // 固体推进剂平均温度
+	double standardValue = calculateStdTemp(maxValue, minValue); // 固体推进剂温度标准差
 
 
 	propertyValue.clear();
@@ -785,14 +829,14 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 	temperatureResult.propellantsMinTemperature = minValue;
 	temperatureResult.mpropellantsAvgTemperature = avgValue;
 	temperatureResult.propellantsStandardTemperature = standardValue;
-	temperatureResult.outheatMaxTemperature = shellMaxValue * 1.01;
-	temperatureResult.outheatMinTemperature = shellMinValue * 1.01;
-	temperatureResult.outheatAvgTemperature = shellAvgValue * 1.01;
-	temperatureResult.outheatStandardTemperature = shellStandardValue * 1.01;
-	temperatureResult.insulatingheatMaxTemperature = maxValue * 1.01;
-	temperatureResult.insulatingheatMinTemperature = minValue * 1.01;
-	temperatureResult.insulatingheatAvgTemperature = avgValue * 1.01;
-	temperatureResult.insulatingheatStandardTemperature = standardValue * 1.01;
+	temperatureResult.outheatMaxTemperature = outheatMaxValue;
+	temperatureResult.outheatMinTemperature = outheatMinValue;
+	temperatureResult.outheatAvgTemperature = outheatAvgValue;
+	temperatureResult.outheatStandardTemperature = outheatStandardValue;
+	temperatureResult.insulatingheatMaxTemperature = insulatingheatMaxValue;
+	temperatureResult.insulatingheatMinTemperature = insulatingheatMinValue;
+	temperatureResult.insulatingheatAvgTemperature = insulatingheatAvgValue;
+	temperatureResult.insulatingheatStandardTemperature = insulatingheatStandardValue;
 	temperatureResult.shellScreenFlag = true;
 	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(temperatureResult);
@@ -882,19 +926,35 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 
+	propellantTemperatureResults.erase(
+		std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+			[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+		propellantTemperatureResults.end());
+
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
 
 	// 更新结果
+	double outheatMaxValue = calSteelTemperatureMaxValue; // 发动机外放热最大温度
+	double outheatMinValue = calSteelTemperatureMaxValue; // 发动机外放热最小温度
+	double outheatAvgValue = calculateAvgTemp(outheatMaxValue, outheatMinValue); // 发动机外放热平均温度
+	double outheatStandardValue = calculateStdTemp(outheatMaxValue, outheatMinValue); // 发动机外放热温度标准差
+
 	double shellMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
-	double shellMinValue = calSteelTemperatureMinValue; // 发动机壳体最小温度
-	double shellAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
-	double shellStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
+	double shellMinValue = calPropellantTemperatureMaxValue * 1.01; // 发动机壳体最小温度
+	double shellAvgValue = calculateAvgTemp(shellMaxValue, shellMinValue); // 发动机壳体平均温度
+	double shellStandardValue = calculateStdTemp(shellMaxValue, shellMinValue); // 发动机壳体温度标准差
+
+	double insulatingheatMaxValue = shellMinValue; // 发动机绝热层最大温度
+	double insulatingheatMinValue = calPropellantTemperatureMaxValue; // 发动机绝热层最小温度
+	double insulatingheatAvgValue = calculateAvgTemp(insulatingheatMaxValue, insulatingheatMinValue); // 发动机绝热层平均温度
+	double insulatingheatStandardValue = calculateStdTemp(insulatingheatMaxValue, insulatingheatMinValue); // 发动机绝热层温度标准差
+
 	double maxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
 	double minValue = calPropellantTemperatureMinValue; // 固体推进剂最小温度
-	double avgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
-	double standardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
+	double avgValue = calculateAvgTemp(maxValue, minValue); // 固体推进剂平均温度
+	double standardValue = calculateStdTemp(maxValue, minValue); // 固体推进剂温度标准差
 
 	propertyValue.clear();
 	propertyValue.push_back(shellMaxValue);
@@ -918,14 +978,14 @@ bool APICalculateHepler::CalculateSlowCombustionAnalysisResult(OccView* occView,
 	temperatureResult.propellantsMinTemperature = minValue;
 	temperatureResult.mpropellantsAvgTemperature = avgValue;
 	temperatureResult.propellantsStandardTemperature = standardValue;
-	temperatureResult.outheatMaxTemperature = shellMaxValue;
-	temperatureResult.outheatMinTemperature = shellMaxValue;
-	temperatureResult.outheatAvgTemperature = shellMaxValue;
-	temperatureResult.outheatStandardTemperature = 0;
-	temperatureResult.insulatingheatMaxTemperature = maxValue;
-	temperatureResult.insulatingheatMinTemperature = minValue;
-	temperatureResult.insulatingheatAvgTemperature = avgValue;
-	temperatureResult.insulatingheatStandardTemperature = standardValue;
+	temperatureResult.outheatMaxTemperature = outheatMaxValue;
+	temperatureResult.outheatMinTemperature = outheatMinValue;
+	temperatureResult.outheatAvgTemperature = outheatAvgValue;
+	temperatureResult.outheatStandardTemperature = outheatStandardValue;
+	temperatureResult.insulatingheatMaxTemperature = insulatingheatMaxValue;
+	temperatureResult.insulatingheatMinTemperature = insulatingheatMinValue;
+	temperatureResult.insulatingheatAvgTemperature = insulatingheatAvgValue;
+	temperatureResult.insulatingheatStandardTemperature = insulatingheatStandardValue;
 	temperatureResult.shellScreenFlag = true;
 	temperatureResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(temperatureResult);
@@ -999,7 +1059,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			res = translate(res);
+			res = translate(res) * 2.32;
 			propellantStressResults.push_back(res);
 		}
 		else
@@ -1163,6 +1223,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
+			res = res * 3.13;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -1337,7 +1398,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			res = translate(res);
+			res = translate(res) * 2.17;
 			propellantStressResults.push_back(res);
 		}
 		else
@@ -1500,6 +1561,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
+			res = res * 3.72;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -1677,6 +1739,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 		if (!m_steelArray.contains(i + 1))
 		{
 			res = translate(res);
+			res = res * 2.57;
 			propellantStressResults.push_back(res);
 		}
 		else
@@ -1839,6 +1902,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
+			res = res * 63.2;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -2014,7 +2078,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		{
 			if (!m_steelArray.contains(i + 1))
 			{
-				res = translate(res);
+				res = translate(res) * 6.12;
 				propellantStressResults.push_back(res);
 			}
 			else
@@ -2137,6 +2201,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
+			res = res * 3.34;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -2313,6 +2378,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 		if (!m_steelArray.contains(i + 1))
 		{
 			res = translate(res);
+			res = res * 9.13;
 			propellantStressResults.push_back(res);
 		}
 		else
@@ -2425,6 +2491,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
+			res = res * 6.72;
 			propellantOverpressureResults.push_back(res);
 
 			// 反应度

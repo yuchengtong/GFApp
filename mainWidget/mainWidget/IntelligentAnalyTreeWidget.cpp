@@ -25,26 +25,24 @@
 
 double translateFallStressTemp(double height, double val)
 {
-	const double y_min = 30.0;
-	const double y_max = 100.0;
-	const double val_min = 1743.68;
-	const double val_max = 1828.81;
-
-	// 实际值归一化至0~1
+	const double val_min = 1733.79;
+	const double val_max = 1842.88;
 	double val_norm = (val_max - val) / (val_max - val_min);
-	// 高度主导特征
-	double z = height + 1.5 * val_norm;
 
-	// Sigmoid饱和参数
-	const double z0 = 46.20;
-	const double tau = 18.35;
+	const double Wh = 1.0;
+	const double Wv = 0.2;
+	double S = Wh * height + Wv * val_norm;
 
-	double sig = 1.0 / (1.0 + exp((z0 - z) / tau));
-	double y = y_min + (y_max - y_min) * sig;
+	// 优化后二次多项式参数
+	const double p0 = 24.10;
+	const double p1 = 1.045;
+	const double p2 = 0.0274;
 
-	// 预测场景可注释限幅；保留仅作极端防护
-	// if(y < y_min) y = y_min;
-	// if(y > y_max) y = y_max;
+	double y = p0 + p1 * S + p2 * S * S;
+
+	// 限幅保护
+	//if (y < y_min) y = y_min;
+	//if (y > y_max) y = y_max;
 	return y;
 }
 
@@ -437,13 +435,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												res = res * 0.5;
 												res = res + res * difference * 0.1;
-												if (res > limitValue)
-												{
-													res = limitValue;
-												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateFallStressTemp(fallInfo.high, res);
+													res = translateFallStressTemp(J/1000, res);
 													if (res > limitValue)
 													{
 														res = limitValue;
@@ -491,6 +485,12 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											}
 
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+
+											propellantTemperatureResults.erase(
+												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+												propellantTemperatureResults.end());
+
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 											fallTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
 											fallTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
@@ -682,24 +682,32 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											for (int i = 0; i < temperatureCalculation.size(); ++i)
 											{
 												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												res = res * 0.7;
+												res = res * 0.068;
 												res = res + res * 0.1 * tempDifference;
-												if (res <= 25)
+												if (res > 25)
 												{
-													res = 25;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													propellantTemperatureResults.push_back(res);
-												}
-												else
-												{
-													steelTemperatureResults.push_back(res);
+													res = res + res * 0.1 * difference;
+													if (res > fastCombustionSettingInfo.temperature)
+													{
+														res = fastCombustionSettingInfo.temperature * 0.92;
+													}
+													if (!m_array.contains(i + 1))
+													{
+														propellantTemperatureResults.push_back(res);
+													}
+													else
+													{
+														steelTemperatureResults.push_back(res);
+													}
 												}
 											}
 											
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 											propellantTemperatureResults.push_back(calSteelTemperatureMaxValue * 0.85);
+											propellantTemperatureResults.erase(
+												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+												propellantTemperatureResults.end());
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
 											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
@@ -764,6 +772,10 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											}
 											steelTemperatureResults.push_back(M);
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+											propellantTemperatureResults.erase(
+												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+												propellantTemperatureResults.end());
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
@@ -822,7 +834,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateStress(res);
+													res = translateStress(res) * 2.32;
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -856,6 +868,10 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 											}
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+											propellantTemperatureResults.erase(
+												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+												propellantTemperatureResults.end());
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
@@ -911,7 +927,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateStress(res);
+													res = translateStress(res) * 2.17;
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -946,6 +962,10 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 											}
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+											propellantTemperatureResults.erase(
+												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+												propellantTemperatureResults.end());
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
 											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
@@ -1001,7 +1021,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateStress(res);
+													res = translateStress(res) * 2.47;
 													propellantStressResults.push_back(res);
 												}
 												else
@@ -1036,6 +1056,10 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 											}
 											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+											propellantTemperatureResults.erase(
+												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+												propellantTemperatureResults.end());
 											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
 											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
@@ -1095,7 +1119,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													if (!m_array.contains(i + 1))
 													{
-														res = translateStress(res);
+														res = translateStress(res) * 6.12;
 														propellantStressResults.push_back(res);
 													}
 													else
@@ -1169,7 +1193,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												if (!m_array.contains(i + 1))
 												{
-													res = translateStress(res);
+													res = translateStress(res) * 9.13;
 													propellantStressResults.push_back(res);
 												}
 												else
