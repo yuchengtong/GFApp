@@ -1561,7 +1561,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			res = res * 3.72;
+			res = res * 5.72;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -1607,10 +1607,10 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 2.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 2.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 2.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 2.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 3.61; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 3.61; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 3.61; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 3.61; // 固体推进剂超压标准差
 
 
 	// 超压分析结果
@@ -1902,7 +1902,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			res = res * 63.2;
+			res = res * 92.2;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -1950,10 +1950,10 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
 	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
 	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 2.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 2.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 2.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 2.47; // 固体推进剂超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 3.87; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 3.87; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 3.87; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 3.87; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -2201,7 +2201,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			res = res * 3.34;
+			res = res * 5.34;
 			propellantOverpressureResults.push_back(res);
 			// 反应度
 			if (propellantInfo.fireOverpressure == 0.0)
@@ -2224,6 +2224,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		}
 		else
 		{
+			res = res * 1.2;
 			steelOverpressureResults.push_back(res);
 		}
 
@@ -2245,14 +2246,14 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
 	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
 
-	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
-	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
-	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 3.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 3.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 3.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 3.47; // 固体推进剂超压标准差
+	double shellOverpressureMaxValue = shellStressMaxValue * 1.97; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 1.97; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 1.97; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 1.97; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 5.37; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 5.37; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 5.37; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 5.37; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
@@ -2491,7 +2492,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 		}
 		if (!m_steelArray.contains(i + 1))
 		{
-			res = res * 6.72;
+			res = res * 9.22;
 			propellantOverpressureResults.push_back(res);
 
 			// 反应度
@@ -2537,14 +2538,14 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	//double propellantOverpressureAvgValue = calculateAvg(propellantOverpressureResults); // 固体推进剂平均超压
 	//double propellantOverpressureStandardValue = calculateStd(propellantOverpressureResults); // 固体推进剂超压标准差
 
-	double shellOverpressureMaxValue = shellStressMaxValue * 1.47; // 发动机壳体最大超压
-	double shellOverpressureMinValue = shellStressMinValue * 1.47; // 发动机壳体最小超压
-	double shellOverpressureAvgValue = shellStressAvgValue * 1.47; // 发动机壳体平均超压
-	double shellOverpressureStandardValue = shellStressStandardValue * 1.47; // 发动机壳体超压标准差
-	double propellantOverpressureMaxValue = propellantStressMaxValue * 3.47; // 固体推进剂最大超压
-	double propellantOverpressureMinValue = propellantStressMinValue * 3.47; // 固体推进剂最小超压
-	double propellantOverpressureAvgValue = propellantStressAvgValue * 3.47; // 固体推进剂平均超压
-	double propellantOverpressureStandardValue = propellantStressStandardValue * 3.47; // 固体推进剂超压标准差
+	double shellOverpressureMaxValue = shellStressMaxValue * 2.47; // 发动机壳体最大超压
+	double shellOverpressureMinValue = shellStressMinValue * 2.47; // 发动机壳体最小超压
+	double shellOverpressureAvgValue = shellStressAvgValue * 2.47; // 发动机壳体平均超压
+	double shellOverpressureStandardValue = shellStressStandardValue * 2.47; // 发动机壳体超压标准差
+	double propellantOverpressureMaxValue = propellantStressMaxValue * 5.22; // 固体推进剂最大超压
+	double propellantOverpressureMinValue = propellantStressMinValue * 5.22; // 固体推进剂最小超压
+	double propellantOverpressureAvgValue = propellantStressAvgValue * 5.22; // 固体推进剂平均超压
+	double propellantOverpressureStandardValue = propellantStressStandardValue * 5.22; // 固体推进剂超压标准差
 
 	// 超压分析结果
 	OverpressureResult overpressureResult;
