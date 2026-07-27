@@ -603,8 +603,8 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										graphicData2.append(fallTableWidget->item(3, 3)->text().toDouble());
 										graphicData2.append(fallTableWidget->item(8, 3)->text().toDouble());
 										graphicData2.append(fallTableWidget->item(13, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(18, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(23, 3)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(18, 3)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(23, 3)->text().toDouble());
 										newData.append(graphicData2);
 										QVector<double> graphicData3;
 										graphicData3.append(fallTableWidget->item(5, 3)->text().toDouble());
@@ -643,9 +643,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										yCoords.append(fallTableWidget->item(21, 2)->text().toDouble());
 
 
-										/*paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最大应力", xCoords, yCoords, newData,
+										paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最大应力", xCoords, yCoords, newData,
 											fallTableWidget->item(1, 1)->text().toDouble(), fallTableWidget->item(5, 1)->text().toDouble(),
-											fallTableWidget->item(1, 2)->text().toDouble(), fallTableWidget->item(25, 2)->text().toDouble());*/
+											fallTableWidget->item(1, 2)->text().toDouble(), fallTableWidget->item(25, 2)->text().toDouble());
 
 									}
 									else if (data == "FastCombustionIntelligentAnaly" && Qt::Checked == check)
