@@ -143,7 +143,7 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
 {
     m_array->clear();
 
-    double m_xScaleFactor = 50.0;
+    double m_xScaleFactor = 10.0;
     double scaledXMin = xMin * m_xScaleFactor;
     double scaledXMax = xMax * m_xScaleFactor;
 
@@ -171,8 +171,8 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     m_axisY->setRange(zMin, zMax);
 
     QLinearGradient gradient;
-    gradient.setColorAt(0.0, Qt::green);
-    gradient.setColorAt(0.8, Qt::red);
+    gradient.setColorAt(0.0, Qt::blue);
+    gradient.setColorAt(0.5, Qt::green);
     gradient.setColorAt(1.0, Qt::red);
     m_series->setBaseGradient(gradient);
     m_series->setColorStyle(Q3DTheme::ColorStyleRangeGradient);

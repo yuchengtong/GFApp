@@ -815,6 +815,8 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 	data3.append(m_tableWidget->item(25, z)->text().toDouble());
 	newData.append(data3);
 
+
+
 	QVector<double> xCoords;
 	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
 	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
