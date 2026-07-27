@@ -706,34 +706,58 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	QVector<QVector<double>> newData;
 	QVector<double> data1;
 	data1.append(m_tableWidget->item(1, 3)->text().toDouble());
-	data1.append(m_tableWidget->item(4, 3)->text().toDouble());
-	data1.append(m_tableWidget->item(7, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(6, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(11, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(16, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(21, 3)->text().toDouble());
 	newData.append(data1);
 	QVector<double> data2;
 	data2.append(m_tableWidget->item(2, 3)->text().toDouble());
-	data2.append(m_tableWidget->item(5, 3)->text().toDouble());
-	data2.append(m_tableWidget->item(8, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(7, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(12, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(17, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(22, 3)->text().toDouble());
 	newData.append(data2);
 	QVector<double> data3;
 	data3.append(m_tableWidget->item(3, 3)->text().toDouble());
-	data3.append(m_tableWidget->item(6, 3)->text().toDouble());
-	data3.append(m_tableWidget->item(9, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(8, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(13, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(18, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(23, 3)->text().toDouble());
 	newData.append(data3);
+	QVector<double> data4;
+	data4.append(m_tableWidget->item(4, 3)->text().toDouble());
+	data4.append(m_tableWidget->item(9, 3)->text().toDouble());
+	data4.append(m_tableWidget->item(14, 3)->text().toDouble());
+	data4.append(m_tableWidget->item(19, 3)->text().toDouble());
+	data4.append(m_tableWidget->item(24, 3)->text().toDouble());
+	newData.append(data4);
+	QVector<double> data5;
+	data5.append(m_tableWidget->item(5, 3)->text().toDouble());
+	data5.append(m_tableWidget->item(10, 3)->text().toDouble());
+	data5.append(m_tableWidget->item(15, 3)->text().toDouble());
+	data5.append(m_tableWidget->item(20, 3)->text().toDouble());
+	data5.append(m_tableWidget->item(25, 3)->text().toDouble());
+	newData.append(data5);
 
 	QVector<double> xCoords;
 	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
 	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
 	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble());
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
-	yCoords.append(m_tableWidget->item(4, 2)->text().toDouble());
-	yCoords.append(m_tableWidget->item(7, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(6, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(11, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(16, 2)->text().toDouble());
+	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
 
 	updateGraphicData("", x_comboBox->itemText(1), "壳体最大应力", xCoords, yCoords, newData,
-		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(3, 1)->text().toDouble(),
-		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(7, 2)->text().toDouble());
+		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
+		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
 }
 
