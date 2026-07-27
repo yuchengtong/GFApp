@@ -755,7 +755,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
 
-	updateGraphicData("", x_comboBox->itemText(1), "壳体最大应力", xCoords, yCoords, newData,
+	updateGraphicData("壳体厚度", x_comboBox->itemText(1), "壳体最大应力", xCoords, yCoords, newData,
 		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
@@ -1084,7 +1084,20 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 	{
 		m_grapgicComboBox->setCurrentIndex(3);
 	}
-	m_3dGraphicWid->axisTitleChange(xName, yName, zName);
+	QMap<QString, QString> unitmMap;
+	unitmMap.insert("壳体厚度", "壳体厚度[mm]");
+	unitmMap.insert("跌落高度", "跌落高度[m]");
+	unitmMap.insert("快烤平均温度", "快烤平均温度[℃]");
+	unitmMap.insert("烘箱终止温度", "烘箱终止温度[℃]");
+	unitmMap.insert("聚能装药口径", "聚能装药口径[mm]");
+	unitmMap.insert("撞击速度", "撞击速度[m/s]");
+	unitmMap.insert("TNT当量", "TNT当量[g]");
+	unitmMap.insert("殉爆距离", "殉爆距离[mm]");
+	unitmMap.insert("壳体最大应力", "壳体最大应力[MPa]");
+	unitmMap.insert("推进剂最大应力", "推进剂最大应力[MPa]");
+	unitmMap.insert("壳体最高温度", "壳体最高温度[℃]");
+	unitmMap.insert("推进剂最高温度", "推进剂最高温度[℃]");
+	m_3dGraphicWid->axisTitleChange(unitmMap.value(xName), unitmMap.value(yName), unitmMap.value(zName));
 	m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
 }
 
