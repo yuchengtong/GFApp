@@ -636,11 +636,13 @@ IntelligentAnalyWidget::~IntelligentAnalyWidget()
 
 void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 {
+	QString yName = "跌落高度";
 	if (itemData == "IntelligentAnaly") {
 		m_propertyStackWidget->setCurrentWidget(m_intelligentPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fallTableWidget);
 		m_tableWidget = m_fallTableWidget;
 		x_comboBox->setItemText(1, "跌落高度");
+		yName = "跌落高度";
 	}
 	else if (itemData == "FallIntelligentAnaly")
 	{
@@ -648,6 +650,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_tableStackWidget->setCurrentWidget(m_fallTableWidget);
 		m_tableWidget = m_fallTableWidget;
 		x_comboBox->setItemText(1, "跌落高度");
+		yName = "跌落高度";
 	}
 	
 	else if (itemData == "FastCombustionIntelligentAnaly")
@@ -656,6 +659,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_tableStackWidget->setCurrentWidget(m_fastCombustionTableWidget);
 		m_tableWidget = m_fastCombustionTableWidget;
 		x_comboBox->setItemText(1, "快烤平均温度");
+		yName = "快烤平均温度";
 	}
 	else if (itemData == "SlowCombustionIntelligentAnaly")
 	{
@@ -663,6 +667,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_tableStackWidget->setCurrentWidget(m_slowCombustionTableWidget);
 		m_tableWidget = m_slowCombustionTableWidget;
 		x_comboBox->setItemText(1, "慢烤平均温度");
+		yName = "慢烤平均温度";
 	}
 	else if (itemData == "ShootIntelligentAnaly")
 	{
@@ -670,20 +675,23 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_tableStackWidget->setCurrentWidget(m_shootTableWidget);
 		m_tableWidget = m_shootTableWidget;
 		x_comboBox->setItemText(1, "枪击速度");
+		yName = "枪击速度";
 	}
 	else if (itemData == "JetImpactIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_jetImpactPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_jetImpactTableWidget);
 		m_tableWidget = m_jetImpactTableWidget;
-		x_comboBox->setItemText(1, "破片撞击速度");
+		x_comboBox->setItemText(1, "聚能装药口径");
+		yName = "聚能装药口径";
 	}
 	else if (itemData == "FragmentationImpactIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fragmentationImpactPropertyWidget);
 		m_tableStackWidget->setCurrentWidget(m_fragmentationImpactTableWidget);
 		m_tableWidget = m_fragmentationImpactTableWidget;
-		x_comboBox->setItemText(1, "聚能装药口径");
+		x_comboBox->setItemText(1, "破片撞击速度");
+		yName = "破片撞击速度";
 	}
 	else if (itemData == "ExplosiveBlastIntelligentAnaly")
 	{
@@ -691,6 +699,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_tableStackWidget->setCurrentWidget(m_explosiveBlastTableWidget);
 		m_tableWidget = m_explosiveBlastTableWidget;
 		x_comboBox->setItemText(1, "TNT当量");
+		yName = "TNT当量";
 	}
 	else if (itemData == "SacrificeExplosionIntelligentAnaly")
 	{
@@ -698,6 +707,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		m_tableStackWidget->setCurrentWidget(m_sacrificeExplosionTableWidget);
 		m_tableWidget = m_sacrificeExplosionTableWidget;
 		x_comboBox->setItemText(1, "殉爆距离");
+		yName = "殉爆距离";
 	}
 
 	onComboBoxIndexChanged(0);
@@ -754,8 +764,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	yCoords.append(m_tableWidget->item(16, 2)->text().toDouble());
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
-
-	updateGraphicData("壳体厚度", x_comboBox->itemText(1), "壳体最大应力", xCoords, yCoords, newData,
+	updateGraphicData("壳体厚度", yName, "壳体最大应力", xCoords, yCoords, newData,
 		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
@@ -801,19 +810,33 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 	data1.append(m_tableWidget->item(21, z)->text().toDouble());
 	newData.append(data1);
 	QVector<double> data2;
-	data2.append(m_tableWidget->item(3, z)->text().toDouble());
-	data2.append(m_tableWidget->item(8, z)->text().toDouble());
-	data2.append(m_tableWidget->item(13, z)->text().toDouble());
-	data2.append(m_tableWidget->item(18, z)->text().toDouble());
-	data2.append(m_tableWidget->item(23, z)->text().toDouble());
+	data2.append(m_tableWidget->item(2, z)->text().toDouble());
+	data2.append(m_tableWidget->item(7, z)->text().toDouble());
+	data2.append(m_tableWidget->item(12, z)->text().toDouble());
+	data2.append(m_tableWidget->item(17, z)->text().toDouble());
+	data2.append(m_tableWidget->item(22, z)->text().toDouble());
 	newData.append(data2);
 	QVector<double> data3;
-	data3.append(m_tableWidget->item(5, z)->text().toDouble());
-	data3.append(m_tableWidget->item(10, z)->text().toDouble());
-	data3.append(m_tableWidget->item(15, z)->text().toDouble());
-	data3.append(m_tableWidget->item(20, z)->text().toDouble());
-	data3.append(m_tableWidget->item(25, z)->text().toDouble());
+	data3.append(m_tableWidget->item(3, z)->text().toDouble());
+	data3.append(m_tableWidget->item(8, z)->text().toDouble());
+	data3.append(m_tableWidget->item(13, z)->text().toDouble());
+	data3.append(m_tableWidget->item(18, z)->text().toDouble());
+	data3.append(m_tableWidget->item(23, z)->text().toDouble());
 	newData.append(data3);
+	QVector<double> data4;
+	data4.append(m_tableWidget->item(4, z)->text().toDouble());
+	data4.append(m_tableWidget->item(9, z)->text().toDouble());
+	data4.append(m_tableWidget->item(14, z)->text().toDouble());
+	data4.append(m_tableWidget->item(19, z)->text().toDouble());
+	data4.append(m_tableWidget->item(24, z)->text().toDouble());
+	newData.append(data4);
+	QVector<double> data5;
+	data5.append(m_tableWidget->item(5, z)->text().toDouble());
+	data5.append(m_tableWidget->item(10, z)->text().toDouble());
+	data5.append(m_tableWidget->item(15, z)->text().toDouble());
+	data5.append(m_tableWidget->item(20, z)->text().toDouble());
+	data5.append(m_tableWidget->item(25, z)->text().toDouble());
+	newData.append(data5);
 
 
 
@@ -831,7 +854,12 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 	yCoords.append(m_tableWidget->item(16, 2)->text().toDouble());
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
-	updateGraphicData("", "", zName, xCoords, yCoords, newData,
+
+	//QString text = m_tableWidget->item(0, 2)->text();
+	//int startIndex = text.indexOf('['); // 找到 '[' 的位置
+	//int endIndex = text.indexOf(']'); // 找到 ']' 的位置
+	//QString extractedText = text.mid(startIndex + 1, endIndex - startIndex - 1);
+	updateGraphicData("壳体厚度", "", zName, xCoords, yCoords, newData,
 		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 }
@@ -1087,12 +1115,13 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 		m_grapgicComboBox->setCurrentIndex(3);
 	}
 	QMap<QString, QString> unitmMap;
-	unitmMap.insert("壳体厚度", "壳体厚度[mm]");
+	unitmMap.insert("壳体厚度", "壳体厚度[mm*10]");
 	unitmMap.insert("跌落高度", "跌落高度[m]");
 	unitmMap.insert("快烤平均温度", "快烤平均温度[℃]");
-	unitmMap.insert("烘箱终止温度", "烘箱终止温度[℃]");
+	unitmMap.insert("慢烤平均温度", "烘箱终止温度[℃]");
 	unitmMap.insert("聚能装药口径", "聚能装药口径[mm]");
-	unitmMap.insert("撞击速度", "撞击速度[m/s]");
+	unitmMap.insert("枪击速度", "撞击速度[m/s]");
+	unitmMap.insert("破片撞击速度", "撞击速度[m/s]");
 	unitmMap.insert("TNT当量", "TNT当量[g]");
 	unitmMap.insert("殉爆距离", "殉爆距离[mm]");
 	unitmMap.insert("壳体最大应力", "壳体最大应力[MPa]");
