@@ -538,11 +538,12 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	QLabel* hspinBoxLabel = new QLabel("水平：");
 	QSpinBox* hspinBox = new QSpinBox();
-	hspinBox->setMinimum(-180);
-	hspinBox->setMaximum(180);
-	hspinBox->setSingleStep(5);
+	hspinBox->setMinimum(1);
+	hspinBox->setMaximum(89);
+	hspinBox->setSingleStep(1);
 	hspinBox->setMinimumWidth(200);
 	hspinBox->setSuffix("°");
+	hspinBox->setValue(45);
 	connect(hspinBox, QOverload<int>::of(&QSpinBox::valueChanged),
 		this, &IntelligentAnalyWidget::hspinChange);
 
@@ -550,9 +551,10 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	QSpinBox* vspinBox = new QSpinBox();
 	vspinBox->setMinimum(0);
 	vspinBox->setMaximum(90);
-	vspinBox->setSingleStep(5);
+	vspinBox->setSingleStep(1);
 	vspinBox->setMinimumWidth(200);
 	vspinBox->setSuffix("°");
+	vspinBox->setValue(30);
 	connect(vspinBox, QOverload<int>::of(&QSpinBox::valueChanged),
 		this, &IntelligentAnalyWidget::vspinChange);
 
@@ -573,7 +575,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	m_3dGraphicWid = new GraphicWidget();
 
-
+	//m_3dGraphicWid->on_angleValueChange(0, 45);
+	//m_3dGraphicWid->on_angleValueChange(1, 30);
 	// 构建布局
 	QVBoxLayout* m_rightLayout = new QVBoxLayout();
 	m_rightLayout->addLayout(choseLayou);

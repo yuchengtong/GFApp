@@ -2470,16 +2470,14 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 			double dist1 = currentNode.Distance(ptShellLeftBottom);
 			double dist2 = currentNode.Distance(ptShellRightBottom);
 			double minDist = std::min(dist1, dist2);
-			if (minDist > 700.0)
+			if (minDist > 600.0)
 			{
 				value = min_value;
-
 
 				if (abs(currentNode.Y() - ptShellLeftBottom.Y()) < 10)
 				{
 					value = min_value + (max_value - min_value) * 0.25;
 				}
-				
 			}
 			else
 			{
@@ -2500,6 +2498,11 @@ bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vecto
 
 				double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
 				value = min_value + (max_value - min_value) * ratio;
+
+				if (value == min_value)
+				{
+					value = min_value + (max_value - min_value) * 0.25;
+				}
 			}
 		}
 		else if (angle > 0 && angle <= 15)
@@ -2849,7 +2852,7 @@ bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::
 
 	const int layerCount = 9;
 
-	std::vector<double> layerBoundaries = { 10.0, 25.0, 50.0, 90.0, 160.0, 260.0, 300.0, 330.0, 350.0 };
+	std::vector<double> layerBoundaries = { 10.0, 50.0, 100.0, 180.0, 230.0, 290.0, 350.0, 430.0, 550.0 };
 	double maxDistance = layerBoundaries.back();
 
 	for (TColStd_PackedMapOfInteger::Iterator it(allnode); it.More(); it.Next())
@@ -2931,52 +2934,275 @@ bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::
 		else if (angle > 0 && angle <= 15)
 		{
 			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			double valueShellRight = min_value + (max_value - min_value) * 0.4;
+			double valueShellRight = min_value;
 			// ptShellRightBottom 影响
-			if (distToShellRight < 300.0)
+			if (distToShellRight < 50.0)
+				valueShellRight = max_value;
+			else if (distToShellRight < 80.0)
 				valueShellRight = min_value + (max_value - min_value) * 0.7;
-			
+			else if (distToShellRight < 120.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			else if (distToShellRight < 180.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.5;
+			else if (distToShellRight < 230.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.4;
+			else if (distToShellRight < 300.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+			else if (distToShellRight < 400.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+
+			gp_Pnt ptShellRightUp(ptShellRightBottom.X(), ptShellRightBottom.Y() - 1700, ptShellRightBottom.Z());
+			double distToShellRightUp = currentNode.Distance(ptShellRightUp);
+			if (distToShellRightUp < 30.0)
+				valueShellRight = max_value;
+			else if (distToShellRightUp < 40.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			else if (distToShellRightUp < 60.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			else if (distToShellRightUp < 90.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.5;
+			else if (distToShellRightUp < 120.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.4;
+			else if (distToShellRightUp < 250.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+			else if (distToShellRightUp < 300.0)
+				valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+
+			if (abs(ptNozzleInletBottom.X() - x) < 200)
+				valueShellRight = min_value + (max_value - min_value) * 0.3;
+
 			value = valueShellRight;
 		}
 		else if (angle > 15 && angle <= 60)
 		{
-			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			double valueShellRight = min_value + (max_value - min_value) * 0.4;
-			// ptShellRightBottom 影响
-			if (distToShellRight < 300.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+			double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
 
-			value = valueShellRight;
+			// 计算每个点的独立影响值
+			double valueNozzleInlet = min_value;
+
+			// ptNozzleInletBottom 影响
+			if (distToNozzleInlet < 50.0)
+				valueNozzleInlet = max_value;
+			else if (distToNozzleInlet < 100.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+			else if (distToNozzleInlet < 150.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+			else if (distToNozzleInlet < 200.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+			else if (distToNozzleInlet < 300.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+			else if (distToNozzleInlet < 500.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+			else if (distToNozzleInlet < 800.0)
+				valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+			value = valueNozzleInlet;
 		}
 		else if (angle > 60 && angle < 90)
 		{
-			double distToShellRight = currentNode.Distance(ptShellRightBottom);
-			double valueShellRight = min_value + (max_value - min_value) * 0.4;
-			// ptShellRightBottom 影响
-			if (distToShellRight < 200.0)
-				valueShellRight = min_value + (max_value - min_value) * 0.7;
+			// 胶囊中心
+			gp_Pnt capsuleCenter(
+				modelGeometryInfo.theXmin + (modelGeometryInfo.theXmax - modelGeometryInfo.theXmin) / 2.0,
+				modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+				ptNozzleInletBottom.Z()
+			);
 
-			gp_Pnt ptShellRightUp(ptShellRightBottom.X(), ptShellRightBottom.Y()-1200, ptShellRightBottom.Z());
-			double distToShellRightUp = currentNode.Distance(ptShellRightUp);
-			if (distToShellRightUp < 300)
-				valueShellRight = min_value + (max_value - min_value) * 0.6;
+			// 胶囊参数：长3000（沿X轴），宽1000（半径500）
+			double capsuleLength = 4000.0;
+			double capsuleRadius = 500.0;
 
+			// 圆柱段半长
+			double cylinderHalfLength = (capsuleLength - 2.0 * capsuleRadius) / 2.0;
+			if (cylinderHalfLength < 0)
+			{
+				cylinderHalfLength = 0;
+			}
 
-			value = valueShellRight;
+			// 胶囊轴线沿 X 方向
+			gp_Dir axisDir(1.0, 0.0, 0.0);
+			gp_Vec axisVec(axisDir);
+
+			// 圆柱段两端点（半球球心）—— 沿 X 方向变化
+			gp_Pnt cylStart(
+				capsuleCenter.X() - cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+			gp_Pnt cylEnd(
+				capsuleCenter.X() + cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+
+			gp_Pnt P = currentNode;
+
+			// 节点在轴线方向上的投影 —— 沿 X 轴
+			gp_Vec centerToP(
+				P.X() - capsuleCenter.X(),
+				P.Y() - capsuleCenter.Y(),
+				P.Z() - capsuleCenter.Z()
+			);
+			double t = centerToP.Dot(axisVec);
+
+			double distToSurface = 0.0;
+
+			if (t < -cylinderHalfLength - capsuleRadius)
+			{
+				// 起始端（-X侧）半球外侧
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength + capsuleRadius)
+			{
+				// 末端（+X侧）半球外侧
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else if (t < -cylinderHalfLength)
+			{
+				// 起始端（-X侧）半球区域
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength)
+			{
+				// 末端（+X侧）半球区域
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else
+			{
+				// 圆柱段区域：到轴线的垂直距离
+				gp_Pnt projPoint(
+					capsuleCenter.X() + t,  // X 随投影变化
+					capsuleCenter.Y(),       // Y 保持中心
+					capsuleCenter.Z()
+				);
+				double distToAxis = P.Distance(projPoint);
+				distToSurface = distToAxis - capsuleRadius;
+			}
+
+			// 胶囊内部距离为负，取0
+			double effectiveDist = std::max(0.0, distToSurface);
+
+			// 9层硬编码衰减
+			if (effectiveDist < 100.0)
+			{
+				value = min_value;
+			}
+			else if (effectiveDist < 200.0)
+			{
+				value = min_value + (max_value - min_value) * 0.2;
+			}
+			else
+			{
+				value = min_value + (max_value - min_value) * 0.3;
+			}
 		}
 		else if (angle == 90)
 		{
-			gp_Pnt circleCenter(ptNozzleInletBottom.X() - 200,
+			// ========== 胶囊影响（大区域背景）==========
+			gp_Pnt capsuleCenter(
+				modelGeometryInfo.theXmin + (modelGeometryInfo.theXmax - modelGeometryInfo.theXmin) / 2.0,
 				modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
-				ptNozzleInletBottom.Z());
+				ptNozzleInletBottom.Z()
+			);
+
+			double capsuleLength = 4000.0;
+			double capsuleRadius = 500.0;
+
+			double cylinderHalfLength = (capsuleLength - 2.0 * capsuleRadius) / 2.0;
+			if (cylinderHalfLength < 0)
+			{
+				cylinderHalfLength = 0;
+			}
+
+			gp_Dir axisDir(1.0, 0.0, 0.0);
+			gp_Vec axisVec(axisDir);
+
+			gp_Pnt cylStart(
+				capsuleCenter.X() - cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+			gp_Pnt cylEnd(
+				capsuleCenter.X() + cylinderHalfLength,
+				capsuleCenter.Y(),
+				capsuleCenter.Z()
+			);
+
+			gp_Pnt P = currentNode;
+			gp_Vec centerToP(
+				P.X() - capsuleCenter.X(),
+				P.Y() - capsuleCenter.Y(),
+				P.Z() - capsuleCenter.Z()
+			);
+			double t = centerToP.Dot(axisVec);
+
+			double distToSurface = 0.0;
+
+			if (t < -cylinderHalfLength - capsuleRadius)
+			{
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength + capsuleRadius)
+			{
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else if (t < -cylinderHalfLength)
+			{
+				distToSurface = P.Distance(cylStart) - capsuleRadius;
+			}
+			else if (t > cylinderHalfLength)
+			{
+				distToSurface = P.Distance(cylEnd) - capsuleRadius;
+			}
+			else
+			{
+				gp_Pnt projPoint(
+					capsuleCenter.X() + t,
+					capsuleCenter.Y(),
+					capsuleCenter.Z()
+				);
+				double distToAxis = P.Distance(projPoint);
+				distToSurface = distToAxis - capsuleRadius;
+			}
+
+			double effectiveDist = std::max(0.0, distToSurface);
+
+			// 胶囊衰减值（修复：越远越小）
+			double valueCapsule;
+			if (effectiveDist < 100.0)
+			{
+				valueCapsule = min_value;  // 胶囊外100内：最小值
+			}
+			else if (effectiveDist < 500.0)
+			{
+				valueCapsule = min_value + (max_value - min_value) * 0.2;
+			}
+			else if (effectiveDist < 1000.0)
+			{
+				valueCapsule = min_value + (max_value - min_value) * 0.1;
+			}
+			else
+			{
+				valueCapsule = min_value;  // 远离胶囊：最小值
+			}
+
+			// ========== 矩形核心影响（局部高应力区）==========
+			gp_Pnt circleCenter(
+				ptNozzleInletBottom.X() - 200,
+				modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+				ptNozzleInletBottom.Z()
+			);
 
 			double dx = abs(circleCenter.X() - x);
 			double dy = abs(circleCenter.Y() - y);
 
-			// 核心矩形区域：保持不变
-			if (dx < 20.0 && dy < 300.0)
+			double valueRect;
+			if (dx < 30.0 && dy < 300.0)
 			{
-				value = max_value;
+				// 核心矩形：最大值
+				valueRect = max_value;
 			}
 			else
 			{
@@ -2984,40 +3210,38 @@ bool APISetNodeValue::SetPropellantFallPressureNephogram(OccView* occView, std::
 				double distY = std::max(0.0, dy - 300.0);
 				double distToRect = std::sqrt(distX * distX + distY * distY);
 
-				// 硬编码阶梯衰减
-				if (distToRect < 100.0)
+				if (distToRect < 40.0)
 				{
-					value = min_value + (max_value - min_value) * 0.8;
+					valueRect = min_value + (max_value - min_value) * 0.8;
 				}
-				else if (distToRect < 130.0)
+				else if (distToRect < 50.0)
 				{
-					value = min_value + (max_value - min_value) * 0.7;
+					valueRect = min_value + (max_value - min_value) * 0.7;
 				}
-				else if (distToRect < 150.0)
+				else if (distToRect < 70.0)
 				{
-					value = min_value + (max_value - min_value) * 0.6;
+					valueRect = min_value + (max_value - min_value) * 0.6;
 				}
-				else if (distToRect < 300.0)
+				else if (distToRect < 90.0)
 				{
-					value = min_value + (max_value - min_value) * 0.5;
+					valueRect = min_value + (max_value - min_value) * 0.5;
 				}
-				else if (distToRect < 1000.0)
+				else if (distToRect < 100.0)
 				{
-					value = min_value + (max_value - min_value) * 0.4;
+					valueRect = min_value + (max_value - min_value) * 0.4;
 				}
-				else if (distToRect <4000.0)
+				else if (distToRect < 120.0)
 				{
-					value = min_value + (max_value - min_value) * 0.3;
-				}
-				else if (distToRect < 4200.0)
-				{
-					value = min_value + (max_value - min_value) * 0.2;
+					valueRect = min_value + (max_value - min_value) * 0.2;
 				}
 				else
 				{
-					value = min_value;
+					valueRect = min_value;
 				}
 			}
+
+			// ========== 最终值：取两者最大值（应力叠加）==========
+			value = std::max(valueCapsule, valueRect);
 		}
 
 		nodeValues.push_back(value);
@@ -8597,11 +8821,11 @@ bool APISetNodeValue::SetPropellantFragmentationReactionDegreeNephogram(OccView*
 		{semi_minor_x_1 * 0.2, semi_major_z_1 * 0.4},
 		{semi_minor_x_1 * 0.25, semi_major_z_1 * 0.45},
 		{semi_minor_x_1 * 0.3, semi_major_z_1 * 0.5},
-		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.6},
-		{semi_minor_x_1 * 0.7, semi_major_z_1 * 0.8},
-		{semi_minor_x_1 * 0.85, semi_major_z_1 * 0.85},
-		{semi_minor_x_1 * 0.95, semi_major_z_1 * 0.9},
-		{semi_minor_x_1 * 1.0, semi_major_z_1 * 1.0}
+		{semi_minor_x_1 * 0.45, semi_major_z_1 * 0.6},
+		{semi_minor_x_1 * 0.5, semi_major_z_1 * 0.8},
+		{semi_minor_x_1 * 0.55, semi_major_z_1 * 0.85},
+		{semi_minor_x_1 * 0.65, semi_major_z_1 * 0.9},
+		{semi_minor_x_1 * 0.7, semi_major_z_1 * 1.0}
 	};
 
 	// cx    // 椭圆中心 x

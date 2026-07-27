@@ -5,16 +5,21 @@
 #include <QSpinBox>
 
 #include "GraphicWidget.h"
+#include <Q3DInputHandler>
 
 GraphicWidget::GraphicWidget(QWidget* parent)
 	: QWidget(parent)
 {
     m_graph = create3DSurfaceGraph();
+    auto* inputHandler = qobject_cast<Q3DInputHandler*>(m_surface->activeInputHandler());
+    if (inputHandler) {
+        inputHandler->setRotationEnabled(false);
+    }
+
 
     m_graph->activeTheme()->setGridEnabled(true);
     m_graph->activeTheme()->setBackgroundEnabled(true);
     m_graph->activeTheme()->setLabelBackgroundEnabled(true);
-
     QWidget* graphContainer = QWidget::createWindowContainer(m_graph);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -30,7 +35,7 @@ GraphicWidget::~GraphicWidget()
 QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
 {
     m_surface = new Q3DSurface;
-   
+ 
     m_axisX = createValue3DAxis("壳体厚度");
     m_axisY = createValue3DAxis("跌落高度");
     m_axisZ = createValue3DAxis("壳体最大应力");
@@ -52,6 +57,11 @@ QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
         m_array->append(dataRow);
     }
     m_series->dataProxy()->resetArray(m_array);
+
+    Q3DCamera* camera = m_surface->scene()->activeCamera();
+    camera->setXRotation(45.0f);
+    camera->setYRotation(30.0f); 
+    camera->setZoomLevel(70.0f);
 
     return m_surface;
 }
@@ -82,8 +92,8 @@ void GraphicWidget::on_angleValueChange(int type, int val)
     {
         m_graph->scene()->activeCamera()->setXRotation(val);
     }
-    else if (1 == type)
-    {       
+    else if (1 == type) 
+    {
         m_graph->scene()->activeCamera()->setYRotation(val);
     }
 }
