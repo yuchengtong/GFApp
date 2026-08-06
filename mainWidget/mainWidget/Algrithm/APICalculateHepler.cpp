@@ -8,6 +8,31 @@
 #include "ModelDataManager.h"
 
 
+double translateAngle(double angle, double val)
+{
+	double theta = std::clamp(angle, 0.0, 90.0);
+	const double exp = 1.01;
+	// 15°相对于0°的增益系数
+	const double kMax = 1.2;
+	// 90°相对于0°的系数，大于1
+	const double k90 = 1.05;
+
+	double res;
+	if (theta <= 15.0)
+	{
+		double t = theta / 15.0;
+		res = val * pow(t, exp);
+		// t=1 得到 baseStress，达不到峰值；修正：区间插值
+		res = val + (kMax * val - val) * pow(t, exp);
+	}
+	else
+	{
+		double t = (theta - 15.0) / 75.0;
+		res = k90 * val + (kMax * val - k90 * val) * pow(1.0 - t, exp);
+	}
+	return res;
+}
+
 double translateFallStress(double height, double val)
 {
 	const double val_min = 1733.79;
@@ -364,6 +389,8 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		{
 			
 			res = translateFallStress(fallInfo.high, res);
+			res = translateAngle(fallInfo.angle, res);
+
 			if (res > limitValue)
 			{
 				res = limitValue;
@@ -373,6 +400,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 		else
 		{
+			res = translateAngle(fallInfo.angle, res);
 			if (res > limitValue)
 			{
 				res = limitValue;
@@ -474,6 +502,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		{
 			res = 25;
 		}
+		res = translateAngle(fallInfo.angle, res);
 		if (fallInfo.angle == 0 && res >= 30)
 		{
 			res = 28.589;
@@ -554,12 +583,14 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		{
 			if (res == 0)
 			{
+				res = translateAngle(fallInfo.angle, res);
 				propellantOverpressureResults.push_back(res);
 			}
 			else
 			{
 				
 				res = translateFallOverpressure(fallInfo.high, res);
+				res = translateAngle(fallInfo.angle, res);
 				propellantOverpressureResults.push_back(res);
 			}
 
@@ -588,6 +619,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		else
 		{
 			//res = translateFallOverpressure(fallInfo.high, res) * 1.42;
+			res = translateAngle(fallInfo.angle, res);
 			steelOverpressureResults.push_back(res);
 		}
 		

@@ -625,6 +625,14 @@ void FallPropertyWidget::initWidget()
 
 			auto angleValue = text.toInt();
 
+			if (angleValue > 90 || angleValue < 0)
+			{
+				m_tableWidget->blockSignals(true);
+				item->setText(m_angle);
+				m_tableWidget->blockSignals(false);
+				return;
+			}
+
 			FallSettingInfo info = ModelDataManager::GetInstance()->GetFallSettingInfo();
 			info.angle = angleValue;
 			ModelDataManager::GetInstance()->SetFallSettingInfo(info);
