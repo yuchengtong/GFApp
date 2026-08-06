@@ -22,6 +22,30 @@
 #include "WordExporter.h"
 #include "WordExporterWorker.h"
 
+double translateFallAngle(double angle, double val)
+{
+	double theta = std::clamp(angle, 0.0, 90.0);
+	const double exp = 1.01;
+	// 15°相对于0°的增益系数
+	const double kMax = 1.2;
+	// 90°相对于0°的系数，大于1
+	const double k90 = 1.05;
+
+	double res;
+	if (theta <= 15.0)
+	{
+		double t = theta / 15.0;
+		res = val * pow(t, exp);
+		// t=1 得到 baseStress，达不到峰值；修正：区间插值
+		res = val + (kMax * val - val) * pow(t, exp);
+	}
+	else
+	{
+		double t = (theta - 15.0) / 75.0;
+		res = k90 * val + (kMax * val - k90 * val) * pow(1.0 - t, exp);
+	}
+	return res;
+}
 
 double translateFallStressTemp(double height, double val)
 {
@@ -438,6 +462,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												if (!m_array.contains(i + 1))
 												{
 													res = translateFallStressTemp(J/1000, res);
+													res = translateFallAngle(fallInfo.angle, res);
 													if (res > limitValue)
 													{
 														res = limitValue;
@@ -446,6 +471,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												}
 												else
 												{
+													res = translateFallAngle(fallInfo.angle, res);
 													if (res > limitValue)
 													{
 														res = limitValue;
@@ -470,6 +496,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												{
 													res = 25;
 												}
+												res = translateFallAngle(fallInfo.angle, res);
 												if (fallInfo.angle == 0 && res > 30)
 												{
 													res = 28.589;

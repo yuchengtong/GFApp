@@ -2893,7 +2893,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									{
 										if (!tableWidget) return;
 										tableWidget->item(stressRow, 2)->setText(
-											maxStress > tensileStrength ? "应力超过壳体最大抗拉强度，有燃爆风险" : "应力未超过壳体最大抗拉强度");
+											maxStress > tensileStrength ? "应力超过壳体最大抗拉强度，有破损风险" : "应力未超过壳体最大抗拉强度");
 										tableWidget->item(tempRow, 2)->setText(
 											maxTemp > ignitionTemperature ? "温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
 										tableWidget->item(pressRow, 2)->setText(
@@ -4309,8 +4309,8 @@ QMap<QString, QVariant> GFTreeModelWidget::convertTextData(ProjectPropertyWidge*
 	data.insert("含能材料", m_materialTableWid->item(2, 2)->text());
 	data.insert("外防热材料", m_materialTableWid->item(3, 2)->text());
 	data.insert("绝热层材料", m_materialTableWid->item(4, 2)->text());
-	data.insert("直径", m_geomTableWid->item(3, 2)->text());
-	data.insert("总长", m_geomTableWid->item(4, 2)->text());
+	data.insert("直径", m_geomTableWid->item(4, 2)->text());
+	data.insert("总长", m_geomTableWid->item(3, 2)->text());
 
 
 	// 材料数据
