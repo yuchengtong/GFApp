@@ -2785,8 +2785,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 		contextMenu->addAction(hidePoints);
 		contextMenu->exec(event->globalPos());
 	}
-
-
 	else if (text == "安全特性参数分析")
 	{
 		QMenu* contextMenu = new QMenu(this);
@@ -2818,420 +2816,410 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 				processedNameList.push_back(nameMap[processedName]);
 		}
 
-		connect(calAction, &QAction::triggered, this, [item, processedNameList, this]() {
+		connect(calAction, &QAction::triggered, this, [item, processedNameList, importModelWidget, this]() {
 			if (processedNameList.isEmpty())
 			{
 				QMessageBox::warning(this, "计算", "请先选择安全性分析场景");
 				return;
 			}
 
-			QWidget* parent = parentWidget();
-			while (parent)
-			{
-				GFImportModelWidget* gfParent = dynamic_cast<GFImportModelWidget*>(parent);
-				if (gfParent)
-				{
-					QString timeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-					auto logWidget = gfParent->GetLogWidget();
-					auto textEdit = logWidget->GetTextEdit();
-					auto occView = gfParent->GetOccView();
-					Handle(AIS_InteractiveContext) context = occView->getContext();
-					Handle(V3d_View) view = occView->getView();
+			QString timeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+			auto logWidget = importModelWidget->GetLogWidget();
+			auto textEdit = logWidget->GetTextEdit();
+			auto occView = importModelWidget->GetOccView();
+			Handle(AIS_InteractiveContext) context = occView->getContext();
+			Handle(V3d_View) view = occView->getView();
 
-					ProgressDialog* progressDialog = new ProgressDialog("计算", gfParent);
-					progressDialog->show();
+			ProgressDialog* progressDialog = new ProgressDialog("计算", importModelWidget);
+			progressDialog->show();
 
-					CalculateWorker* worker = new CalculateWorker(processedNameList);
-					QThread* workerThread = new QThread();
-					worker->moveToThread(workerThread);
+			CalculateWorker* worker = new CalculateWorker(processedNameList);
+			QThread* workerThread = new QThread();
+			worker->moveToThread(workerThread);
 
-					connect(workerThread, &QThread::started, worker, &CalculateWorker::DoWork);
-					connect(worker, &CalculateWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
-					connect(worker, &CalculateWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
-					connect(progressDialog, &ProgressDialog::Canceled, worker, &CalculateWorker::RequestInterruption, Qt::DirectConnection);
+			connect(workerThread, &QThread::started, worker, &CalculateWorker::DoWork);
+			connect(worker, &CalculateWorker::ProgressUpdated, progressDialog, &ProgressDialog::SetProgress);
+			connect(worker, &CalculateWorker::StatusUpdated, progressDialog, &ProgressDialog::SetStatusText);
+			connect(progressDialog, &ProgressDialog::Canceled, worker, &CalculateWorker::RequestInterruption, Qt::DirectConnection);
 
-					auto tensileStrength = ModelDataManager::GetInstance()->GetSteelPropertyInfo().tensileStrength;
-					auto ignitionTemperature = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().ignitionTemperature;
-					auto fireOverpressure = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().fireOverpressure;
+			auto tensileStrength = ModelDataManager::GetInstance()->GetSteelPropertyInfo().tensileStrength;
+			auto ignitionTemperature = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().ignitionTemperature;
+			auto fireOverpressure = ModelDataManager::GetInstance()->GetPropellantPropertyInfo().fireOverpressure;
 
-					connect(worker, &CalculateWorker::WorkFinished, this,
-						[=](bool success, const QString& msg) {
-							QString finishTimeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-							textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+			connect(worker, &CalculateWorker::WorkFinished, this,
+				[=](bool success, const QString& msg) {
+					QString finishTimeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+					textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
 
-							if (success)
+					if (success)
+					{
+						for (int i = 0; i < item->childCount(); ++i)
+						{
+							QTreeWidgetItem* childItem = item->child(i);
+							if (childItem->checkState(0) != Qt::Checked) continue;
+
+							QString originalName = childItem->text(0);
+							int dotIndex = originalName.indexOf('.');
+							QString processedName = (dotIndex != -1) ? originalName.mid(dotIndex + 1).trimmed() : originalName;
+
+							QString logText = timeStr + "[信息]>开始进行" + processedName;
+							textEdit->appendPlainText(logText);
+
+							// 通用结果更新 Lambda
+							auto updateResultWidget = [&](auto* resultWidget,
+								auto& stressResult, auto& strainResult, auto& tempResult,
+								auto& overpressureResult, auto& reactionDegreeResult)
 							{
-								for (int i = 0; i < item->childCount(); ++i)
+								if (!resultWidget) return;
+								resultWidget->updateData(
+									stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
+									stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
+									stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
+									stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
+								// ... 其他 widget 更新类似，实际代码中需要补充完整
+							};
+
+							// 通用判断更新 Lambda
+							auto updateJudgement = [&](auto* tableWidget, int stressRow, int tempRow, int pressRow,
+								double maxStress, double maxTemp, double maxPress)
+							{
+								if (!tableWidget) return;
+								tableWidget->item(stressRow, 2)->setText(
+									maxStress > tensileStrength ? "应力超过壳体最大抗拉强度，有破损风险" : "应力未超过壳体最大抗拉强度");
+								tableWidget->item(tempRow, 2)->setText(
+									maxTemp > ignitionTemperature ? "温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
+								tableWidget->item(pressRow, 2)->setText(
+									maxPress > fireOverpressure ? "超压超过推进剂最大发火超压，有燃爆风险" : "超压未超过推进剂最大发火超压");
+							};
+
+							if (processedName == "跌落安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateFallAnalysisResult(occView, resultValue))
 								{
-									QTreeWidgetItem* childItem = item->child(i);
-									if (childItem->checkState(0) != Qt::Checked) continue;
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>跌落安全性分析计算完成");
 
-									QString originalName = childItem->text(0);
-									int dotIndex = originalName.indexOf('.');
-									QString processedName = (dotIndex != -1) ? originalName.mid(dotIndex + 1).trimmed() : originalName;
+									auto& fallStress = ModelDataManager::GetInstance()->GetFallStressResult();
+									auto& fallStrain = ModelDataManager::GetInstance()->GetFallStrainResult();
+									auto& fallTemp = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+									auto& fallPress = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+									auto& fallReact = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
 
-									QString logText = timeStr + "[信息]>开始进行" + processedName;
-									textEdit->appendPlainText(logText);
+									importModelWidget->GetStressResultWidget()->updateData(
+										fallStress.metalsMaxStress, fallStress.metalsMinStress, fallStress.metalsAvgStress, fallStress.metalsStandardStress,
+										fallStress.propellantsMaxStress, fallStress.propellantsMinStress, fallStress.propellantsAvgStress, fallStress.propellantsStandardStress,
+										fallStress.outheatMaxStress, fallStress.outheatMinStress, fallStress.outheatAvgStress, fallStress.outheatStandardStress,
+										fallStress.insulatingheatMaxStress, fallStress.insulatingheatMinStress, fallStress.insulatingheatAvgStress, fallStress.insulatingheatStandardStress);
+									importModelWidget->GetStrainResultWidget()->updateData(
+										fallStrain.metalsMaxStrain, fallStrain.metalsMinStrain, fallStrain.metalsAvgStrain, fallStrain.metalsStandardStrain,
+										fallStrain.propellantsMaxStrain, fallStrain.propellantsMinStrain, fallStrain.mpropellantsAvgStrain, fallStrain.propellantsStandardStrain,
+										fallStrain.outheatMaxStrain, fallStrain.outheatMinStrain, fallStrain.outheatAvgStrain, fallStrain.outheatStandardStrain,
+										fallStrain.insulatingheatMaxStrain, fallStrain.insulatingheatMinStrain, fallStrain.insulatingheatAvgStrain, fallStrain.insulatingheatStandardStrain);
+									importModelWidget->GetTemperatureResultWidget()->updateData(
+										fallTemp.metalsMaxTemperature, fallTemp.metalsMinTemperature, fallTemp.metalsAvgTemperature, fallTemp.metalsStandardTemperature,
+										fallTemp.propellantsMaxTemperature, fallTemp.propellantsMinTemperature, fallTemp.mpropellantsAvgTemperature, fallTemp.propellantsStandardTemperature,
+										fallTemp.outheatMaxTemperature, fallTemp.outheatMinTemperature, fallTemp.outheatAvgTemperature, fallTemp.outheatStandardTemperature,
+										fallTemp.insulatingheatMaxTemperature, fallTemp.insulatingheatMinTemperature, fallTemp.insulatingheatAvgTemperature, fallTemp.insulatingheatStandardTemperature);
+									importModelWidget->GetOverpressureResultWidget()->updateData(
+										fallPress.metalsMaxOverpressure, fallPress.metalsMinOverpressure, fallPress.metalsAvgOverpressure, fallPress.metalsStandardOverpressure,
+										fallPress.propellantsMaxOverpressure, fallPress.propellantsMinOverpressure, fallPress.mpropellantsAvgOverpressure, fallPress.propellantsStandardOverpressure,
+										fallPress.outheatMaxOverpressure, fallPress.outheatMinOverpressure, fallPress.outheatAvgOverpressure, fallPress.outheatStandardOverpressure,
+										fallPress.insulatingheatMaxOverpressure, fallPress.insulatingheatMinOverpressure, fallPress.insulatingheatAvgOverpressure, fallPress.insulatingheatStandardOverpressure);
+									importModelWidget->GetReactionDegreeResultWidget()->updateData(
+										fallReact.metalsMaxReactionDegree, fallReact.metalsMinReactionDegree, fallReact.metalsAvgReactionDegree, fallReact.metalsStandardReactionDegree,
+										fallReact.propellantsMaxReactionDegree, fallReact.propellantsMinReactionDegree, fallReact.propellantsAvgReactionDegree, fallReact.propellantsStandardReactionDegree,
+										fallReact.outheatMaxReactionDegree, fallReact.outheatMinReactionDegree, fallReact.outheatAvgReactionDegree, fallReact.outheatStandardReactionDegree,
+										fallReact.insulatingheatMaxReactionDegree, fallReact.insulatingheatMinReactionDegree, fallReact.insulatingheatAvgReactionDegree, fallReact.insulatingheatStandardReactionDegree);
 
-									// 通用结果更新 Lambda
-									auto updateResultWidget = [&](auto* resultWidget,
-										auto& stressResult, auto& strainResult, auto& tempResult,
-										auto& overpressureResult, auto& reactionDegreeResult)
-									{
-										if (!resultWidget) return;
-										resultWidget->updateData(
-											stressResult.metalsMaxStress, stressResult.metalsMinStress, stressResult.metalsAvgStress, stressResult.metalsStandardStress,
-											stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
-											stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
-											stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
-										// ... 其他 widget 更新类似，实际代码中需要补充完整
-									};
-
-									// 通用判断更新 Lambda
-									auto updateJudgement = [&](auto* tableWidget, int stressRow, int tempRow, int pressRow,
-										double maxStress, double maxTemp, double maxPress)
-									{
-										if (!tableWidget) return;
-										tableWidget->item(stressRow, 2)->setText(
-											maxStress > tensileStrength ? "应力超过壳体最大抗拉强度，有破损风险" : "应力未超过壳体最大抗拉强度");
-										tableWidget->item(tempRow, 2)->setText(
-											maxTemp > ignitionTemperature ? "温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
-										tableWidget->item(pressRow, 2)->setText(
-											maxPress > fireOverpressure ? "超压超过推进剂最大发火超压，有燃爆风险" : "超压未超过推进剂最大发火超压");
-									};
-
-									if (processedName == "跌落安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateFallAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>跌落安全性分析计算完成");
-
-											auto& fallStress = ModelDataManager::GetInstance()->GetFallStressResult();
-											auto& fallStrain = ModelDataManager::GetInstance()->GetFallStrainResult();
-											auto& fallTemp = ModelDataManager::GetInstance()->GetFallTemperatureResult();
-											auto& fallPress = ModelDataManager::GetInstance()->GetFallOverpressureResult();
-											auto& fallReact = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
-
-											gfParent->GetStressResultWidget()->updateData(
-												fallStress.metalsMaxStress, fallStress.metalsMinStress, fallStress.metalsAvgStress, fallStress.metalsStandardStress,
-												fallStress.propellantsMaxStress, fallStress.propellantsMinStress, fallStress.propellantsAvgStress, fallStress.propellantsStandardStress,
-												fallStress.outheatMaxStress, fallStress.outheatMinStress, fallStress.outheatAvgStress, fallStress.outheatStandardStress,
-												fallStress.insulatingheatMaxStress, fallStress.insulatingheatMinStress, fallStress.insulatingheatAvgStress, fallStress.insulatingheatStandardStress);
-											gfParent->GetStrainResultWidget()->updateData(
-												fallStrain.metalsMaxStrain, fallStrain.metalsMinStrain, fallStrain.metalsAvgStrain, fallStrain.metalsStandardStrain,
-												fallStrain.propellantsMaxStrain, fallStrain.propellantsMinStrain, fallStrain.mpropellantsAvgStrain, fallStrain.propellantsStandardStrain,
-												fallStrain.outheatMaxStrain, fallStrain.outheatMinStrain, fallStrain.outheatAvgStrain, fallStrain.outheatStandardStrain,
-												fallStrain.insulatingheatMaxStrain, fallStrain.insulatingheatMinStrain, fallStrain.insulatingheatAvgStrain, fallStrain.insulatingheatStandardStrain);
-											gfParent->GetTemperatureResultWidget()->updateData(
-												fallTemp.metalsMaxTemperature, fallTemp.metalsMinTemperature, fallTemp.metalsAvgTemperature, fallTemp.metalsStandardTemperature,
-												fallTemp.propellantsMaxTemperature, fallTemp.propellantsMinTemperature, fallTemp.mpropellantsAvgTemperature, fallTemp.propellantsStandardTemperature,
-												fallTemp.outheatMaxTemperature, fallTemp.outheatMinTemperature, fallTemp.outheatAvgTemperature, fallTemp.outheatStandardTemperature,
-												fallTemp.insulatingheatMaxTemperature, fallTemp.insulatingheatMinTemperature, fallTemp.insulatingheatAvgTemperature, fallTemp.insulatingheatStandardTemperature);
-											gfParent->GetOverpressureResultWidget()->updateData(
-												fallPress.metalsMaxOverpressure, fallPress.metalsMinOverpressure, fallPress.metalsAvgOverpressure, fallPress.metalsStandardOverpressure,
-												fallPress.propellantsMaxOverpressure, fallPress.propellantsMinOverpressure, fallPress.mpropellantsAvgOverpressure, fallPress.propellantsStandardOverpressure,
-												fallPress.outheatMaxOverpressure, fallPress.outheatMinOverpressure, fallPress.outheatAvgOverpressure, fallPress.outheatStandardOverpressure,
-												fallPress.insulatingheatMaxOverpressure, fallPress.insulatingheatMinOverpressure, fallPress.insulatingheatAvgOverpressure, fallPress.insulatingheatStandardOverpressure);
-											gfParent->GetReactionDegreeResultWidget()->updateData(
-												fallReact.metalsMaxReactionDegree, fallReact.metalsMinReactionDegree, fallReact.metalsAvgReactionDegree, fallReact.metalsStandardReactionDegree,
-												fallReact.propellantsMaxReactionDegree, fallReact.propellantsMinReactionDegree, fallReact.propellantsAvgReactionDegree, fallReact.propellantsStandardReactionDegree,
-												fallReact.outheatMaxReactionDegree, fallReact.outheatMinReactionDegree, fallReact.outheatAvgReactionDegree, fallReact.outheatStandardReactionDegree,
-												fallReact.insulatingheatMaxReactionDegree, fallReact.insulatingheatMinReactionDegree, fallReact.insulatingheatAvgReactionDegree, fallReact.insulatingheatStandardReactionDegree);
-
-											auto* tw = gfParent->GetFallPropertyWidget()->GetQTableWidget();
-											updateJudgement(tw, 8, 9, 10, resultValue[0], fallTemp.metalsMaxTemperature, fallPress.metalsMaxOverpressure);
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>跌落安全性分析计算失败");
-									}
-									else if (processedName == "快速烤燃安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateFastCombustionAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>快速烤燃安全性分析计算完成");
-											auto& temp = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
-											gfParent->GetFastCombustionTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-
-											auto* tw = gfParent->GetFastCombustionPropertyWidget()->GetQTableWidget();
-											tw->item(10, 2)->setText(temp.metalsMaxTemperature > ignitionTemperature ?
-												"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>快速烤燃安全性分析计算失败");
-									}
-									else if (processedName == "慢速烤燃安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateSlowCombustionAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>慢速烤燃安全性分析计算完成");
-											auto& temp = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
-											gfParent->GetSlowCombustionTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-
-											auto* tw = gfParent->GetSlowCombustionPropertyWidget()->GetQTableWidget();
-											tw->item(10, 2)->setText(temp.metalsMaxTemperature > ignitionTemperature ?
-												"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>慢速烤燃安全性分析计算失败");
-									}
-									else if (processedName == "枪击安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>枪击安全性分析计算完成");
-
-											auto& stress = ModelDataManager::GetInstance()->GetShootStressResult();
-											auto& strain = ModelDataManager::GetInstance()->GetShootStrainResult();
-											auto& temp = ModelDataManager::GetInstance()->GetShootTemperatureResult();
-											auto& overpress = ModelDataManager::GetInstance()->GetShootOverpressureResult();
-											auto& react = ModelDataManager::GetInstance()->GetShootReactionDegreeResult();
-
-											gfParent->GetShootStressResultWidget()->updateData(
-												stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
-												stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
-												stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
-												stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
-											gfParent->GetShootStrainResultWidget()->updateData(
-												strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
-												strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
-												strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
-												strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
-											gfParent->GetShootTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-											gfParent->GetShootOverpressureResultWidget()->updateData(
-												overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
-												overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
-												overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
-												overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
-											gfParent->GetShootReactionDegreeResultWidget()->updateData(
-												react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
-												react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
-												react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
-												react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
-
-											auto* tw = gfParent->GetShootPropertyWidget()->GetQTableWidget();
-											updateJudgement(tw, 10, 11, 12, resultValue[0], temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>枪击安全性分析计算失败");
-									}
-									else if (processedName == "射流冲击安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateJetImpactingAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>射流冲击安全性分析计算完成");
-
-											auto& stress = ModelDataManager::GetInstance()->GetJetImpactStressResult();
-											auto& strain = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
-											auto& temp = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
-											auto& overpress = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
-											auto& react = ModelDataManager::GetInstance()->GetJetImpactReactionDegreeResult();
-
-											gfParent->GetJetImpactStressResultWidget()->updateData(
-												stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
-												stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
-												stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
-												stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
-											gfParent->GetJetImpactStrainResultWidget()->updateData(
-												strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
-												strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
-												strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
-												strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
-											gfParent->GetJetImpactTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-											gfParent->GetJetImpactOverpressureResultWidget()->updateData(
-												overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
-												overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
-												overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
-												overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
-											gfParent->GetJetImpactReactionDegreeResultWidget()->updateData(
-												react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
-												react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
-												react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
-												react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
-
-											auto* tw = gfParent->GetJetImpactPropertyWidget()->GetQTableWidget();
-											updateJudgement(tw, 8, 9, 10, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>射流冲击安全性分析计算失败");
-									}
-									else if (processedName == "破片撞击安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>破片安全性分析计算完成");
-
-											auto& stress = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
-											auto& strain = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
-											auto& temp = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
-											auto& overpress = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
-											auto& react = ModelDataManager::GetInstance()->GetFragmentationImpactReactionDegreeResult();
-
-											gfParent->GetFragmentationImpactStressResultWidget()->updateData(
-												stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
-												stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
-												stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
-												stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
-											gfParent->GetFragmentationImpactStrainResultWidget()->updateData(
-												strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
-												strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
-												strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
-												strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
-											gfParent->GetFragmentationImpactTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-											gfParent->GetFragmentationImpactOverpressureResultWidget()->updateData(
-												overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
-												overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
-												overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
-												overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
-											gfParent->GetFragmentationImpactReactionDegreeResultWidget()->updateData(
-												react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
-												react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
-												react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
-												react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
-
-											auto* tw = gfParent->GetFragmentationImpactPropertyWidget()->GetQTableWidget();
-											updateJudgement(tw, 11, 12, 13, resultValue[0], temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>破片安全性分析计算失败");
-									}
-									else if (processedName == "爆炸冲击波安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateExplosiveBlastAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>爆炸冲击波安全性分析计算完成");
-
-											auto& stress = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
-											auto& strain = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
-											auto& temp = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
-											auto& overpress = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
-											auto& react = ModelDataManager::GetInstance()->GetExplosiveBlastReactionDegreeResult();
-
-											gfParent->GetExplosiveBlastStressResultWidget()->updateData(
-												stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
-												stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
-												stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
-												stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
-											gfParent->GetExplosiveBlastStrainResultWidget()->updateData(
-												strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
-												strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
-												strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
-												strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
-											gfParent->GetExplosiveBlastTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-											gfParent->GetExplosiveBlastOverpressureResultWidget()->updateData(
-												overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
-												overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
-												overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
-												overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
-											gfParent->GetExplosiveBlastReactionDegreeResultWidget()->updateData(
-												react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
-												react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
-												react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
-												react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
-
-											auto* tw = gfParent->GetExplosiveBlastPropertyWidget()->GetQTableWidget();
-											updateJudgement(tw, 7, 8, 9, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>爆炸冲击波安全性分析计算失败");
-									}
-									else if (processedName == "殉爆安全性分析")
-									{
-										std::vector<double> resultValue; resultValue.reserve(8);
-										if (APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(occView, resultValue))
-										{
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>殉爆安全性分析计算完成");
-
-											auto& stress = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
-											auto& strain = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
-											auto& temp = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
-											auto& overpress = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
-											auto& react = ModelDataManager::GetInstance()->GetSacrificeExplosionReactionDegreeResult();
-
-											gfParent->GetSacrificeExplosionStressResultWidget()->updateData(
-												stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
-												stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
-												stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
-												stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
-											gfParent->GetSacrificeExplosionStrainResultWidget()->updateData(
-												strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
-												strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
-												strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
-												strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
-											gfParent->GetSacrificeExplosionTemperatureResultWidget()->updateData(
-												temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
-												temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
-												temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
-												temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
-											gfParent->GetSacrificeExplosionOverpressureResultWidget()->updateData(
-												overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
-												overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
-												overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
-												overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
-											gfParent->GetSacrificeExplosionReactionDegreeResultWidget()->updateData(
-												react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
-												react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
-												react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
-												react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
-
-											auto* tw = gfParent->GetSacrificeExplosionPropertyWidget()->GetQTableWidget();
-											updateJudgement(tw, 8, 9, 10, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
-										}
-										else
-											textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>殉爆安全性分析计算失败");
-									}
+									auto* tw = importModelWidget->GetFallPropertyWidget()->GetQTableWidget();
+									updateJudgement(tw, 8, 9, 10, resultValue[0], fallTemp.metalsMaxTemperature, fallPress.metalsMaxOverpressure);
 								}
-								logWidget->update();
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>跌落安全性分析计算失败");
 							}
-							else
+							else if (processedName == "快速烤燃安全性分析")
 							{
-								QMessageBox::warning(this, "计算", msg);
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateFastCombustionAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>快速烤燃安全性分析计算完成");
+									auto& temp = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
+									importModelWidget->GetFastCombustionTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
+
+									auto* tw = importModelWidget->GetFastCombustionPropertyWidget()->GetQTableWidget();
+									tw->item(10, 2)->setText(temp.metalsMaxTemperature > ignitionTemperature ?
+										"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>快速烤燃安全性分析计算失败");
 							}
+							else if (processedName == "慢速烤燃安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateSlowCombustionAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>慢速烤燃安全性分析计算完成");
+									auto& temp = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
+									importModelWidget->GetSlowCombustionTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
 
-							progressDialog->close();
-							workerThread->quit();
-							workerThread->wait();
-							worker->deleteLater();
-							workerThread->deleteLater();
-							progressDialog->deleteLater();
-							updataIcon();
-						});
+									auto* tw = importModelWidget->GetSlowCombustionPropertyWidget()->GetQTableWidget();
+									tw->item(10, 2)->setText(temp.metalsMaxTemperature > ignitionTemperature ?
+										"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>慢速烤燃安全性分析计算失败");
+							}
+							else if (processedName == "枪击安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>枪击安全性分析计算完成");
 
-					workerThread->start();
-					break;
-				}
-				parent = parent->parentWidget();
-			}
+									auto& stress = ModelDataManager::GetInstance()->GetShootStressResult();
+									auto& strain = ModelDataManager::GetInstance()->GetShootStrainResult();
+									auto& temp = ModelDataManager::GetInstance()->GetShootTemperatureResult();
+									auto& overpress = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+									auto& react = ModelDataManager::GetInstance()->GetShootReactionDegreeResult();
+
+									importModelWidget->GetShootStressResultWidget()->updateData(
+										stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
+										stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
+										stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
+										stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
+									importModelWidget->GetShootStrainResultWidget()->updateData(
+										strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
+										strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
+										strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
+										strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
+									importModelWidget->GetShootTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
+									importModelWidget->GetShootOverpressureResultWidget()->updateData(
+										overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
+										overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
+										overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
+										overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
+									importModelWidget->GetShootReactionDegreeResultWidget()->updateData(
+										react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
+										react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
+										react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
+										react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
+
+									auto* tw = importModelWidget->GetShootPropertyWidget()->GetQTableWidget();
+									updateJudgement(tw, 10, 11, 12, resultValue[0], temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>枪击安全性分析计算失败");
+							}
+							else if (processedName == "射流冲击安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateJetImpactingAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>射流冲击安全性分析计算完成");
+
+									auto& stress = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+									auto& strain = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
+									auto& temp = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
+									auto& overpress = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+									auto& react = ModelDataManager::GetInstance()->GetJetImpactReactionDegreeResult();
+
+									importModelWidget->GetJetImpactStressResultWidget()->updateData(
+										stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
+										stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
+										stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
+										stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
+									importModelWidget->GetJetImpactStrainResultWidget()->updateData(
+										strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
+										strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
+										strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
+										strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
+									importModelWidget->GetJetImpactTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
+									importModelWidget->GetJetImpactOverpressureResultWidget()->updateData(
+										overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
+										overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
+										overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
+										overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
+									importModelWidget->GetJetImpactReactionDegreeResultWidget()->updateData(
+										react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
+										react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
+										react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
+										react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
+
+									auto* tw = importModelWidget->GetJetImpactPropertyWidget()->GetQTableWidget();
+									updateJudgement(tw, 8, 9, 10, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>射流冲击安全性分析计算失败");
+							}
+							else if (processedName == "破片撞击安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>破片安全性分析计算完成");
+
+									auto& stress = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+									auto& strain = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
+									auto& temp = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
+									auto& overpress = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+									auto& react = ModelDataManager::GetInstance()->GetFragmentationImpactReactionDegreeResult();
+
+									importModelWidget->GetFragmentationImpactStressResultWidget()->updateData(
+										stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
+										stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
+										stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
+										stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
+									importModelWidget->GetFragmentationImpactStrainResultWidget()->updateData(
+										strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
+										strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
+										strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
+										strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
+									importModelWidget->GetFragmentationImpactTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
+									importModelWidget->GetFragmentationImpactOverpressureResultWidget()->updateData(
+										overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
+										overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
+										overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
+										overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
+									importModelWidget->GetFragmentationImpactReactionDegreeResultWidget()->updateData(
+										react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
+										react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
+										react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
+										react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
+
+									auto* tw = importModelWidget->GetFragmentationImpactPropertyWidget()->GetQTableWidget();
+									updateJudgement(tw, 11, 12, 13, resultValue[0], temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>破片安全性分析计算失败");
+							}
+							else if (processedName == "爆炸冲击波安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateExplosiveBlastAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>爆炸冲击波安全性分析计算完成");
+
+									auto& stress = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+									auto& strain = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
+									auto& temp = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
+									auto& overpress = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+									auto& react = ModelDataManager::GetInstance()->GetExplosiveBlastReactionDegreeResult();
+
+									importModelWidget->GetExplosiveBlastStressResultWidget()->updateData(
+										stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
+										stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
+										stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
+										stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
+									importModelWidget->GetExplosiveBlastStrainResultWidget()->updateData(
+										strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
+										strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
+										strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
+										strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
+									importModelWidget->GetExplosiveBlastTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
+									importModelWidget->GetExplosiveBlastOverpressureResultWidget()->updateData(
+										overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
+										overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
+										overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
+										overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
+									importModelWidget->GetExplosiveBlastReactionDegreeResultWidget()->updateData(
+										react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
+										react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
+										react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
+										react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
+
+									auto* tw = importModelWidget->GetExplosiveBlastPropertyWidget()->GetQTableWidget();
+									updateJudgement(tw, 7, 8, 9, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>爆炸冲击波安全性分析计算失败");
+							}
+							else if (processedName == "殉爆安全性分析")
+							{
+								std::vector<double> resultValue; resultValue.reserve(8);
+								if (APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(occView, resultValue))
+								{
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>殉爆安全性分析计算完成");
+
+									auto& stress = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+									auto& strain = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
+									auto& temp = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
+									auto& overpress = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+									auto& react = ModelDataManager::GetInstance()->GetSacrificeExplosionReactionDegreeResult();
+
+									importModelWidget->GetSacrificeExplosionStressResultWidget()->updateData(
+										stress.metalsMaxStress, stress.metalsMinStress, stress.metalsAvgStress, stress.metalsStandardStress,
+										stress.propellantsMaxStress, stress.propellantsMinStress, stress.propellantsAvgStress, stress.propellantsStandardStress,
+										stress.outheatMaxStress, stress.outheatMinStress, stress.outheatAvgStress, stress.outheatStandardStress,
+										stress.insulatingheatMaxStress, stress.insulatingheatMinStress, stress.insulatingheatAvgStress, stress.insulatingheatStandardStress);
+									importModelWidget->GetSacrificeExplosionStrainResultWidget()->updateData(
+										strain.metalsMaxStrain, strain.metalsMinStrain, strain.metalsAvgStrain, strain.metalsStandardStrain,
+										strain.propellantsMaxStrain, strain.propellantsMinStrain, strain.mpropellantsAvgStrain, strain.propellantsStandardStrain,
+										strain.outheatMaxStrain, strain.outheatMinStrain, strain.outheatAvgStrain, strain.outheatStandardStrain,
+										strain.insulatingheatMaxStrain, strain.insulatingheatMinStrain, strain.insulatingheatAvgStrain, strain.insulatingheatStandardStrain);
+									importModelWidget->GetSacrificeExplosionTemperatureResultWidget()->updateData(
+										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
+										temp.propellantsMaxTemperature, temp.propellantsMinTemperature, temp.mpropellantsAvgTemperature, temp.propellantsStandardTemperature,
+										temp.outheatMaxTemperature, temp.outheatMinTemperature, temp.outheatAvgTemperature, temp.outheatStandardTemperature,
+										temp.insulatingheatMaxTemperature, temp.insulatingheatMinTemperature, temp.insulatingheatAvgTemperature, temp.insulatingheatStandardTemperature);
+									importModelWidget->GetSacrificeExplosionOverpressureResultWidget()->updateData(
+										overpress.metalsMaxOverpressure, overpress.metalsMinOverpressure, overpress.metalsAvgOverpressure, overpress.metalsStandardOverpressure,
+										overpress.propellantsMaxOverpressure, overpress.propellantsMinOverpressure, overpress.mpropellantsAvgOverpressure, overpress.propellantsStandardOverpressure,
+										overpress.outheatMaxOverpressure, overpress.outheatMinOverpressure, overpress.outheatAvgOverpressure, overpress.outheatStandardOverpressure,
+										overpress.insulatingheatMaxOverpressure, overpress.insulatingheatMinOverpressure, overpress.insulatingheatAvgOverpressure, overpress.insulatingheatStandardOverpressure);
+									importModelWidget->GetSacrificeExplosionReactionDegreeResultWidget()->updateData(
+										react.metalsMaxReactionDegree, react.metalsMinReactionDegree, react.metalsAvgReactionDegree, react.metalsStandardReactionDegree,
+										react.propellantsMaxReactionDegree, react.propellantsMinReactionDegree, react.propellantsAvgReactionDegree, react.propellantsStandardReactionDegree,
+										react.outheatMaxReactionDegree, react.outheatMinReactionDegree, react.outheatAvgReactionDegree, react.outheatStandardReactionDegree,
+										react.insulatingheatMaxReactionDegree, react.insulatingheatMinReactionDegree, react.insulatingheatAvgReactionDegree, react.insulatingheatStandardReactionDegree);
+
+									auto* tw = importModelWidget->GetSacrificeExplosionPropertyWidget()->GetQTableWidget();
+									updateJudgement(tw, 8, 9, 10, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
+								}
+								else
+									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>殉爆安全性分析计算失败");
+							}
+						}
+						logWidget->update();
+					}
+					else
+					{
+						QMessageBox::warning(this, "计算", msg);
+					}
+
+					progressDialog->close();
+					workerThread->quit();
+					workerThread->wait();
+					worker->deleteLater();
+					workerThread->deleteLater();
+					progressDialog->deleteLater();
+					updataIcon();
+				});
+
+			workerThread->start();
 			});
 
 		connect(exportAction, &QAction::triggered, [this, item]() {

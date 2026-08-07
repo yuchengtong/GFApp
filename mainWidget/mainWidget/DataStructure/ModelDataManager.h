@@ -103,6 +103,28 @@ struct FallAnalysisResultInfo {
 	double temperatureMinValue;
 	double overpressureMaxValue;
 	double overpressureMinValue;
+
+
+
+	std::vector<double> nozzleStressNodeValues;
+	std::vector<double> shellStressNodeValues;
+	std::vector<double> propellantStressNodeValues;
+	std::vector<double> heatInsulatingStressNodeValues;
+
+	std::vector<double> nozzleStrainNodeValues;
+	std::vector<double> shellStrainNodeValues;
+	std::vector<double> propellantStrainNodeValues;
+	std::vector<double> heatInsulatingStrainNodeValues;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+
+	std::vector<double> nozzleOverpressureNodeValues;
+	std::vector<double> shellOverpressureNodeValues;
+	std::vector<double> propellantOverpressureNodeValues;
+	std::vector<double> heatInsulatingOverpressureNodeValues;
 };
 
 //快速烤燃
