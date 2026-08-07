@@ -17,7 +17,7 @@ public:
 	static bool SetShellFallStressNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallStressNephogram(OccView* occView, std::vector<double>& nodeValues);
 
-	bool CalFallStressNodeValues(OccView* occView);
+	bool CalculateAllFallStressNodeValues();
 
 	static bool SetShellFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues);
