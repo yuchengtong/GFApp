@@ -82,7 +82,7 @@
 #include "APICalculateHepler.h"
 #include "CalculateWorker.h"
 #include <BRepPrimAPI_MakeSphere.hxx>
-
+#include "APISetNodeValue.h"
 
 
 
@@ -2823,9 +2823,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 				return;
 			}
 
-			QString timeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+
 			auto logWidget = importModelWidget->GetLogWidget();
-			auto textEdit = logWidget->GetTextEdit();
+
 			auto occView = importModelWidget->GetOccView();
 			Handle(AIS_InteractiveContext) context = occView->getContext();
 			Handle(V3d_View) view = occView->getView();
@@ -2848,8 +2848,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 
 			connect(worker, &CalculateWorker::WorkFinished, this,
 				[=](bool success, const QString& msg) {
-					QString finishTimeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-					textEdit->appendPlainText(finishTimeStr + "[" + (success ? "信息" : "错误") + "]>" + msg);
+					QString finishTimeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");		
+					logWidget->PrintInfo(finishTimeStr + msg, success);
 
 					if (success)
 					{
@@ -2862,9 +2862,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 							int dotIndex = originalName.indexOf('.');
 							QString processedName = (dotIndex != -1) ? originalName.mid(dotIndex + 1).trimmed() : originalName;
 
-							QString logText = timeStr + "[信息]>开始进行" + processedName;
-							textEdit->appendPlainText(logText);
-
+							QString logText = "开始进行" + processedName;
+							logWidget->PrintInfo(logText + msg, success);
 							// 通用结果更新 Lambda
 							auto updateResultWidget = [&](auto* resultWidget,
 								auto& stressResult, auto& strainResult, auto& tempResult,
@@ -2897,13 +2896,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateFallAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>跌落安全性分析计算完成");
+									APISetNodeValue::CalculateAllFallStressNodeValues();
+									logWidget->PrintInfo("跌落安全性分析计算完成", success);
 
-									auto& fallStress = ModelDataManager::GetInstance()->GetFallStressResult();
-									auto& fallStrain = ModelDataManager::GetInstance()->GetFallStrainResult();
-									auto& fallTemp = ModelDataManager::GetInstance()->GetFallTemperatureResult();
-									auto& fallPress = ModelDataManager::GetInstance()->GetFallOverpressureResult();
-									auto& fallReact = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
+									auto fallStress = ModelDataManager::GetInstance()->GetFallStressResult();
+									auto FallStressResult=ModelDataManager::GetInstance()->GetFallStressResult();
+
+									auto fallStrain = ModelDataManager::GetInstance()->GetFallStrainResult();
+									auto fallTemp = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+									auto fallPress = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+									auto fallReact = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
 
 									importModelWidget->GetStressResultWidget()->updateData(
 										fallStress.metalsMaxStress, fallStress.metalsMinStress, fallStress.metalsAvgStress, fallStress.metalsStandardStress,
@@ -2935,14 +2937,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									updateJudgement(tw, 8, 9, 10, resultValue[0], fallTemp.metalsMaxTemperature, fallPress.metalsMaxOverpressure);
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>跌落安全性分析计算失败");
+								{
+									logWidget->PrintInfo("跌落安全性分析计算失败", success);
+								}
 							}
 							else if (processedName == "快速烤燃安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateFastCombustionAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>快速烤燃安全性分析计算完成");
+									logWidget->PrintInfo("快速烤燃安全性分析计算完成");
 									auto& temp = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
 									importModelWidget->GetFastCombustionTemperatureResultWidget()->updateData(
 										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
@@ -2955,14 +2959,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 										"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>快速烤燃安全性分析计算失败");
+								{
+									logWidget->PrintInfo("快速烤燃安全性分析计算失败", false);
+								}
 							}
 							else if (processedName == "慢速烤燃安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateSlowCombustionAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>慢速烤燃安全性分析计算完成");
+									logWidget->PrintInfo("慢速烤燃安全性分析计算完成");
 									auto& temp = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
 									importModelWidget->GetSlowCombustionTemperatureResultWidget()->updateData(
 										temp.metalsMaxTemperature, temp.metalsMinTemperature, temp.metalsAvgTemperature, temp.metalsStandardTemperature,
@@ -2975,14 +2981,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 										"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>慢速烤燃安全性分析计算失败");
+								{
+									logWidget->PrintInfo("慢速烤燃安全性分析计算失败",false);
+								}
 							}
 							else if (processedName == "枪击安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>枪击安全性分析计算完成");
+									logWidget->PrintInfo("枪击安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetShootStressResult();
 									auto& strain = ModelDataManager::GetInstance()->GetShootStrainResult();
@@ -3020,14 +3028,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									updateJudgement(tw, 10, 11, 12, resultValue[0], temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>枪击安全性分析计算失败");
+								{
+									logWidget->PrintInfo("枪击安全性分析计算失败", false); 
+								}
 							}
 							else if (processedName == "射流冲击安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateJetImpactingAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>射流冲击安全性分析计算完成");
+									logWidget->PrintInfo("射流冲击安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetJetImpactStressResult();
 									auto& strain = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
@@ -3065,14 +3075,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									updateJudgement(tw, 8, 9, 10, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>射流冲击安全性分析计算失败");
+								{
+									logWidget->PrintInfo("射流冲击安全性分析计算失败", false); 
+								}
 							}
 							else if (processedName == "破片撞击安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>破片安全性分析计算完成");
+									logWidget->PrintInfo("破片安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
 									auto& strain = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
@@ -3110,14 +3122,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									updateJudgement(tw, 11, 12, 13, resultValue[0], temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>破片安全性分析计算失败");
+								{
+									logWidget->PrintInfo("破片安全性分析计算失败",false);
+								}
 							}
 							else if (processedName == "爆炸冲击波安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateExplosiveBlastAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>爆炸冲击波安全性分析计算完成");
+									logWidget->PrintInfo("爆炸冲击波安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
 									auto& strain = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
@@ -3155,14 +3169,16 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									updateJudgement(tw, 7, 8, 9, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>爆炸冲击波安全性分析计算失败");
+								{
+									logWidget->PrintInfo("爆炸冲击波安全性分析计算失败",false);
+								}
 							}
 							else if (processedName == "殉爆安全性分析")
 							{
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(occView, resultValue))
 								{
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>殉爆安全性分析计算完成");
+									logWidget->PrintInfo("殉爆安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
 									auto& strain = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
@@ -3200,7 +3216,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									updateJudgement(tw, 8, 9, 10, stress.metalsMaxStress, temp.metalsMaxTemperature, overpress.metalsMaxOverpressure);
 								}
 								else
-									textEdit->appendPlainText(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "[信息]>殉爆安全性分析计算失败");
+								{
+									logWidget->PrintInfo("殉爆安全性分析计算失败",false);
+								}
 							}
 						}
 						logWidget->update();

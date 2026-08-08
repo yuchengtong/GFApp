@@ -17,13 +17,16 @@ public:
 	static bool SetShellFallStressNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallStressNephogram(OccView* occView, std::vector<double>& nodeValues);
 
-	bool CalculateAllFallStressNodeValues();
+	static bool CalculateAllFallStressNodeValues();
 
 	static bool SetShellFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFallStrainNodeValues();
 
 	static bool SetShellFallTempNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+
+	static bool CalculateAllFallTempNodeValues();
 
 	static bool SetShellFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool SetPropellantFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);

@@ -398,7 +398,75 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
     // ----- 跌落试验 -----
     if (itemData == "FallStressShellResult") {
         setupResultView(m_stressResultWidget);
-        APISetNodeValue::SetShellFallStressNephogram(occView, nodeValues);
+        //APISetNodeValue::SetShellFallStressNephogram(occView, nodeValues);
+
+        auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+        auto angle = fallSettingInfo.angle;
+        auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+        auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+        auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+        auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
+        auto max_value = fallStressResult.metalsMaxStress;
+        auto min_value = fallStressResult.metalsMinStress;
+
+        Handle(MeshVS_Mesh) shellMesh;
+        Handle(MeshVS_Mesh) nozzleMesh;
+        Handle(MeshVS_Mesh) propellantMesh;
+        // ========== 显示壳体网格 ==========
+        {
+            shellMesh = new MeshVS_Mesh();
+            auto meshData90 = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+                (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+            shellMesh->SetDataSource(meshData90);
+
+            MeshVS_DataMapOfIntegerColor propellantColorMap = APISetNodeValue::GetMeshDataMap(fallAnalysisResultInfo.shellStressNodeValues, min_value, max_value);
+            Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+                shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+            propellantNodal->SetColors(propellantColorMap);
+            shellMesh->AddBuilder(propellantNodal);
+            shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+        }
+        // ========== 显示喷嘴网格 ==========
+        {
+            nozzleMesh = new MeshVS_Mesh();
+            auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
+                (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+                (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+            nozzleMesh->SetDataSource(nozzleMeshData);
+
+            MeshVS_DataMapOfIntegerColor nozzleColorMap = APISetNodeValue::GetMeshDataMap(fallAnalysisResultInfo.nozzleStressNodeValues, min_value, max_value);
+            Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
+                nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+            nozzleNodal->SetColors(nozzleColorMap);
+            nozzleMesh->AddBuilder(nozzleNodal);
+            nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+        }
+
+        // ========== 显示推进剂网格 ==========
+        {
+            propellantMesh = new MeshVS_Mesh();
+            auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(angle,
+                (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
+                (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
+            propellantMesh->SetDataSource(propellantMeshData);
+
+            auto nodeValuesVec = fallAnalysisResultInfo.propellantStressNodeValues;
+            std::fill(nodeValuesVec.begin(), nodeValuesVec.end(), -1.0);
+            MeshVS_DataMapOfIntegerColor propellantColorMap = APISetNodeValue::GetMeshDataMap(nodeValuesVec, min_value, max_value);
+            Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
+                propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+            propellantNodal->SetColors(propellantColorMap);
+            propellantMesh->AddBuilder(propellantNodal);
+            propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+        }
+
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+
+        occView->fitAll();
+
         auto res = ModelDataManager::GetInstance()->GetFallStressResult();
         createColorScale("跌落试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }

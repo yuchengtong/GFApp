@@ -989,22 +989,18 @@ bool APISetNodeValue::SetPropellantFallStressNephogram(OccView* occView, std::ve
 
 	return true;
 }
-
-
 bool APISetNodeValue::CalculateAllFallStressNodeValues()
 {
 	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
 	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
 	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
 
-	// 取副本，改完再一次性写回
 	FallAnalysisResultInfo resultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
 	if (!resultInfo.isChecked)
 	{
 		return false;
 	}
 
-	// 清空旧缓存
 	resultInfo.shellStressNodeValues.clear();
 	resultInfo.nozzleStressNodeValues.clear();
 	resultInfo.propellantStressNodeValues.clear();
@@ -1564,30 +1560,22 @@ bool APISetNodeValue::CalculateAllFallStressNodeValues()
 		}
 	}
 
-	// ============================================================
-	// 3. 隔热层直接填 -1
-	// ============================================================
 	if (!modelMeshInfo.heatInsulatingLayerMesh.IsNull())
 	{
 		TColStd_PackedMapOfInteger heatNodes = modelMeshInfo.heatInsulatingLayerMesh->GetAllNodes();
 		resultInfo.heatInsulatingStressNodeValues.assign(heatNodes.Extent(), -1.0);
 	}
 
-	// 一次性写回
 	ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(resultInfo);
+
+	double sum = std::accumulate(resultInfo.shellStressNodeValues.begin(),
+		resultInfo.shellStressNodeValues.end(),
+		0.0);	
+	fallStressResult.metalsAvgStress= sum / static_cast<double>(resultInfo.shellStressNodeValues.size());
+	ModelDataManager::GetInstance()->SetFallStressResult(fallStressResult);
+
 	return true;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 bool APISetNodeValue::SetShellFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues)
@@ -2434,6 +2422,593 @@ bool APISetNodeValue::SetPropellantFallStrainNephogram(OccView* occView, std::ve
 
 	return true;
 }
+bool APISetNodeValue::CalculateAllFallStrainNodeValues()
+{
+	auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
+	auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+
+	FallAnalysisResultInfo resultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+	if (!resultInfo.isChecked)
+	{
+		return false;
+	}
+
+	resultInfo.shellStrainNodeValues.clear();
+	resultInfo.nozzleStrainNodeValues.clear();
+	resultInfo.propellantStrainNodeValues.clear();
+	resultInfo.heatInsulatingStrainNodeValues.clear();
+
+	auto fallStrainResult = ModelDataManager::GetInstance()->GetFallStrainResult();
+	auto angle = fallSettingInfo.angle;
+
+	gp_Pnt ptShellLeftBottom = modelGeometryInfo.ptShellLeftBottom;
+	gp_Pnt ptShellRightBottom = modelGeometryInfo.ptShellRightBottom;
+	gp_Pnt ptNozzleInletBottom = modelGeometryInfo.ptNozzleInletBottom;
+	gp_Pnt ptNozzleOutletBottom = modelGeometryInfo.ptNozzleOutletBottom;
+
+	// ============================================================
+	// 1. 金属材料（壳体 + 喷管）跌落应力
+	// ============================================================
+	{
+		auto max_value = fallStrainResult.metalsMaxStrain;
+		auto min_value = fallStrainResult.metalsMinStrain;
+
+		const int layerCount = 9;
+		const std::vector<double> thresholds = {
+			10.0, 25.0, 50.0, 90.0, 160.0, 260.0, 300.0, 330.0, 400.0, 500.0
+		};
+		const std::vector<double> thresholds90 = {
+			40.0, 100.0, 150.0, 200.0, 300.0, 350.0,
+			1000.0, 2000.0, 3000.0, 3500.0
+		};
+
+		auto calculateMetalStrain = [&](const gp_Pnt& currentNode) -> double
+		{
+			double value = min_value;
+
+			if (angle == 0)
+			{
+				double dist1 = currentNode.Distance(ptShellLeftBottom);
+				double dist2 = currentNode.Distance(ptShellRightBottom);
+				double minDist = std::min(dist1, dist2);
+				if (minDist > 500.0)
+				{
+					value = min_value;
+				}
+				else
+				{
+					int layer = layerCount - 1;
+					for (int i = 0; i < layerCount; ++i)
+					{
+						if (minDist <= thresholds[i])
+						{
+							layer = i;
+							break;
+						}
+					}
+					double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+					value = min_value + (max_value - min_value) * ratio;
+				}
+			}
+			else if (angle > 0 && angle <= 15)
+			{
+				gp_Pnt cor_ptShellRightBottom(ptShellRightBottom.X() + 30, ptShellRightBottom.Y(), ptShellRightBottom.Z());
+				double distToShellRight = currentNode.Distance(cor_ptShellRightBottom);
+				gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 30, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+				double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+				double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
+
+				double valueShellRight = min_value;
+				double valueNozzleInlet = min_value;
+				double valueNozzleOutlet = min_value;
+
+				if (distToShellRight < 100.0)
+					valueShellRight = max_value;
+				else if (distToShellRight < 150.0)
+					valueShellRight = min_value + (max_value - min_value) * 0.7;
+				else if (distToShellRight < 200.0)
+					valueShellRight = min_value + (max_value - min_value) * 0.6;
+				else if (distToShellRight < 300.0)
+					valueShellRight = min_value + (max_value - min_value) * 0.5;
+				else if (distToShellRight < 400.0)
+					valueShellRight = min_value + (max_value - min_value) * 0.4;
+				else if (distToShellRight < 500.0)
+					valueShellRight = min_value + (max_value - min_value) * 0.3;
+				else if (distToShellRight < 600.0)
+					valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+				if (distToNozzleInlet < 50.0)
+					valueNozzleInlet = max_value;
+				else if (distToNozzleInlet < 100.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+				else if (distToNozzleInlet < 150.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+				else if (distToNozzleInlet < 200.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+				else if (distToNozzleInlet < 400.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+				else if (distToNozzleInlet < 500.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+				else if (distToNozzleInlet < 600.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+				if (distToNozzleOutlet < 50.0)
+					valueNozzleOutlet = max_value;
+				else if (distToNozzleOutlet < 100.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+				else if (distToNozzleOutlet < 150.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+				else if (distToNozzleOutlet < 200.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+				else if (distToNozzleOutlet < 250.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+				else if (distToNozzleOutlet < 300.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+				else if (distToNozzleOutlet < 700.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+
+				value = std::max({ valueShellRight, valueNozzleInlet, valueNozzleOutlet });
+			}
+			else if (angle > 15 && angle <= 60)
+			{
+				gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+				double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+				double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
+
+				double valueNozzleInlet = min_value;
+				double valueNozzleOutlet = min_value;
+
+				if (distToNozzleInlet < 50.0)
+					valueNozzleInlet = max_value;
+				else if (distToNozzleInlet < 100.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+				else if (distToNozzleInlet < 150.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+				else if (distToNozzleInlet < 300.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+				else if (distToNozzleInlet < 500.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+				else if (distToNozzleInlet < 600.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+				else if (distToNozzleInlet < 800.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+				if (distToNozzleOutlet < 50.0)
+					valueNozzleOutlet = max_value;
+				else if (distToNozzleOutlet < 100.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+				else if (distToNozzleOutlet < 150.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+				else if (distToNozzleOutlet < 250.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+				else if (distToNozzleOutlet < 300.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+				else if (distToNozzleOutlet < 900.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+
+				value = std::max({ valueNozzleInlet, valueNozzleOutlet });
+			}
+			else if (angle > 60 && angle < 90)
+			{
+				gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+				double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+				double distToNozzleOutlet = currentNode.Distance(ptNozzleOutletBottom);
+
+				double valueNozzleInlet = min_value;
+				double valueNozzleOutlet = min_value;
+
+				if (cor_ptNozzleInletBottom.X() - currentNode.X() < 400)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+
+				if (distToNozzleInlet < 50.0)
+					valueNozzleInlet = max_value;
+				else if (distToNozzleInlet < 100.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+				else if (distToNozzleInlet < 150.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+				else if (distToNozzleInlet < 200.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+				else if (distToNozzleInlet < 400.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+				else if (distToNozzleInlet < 500.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+				else if (distToNozzleInlet < 600.0)
+					valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+
+				if (distToNozzleOutlet < 50.0)
+					valueNozzleOutlet = max_value;
+				else if (distToNozzleOutlet < 100.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.6;
+				else if (distToNozzleOutlet < 150.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.5;
+				else if (distToNozzleOutlet < 250.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.4;
+				else if (distToNozzleOutlet < 400.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.3;
+				else if (distToNozzleOutlet < 700.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.2;
+				else if (distToNozzleOutlet < 900.0)
+					valueNozzleOutlet = min_value + (max_value - min_value) * 0.1;
+
+				value = std::max({ valueNozzleInlet, valueNozzleOutlet });
+			}
+			else if (angle == 90)
+			{
+				double startX = ptNozzleInletBottom.X();
+				double xDist = std::abs(currentNode.X() - startX);
+
+				if (xDist > 3500)
+				{
+					value = min_value;
+				}
+				else
+				{
+					int layer = layerCount - 1;
+					for (int i = 0; i < layerCount; ++i)
+					{
+						if (xDist <= thresholds90[i])
+						{
+							layer = i;
+							break;
+						}
+					}
+					double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+					value = min_value + (max_value - min_value) * ratio;
+				}
+			}
+
+			return value;
+		};
+
+		// 壳体网格
+		if (!modelMeshInfo.shellMesh.IsNull())
+		{
+			TColStd_PackedMapOfInteger shellNodes = modelMeshInfo.shellMesh->GetAllNodes();
+			Handle(TColStd_HArray2OfReal) shellNodeCoords = modelMeshInfo.shellMesh->GetmyNodeCoords();
+			resultInfo.shellStrainNodeValues.reserve(shellNodes.Extent());
+
+			for (TColStd_PackedMapOfInteger::Iterator it(shellNodes); it.More(); it.Next())
+			{
+				int nodeID = it.Key();
+				double x = shellNodeCoords->Value(nodeID, 1);
+				double y = shellNodeCoords->Value(nodeID, 2);
+				double z = shellNodeCoords->Value(nodeID, 3);
+				gp_Pnt currentNode(x, y, z);
+				resultInfo.shellStrainNodeValues.push_back(calculateMetalStrain(currentNode));
+			}
+		}
+
+		// 喷管网格
+		if (!modelMeshInfo.nozzleMesh.IsNull())
+		{
+			TColStd_PackedMapOfInteger nozzleNodes = modelMeshInfo.nozzleMesh->GetAllNodes();
+			Handle(TColStd_HArray2OfReal) nozzleNodeCoords = modelMeshInfo.nozzleMesh->GetmyNodeCoords();
+			resultInfo.nozzleStrainNodeValues.reserve(nozzleNodes.Extent());
+
+			for (TColStd_PackedMapOfInteger::Iterator it(nozzleNodes); it.More(); it.Next())
+			{
+				int nodeID = it.Key();
+				double x = nozzleNodeCoords->Value(nodeID, 1);
+				double y = nozzleNodeCoords->Value(nodeID, 2);
+				double z = nozzleNodeCoords->Value(nodeID, 3);
+				gp_Pnt currentNode(x, y, z);
+				resultInfo.nozzleStrainNodeValues.push_back(calculateMetalStrain(currentNode));
+			}
+		}
+	}
+
+	// ============================================================
+	// 2. 推进剂跌落应力
+	// ============================================================
+	{
+		auto max_value = fallStrainResult.propellantsMaxStrain;
+		auto min_value = fallStrainResult.propellantsMinStrain;
+		auto high = fallSettingInfo.high;
+
+		const int layerCount = 9;
+		std::vector<double> layerBoundaries = { 10.0, 40.0, 90.0, 150.0, 200.0, 260.0, 300.0, 330.0, 350.0 };
+
+		if (!modelMeshInfo.propellantMesh.IsNull())
+		{
+			TColStd_PackedMapOfInteger propellantNodes = modelMeshInfo.propellantMesh->GetAllNodes();
+			Handle(TColStd_HArray2OfReal) propellantNodeCoords = modelMeshInfo.propellantMesh->GetmyNodeCoords();
+			resultInfo.propellantStrainNodeValues.reserve(propellantNodes.Extent());
+
+			for (TColStd_PackedMapOfInteger::Iterator it(propellantNodes); it.More(); it.Next())
+			{
+				int nodeID = it.Key();
+				double x = propellantNodeCoords->Value(nodeID, 1);
+				double y = propellantNodeCoords->Value(nodeID, 2);
+				double z = propellantNodeCoords->Value(nodeID, 3);
+				gp_Pnt currentNode(x, y, z);
+
+				double value = min_value;
+
+				if (angle == 0)
+				{
+					gp_Pnt A = ptShellLeftBottom;
+					gp_Pnt B = ptShellRightBottom;
+					gp_Pnt P = currentNode;
+
+					gp_Vec AB(B.X() - A.X(), B.Y() - A.Y(), B.Z() - A.Z());
+					gp_Vec AP(P.X() - A.X(), P.Y() - A.Y(), P.Z() - A.Z());
+
+					double abLenSq = AB.SquareMagnitude();
+					double distToSegment = 0.0;
+
+					if (abLenSq < 1e-12)
+					{
+						distToSegment = P.Distance(A);
+					}
+					else
+					{
+						double t = AP.Dot(AB) / abLenSq;
+						if (t <= 0.0)
+							distToSegment = P.Distance(A);
+						else if (t >= 1.0)
+							distToSegment = P.Distance(B);
+						else
+						{
+							gp_Vec cross = AB.Crossed(AP);
+							distToSegment = cross.Magnitude() / std::sqrt(abLenSq);
+						}
+					}
+
+					double zFactor = 1.0;
+					if (z > ptShellLeftBottom.Z())
+					{
+						zFactor = std::max(0.0, 1.0 - (z - ptShellLeftBottom.Z()) / high);
+					}
+
+					int layer = -1;
+					for (int i = 0; i < layerCount; ++i)
+					{
+						if (distToSegment <= layerBoundaries[i] + 1e-6)
+						{
+							layer = i;
+							break;
+						}
+					}
+
+					if (layer == -1)
+					{
+						value = min_value;
+					}
+					else
+					{
+						double ratio = static_cast<double>(layerCount - 1 - layer) / (layerCount - 1);
+						value = min_value + (max_value - min_value) * ratio * zFactor;
+					}
+				}
+				else if (angle > 0 && angle <= 15)
+				{
+					double distToShellRight = currentNode.Distance(ptShellRightBottom);
+					double valueShellRight = min_value;
+
+					if (distToShellRight < 50.0)
+						valueShellRight = max_value;
+					else if (distToShellRight < 80.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.7;
+					else if (distToShellRight < 120.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.6;
+					else if (distToShellRight < 180.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.5;
+					else if (distToShellRight < 230.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.4;
+					else if (distToShellRight < 300.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.3;
+					else if (distToShellRight < 400.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+					gp_Pnt ptShellRightUp(ptShellRightBottom.X(), ptShellRightBottom.Y() - 1700, ptShellRightBottom.Z());
+					double distToShellRightUp = currentNode.Distance(ptShellRightUp);
+					if (distToShellRightUp < 30.0)
+						valueShellRight = max_value;
+					else if (distToShellRightUp < 40.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.7;
+					else if (distToShellRightUp < 60.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.6;
+					else if (distToShellRightUp < 90.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.5;
+					else if (distToShellRightUp < 120.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.4;
+					else if (distToShellRightUp < 250.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.3;
+					else if (distToShellRightUp < 300.0)
+						valueShellRight = min_value + (max_value - min_value) * 0.2;
+
+					if (std::abs(ptNozzleInletBottom.X() - x) < 200)
+						valueShellRight = min_value + (max_value - min_value) * 0.3;
+
+					value = valueShellRight;
+				}
+				else if (angle > 15 && angle <= 60)
+				{
+					gp_Pnt cor_ptNozzleInletBottom(ptNozzleInletBottom.X() + 60, ptNozzleInletBottom.Y(), ptNozzleInletBottom.Z());
+					double distToNozzleInlet = currentNode.Distance(cor_ptNozzleInletBottom);
+					double valueNozzleInlet = min_value;
+
+					if (distToNozzleInlet < 50.0)
+						valueNozzleInlet = max_value;
+					else if (distToNozzleInlet < 100.0)
+						valueNozzleInlet = min_value + (max_value - min_value) * 0.7;
+					else if (distToNozzleInlet < 150.0)
+						valueNozzleInlet = min_value + (max_value - min_value) * 0.6;
+					else if (distToNozzleInlet < 200.0)
+						valueNozzleInlet = min_value + (max_value - min_value) * 0.5;
+					else if (distToNozzleInlet < 300.0)
+						valueNozzleInlet = min_value + (max_value - min_value) * 0.4;
+					else if (distToNozzleInlet < 500.0)
+						valueNozzleInlet = min_value + (max_value - min_value) * 0.3;
+					else if (distToNozzleInlet < 800.0)
+						valueNozzleInlet = min_value + (max_value - min_value) * 0.2;
+
+					value = valueNozzleInlet;
+				}
+				else if (angle > 60 && angle < 90)
+				{
+					gp_Pnt capsuleCenter(
+						modelGeometryInfo.theXmin + (modelGeometryInfo.theXmax - modelGeometryInfo.theXmin) / 2.0,
+						modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+						ptNozzleInletBottom.Z()
+					);
+
+					double capsuleLength = 4000.0;
+					double capsuleRadius = 500.0;
+					double cylinderHalfLength = (capsuleLength - 2.0 * capsuleRadius) / 2.0;
+					if (cylinderHalfLength < 0)
+						cylinderHalfLength = 0;
+
+					gp_Dir axisDir(1.0, 0.0, 0.0);
+					gp_Vec axisVec(axisDir);
+
+					gp_Pnt cylStart(capsuleCenter.X() - cylinderHalfLength, capsuleCenter.Y(), capsuleCenter.Z());
+					gp_Pnt cylEnd(capsuleCenter.X() + cylinderHalfLength, capsuleCenter.Y(), capsuleCenter.Z());
+
+					gp_Pnt P = currentNode;
+					gp_Vec centerToP(P.X() - capsuleCenter.X(), P.Y() - capsuleCenter.Y(), P.Z() - capsuleCenter.Z());
+					double t = centerToP.Dot(axisVec);
+
+					double distToSurface = 0.0;
+
+					if (t < -cylinderHalfLength - capsuleRadius)
+						distToSurface = P.Distance(cylStart) - capsuleRadius;
+					else if (t > cylinderHalfLength + capsuleRadius)
+						distToSurface = P.Distance(cylEnd) - capsuleRadius;
+					else if (t < -cylinderHalfLength)
+						distToSurface = P.Distance(cylStart) - capsuleRadius;
+					else if (t > cylinderHalfLength)
+						distToSurface = P.Distance(cylEnd) - capsuleRadius;
+					else
+					{
+						gp_Pnt projPoint(capsuleCenter.X() + t, capsuleCenter.Y(), capsuleCenter.Z());
+						double distToAxis = P.Distance(projPoint);
+						distToSurface = distToAxis - capsuleRadius;
+					}
+
+					double effectiveDist = std::max(0.0, distToSurface);
+
+					if (effectiveDist < 100.0)
+						value = min_value;
+					else if (effectiveDist < 200.0)
+						value = min_value + (max_value - min_value) * 0.2;
+					else
+						value = min_value + (max_value - min_value) * 0.3;
+				}
+				else if (angle == 90)
+				{
+					gp_Pnt capsuleCenter(
+						modelGeometryInfo.theXmin + (modelGeometryInfo.theXmax - modelGeometryInfo.theXmin) / 2.0,
+						modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+						ptNozzleInletBottom.Z()
+					);
+
+					double capsuleLength = 4000.0;
+					double capsuleRadius = 500.0;
+					double cylinderHalfLength = (capsuleLength - 2.0 * capsuleRadius) / 2.0;
+					if (cylinderHalfLength < 0)
+						cylinderHalfLength = 0;
+
+					gp_Dir axisDir(1.0, 0.0, 0.0);
+					gp_Vec axisVec(axisDir);
+
+					gp_Pnt cylStart(capsuleCenter.X() - cylinderHalfLength, capsuleCenter.Y(), capsuleCenter.Z());
+					gp_Pnt cylEnd(capsuleCenter.X() + cylinderHalfLength, capsuleCenter.Y(), capsuleCenter.Z());
+
+					gp_Pnt P = currentNode;
+					gp_Vec centerToP(P.X() - capsuleCenter.X(), P.Y() - capsuleCenter.Y(), P.Z() - capsuleCenter.Z());
+					double t = centerToP.Dot(axisVec);
+
+					double distToSurface = 0.0;
+
+					if (t < -cylinderHalfLength - capsuleRadius)
+						distToSurface = P.Distance(cylStart) - capsuleRadius;
+					else if (t > cylinderHalfLength + capsuleRadius)
+						distToSurface = P.Distance(cylEnd) - capsuleRadius;
+					else if (t < -cylinderHalfLength)
+						distToSurface = P.Distance(cylStart) - capsuleRadius;
+					else if (t > cylinderHalfLength)
+						distToSurface = P.Distance(cylEnd) - capsuleRadius;
+					else
+					{
+						gp_Pnt projPoint(capsuleCenter.X() + t, capsuleCenter.Y(), capsuleCenter.Z());
+						double distToAxis = P.Distance(projPoint);
+						distToSurface = distToAxis - capsuleRadius;
+					}
+
+					double effectiveDist = std::max(0.0, distToSurface);
+
+					double valueCapsule;
+					if (effectiveDist < 100.0)
+						valueCapsule = min_value;
+					else if (effectiveDist < 500.0)
+						valueCapsule = min_value + (max_value - min_value) * 0.2;
+					else if (effectiveDist < 1000.0)
+						valueCapsule = min_value + (max_value - min_value) * 0.1;
+					else
+						valueCapsule = min_value;
+
+					gp_Pnt circleCenter(
+						ptNozzleInletBottom.X() - 200,
+						modelGeometryInfo.theYmin + (modelGeometryInfo.theYmax - modelGeometryInfo.theYmin) / 2.0,
+						ptNozzleInletBottom.Z()
+					);
+
+					double dx = std::abs(circleCenter.X() - x);
+					double dy = std::abs(circleCenter.Y() - y);
+
+					double valueRect;
+					if (dx < 30.0 && dy < 300.0)
+					{
+						valueRect = max_value;
+					}
+					else
+					{
+						double distX = std::max(0.0, dx - 30.0);
+						double distY = std::max(0.0, dy - 300.0);
+						double distToRect = std::sqrt(distX * distX + distY * distY);
+
+						if (distToRect < 40.0)
+							valueRect = min_value + (max_value - min_value) * 0.8;
+						else if (distToRect < 50.0)
+							valueRect = min_value + (max_value - min_value) * 0.7;
+						else if (distToRect < 70.0)
+							valueRect = min_value + (max_value - min_value) * 0.6;
+						else if (distToRect < 90.0)
+							valueRect = min_value + (max_value - min_value) * 0.5;
+						else if (distToRect < 100.0)
+							valueRect = min_value + (max_value - min_value) * 0.4;
+						else if (distToRect < 120.0)
+							valueRect = min_value + (max_value - min_value) * 0.2;
+						else
+							valueRect = min_value;
+					}
+
+					value = std::max(valueCapsule, valueRect);
+				}
+
+				resultInfo.propellantStrainNodeValues.push_back(value);
+			}
+		}
+	}
+
+	if (!modelMeshInfo.heatInsulatingLayerMesh.IsNull())
+	{
+		TColStd_PackedMapOfInteger heatNodes = modelMeshInfo.heatInsulatingLayerMesh->GetAllNodes();
+		resultInfo.heatInsulatingStrainNodeValues.assign(heatNodes.Extent(), -1.0);
+	}
+
+	ModelDataManager::GetInstance()->SetFallAnalysisResultInfo(resultInfo);
+
+	double sum = std::accumulate(resultInfo.shellStrainNodeValues.begin(),
+		resultInfo.shellStrainNodeValues.end(),
+		0.0);
+	fallStrainResult.metalsAvgStrain = sum / static_cast<double>(resultInfo.shellStrainNodeValues.size());
+	ModelDataManager::GetInstance()->SetFallStrainResult(fallStrainResult);
+
+	return true;
+}
 
 bool APISetNodeValue::SetShellFallTempNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
@@ -3011,6 +3586,11 @@ bool APISetNodeValue::SetPropellantFallTempNephogram(OccView* occView, std::vect
 
 	return true;
 }
+bool APISetNodeValue::CalculateAllFallTempNodeValues()
+{
+
+}
+
 
 bool APISetNodeValue::SetShellFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues)
 {
