@@ -105,6 +105,82 @@ struct FallAnalysisResultInfo {
 	double overpressureMinValue;
 
 
+	std::vector<double> nozzleStressNodeValues;
+	std::vector<double> shellStressNodeValues;
+	std::vector<double> propellantStressNodeValues;
+	std::vector<double> heatInsulatingStressNodeValues;
+
+	std::vector<double> nozzleStrainNodeValues;
+	std::vector<double> shellStrainNodeValues;
+	std::vector<double> propellantStrainNodeValues;
+	std::vector<double> heatInsulatingStrainNodeValues;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+
+	std::vector<double> nozzleOverpressureNodeValues;
+	std::vector<double> shellOverpressureNodeValues;
+	std::vector<double> propellantOverpressureNodeValues;
+	std::vector<double> heatInsulatingOverpressureNodeValues;
+
+	std::vector<double> propellantReactionDegreeNodeValues;
+};
+
+//快速烤燃
+struct FastCombustionSettingInfo {
+	bool isChecked = false;
+
+	double temperature = 800.0; // 从达到550℃到弹药开始反应的平均温度
+};
+
+struct FastCombustionAnalysisResultInfo {
+	bool isChecked = false;
+
+	double temperatureMaxValue;
+	double temperatureMinValue;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+};
+
+//慢速烤燃
+struct SlowCombustionSettingInfo {
+	double temperature = 345.0; // 烘箱终止温度
+};
+
+struct SlowCombustionAnalysisResultInfo {
+	bool isChecked = false;
+
+	double temperatureMaxValue;
+	double temperatureMinValue;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+};
+
+//枪击试验
+struct ShootSettingInfo {
+	double speed = 820;
+	double radius = 12.7; // 子弹直径
+};
+
+struct ShootAnalysisResultInfo {
+	bool isChecked = false;
+
+	double stressMaxValue;
+	double stressMinValue;
+	double strainMaxValue;
+	double strainMinValue;
+	double temperatureMaxValue;
+	double temperatureMinValue;
+	double overpressureMaxValue;
+	double overpressureMinValue;
 
 	std::vector<double> nozzleStressNodeValues;
 	std::vector<double> shellStressNodeValues;
@@ -125,53 +201,8 @@ struct FallAnalysisResultInfo {
 	std::vector<double> shellOverpressureNodeValues;
 	std::vector<double> propellantOverpressureNodeValues;
 	std::vector<double> heatInsulatingOverpressureNodeValues;
-};
 
-//快速烤燃
-struct FastCombustionSettingInfo {
-	bool isChecked = false;
-
-	double temperature = 800.0; // 从达到550℃到弹药开始反应的平均温度
-};
-
-struct FastCombustionAnalysisResultInfo {
-	bool isChecked = false;
-
-	double temperatureMaxValue;
-	double temperatureMinValue;
-
-};
-
-//慢速烤燃
-struct SlowCombustionSettingInfo {
-	double temperature = 345.0; // 烘箱终止温度
-};
-
-struct SlowCombustionAnalysisResultInfo {
-	bool isChecked = false;
-
-	double temperatureMaxValue;
-	double temperatureMinValue;
-
-};
-
-//枪击试验
-struct ShootSettingInfo {
-	double speed = 820;
-	double radius = 12.7; // 子弹直径
-};
-
-struct ShootAnalysisResultInfo {
-	bool isChecked = false;
-
-	double stressMaxValue;
-	double stressMinValue;
-	double strainMaxValue;
-	double strainMinValue;
-	double temperatureMaxValue;
-	double temperatureMinValue;
-	double overpressureMaxValue;
-	double overpressureMinValue;
+	std::vector<double> propellantReactionDegreeNodeValues;
 };
 
 //射流冲击试验
@@ -190,6 +221,28 @@ struct JetImpactAnalysisResultInfo {
 	double temperatureMinValue;
 	double overpressureMaxValue;
 	double overpressureMinValue;
+
+	std::vector<double> nozzleStressNodeValues;
+	std::vector<double> shellStressNodeValues;
+	std::vector<double> propellantStressNodeValues;
+	std::vector<double> heatInsulatingStressNodeValues;
+
+	std::vector<double> nozzleStrainNodeValues;
+	std::vector<double> shellStrainNodeValues;
+	std::vector<double> propellantStrainNodeValues;
+	std::vector<double> heatInsulatingStrainNodeValues;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+
+	std::vector<double> nozzleOverpressureNodeValues;
+	std::vector<double> shellOverpressureNodeValues;
+	std::vector<double> propellantOverpressureNodeValues;
+	std::vector<double> heatInsulatingOverpressureNodeValues;
+
+	std::vector<double> propellantReactionDegreeNodeValues;
 };
 
 //破片试验
@@ -209,6 +262,28 @@ struct FragmentationAnalysisResultInfo {
 	double temperatureMinValue;
 	double overpressureMaxValue;
 	double overpressureMinValue;
+
+	std::vector<double> nozzleStressNodeValues;
+	std::vector<double> shellStressNodeValues;
+	std::vector<double> propellantStressNodeValues;
+	std::vector<double> heatInsulatingStressNodeValues;
+
+	std::vector<double> nozzleStrainNodeValues;
+	std::vector<double> shellStrainNodeValues;
+	std::vector<double> propellantStrainNodeValues;
+	std::vector<double> heatInsulatingStrainNodeValues;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+
+	std::vector<double> nozzleOverpressureNodeValues;
+	std::vector<double> shellOverpressureNodeValues;
+	std::vector<double> propellantOverpressureNodeValues;
+	std::vector<double> heatInsulatingOverpressureNodeValues;
+
+	std::vector<double> propellantReactionDegreeNodeValues;
 };
 
 //爆炸冲击波试验
@@ -227,6 +302,28 @@ struct ExplosiveBlastAnalysisResultInfo {
 	double temperatureMinValue;
 	double overpressureMaxValue;
 	double overpressureMinValue;
+
+	std::vector<double> nozzleStressNodeValues;
+	std::vector<double> shellStressNodeValues;
+	std::vector<double> propellantStressNodeValues;
+	std::vector<double> heatInsulatingStressNodeValues;
+
+	std::vector<double> nozzleStrainNodeValues;
+	std::vector<double> shellStrainNodeValues;
+	std::vector<double> propellantStrainNodeValues;
+	std::vector<double> heatInsulatingStrainNodeValues;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+
+	std::vector<double> nozzleOverpressureNodeValues;
+	std::vector<double> shellOverpressureNodeValues;
+	std::vector<double> propellantOverpressureNodeValues;
+	std::vector<double> heatInsulatingOverpressureNodeValues;
+
+	std::vector<double> propellantReactionDegreeNodeValues;
 };
 
 
@@ -246,6 +343,28 @@ struct SacrificeExplosionAnalysisResultInfo {
 	double temperatureMinValue;
 	double overpressureMaxValue;
 	double overpressureMinValue;
+
+	std::vector<double> nozzleStressNodeValues;
+	std::vector<double> shellStressNodeValues;
+	std::vector<double> propellantStressNodeValues;
+	std::vector<double> heatInsulatingStressNodeValues;
+
+	std::vector<double> nozzleStrainNodeValues;
+	std::vector<double> shellStrainNodeValues;
+	std::vector<double> propellantStrainNodeValues;
+	std::vector<double> heatInsulatingStrainNodeValues;
+
+	std::vector<double> nozzleTemperatureNodeValues;
+	std::vector<double> shellTemperatureNodeValues;
+	std::vector<double> propellantTemperatureNodeValues;
+	std::vector<double> heatInsulatingTemperatureNodeValues;
+
+	std::vector<double> nozzleOverpressureNodeValues;
+	std::vector<double> shellOverpressureNodeValues;
+	std::vector<double> propellantOverpressureNodeValues;
+	std::vector<double> heatInsulatingOverpressureNodeValues;
+
+	std::vector<double> propellantReactionDegreeNodeValues;
 };
 
 // 壳体材料

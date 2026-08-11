@@ -2848,9 +2848,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 
 			connect(worker, &CalculateWorker::WorkFinished, this,
 				[=](bool success, const QString& msg) {
-					QString finishTimeStr = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");		
-					logWidget->PrintInfo(finishTimeStr + msg, success);
-
 					if (success)
 					{
 						for (int i = 0; i < item->childCount(); ++i)
@@ -2863,8 +2860,8 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 							QString processedName = (dotIndex != -1) ? originalName.mid(dotIndex + 1).trimmed() : originalName;
 
 							QString logText = "开始进行" + processedName;
-							logWidget->PrintInfo(logText + msg, success);
-							// 通用结果更新 Lambda
+							logWidget->PrintInfo(logText, success);
+
 							auto updateResultWidget = [&](auto* resultWidget,
 								auto& stressResult, auto& strainResult, auto& tempResult,
 								auto& overpressureResult, auto& reactionDegreeResult)
@@ -2875,7 +2872,6 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									stressResult.propellantsMaxStress, stressResult.propellantsMinStress, stressResult.propellantsAvgStress, stressResult.propellantsStandardStress,
 									stressResult.outheatMaxStress, stressResult.outheatMinStress, stressResult.outheatAvgStress, stressResult.outheatStandardStress,
 									stressResult.insulatingheatMaxStress, stressResult.insulatingheatMinStress, stressResult.insulatingheatAvgStress, stressResult.insulatingheatStandardStress);
-								// ... 其他 widget 更新类似，实际代码中需要补充完整
 							};
 
 							// 通用判断更新 Lambda
@@ -2897,6 +2893,11 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								if (APICalculateHepler::CalculateFallAnalysisResult(occView, resultValue))
 								{
 									APISetNodeValue::CalculateAllFallStressNodeValues();
+									APISetNodeValue::CalculateAllFallStrainNodeValues();
+									APISetNodeValue::CalculateAllFallTempNodeValues();
+									APISetNodeValue::CalculateAllFallPressureNodeValues();
+									APISetNodeValue::CalculateAllFallReactionDegreeNodeValues();
+
 									logWidget->PrintInfo("跌落安全性分析计算完成", success);
 
 									auto fallStress = ModelDataManager::GetInstance()->GetFallStressResult();
@@ -2946,6 +2947,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateFastCombustionAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllFastCombustionTempNodeValues();
 									logWidget->PrintInfo("快速烤燃安全性分析计算完成");
 									auto& temp = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
 									importModelWidget->GetFastCombustionTemperatureResultWidget()->updateData(
@@ -2968,6 +2970,7 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateSlowCombustionAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllSlowCombustionTempNodeValues();
 									logWidget->PrintInfo("慢速烤燃安全性分析计算完成");
 									auto& temp = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
 									importModelWidget->GetSlowCombustionTemperatureResultWidget()->updateData(
@@ -2990,6 +2993,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateShootingAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllShootStressNodeValues();
+									APISetNodeValue::CalculateAllShootStrainNodeValues();
+									APISetNodeValue::CalculateAllShootTempNodeValues();
+									APISetNodeValue::CalculateAllShootPressureNodeValues();
+									APISetNodeValue::CalculateAllShootReactionDegreeNodeValues();
+
 									logWidget->PrintInfo("枪击安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetShootStressResult();
@@ -3037,6 +3046,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateJetImpactingAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllJetImpactStressNodeValues();
+									APISetNodeValue::CalculateAllJetImpactStrainNodeValues();
+									APISetNodeValue::CalculateAllJetImpactTempNodeValues();
+									APISetNodeValue::CalculateAllJetImpactPressureNodeValues();
+									APISetNodeValue::CalculateAllJetImpactReactionDegreeNodeValues();
+
 									logWidget->PrintInfo("射流冲击安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetJetImpactStressResult();
@@ -3084,6 +3099,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateFragmentationAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllFragmentationStressNodeValues();
+									APISetNodeValue::CalculateAllFragmentationStrainNodeValues();
+									APISetNodeValue::CalculateAllFragmentationTemperatureNodeValues();
+									APISetNodeValue::CalculateAllFragmentationOverpressureNodeValues();
+									APISetNodeValue::CalculateAllFragmentationReactionDegreeNodeValues();
+
 									logWidget->PrintInfo("破片安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
@@ -3131,6 +3152,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateExplosiveBlastAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllExplosiveBlastStressNodeValues();
+									APISetNodeValue::CalculateAllExplosiveBlastStrainNodeValues();
+									APISetNodeValue::CalculateAllExplosiveBlastTemperatureNodeValues();
+									APISetNodeValue::CalculateAllExplosiveBlastOverpressureNodeValues();
+									APISetNodeValue::CalculateAllExplosiveBlastReactionDegreeNodeValues();
+
 									logWidget->PrintInfo("爆炸冲击波安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
@@ -3178,6 +3205,12 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 								std::vector<double> resultValue; resultValue.reserve(8);
 								if (APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(occView, resultValue))
 								{
+									APISetNodeValue::CalculateAllSacrificeExplosionStressNodeValues();
+									APISetNodeValue::CalculateAllSacrificeExplosionStrainNodeValues();
+									APISetNodeValue::CalculateAllSacrificeExplosionTemperatureNodeValues();
+									APISetNodeValue::CalculateAllSacrificeExplosionOverpressureNodeValues();
+									APISetNodeValue::CalculateAllSacrificeExplosionReactionDegreeNodeValues();
+
 									logWidget->PrintInfo("殉爆安全性分析计算完成");
 
 									auto& stress = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();

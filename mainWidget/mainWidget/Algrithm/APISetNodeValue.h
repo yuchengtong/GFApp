@@ -13,99 +13,71 @@ public:
 		Standard_Real x0,
 		Standard_Real y0);
 
-	//µøÂä
-	static bool SetShellFallStressNephogram(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFallStressNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static double CalculateStd(const std::vector<double> data);
 
+	//µøÂä
 	static bool CalculateAllFallStressNodeValues();
 
-	static bool SetShellFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFallStrainNephogram(OccView* occView, std::vector<double>& nodeValues);
 	static bool CalculateAllFallStrainNodeValues();
-
-	static bool SetShellFallTempNephogram(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFallTempNephogram(OccView* occView, std::vector<double>& nodeValues);
 
 	static bool CalculateAllFallTempNodeValues();
 
-	static bool SetShellFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFallPressureNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFallPressureNodeValues();
 
-	static bool SetPropellantFallReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFallReactionDegreeNodeValues();
 	//¿ìËÙ¿¾È¼
-	static bool SetShellFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFastCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFastCombustionTempNodeValues();
 	//ÂýËÙ¿¾È¼
-	static bool SetShellSlowCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantSlowCombustionTempNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllSlowCombustionTempNodeValues();
 	//Ç¹»÷ÊÔÑé
-	static bool SetShellShootStressResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantShootStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllShootStressNodeValues();
 
-	static bool SetShellShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantShootStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllShootStrainNodeValues();
 
-	static bool SetShellShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantShootTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllShootTempNodeValues();
 
-	static bool SetShellShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantShootOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllShootPressureNodeValues();
 
-	static bool SetPropellantShootReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllShootReactionDegreeNodeValues();
 	//ÉäÁ÷³å»÷ÊÔÑé
-	static bool SetShellJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantJetImpactStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllJetImpactStressNodeValues();
 
-	static bool SetShellJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantJetImpactStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllJetImpactStrainNodeValues();
 
-	static bool SetShellJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantJetImpactTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllJetImpactTempNodeValues();
 
-	static bool SetShellJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantJetImpactOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	
-	static bool SetPropellantJetImpactReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllJetImpactPressureNodeValues();
+
+	static bool CalculateAllJetImpactReactionDegreeNodeValues();
 	//ÆÆÆ¬ÊÔÑé
-	static bool SetShellFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFragmentationStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFragmentationStressNodeValues();
 
-	static bool SetShellFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFragmentationStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFragmentationStrainNodeValues();
 
-	static bool SetShellFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFragmentationTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFragmentationTemperatureNodeValues();
 
-	static bool SetShellFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantFragmentationOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	
-	static bool SetPropellantFragmentationReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllFragmentationOverpressureNodeValues();
+
+	static bool CalculateAllFragmentationReactionDegreeNodeValues();
+
 	//±¬Õ¨³å»÷²¨ÊÔÑé
-	static bool SetShellExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantExplosiveBlastStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllExplosiveBlastStressNodeValues();
 
-	static bool SetShellExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantExplosiveBlastStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllExplosiveBlastStrainNodeValues();
 
-	static bool SetShellExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantExplosiveBlastTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllExplosiveBlastTemperatureNodeValues();
 
-	static bool SetShellExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantExplosiveBlastOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllExplosiveBlastOverpressureNodeValues();
 	
-	static bool SetPropellantExplosiveBlastReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllExplosiveBlastReactionDegreeNodeValues();
 	// Ñ³±¬ÊÔÑé
-	static bool SetShellSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantSacrificeExplosionStressResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllSacrificeExplosionStressNodeValues();
 
-	static bool SetShellSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantSacrificeExplosionStrainResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllSacrificeExplosionStrainNodeValues();
 
-	static bool SetShellSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantSacrificeExplosionTemperatureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllSacrificeExplosionTemperatureNodeValues();
 
-	static bool SetShellSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
-	static bool SetPropellantSacrificeExplosionOverpressureResult(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllSacrificeExplosionOverpressureNodeValues();
 
-	static bool SetPropellantSacrificeExplosionReactionDegreeNephogram(OccView* occView, std::vector<double>& nodeValues);
+	static bool CalculateAllSacrificeExplosionReactionDegreeNodeValues();
 };

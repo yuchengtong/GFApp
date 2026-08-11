@@ -232,52 +232,36 @@ GFImportModelWidget::~GFImportModelWidget()
 
 void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
 {
-    // ========== 1. 重复点击拦截：相同节点直接返回 ==========
+    // ========== 1. 重复点击拦截 ==========
     if (itemData == m_lastClickedItemKey) {
         return;
     }
     m_lastClickedItemKey = itemData;
 
     auto occView = GetOccView();
-    if (!occView) {
-        return;
-    }
+    if (!occView) return;
     Handle(AIS_InteractiveContext) context = occView->getContext();
     Handle(V3d_View) view = occView->getView();
-    std::vector<double> nodeValues; // 复用节点值容器，避免重复构造
 
-    // ========== 内部工具Lambda：公共逻辑全量提取，不新增类函数 ==========
-    // 清理场景旧对象：网格、色标、半透明辅助形状（原代码重复10+次）
+    // ========== 2. 通用 Lambda 工具 ==========
     auto clearSceneAuxObjects = [&]() {
         AIS_ListOfInteractive displayedList;
         context->DisplayedObjects(displayedList);
-
         for (AIS_ListIteratorOfListOfInteractive it(displayedList); it.More(); it.Next()) {
             Handle(AIS_InteractiveObject) obj = it.Value();
-            if (obj->IsKind(STANDARD_TYPE(MeshVS_Mesh))) {
+            if (obj->IsKind(STANDARD_TYPE(MeshVS_Mesh)) ||
+                obj->IsKind(STANDARD_TYPE(AIS_ColorScale)) ||
+                (obj->IsKind(STANDARD_TYPE(AIS_Shape)) &&
+                    !Handle(AIS_Shape)::DownCast(obj).IsNull() &&
+                    std::abs(Handle(AIS_Shape)::DownCast(obj)->Transparency() - 0.9) < 1e-6)) {
                 context->Erase(obj, Standard_False);
-                continue;
-            }
-            if (obj->IsKind(STANDARD_TYPE(AIS_ColorScale))) {
-                context->Erase(obj, Standard_False);
-                continue;
-            }
-            if (obj->IsKind(STANDARD_TYPE(AIS_Shape))) {
-                Handle(AIS_Shape) aisShape = Handle(AIS_Shape)::DownCast(obj);
-                if (!aisShape.IsNull() && std::abs(aisShape->Transparency() - 0.9) < 1e-6) {
-                    context->Erase(obj, Standard_False);
-                }
             }
         }
     };
 
-    // 统一创建颜色标尺：公共参数集中配置，消除几十行重复代码
     auto createColorScale = [&](const QString& title, double minVal, double maxVal, const char* format) {
         QByteArray utf8 = title.toUtf8();
-        TCollection_ExtendedString tostr(utf8.constData(), Standard_True);
-
         Handle(AIS_ColorScale) aColorScale = new AIS_ColorScale();
-
         aColorScale->SetFormat(TCollection_AsciiString(format));
         aColorScale->SetSize(100, 400);
         aColorScale->SetRange(minVal, maxVal);
@@ -285,11 +269,10 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         aColorScale->SetLabelPosition(Aspect_TOCSP_RIGHT);
         aColorScale->SetTextHeight(14);
         aColorScale->SetColor(Quantity_Color(Quantity_NOC_BLACK));
-        aColorScale->SetTitle(tostr);
+        aColorScale->SetTitle(TCollection_ExtendedString(utf8.constData(), Standard_True));
         aColorScale->SetColorRange(Quantity_Color(Quantity_NOC_BLUE1), Quantity_Color(Quantity_NOC_RED));
         aColorScale->SetLabelType(Aspect_TOCSD_AUTO);
         aColorScale->SetZLayer(Graphic3d_ZLayerId_TopOSD);
-
         Graphic3d_Vec2i offset(0, 450);
         context->SetTransformPersistence(aColorScale,
             new Graphic3d_TransformPers(Graphic3d_TMF_2d, Aspect_TOTP_LEFT_UPPER, offset));
@@ -297,7 +280,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(aColorScale, Standard_True);
     };
 
-    // 结果页统一前置操作：关闭旋转、切换页面、清理场景、设置俯视视角
     auto setupResultView = [&](QWidget* page) {
         occView->SetCameraRotationState(false);
         m_PropertyStackWidget->setCurrentWidget(page);
@@ -305,13 +287,77 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         view->SetProj(V3d_Zneg);
     };
 
-    // ========== 2. 纯页面切换：数据驱动映射表，消除30+个重复if ==========
-    struct PageSwitchConfig {
-        QWidget* page;
-        bool enableRotation;
+    // ========== 3. 辅助网格构建函数（消除重复代码） ==========
+    auto buildShellNozzlePropellantMesh = [&](const std::vector<double>& shellVals,
+        const std::vector<double>& nozzleVals,
+        const std::vector<double>& propVals,
+        double minVal, double maxVal,
+        double angle,
+        Handle(MeshVS_Mesh)& shellMesh,
+        Handle(MeshVS_Mesh)& nozzleMesh,
+        Handle(MeshVS_Mesh)& propellantMesh) {
+            auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+            auto geo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+            double cx = (geo.theXmin + geo.theXmax) / 2.0;
+            double cy = (geo.theYmin + geo.theYmax) / 2.0;
+
+            // 壳体
+            if (!meshInfo.shellMesh.IsNull() && !shellVals.empty()) {
+                shellMesh = new MeshVS_Mesh();
+                shellMesh->SetDataSource(meshInfo.shellMesh->RotateXY(angle, cx, cy));
+                auto colorMap = APISetNodeValue::GetMeshDataMap(shellVals, minVal, maxVal);
+                Handle(MeshVS_NodalColorPrsBuilder) builder = new MeshVS_NodalColorPrsBuilder(shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+                builder->SetColors(colorMap);
+                shellMesh->AddBuilder(builder);
+                shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+            }
+
+            // 喷嘴
+            if (!meshInfo.nozzleMesh.IsNull() && !nozzleVals.empty()) {
+                nozzleMesh = new MeshVS_Mesh();
+                nozzleMesh->SetDataSource(meshInfo.nozzleMesh->RotateXY(angle, cx, cy));
+                auto colorMap = APISetNodeValue::GetMeshDataMap(nozzleVals, minVal, maxVal);
+                Handle(MeshVS_NodalColorPrsBuilder) builder = new MeshVS_NodalColorPrsBuilder(nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+                builder->SetColors(colorMap);
+                nozzleMesh->AddBuilder(builder);
+                nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+            }
+
+            // 推进剂（填充 -1）
+            if (!meshInfo.propellantMesh.IsNull()) {
+                propellantMesh = new MeshVS_Mesh();
+                propellantMesh->SetDataSource(meshInfo.propellantMesh->RotateXY(angle, cx, cy));
+                std::vector<double> fillVals(propVals.size(), -1.0);
+                auto colorMap = APISetNodeValue::GetMeshDataMap(fillVals, minVal, maxVal);
+                Handle(MeshVS_NodalColorPrsBuilder) builder = new MeshVS_NodalColorPrsBuilder(propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+                builder->SetColors(colorMap);
+                propellantMesh->AddBuilder(builder);
+                propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+            }
     };
+
+    auto buildPropellantOnlyMesh = [&](const std::vector<double>& propVals,
+        double minVal, double maxVal,
+        double angle,
+        Handle(MeshVS_Mesh)& propellantMesh) {
+            auto meshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
+            auto geo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+            if (meshInfo.propellantMesh.IsNull() || propVals.empty()) return;
+            double cx = (geo.theXmin + geo.theXmax) / 2.0;
+            double cy = (geo.theYmin + geo.theYmax) / 2.0;
+
+            propellantMesh = new MeshVS_Mesh();
+            propellantMesh->SetDataSource(meshInfo.propellantMesh->RotateXY(angle, cx, cy));
+            auto colorMap = APISetNodeValue::GetMeshDataMap(propVals, minVal, maxVal);
+            Handle(MeshVS_NodalColorPrsBuilder) builder = new MeshVS_NodalColorPrsBuilder(propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
+            builder->SetColors(colorMap);
+            propellantMesh->AddBuilder(builder);
+            propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
+    };
+
+    // ========== 4. 页面切换映射表 ==========
+    struct PageSwitchConfig { QWidget* page; bool enableRotation; };
     static const QMap<QString, PageSwitchConfig> pageConfigMap = {
-        // 基础属性
         {"Material", {m_materialPropertyWidget, true}},
         {"Results", {m_resultsPropertyWidget, true}},
         {"Steel", {m_steelPropertyWidgett, true}},
@@ -324,8 +370,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         {"Outheat", {m_outheatPropertyWidget, true}},
         {"Database", {m_databasePropertyWidget, true}},
         {"Analysis", {m_settingPropertyWidget, true}},
-
-        // 试验根节点
         {"FallAnalysis", {m_fallPropertyWidget, false}},
         {"FastCombustionAnalysis", {m_fastCombustionPropertyWidget, false}},
         {"SlowCombustionAnalysis", {m_slowCombustionPropertyWidget, false}},
@@ -334,8 +378,6 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         {"FragmentationImpactAnalysis", {m_fragmentationImpactPropertyWidget, false}},
         {"ExplosiveBlastAnalysis", {m_explosiveBlastPropertyWidget, false}},
         {"SacrificeExplosionAnalysis", {m_sacrificeExplosionPropertyWidget, false}},
-
-        // 结果根节点
         {"StressResult", {m_stressResultWidget, false}},
         {"StrainResult", {m_strainResultWidget, false}},
         {"TemperatureResult", {m_temperatureResultWidget, false}},
@@ -355,7 +397,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         return;
     }
 
-    // ========== 3. 几何与网格节点处理 ==========
+    // ========== 5. 几何与网格节点 ==========
     static const QStringList geomItems = {
         "NozzleGeometry", "ShellGeometry",
         "PropellantGeometry", "HeatInsulatingLayerGeometry"
@@ -394,450 +436,914 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         return;
     }
 
-    // ========== 4. 云图结果节点（按试验分类，逻辑清晰易维护） ==========
+    // ========== 6. 云图结果节点（全部使用辅助函数，统一角度旋转） ==========
     // ----- 跌落试验 -----
     if (itemData == "FallStressShellResult") {
         setupResultView(m_stressResultWidget);
-        //APISetNodeValue::SetShellFallStressNephogram(occView, nodeValues);
-
-        auto fallSettingInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
-        auto angle = fallSettingInfo.angle;
-        auto modelGeometryInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
-        auto modelMeshInfo = ModelDataManager::GetInstance()->GetModelMeshInfo();
-        auto fallAnalysisResultInfo = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
-        auto fallStressResult = ModelDataManager::GetInstance()->GetFallStressResult();
-        auto max_value = fallStressResult.metalsMaxStress;
-        auto min_value = fallStressResult.metalsMinStress;
-
-        Handle(MeshVS_Mesh) shellMesh;
-        Handle(MeshVS_Mesh) nozzleMesh;
-        Handle(MeshVS_Mesh) propellantMesh;
-        // ========== 显示壳体网格 ==========
-        {
-            shellMesh = new MeshVS_Mesh();
-            auto meshData90 = modelMeshInfo.shellMesh->RotateXY(angle, (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-                (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-            shellMesh->SetDataSource(meshData90);
-
-            MeshVS_DataMapOfIntegerColor propellantColorMap = APISetNodeValue::GetMeshDataMap(fallAnalysisResultInfo.shellStressNodeValues, min_value, max_value);
-            Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-                shellMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-            propellantNodal->SetColors(propellantColorMap);
-            shellMesh->AddBuilder(propellantNodal);
-            shellMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-        }
-        // ========== 显示喷嘴网格 ==========
-        {
-            nozzleMesh = new MeshVS_Mesh();
-            auto nozzleMeshData = modelMeshInfo.nozzleMesh->RotateXY(angle,
-                (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-                (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-            nozzleMesh->SetDataSource(nozzleMeshData);
-
-            MeshVS_DataMapOfIntegerColor nozzleColorMap = APISetNodeValue::GetMeshDataMap(fallAnalysisResultInfo.nozzleStressNodeValues, min_value, max_value);
-            Handle(MeshVS_NodalColorPrsBuilder) nozzleNodal = new MeshVS_NodalColorPrsBuilder(
-                nozzleMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-            nozzleNodal->SetColors(nozzleColorMap);
-            nozzleMesh->AddBuilder(nozzleNodal);
-            nozzleMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-        }
-
-        // ========== 显示推进剂网格 ==========
-        {
-            propellantMesh = new MeshVS_Mesh();
-            auto propellantMeshData = modelMeshInfo.propellantMesh->RotateXY(angle,
-                (modelGeometryInfo.theXmin + modelGeometryInfo.theXmax) / 2.0,
-                (modelGeometryInfo.theYmin + modelGeometryInfo.theYmax) / 2.0);
-            propellantMesh->SetDataSource(propellantMeshData);
-
-            auto nodeValuesVec = fallAnalysisResultInfo.propellantStressNodeValues;
-            std::fill(nodeValuesVec.begin(), nodeValuesVec.end(), -1.0);
-            MeshVS_DataMapOfIntegerColor propellantColorMap = APISetNodeValue::GetMeshDataMap(nodeValuesVec, min_value, max_value);
-            Handle(MeshVS_NodalColorPrsBuilder) propellantNodal = new MeshVS_NodalColorPrsBuilder(
-                propellantMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask);
-            propellantNodal->SetColors(propellantColorMap);
-            propellantMesh->AddBuilder(propellantNodal);
-            propellantMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, false);
-        }
-
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
+        auto res = ModelDataManager::GetInstance()->GetFallStressResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStressNodeValues, info.nozzleStressNodeValues,
+            info.propellantStressNodeValues,
+            res.metalsMinStress, res.metalsMaxStress,
+            angle, shellMesh, nozzleMesh, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
-
         occView->fitAll();
-
-        auto res = ModelDataManager::GetInstance()->GetFallStressResult();
         createColorScale("跌落试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }
     else if (itemData == "FallStressPropellantResult") {
         setupResultView(m_stressResultWidget);
-        APISetNodeValue::SetPropellantFallStressNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallStressResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStressNodeValues,
+            res.propellantsMinStress, res.propellantsMaxStress,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
     }
     else if (itemData == "FallStrainShellResult") {
         setupResultView(m_strainResultWidget);
-        APISetNodeValue::SetShellFallStrainNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallStrainResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStrainNodeValues, info.nozzleStrainNodeValues,
+            info.propellantStrainNodeValues,
+            res.metalsMinStrain, res.metalsMaxStrain,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "FallStrainPropellantResult") {
         setupResultView(m_strainResultWidget);
-        APISetNodeValue::SetPropellantFallStrainNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallStrainResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStrainNodeValues,
+            res.propellantsMinStrain, res.propellantsMaxStrain,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "FallTemperatureShellResult") {
         setupResultView(m_temperatureResultWidget);
-        APISetNodeValue::SetShellFallTempNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "FallTemperaturePropellantResult") {
         setupResultView(m_temperatureResultWidget);
-        APISetNodeValue::SetPropellantFallTempNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallTemperatureResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
     else if (itemData == "FallOverpressureShellResult") {
         setupResultView(m_overpressureResultWidge);
-        APISetNodeValue::SetShellFallPressureNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellOverpressureNodeValues, info.nozzleOverpressureNodeValues,
+            info.propellantOverpressureNodeValues,
+            res.metalsMinOverpressure, res.metalsMaxOverpressure,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n超压分析\n单位:MPa", res.metalsMinOverpressure, res.metalsMaxOverpressure, "%.2f");
     }
     else if (itemData == "FallOverpressurePropellantResult") {
         setupResultView(m_overpressureResultWidge);
-        APISetNodeValue::SetPropellantFallPressureNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
+            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
     }
     else if (itemData == "reactionDegreePropellantResult") {
         setupResultView(m_reactionDegreeResultWidget);
-        APISetNodeValue::SetPropellantFallReactionDegreeNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallReactionDegreeResult();
+        auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantReactionDegreeNodeValues,
+            res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("跌落试验\n反应度分析", res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree, "%.2f");
     }
 
     // ----- 快速烤燃 -----
     else if (itemData == "fastTemperatureShellResult") {
         setupResultView(m_fastCombustionTemperatureResultWidget);
-        APISetNodeValue::SetShellFastCombustionTempNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFastCombustionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
+        //auto angle = ModelDataManager::GetInstance()->GetFastCombustionSettingInfo().angle;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            90, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("快速烤燃\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "fastTemperaturePropellantResult") {
         setupResultView(m_fastCombustionTemperatureResultWidget);
-        APISetNodeValue::SetPropellantFastCombustionTempNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFastCombustionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFastCombustionTemperatureResult();
+        //auto angle = ModelDataManager::GetInstance()->GetFastCombustionSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            90, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("快速烤燃\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
 
     // ----- 慢速烤燃 -----
     else if (itemData == "slowTemperatureShellResult") {
         setupResultView(m_slowCombustionTemperatureResultWidget);
-        APISetNodeValue::SetShellSlowCombustionTempNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSlowCombustionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
+        //auto angle = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo().angle;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            90, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("慢速烤燃\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "slowTemperaturePropellantResult") {
         setupResultView(m_slowCombustionTemperatureResultWidget);
-        APISetNodeValue::SetPropellantSlowCombustionTempNephogram(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSlowCombustionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSlowCombustionTemperatureResult();
+        //auto angle = ModelDataManager::GetInstance()->GetSlowCombustionSettingInfo().angle;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            90, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("慢速烤燃\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
 
     // ----- 枪击试验 -----
     else if (itemData == "shootStressShellResult") {
         setupResultView(m_shootStressResultWidget);
-        APISetNodeValue::SetShellShootStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStressNodeValues, info.nozzleStressNodeValues,
+            info.propellantStressNodeValues,
+            res.metalsMinStress, res.metalsMaxStress,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }
     else if (itemData == "shootStressPropellantResult") {
         setupResultView(m_shootStressResultWidget);
-        APISetNodeValue::SetPropellantShootStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStressNodeValues,
+            res.propellantsMinStress, res.propellantsMaxStress,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
     }
     else if (itemData == "shootStrainShellResult") {
         setupResultView(m_shootStrainResultWidget);
-        APISetNodeValue::SetShellShootStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStrainNodeValues, info.nozzleStrainNodeValues,
+            info.propellantStrainNodeValues,
+            res.metalsMinStrain, res.metalsMaxStrain,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "shootStrainPropellantResult") {
         setupResultView(m_shootStrainResultWidget);
-        APISetNodeValue::SetPropellantShootStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStrainNodeValues,
+            res.propellantsMinStrain, res.propellantsMaxStrain,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "shootTempShellResult") {
         setupResultView(m_shootTemperatureResultWidget);
-        APISetNodeValue::SetShellShootTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "shootTempPropellantResult") {
         setupResultView(m_shootTemperatureResultWidget);
-        APISetNodeValue::SetPropellantShootTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
     else if (itemData == "shootOverpressureShellResult") {
         setupResultView(m_shootOverpressureResultWidge);
-        APISetNodeValue::SetShellShootOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellOverpressureNodeValues, info.nozzleOverpressureNodeValues,
+            info.propellantOverpressureNodeValues,
+            res.metalsMinOverpressure, res.metalsMaxOverpressure,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n超压分析\n单位:MPa", res.metalsMinOverpressure, res.metalsMaxOverpressure, "%.2f");
     }
     else if (itemData == "shootOverpressurePropellantResult") {
         setupResultView(m_shootOverpressureResultWidge);
-        APISetNodeValue::SetPropellantShootOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
+            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
     }
     else if (itemData == "shootReactionDegreePropellantResult") {
         setupResultView(m_shootReactionDegreeResultWidget);
-        APISetNodeValue::SetPropellantShootReactionDegreeNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootReactionDegreeResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantReactionDegreeNodeValues,
+            res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("枪击试验\n反应度分析", res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree, "%.2f");
     }
 
     // ----- 射流冲击 -----
     else if (itemData == "jetStressShellResult") {
         setupResultView(m_jetImpactStressResultWidget);
-        APISetNodeValue::SetShellJetImpactStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStressNodeValues, info.nozzleStressNodeValues,
+            info.propellantStressNodeValues,
+            res.metalsMinStress, res.metalsMaxStress,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }
     else if (itemData == "jetStressPropellantResult") {
         setupResultView(m_jetImpactStressResultWidget);
-        APISetNodeValue::SetPropellantJetImpactStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStressNodeValues,
+            res.propellantsMinStress, res.propellantsMaxStress,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
     }
     else if (itemData == "jetStrainShellResult") {
         setupResultView(m_jetImpactStrainResultWidget);
-        APISetNodeValue::SetShellJetImpactStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStrainNodeValues, info.nozzleStrainNodeValues,
+            info.propellantStrainNodeValues,
+            res.metalsMinStrain, res.metalsMaxStrain,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "jetStrainPropellantResult") {
         setupResultView(m_jetImpactStrainResultWidget);
-        APISetNodeValue::SetPropellantJetImpactStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStrainNodeValues,
+            res.propellantsMinStrain, res.propellantsMaxStrain,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "jetTempShellResult") {
         setupResultView(m_jetImpactTemperatureResultWidget);
-        APISetNodeValue::SetShellJetImpactTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "jetTempPropellantResult") {
         setupResultView(m_jetImpactTemperatureResultWidget);
-        APISetNodeValue::SetPropellantJetImpactTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
     else if (itemData == "jetOverpressureShellResult") {
         setupResultView(m_jetImpactOverpressureResultWidge);
-        APISetNodeValue::SetShellJetImpactOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellOverpressureNodeValues, info.nozzleOverpressureNodeValues,
+            info.propellantOverpressureNodeValues,
+            res.metalsMinOverpressure, res.metalsMaxOverpressure,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n超压分析\n单位:MPa", res.metalsMinOverpressure, res.metalsMaxOverpressure, "%.2f");
     }
     else if (itemData == "jetOverpressurePropellantResult") {
         setupResultView(m_jetImpactOverpressureResultWidge);
-        APISetNodeValue::SetPropellantJetImpactOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
+            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
     }
     else if (itemData == "jetImpactReactionDegreePropellantResult") {
         setupResultView(m_jetImpactReactionDegreeResultWidget);
-        APISetNodeValue::SetPropellantJetImpactReactionDegreeNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactReactionDegreeResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantReactionDegreeNodeValues,
+            res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("射流冲击试验\n反应度分析", res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree, "%.2f");
     }
 
     // ----- 破片试验 -----
     else if (itemData == "fragmentationStressShellResult") {
         setupResultView(m_fragmentationImpactStressResultWidget);
-        APISetNodeValue::SetShellFragmentationStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStressNodeValues, info.nozzleStressNodeValues,
+            info.propellantStressNodeValues,
+            res.metalsMinStress, res.metalsMaxStress,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }
     else if (itemData == "fragmentationStressPropellantResult") {
         setupResultView(m_fragmentationImpactStressResultWidget);
-        APISetNodeValue::SetPropellantFragmentationStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStressNodeValues,
+            res.propellantsMinStress, res.propellantsMaxStress,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
     }
     else if (itemData == "fragmentationStrainShellResult") {
         setupResultView(m_fragmentationImpactStrainResultWidget);
-        APISetNodeValue::SetShellFragmentationStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStrainNodeValues, info.nozzleStrainNodeValues,
+            info.propellantStrainNodeValues,
+            res.metalsMinStrain, res.metalsMaxStrain,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "fragmentationStrainPropellantResult") {
         setupResultView(m_fragmentationImpactStrainResultWidget);
-        APISetNodeValue::SetPropellantFragmentationStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStrainNodeValues,
+            res.propellantsMinStrain, res.propellantsMaxStrain,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "fragmentationTempShellResult") {
         setupResultView(m_fragmentationImpactTemperatureResultWidget);
-        APISetNodeValue::SetShellFragmentationTemperatureResult(occView, nodeValues);
-        // 修复原代码BUG：原代码错误调用了快速烤燃的温度数据
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "fragmentationTempPropellantResult") {
         setupResultView(m_fragmentationImpactTemperatureResultWidget);
-        APISetNodeValue::SetPropellantFragmentationTemperatureResult(occView, nodeValues);
-        // 修复原代码BUG：原代码错误调用了快速烤燃的温度数据
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
     else if (itemData == "fragmentationOverpressureShellResult") {
         setupResultView(m_fragmentationImpactOverpressureResultWidge);
-        APISetNodeValue::SetShellFragmentationOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellOverpressureNodeValues, info.nozzleOverpressureNodeValues,
+            info.propellantOverpressureNodeValues,
+            res.metalsMinOverpressure, res.metalsMaxOverpressure,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n超压分析\n单位:MPa", res.metalsMinOverpressure, res.metalsMaxOverpressure, "%.2f");
     }
     else if (itemData == "fragmentationOverpressurePropellantResult") {
         setupResultView(m_fragmentationImpactOverpressureResultWidge);
-        APISetNodeValue::SetPropellantFragmentationOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
+            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
     }
     else if (itemData == "fragmentationImpactReactionDegreePropellantResult") {
         setupResultView(m_fragmentationImpactReactionDegreeResultWidget);
-        APISetNodeValue::SetPropellantFragmentationReactionDegreeNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactReactionDegreeResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantReactionDegreeNodeValues,
+            res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("破片试验\n反应度分析", res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree, "%.2f");
     }
 
     // ----- 爆炸冲击波 -----
     else if (itemData == "explosiveStressShellResult") {
         setupResultView(m_explosiveBlastStressResultWidget);
-        APISetNodeValue::SetShellExplosiveBlastStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStressNodeValues, info.nozzleStressNodeValues,
+            info.propellantStressNodeValues,
+            res.metalsMinStress, res.metalsMaxStress,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }
     else if (itemData == "explosiveStressPropellantResult") {
         setupResultView(m_explosiveBlastStressResultWidget);
-        APISetNodeValue::SetPropellantExplosiveBlastStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStressNodeValues,
+            res.propellantsMinStress, res.propellantsMaxStress,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
     }
     else if (itemData == "explosiveStrainShellResult") {
         setupResultView(m_explosiveBlastStrainResultWidget);
-        APISetNodeValue::SetShellExplosiveBlastStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStrainNodeValues, info.nozzleStrainNodeValues,
+            info.propellantStrainNodeValues,
+            res.metalsMinStrain, res.metalsMaxStrain,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "explosiveStrainPropellantResult") {
         setupResultView(m_explosiveBlastStrainResultWidget);
-        APISetNodeValue::SetPropellantExplosiveBlastStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStrainNodeValues,
+            res.propellantsMinStrain, res.propellantsMaxStrain,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "explosiveTempShellResult") {
         setupResultView(m_explosiveBlastTemperatureResultWidget);
-        APISetNodeValue::SetShellExplosiveBlastTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "explosiveTempPropellantResult") {
         setupResultView(m_explosiveBlastTemperatureResultWidget);
-        APISetNodeValue::SetPropellantExplosiveBlastTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
     else if (itemData == "explosiveOverpressureShellResult") {
         setupResultView(m_explosiveBlastOverpressureResultWidge);
-        APISetNodeValue::SetShellExplosiveBlastOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellOverpressureNodeValues, info.nozzleOverpressureNodeValues,
+            info.propellantOverpressureNodeValues,
+            res.metalsMinOverpressure, res.metalsMaxOverpressure,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n超压分析\n单位:MPa", res.metalsMinOverpressure, res.metalsMaxOverpressure, "%.2f");
     }
     else if (itemData == "explosiveOverpressurePropellantResult") {
         setupResultView(m_explosiveBlastOverpressureResultWidge);
-        APISetNodeValue::SetPropellantExplosiveBlastOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
+            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
     }
     else if (itemData == "explosiveBlastReactionDegreePropellantResult") {
         setupResultView(m_explosiveBlastReactionDegreeResultWidget);
-        APISetNodeValue::SetPropellantExplosiveBlastReactionDegreeNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastReactionDegreeResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantReactionDegreeNodeValues,
+            res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("爆炸冲击波试验\n反应度分析", res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree, "%.2f");
     }
 
     // ----- 殉爆试验 -----
     else if (itemData == "sacrificeStressShellResult") {
         setupResultView(m_sacrificeExplosionStressResultWidget);
-        APISetNodeValue::SetShellSacrificeExplosionStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStressNodeValues, info.nozzleStressNodeValues,
+            info.propellantStressNodeValues,
+            res.metalsMinStress, res.metalsMaxStress,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n应力分析\n单位:MPa", res.metalsMinStress, res.metalsMaxStress, "%.2f");
     }
     else if (itemData == "sacrificeStressPropellantResult") {
         setupResultView(m_sacrificeExplosionStressResultWidget);
-        APISetNodeValue::SetPropellantSacrificeExplosionStressResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStressNodeValues,
+            res.propellantsMinStress, res.propellantsMaxStress,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
     }
     else if (itemData == "sacrificeStrainShellResult") {
         setupResultView(m_sacrificeExplosionStrainResultWidget);
-        APISetNodeValue::SetShellSacrificeExplosionStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellStrainNodeValues, info.nozzleStrainNodeValues,
+            info.propellantStrainNodeValues,
+            res.metalsMinStrain, res.metalsMaxStrain,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "sacrificeStrainPropellantResult") {
         setupResultView(m_sacrificeExplosionStrainResultWidget);
-        APISetNodeValue::SetPropellantSacrificeExplosionStrainResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantStrainNodeValues,
+            res.propellantsMinStrain, res.propellantsMaxStrain,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "sacrificeTempShellResult") {
         setupResultView(m_sacrificeExplosionTemperatureResultWidget);
-        APISetNodeValue::SetShellSacrificeExplosionTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellTemperatureNodeValues, info.nozzleTemperatureNodeValues,
+            info.propellantTemperatureNodeValues,
+            res.metalsMinTemperature, res.metalsMaxTemperature,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n温度分析\n单位:℃", res.metalsMinTemperature, res.metalsMaxTemperature, "%.2f");
     }
     else if (itemData == "sacrificeTempPropellantResult") {
         setupResultView(m_sacrificeExplosionTemperatureResultWidget);
-        APISetNodeValue::SetPropellantSacrificeExplosionTemperatureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionTemperatureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantTemperatureNodeValues,
+            res.propellantsMinTemperature, res.propellantsMaxTemperature,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n温度分析\n单位:℃", res.propellantsMinTemperature, res.propellantsMaxTemperature, "%.2f");
     }
     else if (itemData == "sacrificeOverpressureShellResult") {
         setupResultView(m_sacrificeExplosionOverpressureResultWidge);
-        APISetNodeValue::SetShellSacrificeExplosionOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) shellMesh, nozzleMesh, propellantMesh;
+        buildShellNozzlePropellantMesh(info.shellOverpressureNodeValues, info.nozzleOverpressureNodeValues,
+            info.propellantOverpressureNodeValues,
+            res.metalsMinOverpressure, res.metalsMaxOverpressure,
+            angle, shellMesh, nozzleMesh, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        context->Display(shellMesh, Standard_True);
+        context->Display(nozzleMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n超压分析\n单位:MPa", res.metalsMinOverpressure, res.metalsMaxOverpressure, "%.2f");
     }
     else if (itemData == "sacrificeOverpressurePropellantResult") {
         setupResultView(m_sacrificeExplosionOverpressureResultWidge);
-        APISetNodeValue::SetPropellantSacrificeExplosionOverpressureResult(occView, nodeValues);
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
+            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
     }
     else if (itemData == "sacrificeExplosionDegreePropellantResult") {
         setupResultView(m_sacrificeExplosionReactionDegreeResultWidget);
-        APISetNodeValue::SetPropellantSacrificeExplosionReactionDegreeNephogram(occView, nodeValues);
-        occView->fitAll();
+        auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionReactionDegreeResult();
+        auto angle = 90;
+        Handle(MeshVS_Mesh) propellantMesh;
+        buildPropellantOnlyMesh(info.propellantReactionDegreeNodeValues,
+            res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree,
+            angle, propellantMesh);
+        context->EraseAll(true);
+        context->Display(propellantMesh, Standard_True);
+        occView->fitAll();
         createColorScale("殉爆试验\n反应度分析", res.propellantsMinReactionDegree, res.propellantsMaxReactionDegree, "%.2f");
     }
 
-    // 统一重绘视图
+    // ========== 7. 统一重绘 ==========
     view->Redraw();
 }
 
