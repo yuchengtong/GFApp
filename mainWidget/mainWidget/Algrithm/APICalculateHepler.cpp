@@ -534,6 +534,10 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	double shellTemperatureAvgValue = calculateAvg(steelTemperatureResults); // 发动机壳体平均温度
 	double shellTemperatureStandardValue = calculateStd(steelTemperatureResults); // 发动机壳体温度标准差
 	double propellantTemperatureMaxValue = calPropellantTemperatureMaxValue; // 固体推进剂最大温度
+	if (propellantTemperatureMaxValue == 25)
+	{
+		propellantTemperatureMaxValue = propellantTemperatureMaxValue * 1.01;
+	}
 	double propellantTemperatureMinValue = 25; // 固体推进剂最小温度
 	double propellantTemperatureAvgValue = calculateAvg(propellantTemperatureResults); // 固体推进剂平均温度
 	double propellantTemperatureStandardValue = calculateStd(propellantTemperatureResults); // 固体推进剂温度标准差
