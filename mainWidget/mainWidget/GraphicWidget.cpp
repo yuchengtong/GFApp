@@ -12,9 +12,7 @@ GraphicWidget::GraphicWidget(QWidget* parent)
 {
     m_graph = create3DSurfaceGraph();
     auto* inputHandler = qobject_cast<Q3DInputHandler*>(m_surface->activeInputHandler());
-    if (inputHandler) {
-        inputHandler->setRotationEnabled(false);
-    }
+
 
 
     m_graph->activeTheme()->setGridEnabled(true);

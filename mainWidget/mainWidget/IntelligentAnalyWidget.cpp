@@ -538,8 +538,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	QLabel* hspinBoxLabel = new QLabel("水平：");
 	QSpinBox* hspinBox = new QSpinBox();
-	hspinBox->setMinimum(1);
-	hspinBox->setMaximum(89);
+	//hspinBox->setMinimum(1);
+	//hspinBox->setMaximum(89);
 	hspinBox->setSingleStep(1);
 	hspinBox->setMinimumWidth(200);
 	hspinBox->setSuffix("°");
@@ -549,8 +549,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	QLabel* vspinBoxLabel = new QLabel("垂直：");
 	QSpinBox* vspinBox = new QSpinBox();
-	vspinBox->setMinimum(0);
-	vspinBox->setMaximum(90);
+	//vspinBox->setMinimum(0);
+	//vspinBox->setMaximum(90);
 	vspinBox->setSingleStep(1);
 	vspinBox->setMinimumWidth(200);
 	vspinBox->setSuffix("°");
