@@ -3,21 +3,23 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QSpinBox>
-
-#include "GraphicWidget.h"
 #include <Q3DInputHandler>
+#include <QMouseEvent>
+#include <QTimer>
 
 GraphicWidget::GraphicWidget(QWidget* parent)
-	: QWidget(parent)
+    : QWidget(parent)
 {
     m_graph = create3DSurfaceGraph();
     auto* inputHandler = qobject_cast<Q3DInputHandler*>(m_surface->activeInputHandler());
 
-
-
     m_graph->activeTheme()->setGridEnabled(true);
     m_graph->activeTheme()->setBackgroundEnabled(true);
     m_graph->activeTheme()->setLabelBackgroundEnabled(true);
+
+    // 安装事件过滤器，用于右键拖拽后限制视角角度
+    m_graph->installEventFilter(this);
+
     QWidget* graphContainer = QWidget::createWindowContainer(m_graph);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -33,10 +35,10 @@ GraphicWidget::~GraphicWidget()
 QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
 {
     m_surface = new Q3DSurface;
- 
+
     m_axisX = createValue3DAxis("壳体厚度");
-    m_axisY = createValue3DAxis("跌落高度");
-    m_axisZ = createValue3DAxis("壳体最大应力");
+    m_axisY = createValue3DAxis("壳体最大应力");
+    m_axisZ = createValue3DAxis("跌落高度");
     m_surface->setAxisX(m_axisX);
     m_surface->setAxisY(m_axisY);
     m_surface->setAxisZ(m_axisZ);
@@ -57,8 +59,8 @@ QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
     m_series->dataProxy()->resetArray(m_array);
 
     Q3DCamera* camera = m_surface->scene()->activeCamera();
-    camera->setXRotation(45.0f);
-    camera->setYRotation(30.0f); 
+    camera->setXRotation(-125.0f);
+    camera->setYRotation(30.0f);
     camera->setZoomLevel(70.0f);
 
     return m_surface;
@@ -68,8 +70,8 @@ QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
 QValue3DAxis* GraphicWidget::createValue3DAxis(QString axisTitle, bool titleVisible, float min, float max)
 {
     QValue3DAxis* axis = new QValue3DAxis;
-    axis->setTitle(axisTitle); 
-    axis->setTitleVisible(titleVisible); 
+    axis->setTitle(axisTitle);
+    axis->setTitleVisible(titleVisible);
     axis->setRange(min, max);
     return axis;
 }
@@ -78,7 +80,7 @@ QCategory3DAxis* GraphicWidget::createCategory3DAxis(QString axisTitle, bool tit
 {
     QCategory3DAxis* axis = new QCategory3DAxis;
     axis->setTitle(axisTitle);
-    axis->setTitleVisible(titleVisible); 
+    axis->setTitleVisible(titleVisible);
     axis->setLabels(labList);
     return axis;
 }
@@ -90,7 +92,7 @@ void GraphicWidget::on_angleValueChange(int type, int val)
     {
         m_graph->scene()->activeCamera()->setXRotation(val);
     }
-    else if (1 == type) 
+    else if (1 == type)
     {
         m_graph->scene()->activeCamera()->setYRotation(val);
     }
@@ -145,7 +147,7 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     double scaledXMin = xMin * m_xScaleFactor;
     double scaledXMax = xMax * m_xScaleFactor;
 
-    for (int i = 0; i < rowCount; ++i) 
+    for (int i = 0; i < rowCount; ++i)
     {
         double x = xCoords[i] * m_xScaleFactor;
         auto* row = new QSurfaceDataRow(columnCount);
@@ -196,7 +198,7 @@ QPair<double, double> GraphicWidget::calculateZRange(const QVector<QVector<doubl
     double minZ = std::numeric_limits<float>::max();
     double maxZ = std::numeric_limits<float>::min();
 
-    for (const auto& row : newData) 
+    for (const auto& row : newData)
     {
         for (double z : row)
         {
@@ -207,4 +209,37 @@ QPair<double, double> GraphicWidget::calculateZRange(const QVector<QVector<doubl
 
     double offset = (maxZ - minZ) * 0.05f;
     return { minZ - offset, maxZ + offset };
+}
+
+bool GraphicWidget::eventFilter(QObject* obj, QEvent* event)
+{
+    if (obj == m_graph && event->type() == QEvent::MouseButtonRelease) {
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() == Qt::RightButton) {
+            QTimer::singleShot(0, this, &GraphicWidget::clampCameraAngle);
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
+
+void GraphicWidget::clampCameraAngle()
+{
+    if (!m_surface) {
+        return;
+    }
+
+    Q3DCamera* camera = m_surface->scene()->activeCamera();
+    float xRot = camera->xRotation();
+    float yRot = camera->yRotation();
+
+    bool changed = false;
+    if (xRot < -180.0f) { xRot = -180.0f; changed = true; }
+    if (xRot > -90.0f) { xRot = -90.0f;  changed = true; }
+    if (yRot < 0) { yRot = 0;   changed = true; }
+    if (yRot > 90) { yRot = 90;  changed = true; }
+
+    if (changed) {
+        camera->setXRotation(xRot);
+        camera->setYRotation(yRot);
+    }
 }

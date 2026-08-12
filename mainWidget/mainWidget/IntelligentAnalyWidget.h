@@ -9,8 +9,6 @@
 #include <QLabel>
 #include <QScatterSeries>
 
-
-
 #include "IntelligentAnalyTreeWidget.h"
 #include "IntelligentPropertyWidget.h"
 #include "IntelligentFallPropertyWidget.h"
@@ -46,11 +44,11 @@ public:
 	QTableWidget* getExplosiveBlastTableWidget() { return m_explosiveBlastTableWidget; }
 	QTableWidget* getSacrificeExplosionTableWidget() { return m_sacrificeExplosionTableWidget; }
 
-	QStackedWidget* getStackedWidget() { return  m_tableStackWidget; } 
+	QStackedWidget* getStackedWidget() { return  m_tableStackWidget; }
 
-	GraphicWidget* get3dGraphicWid() {return m_3dGraphicWid;}
+	GraphicWidget* get3dGraphicWid() { return m_3dGraphicWid; }
 
-	
+
 
 	QChartView* getChartView() { return m_chartView; }
 	QChart* getChart() { return m_chart; }
@@ -63,10 +61,10 @@ public:
 	QScatterSeries* getScatter2() { return m_scatter2; }
 	QScatterSeries* getScatter3() { return m_scatter3; }
 
-	// 更新三维坐标数据
-	void updateGraphicData(QString xName, QString yName, QString zName, 
+	// 更新三维图形数据
+	void updateGraphicData(QString xName, QString yName, QString zName,
 		const QVector<double>& xCoords,
-		const QVector<double>& yCoords, 
+		const QVector<double>& yCoords,
 		const QVector<QVector<double>>& newData,
 		double xMin,
 		double xMax,
@@ -83,7 +81,7 @@ public:
 	void createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries,
 		const QString& name, const QColor& color);
 
-	// 插值平滑
+	// 贝塞尔平滑
 	QVector<QPointF> bezierSmooth(const QVector<QPointF>& src, int subdiv = 8);
 
 
@@ -95,12 +93,6 @@ private slots:
 	void onComboBoxIndexGraphicChanged(int index);
 
 	void dataChange(int index);
-
-	void hspinChange(int val);
-
-	void vspinChange(int val);
-
-	
 
 private:
 
@@ -127,7 +119,7 @@ private:
 	QTableWidget* m_fragmentationImpactTableWidget = nullptr;
 	QTableWidget* m_explosiveBlastTableWidget = nullptr;
 	QTableWidget* m_sacrificeExplosionTableWidget = nullptr;
-	
+
 
 
 
@@ -136,19 +128,19 @@ private:
 
 	QComboBox* x_comboBox = nullptr;
 	QComboBox* y_comboBox = nullptr;
-	
+
 
 	QChartView* m_chartView = nullptr;
-	QChart* m_chart = nullptr;              // 图表核心
-	// 每组数据：1条曲线 + 1个散点集（关键修改）
-	QSplineSeries* m_lineSeries1 = nullptr;   // 第一组曲线
+	QChart* m_chart = nullptr;              // 图表对象
+	// 每组数据：1条曲线 + 1组圆点（需同步修改）
+	QSplineSeries* m_lineSeries1 = nullptr;   // 第一条曲线
 	QScatterSeries* m_scatter1 = nullptr;   // 第一组圆点
-	QSplineSeries* m_lineSeries2 = nullptr;   // 第二组曲线
+	QSplineSeries* m_lineSeries2 = nullptr;   // 第二条曲线
 	QScatterSeries* m_scatter2 = nullptr;   // 第二组圆点
-	QSplineSeries* m_lineSeries3 = nullptr;   // 第三组曲线
+	QSplineSeries* m_lineSeries3 = nullptr;   // 第三条曲线
 	QScatterSeries* m_scatter3 = nullptr;   // 第三组圆点
 	QValueAxis* m_axisX = nullptr;          // X轴
-	QValueAxis* m_axisY = nullptr;
+	QValueAxis* m_axisY = nullptr;          // Y轴
 
 
 	QChartView* chartView2 = nullptr;
@@ -161,8 +153,5 @@ private:
 	QVBoxLayout* m_leftLayout = nullptr;
 
 	QMap<QString, QStringList> m_dataMap;
-
-
-
 
 };

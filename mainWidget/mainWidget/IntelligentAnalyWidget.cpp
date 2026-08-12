@@ -433,7 +433,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_tableStackWidget->addWidget(m_sacrificeExplosionTableWidget);
 	m_tableWidget = m_fallTableWidget;
 
-	m_dataMap["壳体厚度"] = QStringList() << "1" << "1.5"  "2" << "2.5" << "3";
+	m_dataMap["壳体厚度"] = QStringList() << "1" << "1.5" << "2" << "2.5" << "3";
 	m_dataMap["跌落高度"] = QStringList() << "10" << "30" << "50" << "70" << "90";
 	m_dataMap["快烤平均温度"] = QStringList() << "600" << "650" << "700" << "750" << "800";
 	m_dataMap["慢烤平均温度"] = QStringList() << "315" << "320" << "325" << "330" << "345";
@@ -451,8 +451,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	x_comboBox->setFixedWidth(180);
 	QLabel* y_label = new QLabel("Y轴：");
 	y_comboBox = new QComboBox();
-	y_comboBox->addItems({ "壳体最大应力 ", "推进剂最大应力", "壳体最高温度", "推进剂最高温度"});
-	
+	y_comboBox->addItems({ "壳体最大应力 ", "推进剂最大应力", "壳体最高温度", "推进剂最高温度" });
+
 	// 连接信号槽
 	connect(x_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
@@ -460,7 +460,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	connect(y_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexChanged);
 
-	
+
 
 	m_chart = new QChart();
 	m_chart->setTitle("正交试验");
@@ -521,7 +521,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	labelLayou->addWidget(x_comboBox);
 	labelLayou->addWidget(y_label);
 	labelLayou->addWidget(y_comboBox);
-	labelLayou->setContentsMargins(0,0,0,0);
+	labelLayou->setContentsMargins(0, 0, 0, 0);
 	labelLayou->addStretch(200);
 
 	m_leftLayout->addLayout(labelLayou);
@@ -536,47 +536,15 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	connect(m_grapgicComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexGraphicChanged);
 
-	QLabel* hspinBoxLabel = new QLabel("水平：");
-	QSpinBox* hspinBox = new QSpinBox();
-	//hspinBox->setMinimum(1);
-	//hspinBox->setMaximum(89);
-	hspinBox->setSingleStep(1);
-	hspinBox->setMinimumWidth(200);
-	hspinBox->setSuffix("°");
-	hspinBox->setValue(45);
-	connect(hspinBox, QOverload<int>::of(&QSpinBox::valueChanged),
-		this, &IntelligentAnalyWidget::hspinChange);
-
-	QLabel* vspinBoxLabel = new QLabel("垂直：");
-	QSpinBox* vspinBox = new QSpinBox();
-	//vspinBox->setMinimum(0);
-	//vspinBox->setMaximum(90);
-	vspinBox->setSingleStep(1);
-	vspinBox->setMinimumWidth(200);
-	vspinBox->setSuffix("°");
-	vspinBox->setValue(30);
-	connect(vspinBox, QOverload<int>::of(&QSpinBox::valueChanged),
-		this, &IntelligentAnalyWidget::vspinChange);
-
-
 	QHBoxLayout* choseLayou = new QHBoxLayout();
 	choseLayou->addWidget(grapgicLabel);
 	choseLayou->addWidget(m_grapgicComboBox);
-
-	choseLayou->addWidget(hspinBoxLabel);
-	choseLayou->addWidget(hspinBox);
-
-	choseLayou->addWidget(vspinBoxLabel);
-	choseLayou->addWidget(vspinBox);
-
 	choseLayou->setContentsMargins(0, 0, 0, 0);
 	choseLayou->addStretch(200);
 
 
 	m_3dGraphicWid = new GraphicWidget();
 
-	//m_3dGraphicWid->on_angleValueChange(0, 45);
-	//m_3dGraphicWid->on_angleValueChange(1, 30);
 	// 构建布局
 	QVBoxLayout* m_rightLayout = new QVBoxLayout();
 	m_rightLayout->addLayout(choseLayou);
@@ -652,7 +620,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 		x_comboBox->setItemText(1, "跌落高度");
 		yName = "跌落高度";
 	}
-	
+
 	else if (itemData == "FastCombustionIntelligentAnaly")
 	{
 		m_propertyStackWidget->setCurrentWidget(m_fastCombustionPropertyWidget);
@@ -855,10 +823,6 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
 
-	//QString text = m_tableWidget->item(0, 2)->text();
-	//int startIndex = text.indexOf('['); // 找到 '[' 的位置
-	//int endIndex = text.indexOf(']'); // 找到 ']' 的位置
-	//QString extractedText = text.mid(startIndex + 1, endIndex - startIndex - 1);
 	updateGraphicData("壳体厚度", "", zName, xCoords, yCoords, newData,
 		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
@@ -884,7 +848,7 @@ void IntelligentAnalyWidget::dataChange(int index)
 	else
 	{
 		rowList1 = { 1,6,11,16,21 };
-		rowList2 = { 3,8,13,18,23  };
+		rowList2 = { 3,8,13,18,23 };
 		rowList3 = { 5,10,15,20,25 };
 		x_col = 2;
 	}
@@ -973,7 +937,7 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 		m_lineSeries1->append(value);
 		m_scatter1->append(value);
 	}
-	
+
 
 	m_lineSeries2->clear();
 	m_scatter2->clear();
@@ -994,7 +958,7 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 	m_axisX = qobject_cast<QValueAxis*>(m_chart->axisX());
 	m_axisY = qobject_cast<QValueAxis*>(m_chart->axisY());
 	if (m_axisX) {
-		m_axisY->setTitleText(xAxisTitle);
+		m_axisX->setTitleText(xAxisTitle);
 	}
 	if (m_axisY) {
 		m_axisY->setTitleText(yAxisTitle);
@@ -1018,7 +982,7 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 	{
 		if (qobject_cast<QScatterSeries*>(marker->series()))
 			marker->setVisible(false);
-	} 
+	}
 	m_chartView->update();
 }
 
@@ -1058,8 +1022,8 @@ qreal IntelligentAnalyWidget::calculateMinValue(const QVector<QPointF>& series, 
 }
 
 //创建一组数据（曲线 + 圆点），统一配置样式
-void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries* &lineSeries, QScatterSeries * &scatterSeries,
-	const QString & name, const QColor & color)
+void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries,
+	const QString& name, const QColor& color)
 {
 	// 1. 创建曲线系列（只负责线条）
 	lineSeries = new QSplineSeries();
@@ -1070,28 +1034,15 @@ void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries* &lineSeries, QS
 
 	// 2. 创建散点系列（只负责圆点）
 	scatterSeries = new QScatterSeries();
-	//scatterSeries->setName(name);  // 与曲线同名，图例合并显示
 	scatterSeries->setMarkerShape(QScatterSeries::MarkerShapeCircle);  // 圆点（原生支持）
 	scatterSeries->setMarkerSize(8);                                  // 圆点大小（8px）
 	scatterSeries->setBrush(QBrush(color));                            // 圆点填充色
 	scatterSeries->setPen(QPen(Qt::black, 1));                         // 圆点边框（黑色，1px）
 }
 
-
-
-void IntelligentAnalyWidget::hspinChange(int val)
-{
-	m_3dGraphicWid->on_angleValueChange(0, val);
-}
-
-void IntelligentAnalyWidget::vspinChange(int val)
-{
-	m_3dGraphicWid->on_angleValueChange(1, val);
-}
-
-void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QString zName, 
+void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QString zName,
 	const QVector<double>& xCoords,
-	const QVector<double>& yCoords, 
+	const QVector<double>& yCoords,
 	const QVector<QVector<double>>& newData,
 	double xMin,
 	double xMax,
@@ -1101,7 +1052,7 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 	if (zName == "壳体最大应力")
 	{
 		m_grapgicComboBox->setCurrentIndex(0);
-	} 
+	}
 	else if (zName == "推进剂最大应力")
 	{
 		m_grapgicComboBox->setCurrentIndex(1);
