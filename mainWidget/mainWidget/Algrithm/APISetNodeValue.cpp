@@ -2841,14 +2841,14 @@ bool APISetNodeValue::CalculateAllFastCombustionTempNodeValues()
 	};
 
 	fastCombustionTemperatureResult.metalsAvgTemperature = computeAvg(resultInfo.shellTemperatureNodeValues);
-	fastCombustionTemperatureResult.outheatAvgTemperature = fastCombustionTemperatureResult.metalsAvgTemperature;
+	//fastCombustionTemperatureResult.outheatAvgTemperature = fastCombustionTemperatureResult.metalsAvgTemperature;
 	fastCombustionTemperatureResult.metalsStandardTemperature = computeStd(resultInfo.shellTemperatureNodeValues);
-	fastCombustionTemperatureResult.outheatStandardTemperature = fastCombustionTemperatureResult.metalsStandardTemperature;
+	//fastCombustionTemperatureResult.outheatStandardTemperature = fastCombustionTemperatureResult.metalsStandardTemperature;
 
 	fastCombustionTemperatureResult.mpropellantsAvgTemperature = computeAvg(resultInfo.propellantTemperatureNodeValues);
 	fastCombustionTemperatureResult.propellantsStandardTemperature = computeStd(resultInfo.propellantTemperatureNodeValues);
 
-	double shellMin = fastCombustionTemperatureResult.metalsMinTemperature;
+	/*double shellMin = fastCombustionTemperatureResult.metalsMinTemperature;
 	double shellMax = fastCombustionTemperatureResult.metalsMaxTemperature;
 	if (shellMax > shellMin) {
 		fastCombustionTemperatureResult.insulatingheatAvgTemperature =
@@ -2857,7 +2857,7 @@ bool APISetNodeValue::CalculateAllFastCombustionTempNodeValues()
 	else {
 		fastCombustionTemperatureResult.insulatingheatAvgTemperature = shellMin;
 	}
-	fastCombustionTemperatureResult.insulatingheatStandardTemperature = computeStd(resultInfo.heatInsulatingTemperatureNodeValues);
+	fastCombustionTemperatureResult.insulatingheatStandardTemperature = computeStd(resultInfo.heatInsulatingTemperatureNodeValues);*/
 
 	ModelDataManager::GetInstance()->SetFastCombustionTemperatureResult(fastCombustionTemperatureResult);
 
@@ -3094,14 +3094,14 @@ bool APISetNodeValue::CalculateAllSlowCombustionTempNodeValues()
 	};
 
 	slowCombustionTemperatureResult.metalsAvgTemperature = computeAvg(resultInfo.shellTemperatureNodeValues);
-	slowCombustionTemperatureResult.outheatAvgTemperature = slowCombustionTemperatureResult.metalsAvgTemperature;
+	//slowCombustionTemperatureResult.outheatAvgTemperature = slowCombustionTemperatureResult.metalsAvgTemperature;
 	slowCombustionTemperatureResult.metalsStandardTemperature = computeStd(resultInfo.shellTemperatureNodeValues);
-	slowCombustionTemperatureResult.outheatStandardTemperature = slowCombustionTemperatureResult.metalsStandardTemperature;
+	//slowCombustionTemperatureResult.outheatStandardTemperature = slowCombustionTemperatureResult.metalsStandardTemperature;
 
 	slowCombustionTemperatureResult.mpropellantsAvgTemperature = computeAvg(resultInfo.propellantTemperatureNodeValues);
 	slowCombustionTemperatureResult.propellantsStandardTemperature = computeStd(resultInfo.propellantTemperatureNodeValues);
 
-	double shellMin = slowCombustionTemperatureResult.metalsMinTemperature;
+	/*double shellMin = slowCombustionTemperatureResult.metalsMinTemperature;
 	double shellMax = slowCombustionTemperatureResult.metalsMaxTemperature;
 	if (shellMax > shellMin) {
 		slowCombustionTemperatureResult.insulatingheatAvgTemperature =
@@ -3110,7 +3110,7 @@ bool APISetNodeValue::CalculateAllSlowCombustionTempNodeValues()
 	else {
 		slowCombustionTemperatureResult.insulatingheatAvgTemperature = shellMin;
 	}
-	slowCombustionTemperatureResult.insulatingheatStandardTemperature = computeStd(resultInfo.heatInsulatingTemperatureNodeValues);
+	slowCombustionTemperatureResult.insulatingheatStandardTemperature = computeStd(resultInfo.heatInsulatingTemperatureNodeValues);*/
 
 
 	ModelDataManager::GetInstance()->SetSlowCombustionTemperatureResult(slowCombustionTemperatureResult);

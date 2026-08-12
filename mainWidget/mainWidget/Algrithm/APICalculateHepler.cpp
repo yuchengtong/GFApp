@@ -814,11 +814,12 @@ bool APICalculateHepler::CalculateFastCombustionAnalysisResult(OccView* occView,
 
 	propellantTemperatureResults.erase(
 		std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
-			[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+			[calSteelTemperatureMaxValue](double value) { return value >= calSteelTemperatureMaxValue; }),
 		propellantTemperatureResults.end());
 
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+
 	
 	
 
