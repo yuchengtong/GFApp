@@ -85,7 +85,7 @@ void StrainResultWidget::initWidget()
 		valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 		m_tableWidget->setItem(row, 2, valueItem);
 
-		QTableWidgetItem* unitItem = new QTableWidgetItem("mm/mm");
+		QTableWidgetItem* unitItem = new QTableWidgetItem(" - ");
 		unitItem->setTextAlignment(Qt::AlignCenter); // 文本居中
 		unitItem->setFlags(unitItem->flags() & ~Qt::ItemIsEditable); // 不可编辑
 		m_tableWidget->setItem(row, 3, unitItem);

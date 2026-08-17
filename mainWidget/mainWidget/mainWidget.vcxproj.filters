@@ -250,6 +250,9 @@
     <ClCompile Include="PropertyWidget\NozzlePropertyWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TableWrapDelegate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -442,6 +445,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="PropertyWidget\NozzlePropertyWidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="TableWrapDelegate.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

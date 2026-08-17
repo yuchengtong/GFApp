@@ -44,6 +44,12 @@ DatabaseWidget::DatabaseWidget(QWidget* parent)
 	tableWidget->verticalHeader()->setDefaultSectionSize(25); // 设置默认行高
 
 	tableWidget->horizontalHeader()->setStretchLastSection(true);
+	
+	tableWidget->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents); //行高自适应开关
+	// 加载完数据强制刷新尺寸
+	//connect(tableWidget->model(), &QAbstractItemModel::dataChanged, tableWidget, &QTableWidget::resizeRowsToContents);
+	connect(tableWidget->horizontalHeader(), &QHeaderView::sectionResized, tableWidget, &QTableWidget::resizeRowsToContents);
+
 	// 启用右键菜单
 	tableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 	// 设置选择行为 - 选择整行
@@ -823,7 +829,16 @@ void DatabaseWidget::onTreeItemClicked(QTreeWidgetItem* item) {
 			}
 		}
 	}
-
+	int colCount = tableWidge->columnCount();
+	for (int i = 0; i < colCount; ++i) {
+		tableWidge->setItemDelegateForColumn(i, nullptr);
+	}
+	if (currentDataaseType.contains("模型"))
+	{
+		TableWrapDelegate* wrapDelegate = new TableWrapDelegate(this);
+		int lastCol = colCount - 1;
+		tableWidge->setItemDelegateForColumn(lastCol, wrapDelegate); // 仅最后一列生效
+	}
 	setTableCenter(tableWidge);
 
 }

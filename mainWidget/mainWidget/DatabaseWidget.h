@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include "ui_DatabaseWidget.h"
+#include "TableWrapDelegate.h"
 #include <QResizeEvent>
 
 class DatabaseWidget : public QWidget
