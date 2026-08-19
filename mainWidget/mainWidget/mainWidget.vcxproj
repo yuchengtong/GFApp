@@ -113,6 +113,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Algrithm\APICalculateHepler.cpp" />
+    <ClCompile Include="Algrithm\APIPolynomialFitter.cpp" />
     <ClCompile Include="Algrithm\APIRotateMeshHelper.cpp" />
     <ClCompile Include="Algrithm\APISetNodeValue.cpp" />
     <ClCompile Include="CalculateWorker.cpp" />
@@ -299,6 +300,7 @@
     <QtMoc Include="GraphicWidget.h" />
     <ClInclude Include="Algrithm\APICalculateHepler.h" />
     <ClInclude Include="Algrithm\APICreateMidSurfaceHelper.h" />
+    <ClInclude Include="Algrithm\APIPolynomialFitter.h" />
     <ClInclude Include="Algrithm\APIRotateMeshHelper.h" />
     <ClInclude Include="Algrithm\APISetNodeValue.h" />
     <ClInclude Include="Algrithm\colour_change_algrithm.h" />

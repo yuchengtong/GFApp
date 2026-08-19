@@ -8,6 +8,34 @@
 #include <QSplitter>
 #include <QHeaderView>
 
+// 自绘线条指示器：用于自定义图例中区分实线/虚线
+class LineIndicator : public QWidget
+{
+public:
+	LineIndicator(Qt::PenStyle style, const QColor& color, QWidget* parent = nullptr)
+		: QWidget(parent), m_style(style), m_color(color)
+	{
+		setFixedSize(36, 14);
+	}
+protected:
+	void paintEvent(QPaintEvent*) override
+	{
+		QPainter p(this);
+		p.setRenderHint(QPainter::Antialiasing);
+		QPen pen(m_color);
+		pen.setWidth(2);
+		pen.setStyle(m_style);
+		if (m_style == Qt::DashLine)
+			pen.setDashPattern(QVector<qreal>{5, 3});
+		p.setPen(pen);
+		p.drawLine(2, height() / 2, width() - 2, height() / 2);
+	}
+private:
+	Qt::PenStyle m_style;
+	QColor m_color;
+};
+
+
 QLegendMarker* getSeriesMarker(QChart* chart, QAbstractSeries* series)
 {
 	for (auto marker : chart->legend()->markers())
@@ -464,10 +492,10 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	m_chart = new QChart();
 	m_chart->setTitle("正交试验");
-	m_chart->setMargins(QMargins(15, 15, 15, 80));
-	createChartDataGroup(m_lineSeries1, m_scatter1, "壳体厚度:1mm", Qt::red);
-	createChartDataGroup(m_lineSeries2, m_scatter2, "壳体厚度:2mm", Qt::blue);
-	createChartDataGroup(m_lineSeries3, m_scatter3, "壳体厚度:3mm", Qt::green);
+	m_chart->setMargins(QMargins(15, 15, 15, 0));
+	createChartDataGroup(m_lineSeries1, m_scatter1, m_quadSeries1, "壳体厚度:1mm", Qt::red);
+	createChartDataGroup(m_lineSeries2, m_scatter2, m_quadSeries2, "壳体厚度:2mm", Qt::blue);
+	createChartDataGroup(m_lineSeries3, m_scatter3, m_quadSeries3, "壳体厚度:3mm", Qt::green);
 
 	m_chart->addSeries(m_lineSeries1);
 	m_chart->addSeries(m_scatter1);
@@ -475,6 +503,9 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_chart->addSeries(m_scatter2);
 	m_chart->addSeries(m_lineSeries3);
 	m_chart->addSeries(m_scatter3);
+	m_chart->addSeries(m_quadSeries1);
+	m_chart->addSeries(m_quadSeries2);
+	m_chart->addSeries(m_quadSeries3);
 	if (auto marker = getSeriesMarker(m_chart, m_scatter1))
 		marker->setVisible(false);
 	if (auto marker = getSeriesMarker(m_chart, m_scatter2))
@@ -482,11 +513,12 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	if (auto marker = getSeriesMarker(m_chart, m_scatter3))
 		marker->setVisible(false);
 
-	//m_chart->legend()->hide();
-	//m_chart->legend()->setAlignment(Qt::AlignBottom);
-	m_chart->legend()->setVisible(true);
-	m_chart->legend()->setAlignment(Qt::AlignBottom);
-	m_chart->legend()->setFont(QFont("Microsoft YaHei", 9));
+	m_chart->legend()->hide();
+	/*m_chart->legend()->setVisible(true);
+	m_chart->legend()->setAlignment(Qt::AlignRight);
+	m_chart->legend()->setFont(QFont("Microsoft YaHei", 8));
+	m_chart->legend()->setMaximumWidth(720);
+	m_chart->legend()->setMarkerShape(QLegend::MarkerShapeFromSeries);*/
 
 	// 4. 创建X轴和Y轴（初始范围适配空数据）
 	m_axisX = new QValueAxis();
@@ -500,7 +532,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	// 5. 所有系列绑定到同一组轴（确保曲线和点对齐）
 	QList<QAbstractSeries*> allSeries = {
-		m_lineSeries1, m_scatter1, m_lineSeries2, m_scatter2, m_lineSeries3, m_scatter3
+		m_lineSeries1, m_scatter1, m_lineSeries2, m_scatter2, m_lineSeries3, m_scatter3, m_quadSeries1, m_quadSeries2, m_quadSeries3
 	};
 	for (QAbstractSeries* series : allSeries) {
 		m_chart->setAxisX(m_axisX, series);
@@ -515,6 +547,8 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 	// 构建布局
 	QVBoxLayout* m_leftLayout = new QVBoxLayout();
+	m_leftLayout->setSpacing(0);
+	m_leftLayout->setContentsMargins(0, 0, 0, 0);
 
 	QHBoxLayout* labelLayou = new QHBoxLayout();
 	labelLayou->addWidget(x_label);
@@ -527,6 +561,26 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_leftLayout->addLayout(labelLayou);
 	m_leftLayout->addWidget(m_chartView);
 
+	// ===== 自定义图例：2行布局，第一行实线(一次拟合)，第二行虚线(二次拟合) =====
+	m_customLegend = new QWidget();
+	m_customLegend->setStyleSheet("background-color: white;");
+	QGridLayout* legendLayout = new QGridLayout(m_customLegend);
+	legendLayout->setContentsMargins(8, 0, 8, 4);
+	legendLayout->setHorizontalSpacing(16);
+	legendLayout->setVerticalSpacing(2);
+	m_linLabel1 = new QLabel("壳体厚度:1mm");
+	m_linLabel2 = new QLabel("壳体厚度:2mm");
+	m_linLabel3 = new QLabel("壳体厚度:3mm");
+	m_quadLabel1 = new QLabel("壳体厚度:1mm(二次)");
+	m_quadLabel2 = new QLabel("壳体厚度:2mm(二次)");
+	m_quadLabel3 = new QLabel("壳体厚度:3mm(二次)");
+	legendLayout->addWidget(createLegendItem(Qt::SolidLine, Qt::red, m_linLabel1), 0, 0);
+	legendLayout->addWidget(createLegendItem(Qt::DashLine, Qt::red, m_quadLabel1), 0, 1);
+	legendLayout->addWidget(createLegendItem(Qt::SolidLine, Qt::blue, m_linLabel2), 1, 0);
+	legendLayout->addWidget(createLegendItem(Qt::DashLine, Qt::blue, m_quadLabel2), 1, 1);
+	legendLayout->addWidget(createLegendItem(Qt::SolidLine, Qt::green, m_linLabel3), 2, 0);
+	legendLayout->addWidget(createLegendItem(Qt::DashLine, Qt::green, m_quadLabel3), 2, 1);
+	m_leftLayout->addWidget(m_customLegend);
 
 
 	// 三维图形
@@ -895,31 +949,58 @@ void IntelligentAnalyWidget::dataChange(int index)
 
 	if (x_index == 0)
 	{
-
+		QString name1, name2, name3;
 		QString text = m_tableWidget->item(0, 2)->text();
-		int startIndex = text.indexOf('['); // 找到 '[' 的位置
-		int endIndex = text.indexOf(']'); // 找到 ']' 的位置
-
+		int startIndex = text.indexOf('[');
+		int endIndex = text.indexOf(']');
 		if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
 			QString titleText = text.mid(0, startIndex) + ":";
 			QString extractedText = text.mid(startIndex + 1, endIndex - startIndex - 1);
-
 			QString leg1 = m_tableWidget->item(1, 2)->text();
 			QString leg2 = m_tableWidget->item(11, 2)->text();
 			QString leg3 = m_tableWidget->item(21, 2)->text();
-
-			m_lineSeries1->setName(titleText + leg1 + extractedText);
-			m_lineSeries2->setName(titleText + leg2 + extractedText);
-			m_lineSeries3->setName(titleText + leg3 + extractedText);
-
+			name1 = titleText + leg1 + extractedText;
+			name2 = titleText + leg2 + extractedText;
+			name3 = titleText + leg3 + extractedText;
 		}
+		else {
+			name1 = "曲线1";
+			name2 = "曲线2";
+			name3 = "曲线3";
+		}
+		m_lineSeries1->setName(name1);
+		m_lineSeries2->setName(name2);
+		m_lineSeries3->setName(name3);
+		m_quadSeries1->setName(name1 + "(二次)");
+		m_quadSeries2->setName(name2 + "(二次)");
+		m_quadSeries3->setName(name3 + "(二次)");
+		m_baseName1 = name1;
+		m_baseName2 = name2;
+		m_baseName3 = name3;
+		m_linLabel1->setText(name1);
+		m_linLabel2->setText(name2);
+		m_linLabel3->setText(name3);
+		m_quadLabel1->setText(name1 + "(二次)");
+		m_quadLabel2->setText(name2 + "(二次)");
+		m_quadLabel3->setText(name3 + "(二次)");
 	}
 	else
 	{
-		QString leg1, leg2, leg3;
 		m_lineSeries1->setName("壳体厚度:1mm");
 		m_lineSeries2->setName("壳体厚度:2mm");
 		m_lineSeries3->setName("壳体厚度:3mm");
+		m_quadSeries1->setName("壳体厚度:1mm(二次)");
+		m_quadSeries2->setName("壳体厚度:2mm(二次)");
+		m_quadSeries3->setName("壳体厚度:3mm(二次)");
+		m_baseName1 = "壳体厚度:1mm";
+		m_baseName2 = "壳体厚度:2mm";
+		m_baseName3 = "壳体厚度:3mm";
+		m_linLabel1->setText("壳体厚度:1mm");
+		m_linLabel2->setText("壳体厚度:2mm");
+		m_linLabel3->setText("壳体厚度:3mm");
+		m_quadLabel1->setText("壳体厚度:1mm(二次)");
+		m_quadLabel2->setText("壳体厚度:2mm(二次)");
+		m_quadLabel3->setText("壳体厚度:3mm(二次)");
 	}
 
 	updateChartData(data1, data2, data3, x_comboBox->currentText(), y_comboBox->currentText());
@@ -929,31 +1010,78 @@ void IntelligentAnalyWidget::dataChange(int index)
 void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle)
 {
 	if (!m_chartView || !m_chart || !m_scatter1 || !m_scatter2 || !m_scatter3) return;
+	if (!m_quadSeries1 || !m_quadSeries2 || !m_quadSeries3) return;
 
-	// 同步更新：曲线和散点的坐标完全一致
-	m_lineSeries1->clear();
-	m_scatter1->clear();
-	for (QPointF value : data1) {
-		m_lineSeries1->append(value);
-		m_scatter1->append(value);
-	}
+	// 对每组数据执行：一次拟合 + 二次拟合 + 散点保留
+	auto fitGroup = [](const QVector<QPointF>& data, QSplineSeries* lineSeries,
+		QSplineSeries* quadSeries, QScatterSeries* scatter,
+		QVector<QPointF>& allPoints,
+		QLabel* linLabel, QLabel* quadLabel, const QString& baseName)
+	{
+		// 散点：原始数据点
+		/*scatter->clear();
+		for (const QPointF& p : data) {
+			scatter->append(p);
+			allPoints.append(p);
+		}*/
+		if (data.isEmpty()) {
+			lineSeries->clear();
+			quadSeries->clear();
+			return;
+		}
+		// 判断y值是否全为0，全0则不拟合不显示
+		bool allYZero = true;
+		for (const QPointF& p : data) {
+			if (qAbs(p.y()) > 1e-12) {
+				allYZero = false;
+				break;
+			}
+		}
+		
+		// 计算x范围
+		double xMin = data.first().x(), xMax = data.first().x();
+		for (const QPointF& p : data) {
+			xMin = qMin(xMin, p.x());
+			xMax = qMax(xMax, p.x());
+		}
+		// 一次拟合 → 生成平滑曲线
+		FitResult linFit = APIPolynomialFitter::fitLinear(data);
+		QVector<QPointF> linCurve = APIPolynomialFitter::generateLinearCurve(linFit, xMin, xMax, 50);
+		lineSeries->clear();
+		for (const QPointF& p : linCurve) {
+			lineSeries->append(p);
+			allPoints.append(p);
+		}
+		// 二次拟合 → 生成平滑曲线
+		FitResult quadFit = APIPolynomialFitter::fitQuadratic(data);
+		QVector<QPointF> quadCurve = APIPolynomialFitter::generateQuadraticCurve(quadFit, xMin, xMax, 50);
+		quadSeries->clear();
+		for (const QPointF& p : quadCurve) {
+			quadSeries->append(p);
+			allPoints.append(p);
+		}
 
+		if (!allYZero) {
+			// 更新图例label，附加拟合函数方程
+			if (linLabel && !baseName.isEmpty()) {
+				QString eq = QString("y=%1x+%2")
+					.arg(linFit.a, 0, 'f', 2).arg(linFit.b, 0, 'f', 2);
+				linLabel->setText(baseName + "  " + eq);
+			}
+			if (quadLabel && !baseName.isEmpty()) {
+				QString eq = QString("y=%1x²+%2x+%3")
+					.arg(quadFit.a, 0, 'f', 2).arg(quadFit.b, 0, 'f', 2).arg(quadFit.c, 0, 'f', 2);
+				quadLabel->setText(baseName + "  " + eq);
+			}
+		}
+	};
 
-	m_lineSeries2->clear();
-	m_scatter2->clear();
-	for (QPointF value : data2) {
-		m_lineSeries2->append(value);
-		m_scatter2->append(value);
-	}
+	QVector<QPointF> allPoints;
+	fitGroup(data1, m_lineSeries1, m_quadSeries1, m_scatter1, allPoints, m_linLabel1, m_quadLabel1, m_baseName1);
+	fitGroup(data2, m_lineSeries2, m_quadSeries2, m_scatter2, allPoints, m_linLabel2, m_quadLabel2, m_baseName2);
+	fitGroup(data3, m_lineSeries3, m_quadSeries3, m_scatter3, allPoints, m_linLabel3, m_quadLabel3, m_baseName3);
 
-	m_lineSeries3->clear();
-	m_scatter3->clear();
-	for (QPointF value : data3) {
-		m_lineSeries3->append(value);
-		m_scatter3->append(value);
-	}
-
-	// 自动调整轴范围（适配新数据）
+	// 自动调整轴范围（包含所有拟合曲线和原始数据点）
 	m_chart->createDefaultAxes();
 	m_axisX = qobject_cast<QValueAxis*>(m_chart->axisX());
 	m_axisY = qobject_cast<QValueAxis*>(m_chart->axisY());
@@ -963,21 +1091,17 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 	if (m_axisY) {
 		m_axisY->setTitleText(yAxisTitle);
 	}
-	QVector<QPointF> data;
-	data.append(data1);
-	data.append(data2);
-	data.append(data3);
-	qreal maxX = calculateMaxValue(data, true);
-	qreal maxY = calculateMaxValue(data, false);
-	qreal minX = calculateMinValue(data, true);
-	qreal minY = calculateMinValue(data, false);
-	m_axisX->setRange(minX * 0.9, maxX * 1.1);
-	m_axisY->setRange(minY * 0.9, maxY * 1.1);
-	m_axisX->setTickCount(4);
-	m_axisY->setTickCount(4);
-
-	// 全局过滤：隐藏所有散点图例，兜底防止切换工况出现空方块
+	qreal maxX = calculateMaxValue(allPoints, true);
+	qreal maxY = calculateMaxValue(allPoints, false);
+	qreal minX = calculateMinValue(allPoints, true);
+	qreal minY = calculateMinValue(allPoints, false);
+	m_axisX->setRange(minX * 0.99, maxX * 1.01);
+	m_axisY->setRange(minY * 0.99, maxY * 1.01);
+	m_axisX->setTickCount(8);
+	m_axisY->setTickCount(8);
+	// 全局过滤：隐藏所有散点图例
 	auto legend = m_chart->legend();
+	legend->setMaximumWidth(720);
 	for (auto marker : legend->markers())
 	{
 		if (qobject_cast<QScatterSeries*>(marker->series()))
@@ -986,6 +1110,19 @@ void IntelligentAnalyWidget::updateChartData(QVector<QPointF> data1, QVector<QPo
 	m_chartView->update();
 }
 
+// 创建自定义图例条目（线条指示器 + 名称标签）
+QWidget* IntelligentAnalyWidget::createLegendItem(Qt::PenStyle style, const QColor& color, QLabel* label)
+{
+	QWidget* item = new QWidget();
+	QHBoxLayout* lay = new QHBoxLayout(item);
+	lay->setContentsMargins(0, 0, 0, 0);
+	lay->setSpacing(6);
+	LineIndicator* ind = new LineIndicator(style, color);
+	lay->addWidget(ind);
+	lay->addWidget(label);
+	lay->addStretch();
+	return item;
+}
 
 // 计算数据最大值（确保不小于0）
 qreal IntelligentAnalyWidget::calculateMaxValue(const QVector<QPointF>& series, bool isX)
@@ -1022,7 +1159,7 @@ qreal IntelligentAnalyWidget::calculateMinValue(const QVector<QPointF>& series, 
 }
 
 //创建一组数据（曲线 + 圆点），统一配置样式
-void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries,
+void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries, QSplineSeries*& quadSeries,
 	const QString& name, const QColor& color)
 {
 	// 1. 创建曲线系列（只负责线条）
@@ -1038,6 +1175,14 @@ void IntelligentAnalyWidget::createChartDataGroup(QSplineSeries*& lineSeries, QS
 	scatterSeries->setMarkerSize(8);                                  // 圆点大小（8px）
 	scatterSeries->setBrush(QBrush(color));                            // 圆点填充色
 	scatterSeries->setPen(QPen(Qt::black, 1));                         // 圆点边框（黑色，1px）
+
+	quadSeries = new QSplineSeries();
+	quadSeries->setName(name + "(二次)");
+	QPen quadPen(color);
+	quadPen.setWidth(2);
+	quadPen.setStyle(Qt::DashLine);
+	quadPen.setDashPattern(QVector<qreal>{6, 3});
+	quadSeries->setPen(quadPen);
 }
 
 void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QString zName,

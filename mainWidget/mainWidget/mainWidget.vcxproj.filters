@@ -253,6 +253,9 @@
     <ClCompile Include="TableWrapDelegate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Algrithm\APIPolynomialFitter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="occView.h">
@@ -479,6 +482,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Algrithm\APISetNodeValue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Algrithm\APIPolynomialFitter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

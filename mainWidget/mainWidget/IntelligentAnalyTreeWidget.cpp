@@ -529,6 +529,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto lineSeries1 = paParent->getLineSeries1();
 										auto lineSeries2 = paParent->getLineSeries2();
 										auto lineSeries3 = paParent->getLineSeries3();
+										auto quadSeries1 = paParent->getQuadSeries1();
+										auto quadSeries2 = paParent->getQuadSeries2();
+										auto quadSeries3 = paParent->getQuadSeries3();
 										auto scatter1 = paParent->getScatter1();
 										auto scatter2 = paParent->getScatter2();
 										auto scatter3 = paParent->getScatter3();
@@ -615,7 +618,13 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 										}
 
-										updateChartData(chartView, chart, lineSeries1, lineSeries2, lineSeries3, scatter1, scatter2, scatter3, data1, data2, data3, "壳体厚度", "壳体最大应力");
+										//updateChartData(chartView, chart, lineSeries1, lineSeries2, lineSeries3, scatter1, scatter2, scatter3, data1, data2, data3, "壳体厚度", "壳体最大应力");
+										updateChartData(chartView, chart,
+											lineSeries1, lineSeries2, lineSeries3,
+											quadSeries1, quadSeries2, quadSeries3,
+											scatter1, scatter2, scatter3,
+											data1, data2, data3,
+											"跌落高度", "壳体最大应力");
 
 										// 更新三维模型数据
 										QVector<QVector<double>> newData;
@@ -1328,60 +1337,137 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 	}
 }
 
-void IntelligentAnalyTreeWidget::updateChartData(QChartView* chartView, QChart* chart, QLineSeries* lineSeries1, QLineSeries* lineSeries2, QLineSeries* lineSeries3, QScatterSeries* scatter1, QScatterSeries* scatter2, QScatterSeries* scatter3, QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle)
+//void IntelligentAnalyTreeWidget::updateChartData(QChartView* chartView, QChart* chart, QLineSeries* lineSeries1, QLineSeries* lineSeries2, QLineSeries* lineSeries3, QScatterSeries* scatter1, QScatterSeries* scatter2, QScatterSeries* scatter3, QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3, QString xAxisTitle, QString yAxisTitle)
+//{
+//	if (!chartView || !chartView->chart()) return;
+//
+//	if (!chartView || !chart || !scatter1 || !scatter2 || !scatter3) return;
+//
+//	// 同步更新：曲线和散点的坐标完全一致
+//	lineSeries1->clear();
+//	scatter1->clear();
+//	for (QPointF value : data1) {
+//		lineSeries1->append(value);
+//		scatter1->append(value);
+//	}
+//
+//
+//	lineSeries2->clear();
+//	scatter2->clear();
+//	for (QPointF value : data2) {
+//		lineSeries2->append(value);
+//		scatter2->append(value);
+//	}
+//
+//	lineSeries3->clear();
+//	scatter3->clear();
+//	for (QPointF value : data3) {
+//		lineSeries3->append(value);
+//		scatter3->append(value);
+//	}
+//
+//	// 自动调整轴范围（适配新数据）
+//	chart->createDefaultAxes();
+//	auto m_axisX = qobject_cast<QValueAxis*>(chart->axisX());
+//	auto m_axisY = qobject_cast<QValueAxis*>(chart->axisY());
+//	if (m_axisX) {
+//		m_axisY->setTitleText(xAxisTitle);
+//	}
+//	if (m_axisY) {
+//		m_axisY->setTitleText(yAxisTitle);
+//	}
+//	QVector<QPointF> data;
+//	data.append(data1);
+//	data.append(data2);
+//	data.append(data3);
+//	qreal maxX = calculateMaxValue(data, true);
+//	qreal maxY = calculateMaxValue(data, false);
+//	qreal minX = calculateMinValue(data, true);
+//	qreal minY = calculateMinValue(data, false);
+//	m_axisX->setRange(minX * 0.9, maxX * 1.1);
+//	m_axisY->setRange(minY * 0.9, maxY * 1.1);
+//	m_axisX->setTickCount(4);
+//	m_axisY->setTickCount(4);
+//
+//	chartView->update();
+//
+//}
+
+void IntelligentAnalyTreeWidget::updateChartData(QChartView* chartView, QChart* chart,
+	QLineSeries* lineSeries1, QLineSeries* lineSeries2, QLineSeries* lineSeries3,
+	QLineSeries* quadSeries1, QLineSeries* quadSeries2, QLineSeries* quadSeries3,
+	QScatterSeries* scatter1, QScatterSeries* scatter2, QScatterSeries* scatter3,
+	QVector<QPointF> data1, QVector<QPointF> data2, QVector<QPointF> data3,
+	QString xAxisTitle, QString yAxisTitle)
 {
 	if (!chartView || !chartView->chart()) return;
-
 	if (!chartView || !chart || !scatter1 || !scatter2 || !scatter3) return;
+	if (!quadSeries1 || !quadSeries2 || !quadSeries3) return;
 
-	// 同步更新：曲线和散点的坐标完全一致
-	lineSeries1->clear();
-	scatter1->clear();
-	for (QPointF value : data1) {
-		lineSeries1->append(value);
-		scatter1->append(value);
-	}
+	// 对每组数据执行：一次拟合 + 二次拟合 + 散点保留
+	auto fitGroup = [](const QVector<QPointF>& data, QLineSeries* lineSeries,
+		QLineSeries* quadSeries, QScatterSeries* scatter,
+		QVector<QPointF>& allPoints)
+	{
+		// 散点：原始数据点
+		/*scatter->clear();
+		for (const QPointF& p : data) {
+			scatter->append(p);
+			allPoints.append(p);
+		}*/
+		if (data.isEmpty()) {
+			lineSeries->clear();
+			quadSeries->clear();
+			return;
+		}
+		// 计算x范围
+		double xMin = data.first().x(), xMax = data.first().x();
+		for (const QPointF& p : data) {
+			xMin = qMin(xMin, p.x());
+			xMax = qMax(xMax, p.x());
+		}
+		// 一次拟合 → 生成平滑曲线
+		FitResult linFit = APIPolynomialFitter::fitLinear(data);
+		QVector<QPointF> linCurve = APIPolynomialFitter::generateLinearCurve(linFit, xMin, xMax, 50);
+		lineSeries->clear();
+		for (const QPointF& p : linCurve) {
+			lineSeries->append(p);
+			allPoints.append(p);
+		}
+		// 二次拟合 → 生成平滑曲线
+		FitResult quadFit = APIPolynomialFitter::fitQuadratic(data);
+		QVector<QPointF> quadCurve = APIPolynomialFitter::generateQuadraticCurve(quadFit, xMin, xMax, 50);
+		quadSeries->clear();
+		for (const QPointF& p : quadCurve) {
+			quadSeries->append(p);
+			allPoints.append(p);
+		}
+	};
 
+	QVector<QPointF> allPoints;
+	fitGroup(data1, lineSeries1, quadSeries1, scatter1, allPoints);
+	fitGroup(data2, lineSeries2, quadSeries2, scatter2, allPoints);
+	fitGroup(data3, lineSeries3, quadSeries3, scatter3, allPoints);
 
-	lineSeries2->clear();
-	scatter2->clear();
-	for (QPointF value : data2) {
-		lineSeries2->append(value);
-		scatter2->append(value);
-	}
-
-	lineSeries3->clear();
-	scatter3->clear();
-	for (QPointF value : data3) {
-		lineSeries3->append(value);
-		scatter3->append(value);
-	}
-
-	// 自动调整轴范围（适配新数据）
+	// 自动调整轴范围（包含所有拟合曲线和原始数据点）
 	chart->createDefaultAxes();
 	auto m_axisX = qobject_cast<QValueAxis*>(chart->axisX());
 	auto m_axisY = qobject_cast<QValueAxis*>(chart->axisY());
 	if (m_axisX) {
-		m_axisY->setTitleText(xAxisTitle);
+		m_axisX->setTitleText(xAxisTitle);
 	}
 	if (m_axisY) {
 		m_axisY->setTitleText(yAxisTitle);
 	}
-	QVector<QPointF> data;
-	data.append(data1);
-	data.append(data2);
-	data.append(data3);
-	qreal maxX = calculateMaxValue(data, true);
-	qreal maxY = calculateMaxValue(data, false);
-	qreal minX = calculateMinValue(data, true);
-	qreal minY = calculateMinValue(data, false);
-	m_axisX->setRange(minX * 0.9, maxX * 1.1);
-	m_axisY->setRange(minY * 0.9, maxY * 1.1);
-	m_axisX->setTickCount(4);
-	m_axisY->setTickCount(4);
-
+	qreal maxX = calculateMaxValue(allPoints, true);
+	qreal maxY = calculateMaxValue(allPoints, false);
+	qreal minX = calculateMinValue(allPoints, true);
+	qreal minY = calculateMinValue(allPoints, false);
+	m_axisX->setRange(minX * 0.99, maxX * 1.01);
+	m_axisY->setRange(minY * 0.99, maxY * 1.01);
+	m_axisX->setTickCount(8);
+	m_axisY->setTickCount(8);
 	chartView->update();
-
 }
 
 // 计算数据最大值（确保不小于0）

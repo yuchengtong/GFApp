@@ -60,6 +60,9 @@ public:
 	QScatterSeries* getScatter1() { return m_scatter1; }
 	QScatterSeries* getScatter2() { return m_scatter2; }
 	QScatterSeries* getScatter3() { return m_scatter3; }
+	QSplineSeries* getQuadSeries1() { return m_quadSeries1; }
+	QSplineSeries* getQuadSeries2() { return m_quadSeries2; }
+	QSplineSeries* getQuadSeries3() { return m_quadSeries3; }
 
 	// 更新三维图形数据
 	void updateGraphicData(QString xName, QString yName, QString zName,
@@ -78,7 +81,7 @@ public:
 
 	qreal calculateMinValue(const QVector<QPointF>& series, bool isX);
 
-	void createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries,
+	void createChartDataGroup(QSplineSeries*& lineSeries, QScatterSeries*& scatterSeries, QSplineSeries*& quadSeries,
 		const QString& name, const QColor& color);
 
 	// 贝塞尔平滑
@@ -135,10 +138,13 @@ private:
 	// 每组数据：1条曲线 + 1组圆点（需同步修改）
 	QSplineSeries* m_lineSeries1 = nullptr;   // 第一条曲线
 	QScatterSeries* m_scatter1 = nullptr;   // 第一组圆点
+	QSplineSeries* m_quadSeries1 = nullptr;    // 第一组二次拟合曲线
 	QSplineSeries* m_lineSeries2 = nullptr;   // 第二条曲线
 	QScatterSeries* m_scatter2 = nullptr;   // 第二组圆点
+	QSplineSeries* m_quadSeries2 = nullptr;    // 第二组二次拟合曲线
 	QSplineSeries* m_lineSeries3 = nullptr;   // 第三条曲线
 	QScatterSeries* m_scatter3 = nullptr;   // 第三组圆点
+	QSplineSeries* m_quadSeries3 = nullptr;    // 第三组二次拟合曲线
 	QValueAxis* m_axisX = nullptr;          // X轴
 	QValueAxis* m_axisY = nullptr;          // Y轴
 
@@ -151,6 +157,18 @@ private:
 
 	QHBoxLayout* graphicLayout = nullptr;
 	QVBoxLayout* m_leftLayout = nullptr;
+	// 自定义图例（2行：实线一次拟合 / 虚线二次拟合）
+	QWidget* m_customLegend = nullptr;
+	QLabel* m_linLabel1 = nullptr;
+	QLabel* m_linLabel2 = nullptr;
+	QLabel* m_linLabel3 = nullptr;
+	QLabel* m_quadLabel1 = nullptr;
+	QLabel* m_quadLabel2 = nullptr;
+	QLabel* m_quadLabel3 = nullptr;
+	QString m_baseName1; // 图例名称
+	QString m_baseName2;
+	QString m_baseName3;
+	QWidget* createLegendItem(Qt::PenStyle style, const QColor& color, QLabel* label);
 
 	QMap<QString, QStringList> m_dataMap;
 
