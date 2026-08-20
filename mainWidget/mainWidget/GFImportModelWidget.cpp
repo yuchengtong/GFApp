@@ -484,7 +484,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
         occView->fitAll();
-        createColorScale("跌落试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
+        createColorScale("跌落试验\n应变分析", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "FallStrainPropellantResult") {
         setupResultView(m_strainResultWidget);
@@ -498,7 +498,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("跌落试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("跌落试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "FallTemperatureShellResult") {
         setupResultView(m_temperatureResultWidget);
@@ -690,7 +690,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
         occView->fitAll();
-        createColorScale("枪击试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
+        createColorScale("枪击试验\n应变分析", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "shootStrainPropellantResult") {
         setupResultView(m_shootStrainResultWidget);
@@ -704,7 +704,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("枪击试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("枪击试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "shootTempShellResult") {
         setupResultView(m_shootTemperatureResultWidget);
@@ -830,7 +830,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
         occView->fitAll();
-        createColorScale("射流冲击试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
+        createColorScale("射流冲击试验\n应变分析", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "jetStrainPropellantResult") {
         setupResultView(m_jetImpactStrainResultWidget);
@@ -844,7 +844,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("射流冲击试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("射流冲击试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "jetTempShellResult") {
         setupResultView(m_jetImpactTemperatureResultWidget);
@@ -970,7 +970,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
         occView->fitAll();
-        createColorScale("破片试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
+        createColorScale("破片试验\n应变分析", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "fragmentationStrainPropellantResult") {
         setupResultView(m_fragmentationImpactStrainResultWidget);
@@ -984,7 +984,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("破片试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("破片试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "fragmentationTempShellResult") {
         setupResultView(m_fragmentationImpactTemperatureResultWidget);
@@ -1110,7 +1110,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
         occView->fitAll();
-        createColorScale("爆炸冲击波试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
+        createColorScale("爆炸冲击波试验\n应变分析", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "explosiveStrainPropellantResult") {
         setupResultView(m_explosiveBlastStrainResultWidget);
@@ -1124,7 +1124,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("爆炸冲击波试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("爆炸冲击波试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "explosiveTempShellResult") {
         setupResultView(m_explosiveBlastTemperatureResultWidget);
@@ -1250,7 +1250,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->Display(shellMesh, Standard_True);
         context->Display(nozzleMesh, Standard_True);
         occView->fitAll();
-        createColorScale("殉爆试验\n应变分析\n单位:mm", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
+        createColorScale("殉爆试验\n应变分析", res.metalsMinStrain, res.metalsMaxStrain, "%.6f");
     }
     else if (itemData == "sacrificeStrainPropellantResult") {
         setupResultView(m_sacrificeExplosionStrainResultWidget);
@@ -1264,7 +1264,7 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("殉爆试验\n应变分析\n单位:mm", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("殉爆试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
     }
     else if (itemData == "sacrificeTempShellResult") {
         setupResultView(m_sacrificeExplosionTemperatureResultWidget);
