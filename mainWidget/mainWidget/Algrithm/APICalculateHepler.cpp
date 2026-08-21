@@ -346,6 +346,7 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	auto calInfo = ModelDataManager::GetInstance()->GetCalculationPropertyInfo();
 	auto fallInfo = ModelDataManager::GetInstance()->GetFallSettingInfo();
 	auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto insulatingheatPropertyInfo = ModelDataManager::GetInstance()->GetInsulatingheatPropertyInfo();
 
 	auto A = 1;
 	auto B = steelInfo.density;
@@ -362,7 +363,9 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	auto L = modelGeomInfo.width;//宽
 	auto M = modelGeomInfo.thickness;//厚
 
-	auto limitValue = steelInfo.tensileStrength*1.5; // 抗拉强度
+	
+
+	auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 	auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 	auto modulus = steelInfo.modulus;// 弹性模量
 	double difference = (tangentModulus / modulus);
@@ -375,6 +378,9 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 
 	//std::vector<double> stressResults;
 	//stressResults.reserve(stressCalculation.size());
+
+	
+
 	for (int i = 0; i < stressCalculation.size(); ++i)
 	{
 		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
@@ -409,11 +415,78 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 		}
 	}
 	
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，高度=5m的情况
+
+	double tempM = 1;
+	double tempJ = 5 * 1000;
+	std::vector<double> tempSteelStressResults;
+	std::vector<double> tempPropellantStressResults;
+
+	for (int i = 0; i < stressCalculation.size(); ++i)
+	{
+		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, tempJ, K, L, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res * 0.5;
+		res = res + res * difference * 0.1;
+
+		if (!m_steelArray.contains(i + 1))
+		{
+
+			res = translateFallStress(tempJ / 1000, res);
+			res = translateAngle(fallInfo.angle, res);
+
+			if (res > limitValue)
+			{
+				res = limitValue;
+			}
+			tempPropellantStressResults.push_back(res);
+
+		}
+		else
+		{
+			res = translateAngle(fallInfo.angle, res);
+			if (res > limitValue)
+			{
+				res = limitValue;
+			}
+			tempSteelStressResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelStressMaxValue = *std::max_element(tempSteelStressResults.begin(), tempSteelStressResults.end());
+
+	tempPropellantStressResults.erase(
+		std::remove_if(tempPropellantStressResults.begin(), tempPropellantStressResults.end(),
+			[tempCalSteelStressMaxValue](double value) { return value > tempCalSteelStressMaxValue; }),
+		tempPropellantStressResults.end());
+	double tempCalPropellantStressMaxValue = *std::max_element(tempPropellantStressResults.begin(), tempPropellantStressResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
-	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+	//double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
 
 	double calPropellantStressMinValue = *std::min_element(propellantStressResults.begin(), propellantStressResults.end());
-	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+	//double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+	// 先随高度，再随壁厚
+	double calSteelStressMaxValue = tempCalSteelStressMaxValue * (pow(J / 5000, 0.5) * pow(M, -0.5));
+	double calPropellantStressMaxValue = tempCalPropellantStressMaxValue * (pow(J / 5000, 0.5) * pow(M, -0.4));
+
+	if (calSteelStressMaxValue > limitValue)
+	{
+		calSteelStressMaxValue = limitValue;
+	}
+	if (calPropellantStressMaxValue > limitValue)
+	{
+		calPropellantStressMaxValue = limitValue;
+	}
 
 	// 更新结果
 	double shellStressMaxValue = calSteelStressMaxValue; // 发动机壳体最大应力
@@ -492,9 +565,9 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 	std::vector<double> propellantTemperatureResults;
 	/*std::vector<double> temperatureResults;
 	temperatureResults.reserve(temperatureCalculation.size());*/
+	
 
-	steelTemperatureResults.push_back(25);
-	propellantTemperatureResults.push_back(25);
+	
 	for (int i = 0; i < temperatureCalculation.size(); ++i)
 	{
 		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
@@ -503,10 +576,10 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 			res = 25;
 		}
 		res = translateAngle(fallInfo.angle, res);
-		if (fallInfo.angle == 0 && res >= 30)
+		/*if (fallInfo.angle == 0 && res >= 30)
 		{
 			res = 28.589;
-		}
+		}*/
 		if (!m_steelArray.contains(i + 1))
 		{
 			propellantTemperatureResults.push_back(res);
@@ -516,17 +589,61 @@ bool APICalculateHepler::CalculateFallAnalysisResult(OccView* occView, std::vect
 			steelTemperatureResults.push_back(res);
 		}
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，高度=5m的情况
+	// 绝热层导热系数
+	double limitTemplate = 27.5 + 0.1 * (1 - insulatingheatPropertyInfo.specificHeatCapacity / insulatingheatPropertyInfo.thermalConductivity / 1100 * 2.5);
+	std::vector<double> tempSteelTemperatureResults;
+	std::vector<double> tempPropellantTemperatureResults;
+	tempPropellantTemperatureResults.push_back(limitTemplate);
+	for (int i = 0; i < temperatureCalculation.size(); ++i)
+	{
+		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, tempJ, K, L, tempM, A);
+		if (res > limitTemplate)
+		{
+			res = limitTemplate;
+		}
+		if (res < 25)
+		{
+			res = 25;
+		}
+		res = translateAngle(fallInfo.angle, res);
+		/*if (fallInfo.angle == 0 && res >= 30)
+		{
+			res = 28.589;
+		}*/
+		if (!m_steelArray.contains(i + 1))
+		{
+			if (res > limitTemplate)
+			{
+				res = limitTemplate;
+			}
+			tempPropellantTemperatureResults.push_back(res);
+		}
+		else
+		{
+			tempSteelTemperatureResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelTemperatureMaxValue = *std::max_element(tempSteelTemperatureResults.begin(), tempSteelTemperatureResults.end()) + 1 + limitTemplate - 27.5;;
+	double tempCalPropellantTemperatureMaxValue = *std::max_element(tempPropellantTemperatureResults.begin(), tempPropellantTemperatureResults.end()) + 1;
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-
-	propellantTemperatureResults.erase(
-		std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
-			[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
-		propellantTemperatureResults.end());
+	//double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+	double changeSteelTemp = tempCalSteelTemperatureMaxValue - 25;
+	double calSteelTemperatureMaxValue = changeSteelTemp * ((J / 5000) + pow(M, -0.85)) + 25;
+	
 
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	//double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	double changePropellantTemp = tempCalPropellantTemperatureMaxValue - 25;
+	double calPropellantTemperatureMaxValue = changePropellantTemp * ((J / 5000) + pow(M, -0.75)) + 25;
+
+
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
@@ -1067,7 +1184,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	auto L = modelGeomInfo.thickness;//厚度
 	auto M = shootInfo.speed * 1000;//撞击速度
 
-	auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+	auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 	auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 	auto modulus = steelInfo.modulus;// 弹性模量
 	double difference = (tangentModulus / modulus);
@@ -1407,7 +1524,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	auto L = modelGeomInfo.thickness;//厚
 	auto M = jetImpactingInfo.caliber;// 聚能装药口径
 
-	auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+	auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 	auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 	auto modulus = steelInfo.modulus;// 弹性模量
 	double difference = (tangentModulus / modulus);
@@ -1746,7 +1863,7 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 	auto L = modelGeomInfo.thickness;//厚度
 	auto M = fragmentationSettingInfo.speed * 1000;//撞击速度
 
-	auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+	auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 	auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 	auto modulus = steelInfo.modulus;// 弹性模量
 	double difference = (tangentModulus / modulus);
@@ -2084,7 +2201,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	auto L = modelGeomInfo.thickness;//厚
 	auto M = explosiveBlastSettingInfo.tnt / 2 ;// TNT当量
 
-	auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+	auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 	auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 	auto modulus = steelInfo.modulus;// 弹性模量
 	double difference = (tangentModulus / modulus);
@@ -2386,7 +2503,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	auto L = modelGeomInfo.thickness;//厚
 	auto M = sacrificeExplosionInfo.distance;//距离
 
-	auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+	auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 	auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 	auto modulus = steelInfo.modulus;// 弹性模量
 	double difference = (tangentModulus / modulus);

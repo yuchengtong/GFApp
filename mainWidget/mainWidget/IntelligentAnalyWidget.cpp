@@ -490,6 +490,7 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 
 
 
+
 	m_chart = new QChart();
 	m_chart->setTitle("正交试验");
 	m_chart->setMargins(QMargins(15, 15, 15, 0));
@@ -583,6 +584,11 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	m_leftLayout->addWidget(m_customLegend);
 
 
+
+	x_comboBox->setCurrentIndex(1);
+	y_comboBox->setCurrentIndex(2);
+
+
 	// 三维图形
 	QLabel* grapgicLabel = new QLabel("结果集：");
 	m_grapgicComboBox = new QComboBox();
@@ -590,16 +596,9 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	connect(m_grapgicComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexGraphicChanged);
 
-
-	QLabel* rLabel = new QLabel("R²：");
-	m_r = new QLineEdit();
-	m_r->setEnabled(false);
-
 	QHBoxLayout* choseLayou = new QHBoxLayout();
 	choseLayou->addWidget(grapgicLabel);
 	choseLayou->addWidget(m_grapgicComboBox);
-	choseLayou->addWidget(rLabel);
-	choseLayou->addWidget(m_r);
 	choseLayou->setContentsMargins(0, 0, 0, 0);
 	choseLayou->addStretch(200);
 
@@ -744,47 +743,47 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	// 更新三维模型数据
 	QVector<QVector<double>> newData;
 	QVector<double> data1;
-	data1.append(m_tableWidget->item(1, 3)->text().toDouble());
-	data1.append(m_tableWidget->item(6, 3)->text().toDouble());
-	data1.append(m_tableWidget->item(11, 3)->text().toDouble());
-	data1.append(m_tableWidget->item(16, 3)->text().toDouble());
-	data1.append(m_tableWidget->item(21, 3)->text().toDouble());
+	data1.append(m_tableWidget->item(1, 5)->text().toDouble());
+	data1.append(m_tableWidget->item(6, 5)->text().toDouble());
+	data1.append(m_tableWidget->item(11, 5)->text().toDouble());
+	data1.append(m_tableWidget->item(16, 5)->text().toDouble());
+	data1.append(m_tableWidget->item(21, 5)->text().toDouble());
 	newData.append(data1);
 	QVector<double> data2;
-	data2.append(m_tableWidget->item(2, 3)->text().toDouble());
-	data2.append(m_tableWidget->item(7, 3)->text().toDouble());
-	data2.append(m_tableWidget->item(12, 3)->text().toDouble());
-	data2.append(m_tableWidget->item(17, 3)->text().toDouble());
-	data2.append(m_tableWidget->item(22, 3)->text().toDouble());
+	data2.append(m_tableWidget->item(2, 5)->text().toDouble());
+	data2.append(m_tableWidget->item(7, 5)->text().toDouble());
+	data2.append(m_tableWidget->item(12, 5)->text().toDouble());
+	data2.append(m_tableWidget->item(17, 5)->text().toDouble());
+	data2.append(m_tableWidget->item(22, 5)->text().toDouble());
 	newData.append(data2);
 	QVector<double> data3;
-	data3.append(m_tableWidget->item(3, 3)->text().toDouble());
-	data3.append(m_tableWidget->item(8, 3)->text().toDouble());
-	data3.append(m_tableWidget->item(13, 3)->text().toDouble());
-	data3.append(m_tableWidget->item(18, 3)->text().toDouble());
-	data3.append(m_tableWidget->item(23, 3)->text().toDouble());
+	data3.append(m_tableWidget->item(3, 5)->text().toDouble());
+	data3.append(m_tableWidget->item(8, 5)->text().toDouble());
+	data3.append(m_tableWidget->item(13, 5)->text().toDouble());
+	data3.append(m_tableWidget->item(18, 5)->text().toDouble());
+	data3.append(m_tableWidget->item(23, 5)->text().toDouble());
 	newData.append(data3);
 	QVector<double> data4;
-	data4.append(m_tableWidget->item(4, 3)->text().toDouble());
-	data4.append(m_tableWidget->item(9, 3)->text().toDouble());
-	data4.append(m_tableWidget->item(14, 3)->text().toDouble());
-	data4.append(m_tableWidget->item(19, 3)->text().toDouble());
-	data4.append(m_tableWidget->item(24, 3)->text().toDouble());
+	data4.append(m_tableWidget->item(4, 5)->text().toDouble());
+	data4.append(m_tableWidget->item(9, 5)->text().toDouble());
+	data4.append(m_tableWidget->item(14, 5)->text().toDouble());
+	data4.append(m_tableWidget->item(19, 5)->text().toDouble());
+	data4.append(m_tableWidget->item(24, 5)->text().toDouble());
 	newData.append(data4);
 	QVector<double> data5;
-	data5.append(m_tableWidget->item(5, 3)->text().toDouble());
-	data5.append(m_tableWidget->item(10, 3)->text().toDouble());
-	data5.append(m_tableWidget->item(15, 3)->text().toDouble());
-	data5.append(m_tableWidget->item(20, 3)->text().toDouble());
-	data5.append(m_tableWidget->item(25, 3)->text().toDouble());
+	data5.append(m_tableWidget->item(5, 5)->text().toDouble());
+	data5.append(m_tableWidget->item(10, 5)->text().toDouble());
+	data5.append(m_tableWidget->item(15, 5)->text().toDouble());
+	data5.append(m_tableWidget->item(20, 5)->text().toDouble());
+	data5.append(m_tableWidget->item(25, 5)->text().toDouble());
 	newData.append(data5);
 
 	QVector<double> xCoords;
-	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble()*10);
-	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble()*10);
-	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble()*10);
-	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble()*10);
-	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble()*10);
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble() * 10);
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
@@ -793,7 +792,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	yCoords.append(m_tableWidget->item(16, 2)->text().toDouble());
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
-	updateGraphicData("壳体厚度", yName, "壳体最大应力", xCoords, yCoords, newData,
+	updateGraphicData("跌落高度", yName, "壳体最高温度", xCoords, yCoords, newData,
 		m_tableWidget->item(1, 1)->text().toDouble() * 10, m_tableWidget->item(5, 1)->text().toDouble() * 10,
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
@@ -801,7 +800,8 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 
 void IntelligentAnalyWidget::onComboBoxIndexChanged(int index)
 {
-	x_comboBox->currentIndex();
+	/*x_comboBox->setCurrentIndex(1);
+	y_comboBox->setCurrentIndex(2);*/
 	dataChange(0);
 }
 
@@ -1232,8 +1232,7 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 	unitmMap.insert("壳体最高温度", "壳体最高温度[℃]");
 	unitmMap.insert("推进剂最高温度", "推进剂最高温度[℃]");
 	m_3dGraphicWid->axisTitleChange(unitmMap.value(xName), unitmMap.value(yName), unitmMap.value(zName));
-	double r2 = m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
-	m_r->setText(QString::number(r2, 'f', 4));
+	m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
 }
 
 QVector<QPointF> IntelligentAnalyWidget::bezierSmooth(const QVector<QPointF>& src, int subdiv)

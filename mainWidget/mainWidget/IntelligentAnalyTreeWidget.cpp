@@ -398,7 +398,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 							auto fallTableWidget = paParent->getFallTableWidget();
 
-							auto limitValue = steelInfo.tensileStrength * 1.5; // 抗拉强度
+							auto limitValue = steelInfo.tensileStrength * 3.0; // 抗拉强度
 							auto tangentModulus = steelInfo.tangentModulus; // 切线模量
 							auto modulus = steelInfo.modulus;// 弹性模量
 							double difference = (tangentModulus / modulus);
@@ -439,89 +439,202 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.fallStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.fallTemperatureCalculation;
+
+
+										// 计算厚度=1mm，高度=5m的情况
+										M = 1;
+										J = 5 * 1000;
+										std::vector<double> steelStressResults;
+										std::vector<double> propellantStressResults;
+
+										for (int i = 0; i < stressCalculation.size(); ++i)
+										{
+											double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res * 0.5;
+											res = res + res * difference * 0.1;
+											if (!m_array.contains(i + 1))
+											{
+												res = translateFallStressTemp(J / 1000, res);
+												res = translateFallAngle(fallInfo.angle, res);
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
+												propellantStressResults.push_back(res);
+											}
+											else
+											{
+												res = translateFallAngle(fallInfo.angle, res);
+												if (res > limitValue)
+												{
+													res = limitValue;
+												}
+												steelStressResults.push_back(res);
+											}
+										}
+
+										double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										propellantStressResults.erase(
+											std::remove_if(propellantStressResults.begin(), propellantStressResults.end(),
+												[calSteelStressMaxValue](double value) { return value > calSteelStressMaxValue; }),
+											propellantStressResults.end());
+										double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+										
+										// 绝热层导热系数
+										double limitTemplate = 27.5 + 0.1 * (1- insulatingheatPropertyInfo.specificHeatCapacity / insulatingheatPropertyInfo.thermalConductivity / 1100 * 2.5);
+
+										// 温度
+										std::vector<double> steelTemperatureResults;
+										std::vector<double> propellantTemperatureResults;
+										propellantTemperatureResults.push_back(limitTemplate);
+										for (int i = 0; i < temperatureCalculation.size(); ++i)
+										{
+											double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+											
+											if (res < 25)
+											{
+												res = 25;
+											}
+											res = translateFallAngle(fallInfo.angle, res);
+											/*if (fallInfo.angle == 0 && res > 30)
+											{
+												res = 28.589;
+											}*/
+											if (!m_array.contains(i + 1))
+											{
+												if (res > limitTemplate)
+												{
+													res = limitTemplate;
+												}
+												propellantTemperatureResults.push_back(res);
+											}
+											else
+											{
+												steelTemperatureResults.push_back(res);
+											}
+										}
+										double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end()) + 1 + limitTemplate - 27.5;
+										double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end()) + 1;
+										
+										
 										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
-											M = fallTableWidget->item(i, 1)->text().toInt();	// 厚度
+											M = fallTableWidget->item(i, 1)->text().toDouble();	// 厚度
 											J = fallTableWidget->item(i, 2)->text().toDouble() * 1000;//跌落高度
 
-											std::vector<double> steelStressResults;
-											std::vector<double> propellantStressResults;
-
-											//std::vector<double> stressResults;
-											//stressResults.reserve(stressCalculation.size());
-											for (int i = 0; i < stressCalculation.size(); ++i)
+											// 先随高度，再随壁厚
+											double tempCalSteelStressMaxValue = calSteelStressMaxValue * (pow(J / 5000,0.5) * pow(M, -0.5));
+											double tempCalPropellantStressMaxValue = calPropellantStressMaxValue * (pow(J / 5000, 0.5) * pow(M, -0.4));
+											if (tempCalSteelStressMaxValue > limitValue)
 											{
-												double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res * 0.5;
-												res = res + res * difference * 0.1;
-												if (!m_array.contains(i + 1))
-												{
-													res = translateFallStressTemp(J/1000, res);
-													res = translateFallAngle(fallInfo.angle, res);
-													if (res > limitValue)
-													{
-														res = limitValue;
-													}
-													propellantStressResults.push_back(res);
-												}
-												else
-												{
-													res = translateFallAngle(fallInfo.angle, res);
-													if (res > limitValue)
-													{
-														res = limitValue;
-													}
-													steelStressResults.push_back(res);
-												}
+												tempCalSteelStressMaxValue = limitValue;
 											}
-
-											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
-											double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
-
-											fallTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
-											fallTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
-
-											// 温度
-											std::vector<double> steelTemperatureResults;
-											std::vector<double> propellantTemperatureResults;
-											for (int i = 0; i < temperatureCalculation.size(); ++i)
+											if (tempCalPropellantStressMaxValue > limitValue)
 											{
-												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 25)
-												{
-													res = 25;
-												}
-												res = translateFallAngle(fallInfo.angle, res);
-												if (fallInfo.angle == 0 && res > 30)
-												{
-													res = 28.589;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													propellantTemperatureResults.push_back(res);
-												}
-												else
-												{
-													steelTemperatureResults.push_back(res);
-												}
+												tempCalPropellantStressMaxValue = limitValue;
 											}
+											fallTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(tempCalSteelStressMaxValue)));
+											fallTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(tempCalPropellantStressMaxValue)));
+											double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+											double tempCalSteelTemperatureMaxValue = changeSteelTemp * ((J / 5000) + pow(M, -0.85)) + 25;
 
-											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+											double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+											double tempCalPropellantTemperatureMaxValue = changePropellantTemp * ((J / 5000) + pow(M, -0.75)) +25;
 
-											propellantTemperatureResults.erase(
-												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
-													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
-												propellantTemperatureResults.end());
-
-											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-											fallTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
-											fallTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
+											fallTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(tempCalSteelTemperatureMaxValue)));
+											fallTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(tempCalPropellantTemperatureMaxValue)));
 										}
+
+
+										//for (size_t i = 1; i < 26; i++)
+										//{
+										//	// 更新计算数值
+										//	M = fallTableWidget->item(i, 1)->text().toInt();	// 厚度
+										//	J = fallTableWidget->item(i, 2)->text().toDouble() * 1000;//跌落高度
+
+										//	std::vector<double> steelStressResults;
+										//	std::vector<double> propellantStressResults;
+
+										//	//std::vector<double> stressResults;
+										//	//stressResults.reserve(stressCalculation.size());
+										//	for (int i = 0; i < stressCalculation.size(); ++i)
+										//	{
+										//		double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+										//		if (res < 0)
+										//		{
+										//			res = 0;
+										//		}
+										//		res = res * 0.5;
+										//		res = res + res * difference * 0.1;
+										//		if (!m_array.contains(i + 1))
+										//		{
+										//			res = translateFallStressTemp(J/1000, res);
+										//			res = translateFallAngle(fallInfo.angle, res);
+										//			if (res > limitValue)
+										//			{
+										//				res = limitValue;
+										//			}
+										//			propellantStressResults.push_back(res);
+										//		}
+										//		else
+										//		{
+										//			res = translateFallAngle(fallInfo.angle, res);
+										//			if (res > limitValue)
+										//			{
+										//				res = limitValue;
+										//			}
+										//			steelStressResults.push_back(res);
+										//		}
+										//	}
+
+										//	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										//	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+										//	fallTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
+										//	fallTableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
+
+										//	// 温度
+										//	std::vector<double> steelTemperatureResults;
+										//	std::vector<double> propellantTemperatureResults;
+										//	for (int i = 0; i < temperatureCalculation.size(); ++i)
+										//	{
+										//		double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+										//		if (res < 25)
+										//		{
+										//			res = 25;
+										//		}
+										//		res = translateFallAngle(fallInfo.angle, res);
+										//		if (fallInfo.angle == 0 && res > 30)
+										//		{
+										//			res = 28.589;
+										//		}
+										//		if (!m_array.contains(i + 1))
+										//		{
+										//			propellantTemperatureResults.push_back(res);
+										//		}
+										//		else
+										//		{
+										//			steelTemperatureResults.push_back(res);
+										//		}
+										//	}
+
+										//	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+
+										//	propellantTemperatureResults.erase(
+										//		std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+										//			[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+										//		propellantTemperatureResults.end());
+
+										//	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+										//	fallTableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
+										//	fallTableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
+										//}
 
 										// 更新ChartView
 										auto chartView = paParent->getChartView();
@@ -536,85 +649,90 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto scatter2 = paParent->getScatter2();
 										auto scatter3 = paParent->getScatter3();
 										auto x_comboBox = paParent->getXComboBox();
-										x_comboBox->setCurrentIndex(0);
+										x_comboBox->setCurrentIndex(1);
 										x_comboBox->setItemText(1, "跌落高度");
 
+										auto y_comboBox = paParent->getYComboBox();
+										y_comboBox->setCurrentIndex(2);
+										auto m_grapgicComboBox = paParent->getGrapgicComboBox();
+										m_grapgicComboBox->setCurrentIndex(2);
+
 										QVector<QPointF> data1;
-										if (fallTableWidget->item(1, 3))
+										if (fallTableWidget->item(1, 5))
 										{
-											data1.append(QPointF(1, fallTableWidget->item(1, 3)->text().toDouble()));
+											data1.append(QPointF(1, fallTableWidget->item(1, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(2, 3))
+										if (fallTableWidget->item(6, 5))
 										{
-											data1.append(QPointF(2, fallTableWidget->item(2, 3)->text().toDouble()));
+											data1.append(QPointF(2, fallTableWidget->item(6, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(3, 3))
+										if (fallTableWidget->item(11, 5))
 										{
-											data1.append(QPointF(3, fallTableWidget->item(3, 3)->text().toDouble()));
+											data1.append(QPointF(3, fallTableWidget->item(11, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(4, 3))
+										if (fallTableWidget->item(16, 5))
 										{
-											data1.append(QPointF(4, fallTableWidget->item(4, 3)->text().toDouble()));
+											data1.append(QPointF(4, fallTableWidget->item(16, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(5, 3))
+										if (fallTableWidget->item(21, 5))
 										{
-											data1.append(QPointF(5, fallTableWidget->item(5, 3)->text().toDouble()));
+											data1.append(QPointF(5, fallTableWidget->item(21, 5)->text().toDouble()));
 
 										}
 										QVector<QPointF> data2;
-										if (fallTableWidget->item(11, 3))
+										if (fallTableWidget->item(3, 5))
 										{
-											data2.append(QPointF(1, fallTableWidget->item(11, 3)->text().toDouble()));
+											data2.append(QPointF(1, fallTableWidget->item(3, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(12, 3))
+										if (fallTableWidget->item(8, 5))
 										{
-											data2.append(QPointF(2, fallTableWidget->item(12, 3)->text().toDouble()));
+											data2.append(QPointF(2, fallTableWidget->item(8, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(13, 3))
+										if (fallTableWidget->item(13, 5))
 										{
-											data2.append(QPointF(3, fallTableWidget->item(13, 3)->text().toDouble()));
+											data2.append(QPointF(3, fallTableWidget->item(13, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(14, 3))
+										if (fallTableWidget->item(18, 5))
 										{
-											data2.append(QPointF(4, fallTableWidget->item(14, 3)->text().toDouble()));
-
-										}
-										if (fallTableWidget->item(15, 3))
-										{
-											data2.append(QPointF(5, fallTableWidget->item(15, 3)->text().toDouble()));
-
-										}
-										QVector<QPointF> data3;
-										if (fallTableWidget->item(21, 3))
-										{
-											data3.append(QPointF(1, fallTableWidget->item(21, 3)->text().toDouble()));
-
-										}
-										if (fallTableWidget->item(22, 3))
-										{
-											data3.append(QPointF(2, fallTableWidget->item(22, 3)->text().toDouble()));
+											data2.append(QPointF(4, fallTableWidget->item(18, 5)->text().toDouble()));
 
 										}
 										if (fallTableWidget->item(23, 3))
 										{
-											data3.append(QPointF(3, fallTableWidget->item(23, 3)->text().toDouble()));
+											data2.append(QPointF(5, fallTableWidget->item(23, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(24, 3))
+										QVector<QPointF> data3;
+										if (fallTableWidget->item(5, 5))
 										{
-											data3.append(QPointF(4, fallTableWidget->item(24, 3)->text().toDouble()));
+											data3.append(QPointF(1, fallTableWidget->item(5, 5)->text().toDouble()));
 
 										}
-										if (fallTableWidget->item(25, 3))
+										if (fallTableWidget->item(10, 5))
 										{
-											data3.append(QPointF(5, fallTableWidget->item(25, 3)->text().toDouble()));
+											data3.append(QPointF(2, fallTableWidget->item(10, 5)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(15, 5))
+										{
+											data3.append(QPointF(3, fallTableWidget->item(15, 5)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(20, 5))
+										{
+											data3.append(QPointF(4, fallTableWidget->item(20, 5)->text().toDouble()));
+
+										}
+										if (fallTableWidget->item(25, 5))
+										{
+											data3.append(QPointF(5, fallTableWidget->item(25, 5)->text().toDouble()));
 
 										}
 
@@ -624,44 +742,44 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 											quadSeries1, quadSeries2, quadSeries3,
 											scatter1, scatter2, scatter3,
 											data1, data2, data3,
-											"跌落高度", "壳体最大应力");
+											"跌落高度", "壳体最高温度");
 
 										// 更新三维模型数据
 										QVector<QVector<double>> newData;
 										QVector<double> graphicData1;
-										graphicData1.append(fallTableWidget->item(1, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(6, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(11, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(16, 3)->text().toDouble());
-										graphicData1.append(fallTableWidget->item(21, 3)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(1, 5)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(6, 5)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(11, 5)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(16, 5)->text().toDouble());
+										graphicData1.append(fallTableWidget->item(21, 5)->text().toDouble());
 										newData.append(graphicData1);
 										QVector<double> graphicData4;
-										graphicData4.append(fallTableWidget->item(2, 3)->text().toDouble());
-										graphicData4.append(fallTableWidget->item(7, 3)->text().toDouble());
-										graphicData4.append(fallTableWidget->item(12, 3)->text().toDouble());
-										graphicData4.append(fallTableWidget->item(17, 3)->text().toDouble());
-										graphicData4.append(fallTableWidget->item(22, 3)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(2, 5)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(7, 5)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(12, 5)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(17, 5)->text().toDouble());
+										graphicData4.append(fallTableWidget->item(22, 5)->text().toDouble());
 										newData.append(graphicData4);
 										QVector<double> graphicData2;
-										graphicData2.append(fallTableWidget->item(3, 3)->text().toDouble());
-										graphicData2.append(fallTableWidget->item(8, 3)->text().toDouble());
-										graphicData2.append(fallTableWidget->item(13, 3)->text().toDouble());
-										graphicData2.append(fallTableWidget->item(18, 3)->text().toDouble());
-										graphicData2.append(fallTableWidget->item(23, 3)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(3, 5)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(8, 5)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(13, 5)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(18, 5)->text().toDouble());
+										graphicData2.append(fallTableWidget->item(23, 5)->text().toDouble());
 										newData.append(graphicData2);
 										QVector<double> graphicData5;
-										graphicData5.append(fallTableWidget->item(4, 3)->text().toDouble());
-										graphicData5.append(fallTableWidget->item(9, 3)->text().toDouble());
-										graphicData5.append(fallTableWidget->item(14, 3)->text().toDouble());
-										graphicData5.append(fallTableWidget->item(19, 3)->text().toDouble());
-										graphicData5.append(fallTableWidget->item(24, 3)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(4, 5)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(9, 5)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(14, 5)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(19, 5)->text().toDouble());
+										graphicData5.append(fallTableWidget->item(24, 5)->text().toDouble());
 										newData.append(graphicData5);
 										QVector<double> graphicData3;
-										graphicData3.append(fallTableWidget->item(5, 3)->text().toDouble());
-										graphicData3.append(fallTableWidget->item(10, 3)->text().toDouble());
-										graphicData3.append(fallTableWidget->item(15, 3)->text().toDouble());
-										graphicData3.append(fallTableWidget->item(20, 3)->text().toDouble());
-										graphicData3.append(fallTableWidget->item(25, 3)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(5, 5)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(10, 5)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(15, 5)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(20, 5)->text().toDouble());
+										graphicData3.append(fallTableWidget->item(25, 5)->text().toDouble());
 										newData.append(graphicData3);
 										QVector<double> xCoords;
 										xCoords.append(fallTableWidget->item(1, 1)->text().toDouble() * 10);
@@ -678,7 +796,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										yCoords.append(fallTableWidget->item(21, 2)->text().toDouble());
 
 
-										paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最大应力", xCoords, yCoords, newData,
+										paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最高温度", xCoords, yCoords, newData,
 											fallTableWidget->item(1, 1)->text().toDouble() * 10, fallTableWidget->item(5, 1)->text().toDouble()*10,
 											fallTableWidget->item(1, 2)->text().toDouble(), fallTableWidget->item(25, 2)->text().toDouble());
 
@@ -722,9 +840,9 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 												if (res > 25)
 												{
 													res = res + res * 0.1 * difference;
-													if (res > fastCombustionSettingInfo.temperature)
+													if (res > M)
 													{
-														res = fastCombustionSettingInfo.temperature * 0.92;
+														res = M * 0.92;
 													}
 													if (!m_array.contains(i + 1))
 													{

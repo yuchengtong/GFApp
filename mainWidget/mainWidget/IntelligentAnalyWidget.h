@@ -33,6 +33,8 @@ public:
 
 	QComboBox* getXComboBox() { return x_comboBox; }
 	QComboBox* getYComboBox() { return y_comboBox; }
+	QComboBox* getGrapgicComboBox() { return m_grapgicComboBox; }
+	
 
 
 	QTableWidget* getFallTableWidget() { return m_fallTableWidget; }
