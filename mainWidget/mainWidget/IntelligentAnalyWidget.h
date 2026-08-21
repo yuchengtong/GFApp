@@ -152,6 +152,7 @@ private:
 	QChartView* chartView2 = nullptr;
 
 	QComboBox* m_grapgicComboBox = nullptr;
+	QLineEdit* m_r = nullptr;
 
 	GraphicWidget* m_3dGraphicWid = nullptr;
 

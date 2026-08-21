@@ -590,9 +590,16 @@ IntelligentAnalyWidget::IntelligentAnalyWidget(QWidget* parent)
 	connect(m_grapgicComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IntelligentAnalyWidget::onComboBoxIndexGraphicChanged);
 
+
+	QLabel* rLabel = new QLabel("R²：");
+	m_r = new QLineEdit();
+	m_r->setEnabled(false);
+
 	QHBoxLayout* choseLayou = new QHBoxLayout();
 	choseLayou->addWidget(grapgicLabel);
 	choseLayou->addWidget(m_grapgicComboBox);
+	choseLayou->addWidget(rLabel);
+	choseLayou->addWidget(m_r);
 	choseLayou->setContentsMargins(0, 0, 0, 0);
 	choseLayou->addStretch(200);
 
@@ -773,11 +780,11 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	newData.append(data5);
 
 	QVector<double> xCoords;
-	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble()*10);
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble()*10);
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble()*10);
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble()*10);
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble()*10);
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
@@ -787,7 +794,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
 	updateGraphicData("壳体厚度", yName, "壳体最大应力", xCoords, yCoords, newData,
-		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
+		m_tableWidget->item(1, 1)->text().toDouble() * 10, m_tableWidget->item(5, 1)->text().toDouble() * 10,
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
 }
@@ -863,11 +870,11 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 
 
 	QVector<double> xCoords;
-	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble());
-	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble() * 10);
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
@@ -878,7 +885,7 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 
 
 	updateGraphicData("壳体厚度", "", zName, xCoords, yCoords, newData,
-		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble(),
+		m_tableWidget->item(1, 1)->text().toDouble() * 10, m_tableWidget->item(5, 1)->text().toDouble() * 10,
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 }
 
@@ -1225,7 +1232,8 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 	unitmMap.insert("壳体最高温度", "壳体最高温度[℃]");
 	unitmMap.insert("推进剂最高温度", "推进剂最高温度[℃]");
 	m_3dGraphicWid->axisTitleChange(unitmMap.value(xName), unitmMap.value(yName), unitmMap.value(zName));
-	m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
+	double r2 = m_3dGraphicWid->dataUpdate(xCoords, yCoords, newData, newData.size(), newData.at(0).size(), xMin, xMax, yMin, yMax);
+	m_r->setText(QString::number(r2, 'f', 4));
 }
 
 QVector<QPointF> IntelligentAnalyWidget::bezierSmooth(const QVector<QPointF>& src, int subdiv)

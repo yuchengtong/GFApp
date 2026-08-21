@@ -1,4 +1,5 @@
 ﻿#pragma execution_character_set("utf-8")
+
 #include "GraphicWidget.h"
 #include <QLabel>
 #include <QVBoxLayout>
@@ -12,13 +13,10 @@ GraphicWidget::GraphicWidget(QWidget* parent)
     : QWidget(parent)
 {
     m_graph = create3DSurfaceGraph();
-    auto* inputHandler = qobject_cast<Q3DInputHandler*>(m_surface->activeInputHandler());
-
     m_graph->activeTheme()->setGridEnabled(true);
     m_graph->activeTheme()->setBackgroundEnabled(true);
     m_graph->activeTheme()->setLabelBackgroundEnabled(true);
 
-    // 安装事件过滤器，用于右键拖拽后限制视角角度
     m_graph->installEventFilter(this);
 
     QWidget* graphContainer = QWidget::createWindowContainer(m_graph);
@@ -30,7 +28,10 @@ GraphicWidget::GraphicWidget(QWidget* parent)
 
 GraphicWidget::~GraphicWidget()
 {
-
+    if (m_array) {
+        qDeleteAll(*m_array);
+        delete m_array;
+    }
 }
 
 QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
@@ -50,11 +51,9 @@ QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
     m_surface->addSeries(m_series);
     m_array = new QSurfaceDataArray;
 
-    for (int index = 0; index != 3; ++index)
-    {
+    for (int i = 0; i < 3; ++i) {
         QSurfaceDataRow* dataRow = new QSurfaceDataRow;
-        for (int valIdx = 0; valIdx != 3; ++valIdx)
-        {
+        for (int j = 0; j < 3; ++j) {
             dataRow->append(QVector3D(0, 0, 0));
         }
         m_array->append(dataRow);
@@ -68,7 +67,6 @@ QAbstract3DGraph* GraphicWidget::create3DSurfaceGraph()
 
     return m_surface;
 }
-
 
 QValue3DAxis* GraphicWidget::createValue3DAxis(QString axisTitle, bool titleVisible, float min, float max)
 {
@@ -88,83 +86,63 @@ QCategory3DAxis* GraphicWidget::createCategory3DAxis(QString axisTitle, bool tit
     return axis;
 }
 
-
-void GraphicWidget::on_angleValueChange(int type, int val)
-{
-    if (0 == type)
-    {
-        m_graph->scene()->activeCamera()->setXRotation(val);
-    }
-    else if (1 == type)
-    {
-        m_graph->scene()->activeCamera()->setYRotation(val);
-    }
-}
-
-
 void GraphicWidget::on_scaleSlider_sliderMoved(int position)
 {
     m_graph->scene()->activeCamera()->setZoomLevel(position);
 }
 
-
-
-template<class T>
-void setSeriesStyle(T graphi, int index)
-{
-    foreach(QAbstract3DSeries * series, graphi->seriesList())
-    {
-        series->setMesh(QAbstract3DSeries::Mesh(index + 1));
-    }
-}
-
 void GraphicWidget::axisTitleChange(QString xName, QString yName, QString zName)
 {
-    if (xName != "")
-    {
-        m_axisX->setTitle(xName);
-    }
-    if (yName != "")
-    {
-        m_axisZ->setTitle(yName);
-    }
-    if (zName != "")
-    {
-        m_axisY->setTitle(zName);
-    }
+    if (!xName.isEmpty()) m_axisX->setTitle(xName);
+    if (!yName.isEmpty()) m_axisZ->setTitle(yName);
+    if (!zName.isEmpty()) m_axisY->setTitle(zName);
 }
 
-// ========== 新增：高斯消元法 ==========
-std::vector<double> GraphicWidget::gaussSolve(std::vector<std::vector<double>> A, std::vector<double> b)
+std::vector<double> GraphicWidget::gaussSolve(std::vector<std::vector<double>> A, std::vector<double> b, double lambda)
 {
-    int n = A.size();
-    for (int i = 0; i < n; i++) A[i].push_back(b[i]);
+    int n = static_cast<int>(A.size());
+    if (n == 0 || static_cast<int>(b.size()) != n) return {};
 
-    for (int col = 0; col < n; col++) {
+    for (int i = 0; i < n; ++i) A[i].push_back(b[i]);
+
+    if (lambda > 0.0) {
+        for (int i = 0; i < n; ++i) {
+            A[i][i] += lambda;
+        }
+    }
+
+    const double EPS = 1e-12;
+    for (int col = 0; col < n; ++col) {
         int pivot = col;
-        for (int row = col + 1; row < n; row++)
-            if (std::abs(A[row][col]) > std::abs(A[pivot][col])) pivot = row;
+        for (int row = col + 1; row < n; ++row) {
+            if (std::abs(A[row][col]) > std::abs(A[pivot][col]))
+                pivot = row;
+        }
         std::swap(A[col], A[pivot]);
 
-        if (std::abs(A[col][col]) < 1e-12) continue;
+        if (std::abs(A[col][col]) < EPS) continue;
 
-        for (int row = col + 1; row < n; row++) {
+        for (int row = col + 1; row < n; ++row) {
             double factor = A[row][col] / A[col][col];
-            for (int j = col; j <= n; j++) A[row][j] -= factor * A[col][j];
+            for (int j = col; j <= n; ++j) {
+                A[row][j] -= factor * A[col][j];
+            }
         }
     }
 
     std::vector<double> x(n, 0.0);
-    for (int i = n - 1; i >= 0; i--) {
+    for (int i = n - 1; i >= 0; --i) {
+        if (std::abs(A[i][i]) < EPS) {
+            x[i] = 0.0;
+            continue;
+        }
         double sum = A[i][n];
-        for (int j = i + 1; j < n; j++) sum -= A[i][j] * x[j];
-        x[i] = (std::abs(A[i][i]) < 1e-12) ? 0.0 : sum / A[i][i];
+        for (int j = i + 1; j < n; ++j) sum -= A[i][j] * x[j];
+        x[i] = sum / A[i][i];
     }
     return x;
 }
 
-// ========== 新增：二次曲面拟合 ==========
-// 拟合方程: z = a*x^2 + b*y^2 + c*x*y + d*x + e*y + f
 std::vector<double> GraphicWidget::fitQuadraticSurface(
     const QVector<double>& xCoords,
     const QVector<double>& yCoords,
@@ -174,6 +152,7 @@ std::vector<double> GraphicWidget::fitQuadraticSurface(
     double R[6] = {};
 
     int rowCount = newData.size();
+    int totalPoints = 0;
     for (int i = 0; i < rowCount; ++i) {
         int colCount = newData[i].size();
         for (int j = 0; j < colCount; ++j) {
@@ -188,6 +167,7 @@ std::vector<double> GraphicWidget::fitQuadraticSurface(
                 }
                 R[p] += phi[p] * zv;
             }
+            ++totalPoints;
         }
     }
 
@@ -198,10 +178,28 @@ std::vector<double> GraphicWidget::fitQuadraticSurface(
         b[i] = R[i];
     }
 
-    return gaussSolve(A, b);
+    auto coeff = gaussSolve(A, b, 0.0);
+
+    bool needReg = false;
+    int zeroCnt = 0;
+    for (double c : coeff) {
+        if (std::isnan(c) || std::isinf(c)) { needReg = true; break; }
+        if (std::abs(c) < 1e-15) ++zeroCnt;
+    }
+    if (zeroCnt >= 6) needReg = true;
+
+    if (totalPoints < 6) {
+        qDebug() << "警告: 数据点仅" << totalPoints << "个，二次曲面欠定，启用正则化拟合";
+        needReg = true;
+    }
+
+    if (needReg) {
+        coeff = gaussSolve(A, b, 1e-3);
+    }
+
+    return coeff;
 }
 
-// ========== 新增：生成拟合网格 ==========
 QVector<QVector<double>> GraphicWidget::generateFittedGrid(
     const std::vector<double>& coeff,
     double xMin, double xMax,
@@ -209,12 +207,10 @@ QVector<QVector<double>> GraphicWidget::generateFittedGrid(
     int gridSize)
 {
     QVector<QVector<double>> grid(gridSize, QVector<double>(gridSize));
-    double a = coeff[0];
-    double b = coeff[1];
-    double c = coeff[2];
-    double d = coeff[3];
-    double e = coeff[4];
-    double f = coeff[5];
+    if (coeff.size() < 6) return grid;
+
+    double a = coeff[0], b = coeff[1], c = coeff[2];
+    double d = coeff[3], e = coeff[4], f = coeff[5];
 
     for (int i = 0; i < gridSize; ++i) {
         double xv = xMin + (xMax - xMin) * i / (gridSize - 1);
@@ -226,7 +222,19 @@ QVector<QVector<double>> GraphicWidget::generateFittedGrid(
     return grid;
 }
 
-void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
+//static void printMatrix(const QString& title, const QVector<QVector<double>>& mat, int rowCount, int colCount)
+//{
+//    qDebug() << "==========" << title << "==========";
+//    for (int i = 0; i < rowCount; ++i) {
+//        QString line;
+//        for (int j = 0; j < colCount; ++j) {
+//            line.append(QString::number(mat[i][j], 'f', 4)).append(" ");
+//        }
+//        qDebug() << "Row" << i << ":" << line;
+//    }
+//}
+
+double GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     const QVector<double>& yCoords,
     const QVector<QVector<double>>& newData,
     int rowCount,
@@ -236,32 +244,16 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     double yMin,
     double yMax)
 {
-    // ========== 打印原始输入数据 ==========
-    qDebug() << "=== 原始输入数据 ===";
-    qDebug() << "xCoords (行坐标):" << xCoords;
-    qDebug() << "yCoords (列坐标):" << yCoords;
-    qDebug() << "数据矩阵大小:" << rowCount << "行 ×" << columnCount << "列";
-    qDebug() << "x轴范围: [" << xMin << ", " << xMax << "]";
-    qDebug() << "y轴范围: [" << yMin << ", " << yMax << "]";
+    //printMatrix("原始数据 (newData)", newData, rowCount, columnCount);
 
-    for (int i = 0; i < rowCount; ++i) {
-        QString rowStr;
-        for (int j = 0; j < columnCount; ++j) {
-            rowStr += QString::number(newData[i][j]) + " ";
-        }
-        qDebug() << "Row" << i << ":" << rowStr;
-    }
-
-    // ========== 1. 二次曲面拟合 ==========
     std::vector<double> coeff = fitQuadraticSurface(xCoords, yCoords, newData);
     double a = coeff[0], b = coeff[1], c = coeff[2];
     double d = coeff[3], e = coeff[4], f = coeff[5];
 
-    // 计算R²（可选，调试用）
     double zMean = 0.0;
     int totalPoints = 0;
     for (int i = 0; i < rowCount; ++i)
-        for (int j = 0; j < columnCount; ++j) { zMean += newData[i][j]; totalPoints++; }
+        for (int j = 0; j < columnCount; ++j) { zMean += newData[i][j]; ++totalPoints; }
     zMean /= totalPoints;
 
     double ssTot = 0.0, ssRes = 0.0;
@@ -276,7 +268,9 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
         }
     }
     double r2 = (ssTot < 1e-12) ? 1.0 : 1.0 - ssRes / ssTot;
-    qDebug() << "曲面拟合 R² =" << r2;
+    //qDebug() << "曲面拟合 R² =" << r2;
+    //qDebug() << "拟合系数: a=" << a << "b=" << b << "c=" << c
+    //    << "d=" << d << "e=" << e << "f=" << f;
 
     const int gridSize = 100;
     QVector<double> fittedXCoords(gridSize);
@@ -287,79 +281,75 @@ void GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     }
     QVector<QVector<double>> fittedData = generateFittedGrid(coeff, xMin, xMax, yMin, yMax, gridSize);
 
-    // ========== 3. 用拟合网格更新曲面 ==========
+    double fMin = fittedData[0][0], fMax = fittedData[0][0];
+    for (int i = 0; i < gridSize; ++i)
+        for (int j = 0; j < gridSize; ++j) {
+            fMin = qMin(fMin, fittedData[i][j]);
+            fMax = qMax(fMax, fittedData[i][j]);
+        }
+    //qDebug() << "fittedData 数值范围:" << fMin << "~" << fMax;
+
+    qDeleteAll(*m_array);
     m_array->clear();
 
-    double m_xScaleFactor = 10.0;
-    double scaledXMin = xMin * m_xScaleFactor;
-    double scaledXMax = xMax * m_xScaleFactor;
+    //qDebug() << "========== 参与绘图的3D坐标（后10个点）==========";
 
-    for (int i = 0; i < gridSize; ++i)
-    {
-        double x = fittedXCoords[i] * m_xScaleFactor;
+    for (int i = 0; i < gridSize; ++i) {
+        double x = fittedXCoords[i];
         auto* row = new QSurfaceDataRow(gridSize);
 
-        for (int j = 0; j < gridSize; ++j)
-        {
+        for (int j = 0; j < gridSize; ++j) {
             double y = fittedYCoords[j];
             double z = fittedData[i][j];
             (*row)[j].setPosition(QVector3D(x, z, y));
-        }
 
+            //if (i == gridSize - 1 && j >= gridSize - 10) {
+            //    qDebug() << "QVector3D(" << x << "," << z << "," << y << ")";
+            //}
+        }
         m_array->append(row);
     }
 
     auto zRange = calculateZRange(fittedData);
-    auto zMin = zRange.first;
-    auto zMax = zRange.second;
-
-    m_axisX->setRange(scaledXMin, scaledXMax);
-    m_axisZ->setRange(yMin, yMax);
-    m_axisY->setRange(zMin, zMax);
+    m_axisX->setRange(xMin-1, xMax);
+    m_axisZ->setRange(yMin-1, yMax);
+    m_axisY->setRange(zRange.first, zRange.second);
 
     QLinearGradient gradient;
-    gradient.setColorAt(0.00, QColor(0, 0, 255)); // 深蓝
-    gradient.setColorAt(0.17, QColor(0, 128, 255)); // 浅蓝
-    gradient.setColorAt(0.33, QColor(0, 255, 255)); // 青色
-    gradient.setColorAt(0.50, QColor(0, 255, 0)); // 绿色
-    gradient.setColorAt(0.67, QColor(255, 255, 0)); // 黄色
-    gradient.setColorAt(0.83, QColor(255, 128, 0)); // 橙色
-    gradient.setColorAt(1.00, QColor(255, 0, 0)); // 红色
+    gradient.setColorAt(0.00, QColor(0, 0, 255));
+    gradient.setColorAt(0.17, QColor(0, 128, 255));
+    gradient.setColorAt(0.33, QColor(0, 255, 255));
+    gradient.setColorAt(0.50, QColor(0, 255, 0));
+    gradient.setColorAt(0.67, QColor(255, 255, 0));
+    gradient.setColorAt(0.83, QColor(255, 128, 0));
+    gradient.setColorAt(1.00, QColor(255, 0, 0));
     m_series->setBaseGradient(gradient);
     m_series->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
 
     m_series->dataProxy()->resetArray(m_array);
     m_surface->show();
+
+    return r2;
 }
 
-
-void GraphicWidget::setAxisAutoAdjust(bool xAuto, bool yAuto, bool zAuto)
+QPair<double, double> GraphicWidget::calculateZRange(const QVector<QVector<double>>& data)
 {
-    if (!m_surface)
-    {
-        return;
-    }
+    double minZ = std::numeric_limits<double>::max();
+    double maxZ = std::numeric_limits<double>::lowest();
 
-    m_surface->axisX()->setAutoAdjustRange(xAuto);
-    m_surface->axisY()->setAutoAdjustRange(yAuto);
-    m_surface->axisZ()->setAutoAdjustRange(zAuto);
-}
-
-QPair<double, double> GraphicWidget::calculateZRange(const QVector<QVector<double>>& newData)
-{
-    double minZ = std::numeric_limits<float>::max();
-    double maxZ = std::numeric_limits<float>::min();
-
-    for (const auto& row : newData)
-    {
-        for (double z : row)
-        {
+    for (const auto& row : data) {
+        for (double z : row) {
             if (z < minZ) minZ = z;
             if (z > maxZ) maxZ = z;
         }
     }
 
-    double offset = (maxZ - minZ) * 0.05f;
+    if (std::abs(maxZ - minZ) < 1e-12) {
+        double mid = (maxZ + minZ) * 0.5;
+        return { mid - 1.0, mid + 1.0 };
+    }
+
+    double offset = (maxZ - minZ) * 0.05;
     return { minZ - offset, maxZ + offset };
 }
 
@@ -376,9 +366,7 @@ bool GraphicWidget::eventFilter(QObject* obj, QEvent* event)
 
 void GraphicWidget::clampCameraAngle()
 {
-    if (!m_surface) {
-        return;
-    }
+    if (!m_surface) return;
 
     Q3DCamera* camera = m_surface->scene()->activeCamera();
     float xRot = camera->xRotation();
@@ -387,8 +375,8 @@ void GraphicWidget::clampCameraAngle()
     bool changed = false;
     if (xRot < -180.0f) { xRot = -180.0f; changed = true; }
     if (xRot > -90.0f) { xRot = -90.0f;  changed = true; }
-    if (yRot < 0) { yRot = 0;   changed = true; }
-    if (yRot > 90) { yRot = 90;  changed = true; }
+    if (yRot < 0.0f) { yRot = 0.0f;    changed = true; }
+    if (yRot > 90.0f) { yRot = 90.0f;   changed = true; }
 
     if (changed) {
         camera->setXRotation(xRot);

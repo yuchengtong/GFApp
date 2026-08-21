@@ -28,7 +28,7 @@ public:
     explicit GraphicWidget(QWidget* parent = nullptr);
     ~GraphicWidget();
 
-    void dataUpdate(const QVector<double>& xCoords,
+    double dataUpdate(const QVector<double>& xCoords,
         const QVector<double>& yCoords,
         const QVector<QVector<double>>& newData,
         int rowCount,
@@ -39,10 +39,8 @@ public:
         double yMax);
 
     void axisTitleChange(QString xName, QString yName, QString zName);
-    void setAxisAutoAdjust(bool xAuto, bool yAuto, bool zAuto);
 
 public slots:
-    void on_angleValueChange(int type, int val);
     void on_scaleSlider_sliderMoved(int position);
 
 protected:
@@ -56,8 +54,7 @@ private:
     QPair<double, double> calculateZRange(const QVector<QVector<double>>& newData);
     void clampCameraAngle();
 
-    // ========== 新增：曲面拟合相关 ==========
-    static std::vector<double> gaussSolve(std::vector<std::vector<double>> A, std::vector<double> b);
+    static std::vector<double> gaussSolve(std::vector<std::vector<double>> A, std::vector<double> b, double lambda = 0.0);
     std::vector<double> fitQuadraticSurface(const QVector<double>& xCoords,
         const QVector<double>& yCoords,
         const QVector<QVector<double>>& newData);
