@@ -315,6 +315,11 @@ double GraphicWidget::dataUpdate(const QVector<double>& xCoords,
     m_axisZ->setRange(yMin-1, yMax);
     m_axisY->setRange(zRange.first, zRange.second);
 
+
+    m_surface->setHorizontalAspectRatio(1.0);
+
+
+
     QLinearGradient gradient;
     gradient.setColorAt(0.00, QColor(0, 0, 255));
     gradient.setColorAt(0.17, QColor(0, 128, 255));
