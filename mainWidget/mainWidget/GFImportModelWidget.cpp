@@ -459,15 +459,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_stressResultWidget);
         auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallStressResult();
+
+        double maxValue = std::max(res.propellantsMaxStress, res.insulatingheatMaxStress);
+
         auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStressNodeValues,
-            res.propellantsMinStress, res.propellantsMaxStress,
+            res.propellantsMinStress, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("跌落试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
+        createColorScale("跌落试验\n应力分析\n单位:MPa", res.propellantsMinStress, maxValue, "%.2f");
     }
     else if (itemData == "FallStrainShellResult") {
         setupResultView(m_strainResultWidget);
@@ -490,15 +493,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_strainResultWidget);
         auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallStrainResult();
+
+        double maxValue = std::max(res.propellantsMaxStrain, res.insulatingheatMaxStrain);
+
         auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStrainNodeValues,
-            res.propellantsMinStrain, res.propellantsMaxStrain,
+            res.propellantsMinStrain, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("跌落试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("跌落试验\n应变分析", res.propellantsMinStrain, maxValue, "%.6f");
     }
     else if (itemData == "FallTemperatureShellResult") {
         setupResultView(m_temperatureResultWidget);
@@ -555,15 +561,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_overpressureResultWidge);
         auto info = ModelDataManager::GetInstance()->GetFallAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFallOverpressureResult();
+
+        double maxValue = std::max(res.propellantsMaxOverpressure, res.insulatingheatMaxOverpressure);
+
         auto angle = ModelDataManager::GetInstance()->GetFallSettingInfo().angle;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
-            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            res.propellantsMinOverpressure, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("跌落试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
+        createColorScale("跌落试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, maxValue, "%.2f");
     }
     else if (itemData == "reactionDegreePropellantResult") {
         setupResultView(m_reactionDegreeResultWidget);
@@ -668,15 +677,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_shootStressResultWidget);
         auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootStressResult();
+
+        double maxValue = std::max(res.propellantsMaxStress, res.insulatingheatMaxStress);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStressNodeValues,
-            res.propellantsMinStress, res.propellantsMaxStress,
+            res.propellantsMinStress, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("枪击试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
+        createColorScale("枪击试验\n应力分析\n单位:MPa", res.propellantsMinStress, maxValue, "%.2f");
     }
     else if (itemData == "shootStrainShellResult") {
         setupResultView(m_shootStrainResultWidget);
@@ -699,15 +711,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_shootStrainResultWidget);
         auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootStrainResult();
+
+        double maxValue = std::max(res.propellantsMaxStrain, res.insulatingheatMaxStrain);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStrainNodeValues,
-            res.propellantsMinStrain, res.propellantsMaxStrain,
+            res.propellantsMinStrain, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("枪击试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("枪击试验\n应变分析", res.propellantsMinStrain, maxValue, "%.6f");
     }
     else if (itemData == "shootTempShellResult") {
         setupResultView(m_shootTemperatureResultWidget);
@@ -764,15 +779,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_shootOverpressureResultWidge);
         auto info = ModelDataManager::GetInstance()->GetShootAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetShootOverpressureResult();
+
+        double maxValue = std::max(res.propellantsMaxOverpressure, res.insulatingheatMaxOverpressure);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
-            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            res.propellantsMinOverpressure, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("枪击试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
+        createColorScale("枪击试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, maxValue, "%.2f");
     }
     else if (itemData == "shootReactionDegreePropellantResult") {
         setupResultView(m_shootReactionDegreeResultWidget);
@@ -811,15 +829,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_jetImpactStressResultWidget);
         auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactStressResult();
+
+        double maxValue = std::max(res.propellantsMaxStress, res.insulatingheatMaxStress);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStressNodeValues,
-            res.propellantsMinStress, res.propellantsMaxStress,
+            res.propellantsMinStress, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("射流冲击试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
+        createColorScale("射流冲击试验\n应力分析\n单位:MPa", res.propellantsMinStress, maxValue, "%.2f");
     }
     else if (itemData == "jetStrainShellResult") {
         setupResultView(m_jetImpactStrainResultWidget);
@@ -842,15 +863,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_jetImpactStrainResultWidget);
         auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactStrainResult();
+
+        double maxValue = std::max(res.propellantsMaxStrain, res.insulatingheatMaxStrain);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStrainNodeValues,
-            res.propellantsMinStrain, res.propellantsMaxStrain,
+            res.propellantsMinStrain, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("射流冲击试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("射流冲击试验\n应变分析", res.propellantsMinStrain, maxValue, "%.6f");
     }
     else if (itemData == "jetTempShellResult") {
         setupResultView(m_jetImpactTemperatureResultWidget);
@@ -907,15 +931,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_jetImpactOverpressureResultWidge);
         auto info = ModelDataManager::GetInstance()->GetJetImpactAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetJetImpactOverpressureResult();
+
+        double maxValue = std::max(res.propellantsMaxOverpressure, res.insulatingheatMaxOverpressure);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
-            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            res.propellantsMinOverpressure, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("射流冲击试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
+        createColorScale("射流冲击试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, maxValue, "%.2f");
     }
     else if (itemData == "jetImpactReactionDegreePropellantResult") {
         setupResultView(m_jetImpactReactionDegreeResultWidget);
@@ -954,15 +981,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_fragmentationImpactStressResultWidget);
         auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactStressResult();
+
+        double maxValue = std::max(res.propellantsMaxStress, res.insulatingheatMaxStress);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStressNodeValues,
-            res.propellantsMinStress, res.propellantsMaxStress,
+            res.propellantsMinStress, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("破片试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
+        createColorScale("破片试验\n应力分析\n单位:MPa", res.propellantsMinStress, maxValue, "%.2f");
     }
     else if (itemData == "fragmentationStrainShellResult") {
         setupResultView(m_fragmentationImpactStrainResultWidget);
@@ -985,15 +1015,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_fragmentationImpactStrainResultWidget);
         auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactStrainResult();
+
+        double maxValue = std::max(res.propellantsMaxStrain, res.insulatingheatMaxStrain);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStrainNodeValues,
-            res.propellantsMinStrain, res.propellantsMaxStrain,
+            res.propellantsMinStrain, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("破片试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("破片试验\n应变分析", res.propellantsMinStrain, maxValue, "%.6f");
     }
     else if (itemData == "fragmentationTempShellResult") {
         setupResultView(m_fragmentationImpactTemperatureResultWidget);
@@ -1050,15 +1083,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_fragmentationImpactOverpressureResultWidge);
         auto info = ModelDataManager::GetInstance()->GetFragmentationAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetFragmentationImpactOverpressureResult();
+
+        double maxValue = std::max(res.propellantsMaxOverpressure, res.insulatingheatMaxOverpressure);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
-            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            res.propellantsMinOverpressure, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("破片试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
+        createColorScale("破片试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, maxValue, "%.2f");
     }
     else if (itemData == "fragmentationImpactReactionDegreePropellantResult") {
         setupResultView(m_fragmentationImpactReactionDegreeResultWidget);
@@ -1097,15 +1133,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_explosiveBlastStressResultWidget);
         auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastStressResult();
+
+        double maxValue = std::max(res.propellantsMaxStress, res.insulatingheatMaxStress);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStressNodeValues,
-            res.propellantsMinStress, res.propellantsMaxStress,
+            res.propellantsMinStress, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("爆炸冲击波试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
+        createColorScale("爆炸冲击波试验\n应力分析\n单位:MPa", res.propellantsMinStress, maxValue, "%.2f");
     }
     else if (itemData == "explosiveStrainShellResult") {
         setupResultView(m_explosiveBlastStrainResultWidget);
@@ -1128,15 +1167,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_explosiveBlastStrainResultWidget);
         auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastStrainResult();
+
+        double maxValue = std::max(res.propellantsMaxStrain, res.insulatingheatMaxStrain);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStrainNodeValues,
-            res.propellantsMinStrain, res.propellantsMaxStrain,
+            res.propellantsMinStrain, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("爆炸冲击波试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("爆炸冲击波试验\n应变分析", res.propellantsMinStrain, maxValue, "%.6f");
     }
     else if (itemData == "explosiveTempShellResult") {
         setupResultView(m_explosiveBlastTemperatureResultWidget);
@@ -1193,15 +1235,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_explosiveBlastOverpressureResultWidge);
         auto info = ModelDataManager::GetInstance()->GetExplosiveBlastAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetExplosiveBlastOverpressureResult();
+
+        double maxValue = std::max(res.propellantsMaxOverpressure, res.insulatingheatMaxOverpressure);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
-            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            res.propellantsMinOverpressure, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("爆炸冲击波试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
+        createColorScale("爆炸冲击波试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, maxValue, "%.2f");
     }
     else if (itemData == "explosiveBlastReactionDegreePropellantResult") {
         setupResultView(m_explosiveBlastReactionDegreeResultWidget);
@@ -1240,15 +1285,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_sacrificeExplosionStressResultWidget);
         auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionStressResult();
+
+        double maxValue = std::max(res.propellantsMaxStress, res.insulatingheatMaxStress);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStressNodeValues,
-            res.propellantsMinStress, res.propellantsMaxStress,
+            res.propellantsMinStress, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("殉爆试验\n应力分析\n单位:MPa", res.propellantsMinStress, res.propellantsMaxStress, "%.2f");
+        createColorScale("殉爆试验\n应力分析\n单位:MPa", res.propellantsMinStress, maxValue, "%.2f");
     }
     else if (itemData == "sacrificeStrainShellResult") {
         setupResultView(m_sacrificeExplosionStrainResultWidget);
@@ -1271,15 +1319,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_sacrificeExplosionStrainResultWidget);
         auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionStrainResult();
+
+        double maxValue = std::max(res.propellantsMaxStrain, res.insulatingheatMaxStrain);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantStrainNodeValues,
-            res.propellantsMinStrain, res.propellantsMaxStrain,
+            res.propellantsMinStrain, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("殉爆试验\n应变分析", res.propellantsMinStrain, res.propellantsMaxStrain, "%.6f");
+        createColorScale("殉爆试验\n应变分析", res.propellantsMinStrain, maxValue, "%.6f");
     }
     else if (itemData == "sacrificeTempShellResult") {
         setupResultView(m_sacrificeExplosionTemperatureResultWidget);
@@ -1336,15 +1387,18 @@ void GFImportModelWidget::onTreeItemClicked(const QString& itemData)
         setupResultView(m_sacrificeExplosionOverpressureResultWidge);
         auto info = ModelDataManager::GetInstance()->GetSacrificeExplosionAnalysisResultInfo();
         auto res = ModelDataManager::GetInstance()->GetSacrificeExplosionOverpressureResult();
+
+        double maxValue = std::max(res.propellantsMaxOverpressure, res.insulatingheatMaxOverpressure);
+
         auto angle = 90;
         Handle(MeshVS_Mesh) propellantMesh;
         buildPropellantOnlyMesh(info.propellantOverpressureNodeValues,
-            res.propellantsMinOverpressure, res.propellantsMaxOverpressure,
+            res.propellantsMinOverpressure, maxValue,
             angle, propellantMesh);
         context->EraseAll(true);
         context->Display(propellantMesh, Standard_True);
         occView->fitAll();
-        createColorScale("殉爆试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, res.propellantsMaxOverpressure, "%.2f");
+        createColorScale("殉爆试验\n超压分析\n单位:MPa", res.propellantsMinOverpressure, maxValue, "%.2f");
     }
     else if (itemData == "sacrificeExplosionDegreePropellantResult") {
         setupResultView(m_sacrificeExplosionReactionDegreeResultWidget);
