@@ -1218,7 +1218,7 @@ void IntelligentAnalyWidget::updateGraphicData(QString xName, QString yName, QSt
 		m_grapgicComboBox->setCurrentIndex(3);
 	}
 	QMap<QString, QString> unitmMap;
-	unitmMap.insert("壳体厚度", "壳体厚度[mm*10]");
+	unitmMap.insert("壳体厚度", "壳体厚度[mm]");
 	unitmMap.insert("跌落高度", "跌落高度[m]");
 	unitmMap.insert("快烤平均温度", "快烤平均温度[℃]");
 	unitmMap.insert("慢烤平均温度", "烘箱终止温度[℃]");
