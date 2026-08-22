@@ -779,11 +779,11 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	newData.append(data5);
 
 	QVector<double> xCoords;
-	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble());
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
@@ -793,7 +793,7 @@ void IntelligentAnalyWidget::onTreeItemClicked(const QString& itemData)
 	yCoords.append(m_tableWidget->item(21, 2)->text().toDouble());
 
 	updateGraphicData("跌落高度", yName, "壳体最高温度", xCoords, yCoords, newData,
-		m_tableWidget->item(1, 1)->text().toDouble() * 10, m_tableWidget->item(5, 1)->text().toDouble() * 10,
+		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble() ,
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 
 }
@@ -870,11 +870,11 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 
 
 	QVector<double> xCoords;
-	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble() * 10);
-	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble() * 10);
+	xCoords.append(m_tableWidget->item(1, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(2, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(3, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(4, 1)->text().toDouble());
+	xCoords.append(m_tableWidget->item(5, 1)->text().toDouble());
 
 	QVector<double> yCoords;
 	yCoords.append(m_tableWidget->item(1, 2)->text().toDouble());
@@ -885,7 +885,7 @@ void IntelligentAnalyWidget::onComboBoxIndexGraphicChanged(int index)
 
 
 	updateGraphicData("壳体厚度", "", zName, xCoords, yCoords, newData,
-		m_tableWidget->item(1, 1)->text().toDouble() * 10, m_tableWidget->item(5, 1)->text().toDouble() * 10,
+		m_tableWidget->item(1, 1)->text().toDouble(), m_tableWidget->item(5, 1)->text().toDouble() ,
 		m_tableWidget->item(1, 2)->text().toDouble(), m_tableWidget->item(25, 2)->text().toDouble());
 }
 

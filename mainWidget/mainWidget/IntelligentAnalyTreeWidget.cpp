@@ -782,11 +782,11 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										graphicData3.append(fallTableWidget->item(25, 5)->text().toDouble());
 										newData.append(graphicData3);
 										QVector<double> xCoords;
-										xCoords.append(fallTableWidget->item(1, 1)->text().toDouble() * 10);
-										xCoords.append(fallTableWidget->item(2, 1)->text().toDouble() * 10);
-										xCoords.append(fallTableWidget->item(3, 1)->text().toDouble() * 10);
-										xCoords.append(fallTableWidget->item(4, 1)->text().toDouble() * 10);
-										xCoords.append(fallTableWidget->item(5, 1)->text().toDouble() * 10);
+										xCoords.append(fallTableWidget->item(1, 1)->text().toDouble());
+										xCoords.append(fallTableWidget->item(2, 1)->text().toDouble());
+										xCoords.append(fallTableWidget->item(3, 1)->text().toDouble());
+										xCoords.append(fallTableWidget->item(4, 1)->text().toDouble());
+										xCoords.append(fallTableWidget->item(5, 1)->text().toDouble());
 
 										QVector<double> yCoords;
 										yCoords.append(fallTableWidget->item(1, 2)->text().toDouble());
@@ -797,7 +797,7 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 
 
 										paParent->updateGraphicData("壳体厚度", "跌落高度", "壳体最高温度", xCoords, yCoords, newData,
-											fallTableWidget->item(1, 1)->text().toDouble() * 10, fallTableWidget->item(5, 1)->text().toDouble()*10,
+											fallTableWidget->item(1, 1)->text().toDouble(), fallTableWidget->item(5, 1)->text().toDouble(),
 											fallTableWidget->item(1, 2)->text().toDouble(), fallTableWidget->item(25, 2)->text().toDouble());
 
 									}
