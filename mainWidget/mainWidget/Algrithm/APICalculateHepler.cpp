@@ -1221,11 +1221,60 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 			steelStressResults.push_back(res);
 		}
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，撞击速度=620的情况
+	double tempL = 1.0;	// 厚度
+	double tempM = 620 * 1000;//撞击速度
+	std::vector<double> tempSteelStressResults;
+	std::vector<double> tempPropellantStressResults;
+
+	for (int i = 0; i < stressCalculation.size(); ++i)
+	{
+		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res * 0.5;
+		res = res + res * difference * 0.1;
+		if (res > limitValue)
+		{
+			res = limitValue;
+		}
+		if (!m_steelArray.contains(i + 1))
+		{
+			res = translate(res) * 2.32;
+			tempPropellantStressResults.push_back(res);
+		}
+		else
+		{
+			tempSteelStressResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelStressMaxValue = *std::max_element(tempSteelStressResults.begin(), tempSteelStressResults.end());
+	double tempCalPropellantStressMaxValue = *std::max_element(tempPropellantStressResults.begin(), tempPropellantStressResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	double calSteelStressMaxValue = tempCalSteelStressMaxValue * (M / tempM * pow(L, -0.6));
+	double calPropellantStressMaxValue = tempCalPropellantStressMaxValue * (M / tempM * pow(L, -0.5));
+	if (calSteelStressMaxValue > limitValue)
+	{
+		calSteelStressMaxValue = limitValue;
+	}
+	if (calPropellantStressMaxValue > limitValue)
+	{
+		calPropellantStressMaxValue = limitValue;
+	}
+
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
-	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+	//double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
 
 	double calPropellantStressMinValue = *std::min_element(propellantStressResults.begin(), propellantStressResults.end());
-	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+	//double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
 
 	// 更新结果
 	double shellStressMaxValue = calSteelStressMaxValue; // 发动机壳体最大应力
@@ -1304,6 +1353,7 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 	for (int i = 0; i < temperatureCalculation.size(); ++i)
 	{
 		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
+		res = res * 0.41;
 		if (res < 25)
 		{
 			res = 25;
@@ -1317,13 +1367,56 @@ bool APICalculateHepler::CalculateShootingAnalysisResult(OccView* occView, std::
 			steelTemperatureResults.push_back(res);
 		}
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，撞击速度=620的情况
+	std::vector<double> tempSteelTemperatureResults;
+	std::vector<double> tempPropellantTemperatureResults;
+	for (int i = 0; i < temperatureCalculation.size(); ++i)
+	{
+		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		res = res * 0.41;
+		if (res < 25)
+		{
+			res = 25;
+		}
+		if (!m_steelArray.contains(i + 1))
+		{
+			tempPropellantTemperatureResults.push_back(res);
+		}
+		else
+		{
+			tempSteelTemperatureResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelTemperatureMaxValue = *std::max_element(tempSteelTemperatureResults.begin(), tempSteelTemperatureResults.end());
+	/*tempPropellantTemperatureResults.erase(
+		std::remove_if(tempPropellantTemperatureResults.begin(), tempPropellantTemperatureResults.end(),
+			[tempCalSteelTemperatureMaxValue](double value) { return value > tempCalSteelTemperatureMaxValue; }),
+		tempPropellantTemperatureResults.end());*/
+	double tempCalPropellantTemperatureMaxValue = *std::max_element(tempPropellantTemperatureResults.begin(), tempPropellantTemperatureResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 	propellantTemperatureResults.push_back(25);
 	steelTemperatureResults.push_back(25);
+
+
+	// 温度
+	double changeSteelTemp = tempCalSteelTemperatureMaxValue - 25;
+	double calSteelTemperatureMaxValue = changeSteelTemp * (pow((M / tempM), 2) * pow(L, -1)) + 25;
+
+	double changePropellantTemp = tempCalPropellantTemperatureMaxValue - 25;
+	double calPropellantTemperatureMaxValue = changePropellantTemp * (pow((M / tempM), 2) * pow(L, -0.8)) + 25;
+
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+	//double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	//double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
@@ -1560,11 +1653,61 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 			steelStressResults.push_back(res);
 		}
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，聚能装药口径=30的情况
+	double tempL = 1.0;	// 厚度
+	double tempM = 30;//聚能装药口径
+	std::vector<double> tempSteelStressResults;
+	std::vector<double> tempPropellantStressResults;
+
+
+	for (int i = 0; i < stressCalculation.size(); ++i)
+	{
+		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res * 0.5;
+		res = res + res * difference * 0.1;
+		if (res > limitValue)
+		{
+			res = limitValue;
+		}
+		if (!m_steelArray.contains(i + 1))
+		{
+			res = translate(res) * 2.17;
+			tempPropellantStressResults.push_back(res);
+		}
+		else
+		{
+			tempSteelStressResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelStressMaxValue = *std::max_element(tempSteelStressResults.begin(), tempSteelStressResults.end());
+	double tempCalPropellantStressMaxValue = *std::max_element(tempPropellantStressResults.begin(), tempPropellantStressResults.end());
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	// 先随高度，再随壁厚
+	double calSteelStressMaxValue = tempCalSteelStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.5));
+	double calPropellantStressMaxValue = tempCalPropellantStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.4));
+	if (calSteelStressMaxValue > limitValue)
+	{
+		calSteelStressMaxValue = limitValue;
+	}
+	if (calPropellantStressMaxValue > limitValue)
+	{
+		calPropellantStressMaxValue = limitValue;
+	}
+
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
-	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+	//double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
 
 	double calPropellantStressMinValue = *std::min_element(propellantStressResults.begin(), propellantStressResults.end());
-	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+	//double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
 
 	// 更新结果
 	double shellStressMaxValue = calSteelStressMaxValue; // 发动机壳体最大应力
@@ -1643,7 +1786,7 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 	for (int i = 0; i < temperatureCalculation.size(); ++i)
 	{
 		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-		res = res + 10;
+		res = res * 2.41;
 		if (res < 25)
 		{
 			res = 25;
@@ -1657,11 +1800,46 @@ bool APICalculateHepler::CalculateJetImpactingAnalysisResult(OccView* occView, s
 			steelTemperatureResults.push_back(res);
 		}
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，聚能装药口径=30的情况
+	std::vector<double> tempSteelTemperatureResults;
+	std::vector<double> tempPropellantTemperatureResults;
+
+	for (int i = 0; i < temperatureCalculation.size(); ++i)
+	{
+		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		res = res * 2.43;
+		if (res < 25)
+		{
+			res = 25;
+		}
+		if (!m_steelArray.contains(i + 1))
+		{
+			tempPropellantTemperatureResults.push_back(res);
+		}
+		else
+		{
+			tempSteelTemperatureResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelTemperatureMaxValue = *std::max_element(tempSteelTemperatureResults.begin(), tempSteelTemperatureResults.end());
+	double tempCalPropellantTemperatureMaxValue = *std::max_element(tempPropellantTemperatureResults.begin(), tempPropellantTemperatureResults.end());
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	double changeSteelTemp = tempCalSteelTemperatureMaxValue - 25;
+	double calSteelTemperatureMaxValue = changeSteelTemp * ((M / tempM) * pow(L, -0.85)) + 25;
+
+	double changePropellantTemp = tempCalPropellantTemperatureMaxValue - 25;
+	double calPropellantTemperatureMaxValue = changePropellantTemp * ((M / tempM) * pow(L, -0.7)) + 25;
+
+
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+	//double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	//double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
@@ -1901,11 +2079,60 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 			steelStressResults.push_back(res);
 		}
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，撞击速度=1630的情况
+	double tempL = 1.0;	// 厚度
+	double tempM = 1630 * 1000;//撞击速度
+	std::vector<double> tempSteelStressResults;
+	std::vector<double> tempPropellantStressResults;
+
+	for (int i = 0; i < stressCalculation.size(); ++i)
+	{
+		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res * 0.5;
+		res = res + res * difference * 0.1;
+		if (res > limitValue)
+		{
+			res = limitValue;
+		}
+		if (!m_steelArray.contains(i + 1))
+		{
+			res = translate(res);
+			res = res * 2.57;
+			tempPropellantStressResults.push_back(res);
+		}
+		else
+		{
+			tempSteelStressResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelStressMaxValue = *std::max_element(tempSteelStressResults.begin(), tempSteelStressResults.end());
+	double tempCalPropellantStressMaxValue = *std::max_element(tempPropellantStressResults.begin(), tempPropellantStressResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	double calSteelStressMaxValue = tempCalSteelStressMaxValue * (M / tempM * pow(L, -0.6));
+	double calPropellantStressMaxValue = tempCalPropellantStressMaxValue * (M / tempM * pow(L, -0.5));
+	if (calSteelStressMaxValue > limitValue)
+	{
+		calSteelStressMaxValue = limitValue;
+	}
+	if (calPropellantStressMaxValue > limitValue)
+	{
+		calPropellantStressMaxValue = limitValue;
+	}
+
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
-	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+	//double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
 
 	double calPropellantStressMinValue = *std::min_element(propellantStressResults.begin(), propellantStressResults.end());
-	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+	//double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
 
 	// 更新结果
 	double shellStressMaxValue = calSteelStressMaxValue; // 发动机壳体最大应力
@@ -1998,11 +2225,47 @@ bool APICalculateHepler::CalculateFragmentationAnalysisResult(OccView* occView, 
 			steelTemperatureResults.push_back(res);
 		}
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，撞击速度=1630的情况
+	std::vector<double> tempSteelTemperatureResults;
+	std::vector<double> tempPropellantTemperatureResults;
+	for (int i = 0; i < temperatureCalculation.size(); ++i)
+	{
+		double res = calculate(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res + 25;
+		if (!m_steelArray.contains(i + 1))
+		{
+			tempPropellantTemperatureResults.push_back(res);
+		}
+		else
+		{
+			tempSteelTemperatureResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelTemperatureMaxValue = *std::max_element(tempSteelTemperatureResults.begin(), tempSteelTemperatureResults.end());
+	double tempCalPropellantTemperatureMaxValue = *std::max_element(tempPropellantTemperatureResults.begin(), tempPropellantTemperatureResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 温度
+	double changeSteelTemp = tempCalSteelTemperatureMaxValue - 25;
+	double calSteelTemperatureMaxValue = changeSteelTemp * (pow((M / tempM), 2) * pow(L, -1)) + 25;
+
+	double changePropellantTemp = tempCalPropellantTemperatureMaxValue - 25;
+	double calPropellantTemperatureMaxValue = changePropellantTemp * (pow((M / tempM), 2) * pow(L, -0.8)) + 25;
+
+
+
 	double calSteelTemperatureMinValue = *std::min_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-	double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+	//double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
 
 	double calPropellantTemperatureMinValue = *std::min_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-	double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+	//double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
 
 	// 更新结果
 	double shellTemperatureMaxValue = calSteelTemperatureMaxValue; // 发动机壳体最大温度
@@ -2184,6 +2447,7 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	auto calInfo = ModelDataManager::GetInstance()->GetCalculationPropertyInfo();
 	auto explosiveBlastSettingInfo = ModelDataManager::GetInstance()->GetExplosiveBlastSettingInfo();
 	auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto insulatingheatPropertyInfo = ModelDataManager::GetInstance()->GetInsulatingheatPropertyInfo();
 
 	auto A = 1;
 	auto B = steelInfo.density;
@@ -2247,11 +2511,71 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 		}
 		
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 计算厚度=1mm，TNT当量=30的情况
+	// 绝热层导热系数
+	double limitTemperature = 77.4758 + 0.1 * (1 - insulatingheatPropertyInfo.specificHeatCapacity / insulatingheatPropertyInfo.thermalConductivity / 1100 * 10);
+
+	// 计算厚度=1mm，TNT当量=30的情况
+	double tempL = 1.0;//厚
+	double tempM = 30 / 2;//TNT当量
+
+	std::vector<double> tempSteelStressResults;
+	std::vector<double> tempPropellantStressResults;
+	for (int i = 0; i < stressCalculation.size(); ++i)
+	{
+		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res * 0.5;
+		res = res + res * difference * 0.1;
+		if (res > limitValue)
+		{
+			res = limitValue;
+		}
+		if (res < 4000)
+		{
+			if (!m_steelArray.contains(i + 1))
+			{
+				res = translate(res) * 6.12;
+				tempPropellantStressResults.push_back(res);
+			}
+			else
+			{
+				tempSteelStressResults.push_back(res);
+			}
+		}
+		else
+		{
+			tempPropellantStressResults.push_back(0);
+			tempSteelStressResults.push_back(0);
+		}
+	}
+
+	double tempCalSteelStressMaxValue = *std::max_element(tempSteelStressResults.begin(), tempSteelStressResults.end());
+	double tempCalPropellantStressMaxValue = *std::max_element(tempPropellantStressResults.begin(), tempPropellantStressResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	double calSteelStressMaxValue = tempCalSteelStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.5));
+	double calPropellantStressMaxValue = tempCalPropellantStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.4));
+	if (calSteelStressMaxValue > limitValue)
+	{
+		calSteelStressMaxValue = limitValue;
+	}
+	if (calPropellantStressMaxValue > limitValue)
+	{
+		calPropellantStressMaxValue = limitValue;
+	}
+
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
-	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+	//double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
 
 	double calPropellantStressMinValue = *std::min_element(propellantStressResults.begin(), propellantStressResults.end());
-	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+	//double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
 
 	// 更新结果
 	double shellStressMaxValue = calSteelStressMaxValue; // 发动机壳体最大应力
@@ -2319,8 +2643,21 @@ bool APICalculateHepler::CalculateExplosiveBlastAnalysisResult(OccView* occView,
 	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetExplosiveBlastStrainResult(strainResult);
 
+
+	// 温度
+	double calSteelTemperatureMaxValue = limitTemperature;
+	double calPropellantTemperatureMaxValue = limitTemperature * 0.92;
+
+	double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+	double tempCalSteelTemperatureMaxValue = changeSteelTemp * ((M / tempM) * pow(L, -0.85)) + 25;
+
+	double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+	double tempCalPropellantTemperatureMaxValue = changePropellantTemp * ((M / tempM) * pow(L, -0.7)) + 25;
+
 	// 温度分析结果
 	TemperatureResult temperatureResult;
+	temperatureResult.metalsMaxTemperature = tempCalSteelTemperatureMaxValue;
+	temperatureResult.propellantsMaxTemperature = tempCalPropellantTemperatureMaxValue;
 	temperatureResult.metalsAvgTemperature = temperatureResult.metalsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.metalsMaxTemperature - temperatureResult.metalsMinTemperature);
 	temperatureResult.mpropellantsAvgTemperature = temperatureResult.propellantsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.propellantsMaxTemperature - temperatureResult.propellantsMinTemperature);
 	
@@ -2486,6 +2823,7 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	auto calInfo = ModelDataManager::GetInstance()->GetCalculationPropertyInfo();
 	auto sacrificeExplosionInfo = ModelDataManager::GetInstance()->GetSacrificeExplosionSettingInfo();
 	auto modelGeomInfo = ModelDataManager::GetInstance()->GetModelGeometryInfo();
+	auto insulatingheatPropertyInfo = ModelDataManager::GetInstance()->GetInsulatingheatPropertyInfo();
 
 	auto A = 1;
 	auto B = steelInfo.density;
@@ -2541,11 +2879,63 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 			steelStressResults.push_back(res);
 		}
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 绝热层导热系数
+	double limitTemperature = 94.3635 + 0.1 * (1 - insulatingheatPropertyInfo.specificHeatCapacity / insulatingheatPropertyInfo.thermalConductivity / 1100 * 10);
+
+	// 计算厚度=1mm，距离=100的情况
+	double tempL = 1.0;//厚
+	double tempM = 100;//距离
+
+	std::vector<double> tempSteelStressResults;
+	std::vector<double> tempPropellantStressResults;
+	for (int i = 0; i < stressCalculation.size(); ++i)
+	{
+		double res = calculate(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+		if (res < 0)
+		{
+			res = 0;
+		}
+		res = res * 0.1;
+		res = res + res * difference * 0.1;
+		if (res > limitValue)
+		{
+			res = limitValue;
+		}
+		if (!m_steelArray.contains(i + 1))
+		{
+			res = translate(res);
+			res = res * 9.13;
+			tempPropellantStressResults.push_back(res);
+		}
+		else
+		{
+			tempSteelStressResults.push_back(res);
+		}
+	}
+
+	double tempCalSteelStressMaxValue = *std::max_element(tempSteelStressResults.begin(), tempSteelStressResults.end());
+	double tempCalPropellantStressMaxValue = *std::max_element(tempPropellantStressResults.begin(), tempPropellantStressResults.end());
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	double calSteelStressMaxValue = tempCalSteelStressMaxValue * (pow(tempM / M, 0.5) + pow(L, -0.5));
+	double calPropellantStressMaxValue = tempCalPropellantStressMaxValue * (pow(tempM / M, 0.5) + pow(L, -0.4));
+	if (calSteelStressMaxValue > limitValue)
+	{
+		calSteelStressMaxValue = limitValue;
+	}
+	if (calPropellantStressMaxValue > limitValue)
+	{
+		calPropellantStressMaxValue = limitValue;
+	}
+
 	double calSteelStressMinValue = *std::min_element(steelStressResults.begin(), steelStressResults.end());
-	double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+	//double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
 
 	double calPropellantStressMinValue = *std::min_element(propellantStressResults.begin(), propellantStressResults.end());
-	double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+	//double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
 
 	// 更新结果
 	double shellStressMaxValue = calSteelStressMaxValue; // 发动机壳体最大应力
@@ -2613,8 +3003,22 @@ bool APICalculateHepler::CalculateSacrificeExplosionAnalysisResult(OccView* occV
 	strainResult.propellantScreenFlag = true;
 	ModelDataManager::GetInstance()->SetSacrificeExplosionStrainResult(strainResult);
 
+
+
+	// 温度
+	double calSteelTemperatureMaxValue = limitTemperature;
+	double calPropellantTemperatureMaxValue = limitTemperature * 0.83;
+
+	double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+	double tempCalSteelTemperatureMaxValue = changeSteelTemp * ((tempM / M) * pow(L, -0.85)) + 25;
+
+	double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+	double tempCalPropellantTemperatureMaxValue = changePropellantTemp * ((tempM / M) * pow(L, -0.7)) + 25;
+
 	// 温度分析结果
 	TemperatureResult temperatureResult;
+	temperatureResult.metalsMaxTemperature = tempCalSteelTemperatureMaxValue;
+	temperatureResult.propellantsMaxTemperature = tempCalPropellantTemperatureMaxValue;
 	temperatureResult.metalsAvgTemperature = temperatureResult.metalsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.metalsMaxTemperature - temperatureResult.metalsMinTemperature);
 	temperatureResult.mpropellantsAvgTemperature = temperatureResult.propellantsMinTemperature + QRandomGenerator::global()->generateDouble() * (temperatureResult.propellantsMaxTemperature - temperatureResult.propellantsMinTemperature);
 

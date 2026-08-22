@@ -94,7 +94,7 @@ void IntelligentSacrificeExplosionPropertyWidget::initWidget()
 
 	}
 
-	QStringList valueLabels = { " ","ัณฑฌสิั้","1", "3", "5", "80","100","5" };
+	QStringList valueLabels = { " ","ัณฑฌสิั้","1", "3", "5", "100","1000","5" };
 	for (int row = 0; row < valueLabels.size(); ++row) {
 		if (row != 0)
 		{

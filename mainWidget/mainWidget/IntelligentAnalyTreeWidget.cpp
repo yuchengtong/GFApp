@@ -82,7 +82,7 @@ double translateStress(double x)
 	// 封顶保底
 	if (y < 0.0) y = 0.0;
 	//if (y > 20.0) y = 20.0;
-	return y;
+	return y * 6.2;
 }
 
 
@@ -961,74 +961,99 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.shootStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.shootTemperatureCalculation;
+
+										// 计算厚度=1mm，撞击速度=620的情况
+										double tempL = 1.0;	// 厚度
+										double tempM = 620 * 1000;//撞击速度
+
+										std::vector<double> steelStressResults;
+										std::vector<double> propellantStressResults;
+
+										for (int i = 0; i < stressCalculation.size(); ++i)
+										{
+											double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res * 0.5;
+											res = res + res * difference * 0.1;
+											if (res > limitValue)
+											{
+												res = limitValue;
+											}
+											if (!m_array.contains(i + 1))
+											{
+												res = translateStress(res) * 2.32;
+												propellantStressResults.push_back(res);
+											}
+											else
+											{
+												steelStressResults.push_back(res);
+											}
+										}
+										double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+									
+
+										// 温度
+										std::vector<double> steelTemperatureResults;
+										std::vector<double> propellantTemperatureResults;
+										for (int i = 0; i < temperatureCalculation.size(); ++i)
+										{
+											double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											res = res * 0.41;
+											if (res < 25)
+											{
+												res = 25;
+											}
+											if (!m_array.contains(i + 1))
+											{
+												propellantTemperatureResults.push_back(res);
+											}
+											else
+											{
+												steelTemperatureResults.push_back(res);
+											}
+										}
+										double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+										/*propellantTemperatureResults.erase(
+											std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+												[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+											propellantTemperatureResults.end());*/
+										double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+
+
 										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
-											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
+											L = tableWidget->item(i, 1)->text().toDouble();	// 厚度
 											M = tableWidget->item(i, 2)->text().toDouble() * 1000;//撞击速度
 
-											std::vector<double> steelStressResults;
-											std::vector<double> propellantStressResults;
-
-											//std::vector<double> stressResults;
-											//stressResults.reserve(stressCalculation.size());
-											for (int i = 0; i < stressCalculation.size(); ++i)
+											double tempCalSteelStressMaxValue = calSteelStressMaxValue * (M/tempM * pow(L, -0.6));
+											double tempCalPropellantStressMaxValue = calPropellantStressMaxValue * (M / tempM * pow(L, -0.5));
+											if (tempCalSteelStressMaxValue > limitValue)
 											{
-												double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res * 0.5;
-												res = res + res * difference * 0.1;
-												if (res > limitValue)
-												{
-													res = limitValue;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													res = translateStress(res) * 2.32;
-													propellantStressResults.push_back(res);
-												}
-												else
-												{
-													steelStressResults.push_back(res);
-												}
+												tempCalSteelStressMaxValue = limitValue;
 											}
-											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
-											double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+											if (tempCalPropellantStressMaxValue > limitValue)
+											{
+												tempCalPropellantStressMaxValue = limitValue;
+											}
 
-											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
-											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
+											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(tempCalSteelStressMaxValue)));
+											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(tempCalPropellantStressMaxValue)));
 
 											// 温度
-											std::vector<double> steelTemperatureResults;
-											std::vector<double> propellantTemperatureResults;
-											for (int i = 0; i < temperatureCalculation.size(); ++i)
-											{
-												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 25)
-												{
-													res = 25;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													propellantTemperatureResults.push_back(res);
-												}
-												else
-												{
-													steelTemperatureResults.push_back(res);
-												}
-											}
-											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-											propellantTemperatureResults.erase(
-												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
-													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
-												propellantTemperatureResults.end());
-											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+											double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+											double tempCalSteelTemperatureMaxValue = changeSteelTemp * (pow((M/ tempM),2) * pow(L, -1)) + 25;
 
-											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
-											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
+											double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+											double tempCalPropellantTemperatureMaxValue = changePropellantTemp * (pow((M / tempM), 2) * pow(L, -0.8)) + 25;
+
+											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(tempCalSteelTemperatureMaxValue)));
+											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(tempCalPropellantTemperatureMaxValue)));
 										}
 									}
 									else if (data == "JetImpactIntelligentAnaly" && Qt::Checked == check)
@@ -1057,71 +1082,99 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.jetImpactStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.jetImpactTemperatureCalculation;
+
+										// 计算厚度=1mm，聚能装药口径=30的情况
+										double tempL = 1.0;//厚
+										double tempM = 30;//聚能装药口径
+
+										std::vector<double> steelStressResults;
+										std::vector<double> propellantStressResults;
+										for (int i = 0; i < stressCalculation.size(); ++i)
+										{
+											double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res * 0.5;
+											res = res + res * difference * 0.1;
+											if (res > limitValue)
+											{
+												res = limitValue;
+											}
+											if (!m_array.contains(i + 1))
+											{
+												res = translateStress(res) * 2.17;
+												propellantStressResults.push_back(res);
+											}
+											else
+											{
+												steelStressResults.push_back(res);
+											}
+										}
+										double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+
+										// 温度
+										std::vector<double> steelTemperatureResults;
+										std::vector<double> propellantTemperatureResults;
+										for (int i = 0; i < temperatureCalculation.size(); ++i)
+										{
+											double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											res = res * 2.43;
+											if (res < 25)
+											{
+												res = 25;
+											}
+											if (!m_array.contains(i + 1))
+											{
+												propellantTemperatureResults.push_back(res);
+											}
+											else
+											{
+												steelTemperatureResults.push_back(res);
+											}
+										}
+										double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+										/*propellantTemperatureResults.erase(
+											std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+												[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+											propellantTemperatureResults.end());*/
+										double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+
+
+
 										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
-											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
+											L = tableWidget->item(i, 1)->text().toDouble();	// 厚度
 											M = tableWidget->item(i, 2)->text().toDouble();//聚能装药口径
 
-											std::vector<double> steelStressResults;
-											std::vector<double> propellantStressResults;
-											for (int i = 0; i < stressCalculation.size(); ++i)
+											
+											// 先随高度，再随壁厚
+											double tempCalSteelStressMaxValue = calSteelStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.5));
+											double tempCalPropellantStressMaxValue = calPropellantStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.4));
+											if (tempCalSteelStressMaxValue > limitValue)
 											{
-												double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res * 0.5;
-												res = res + res * difference * 0.1;
-												if (res > limitValue)
-												{
-													res = limitValue;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													res = translateStress(res) * 2.17;
-													propellantStressResults.push_back(res);
-												}
-												else
-												{
-													steelStressResults.push_back(res);
-												}
+												tempCalSteelStressMaxValue = limitValue;
 											}
-											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
-											double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+											if (tempCalPropellantStressMaxValue > limitValue)
+											{
+												tempCalPropellantStressMaxValue = limitValue;
+											}
 
-											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
-											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
+											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(tempCalSteelStressMaxValue)));
+											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(tempCalPropellantStressMaxValue)));
 
 											// 温度
-											std::vector<double> steelTemperatureResults;
-											std::vector<double> propellantTemperatureResults;
-											for (int i = 0; i < temperatureCalculation.size(); ++i)
-											{
-												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												res = res + 10;
-												if (res < 25)
-												{
-													res = 25;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													propellantTemperatureResults.push_back(res);
-												}
-												else
-												{
-													steelTemperatureResults.push_back(res);
-												}
-											}
-											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-											propellantTemperatureResults.erase(
-												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
-													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
-												propellantTemperatureResults.end());
-											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
-											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
+											double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+											double tempCalSteelTemperatureMaxValue = changeSteelTemp * ((M / tempM) * pow(L, -0.85)) + 25;
+
+											double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+											double tempCalPropellantTemperatureMaxValue = changePropellantTemp * ((M / tempM) * pow(L, -0.7)) + 25;
+											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(tempCalSteelTemperatureMaxValue)));
+											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(tempCalPropellantTemperatureMaxValue)));
 										}
 									}
 									else if (data == "FragmentationImpactIntelligentAnaly" && Qt::Checked == check)
@@ -1150,76 +1203,102 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.fragmentationImpactStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.fragmentationImpactTemperatureCalculation;
+
+
+										// 计算厚度=1mm，撞击速度=1630的情况
+										double tempL = 1.0;//厚
+										double tempM = 1630 * 1000;//撞击速度
+
+										std::vector<double> steelStressResults;
+										std::vector<double> propellantStressResults;
+										for (int i = 0; i < stressCalculation.size(); ++i)
+										{
+											double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res * 0.5;
+											res = res + res * difference * 0.1;
+											if (res > limitValue)
+											{
+												res = limitValue;
+											}
+											if (!m_array.contains(i + 1))
+											{
+												res = translateStress(res) * 2.57;
+												propellantStressResults.push_back(res);
+											}
+											else
+											{
+												steelStressResults.push_back(res);
+											}
+										}
+										double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+										
+
+										// 温度
+										std::vector<double> steelTemperatureResults;
+										std::vector<double> propellantTemperatureResults;
+										for (int i = 0; i < temperatureCalculation.size(); ++i)
+										{
+											double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res + 25;
+											if (!m_array.contains(i + 1))
+											{
+												propellantTemperatureResults.push_back(res);
+											}
+											else
+											{
+												steelTemperatureResults.push_back(res);
+											}
+										}
+										double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
+										/*propellantTemperatureResults.erase(
+											std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
+												[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
+											propellantTemperatureResults.end());*/
+										double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
+										
+										
+
+
 										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
-											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
+											L = tableWidget->item(i, 1)->text().toDouble();	// 厚度
 											M = tableWidget->item(i, 2)->text().toDouble() * 1000;//撞击速度
 
-											std::vector<double> steelStressResults;
-											std::vector<double> propellantStressResults;
-
-											for (int i = 0; i < stressCalculation.size(); ++i)
+											// 先随高度，再随壁厚
+											double tempCalSteelStressMaxValue = calSteelStressMaxValue * (M / tempM * pow(L, -0.6));
+											double tempCalPropellantStressMaxValue = calPropellantStressMaxValue * (M / tempM * pow(L, -0.5));
+											if (tempCalSteelStressMaxValue > limitValue)
 											{
-												double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res * 0.5;
-												res = res + res * difference * 0.1;
-												if (res > limitValue)
-												{
-													res = limitValue;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													res = translateStress(res) * 2.47;
-													propellantStressResults.push_back(res);
-												}
-												else
-												{
-													steelStressResults.push_back(res);
-												}
+												tempCalSteelStressMaxValue = limitValue;
 											}
-											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
-											double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
-
-											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
-											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
-
-											// 温度
-											std::vector<double> steelTemperatureResults;
-											std::vector<double> propellantTemperatureResults;
-											for (int i = 0; i < temperatureCalculation.size(); ++i)
+											if (tempCalPropellantStressMaxValue > limitValue)
 											{
-												double res = calculateForm(temperatureCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res + 25;
-												if (!m_array.contains(i + 1))
-												{
-													propellantTemperatureResults.push_back(res);
-												}
-												else
-												{
-													steelTemperatureResults.push_back(res);
-												}
+												tempCalPropellantStressMaxValue = limitValue;
 											}
-											double calSteelTemperatureMaxValue = *std::max_element(steelTemperatureResults.begin(), steelTemperatureResults.end());
-											propellantTemperatureResults.erase(
-												std::remove_if(propellantTemperatureResults.begin(), propellantTemperatureResults.end(),
-													[calSteelTemperatureMaxValue](double value) { return value > calSteelTemperatureMaxValue; }),
-												propellantTemperatureResults.end());
-											double calPropellantTemperatureMaxValue = *std::max_element(propellantTemperatureResults.begin(), propellantTemperatureResults.end());
-											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(calSteelTemperatureMaxValue)));
-											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(calPropellantTemperatureMaxValue)));
+
+											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(tempCalSteelStressMaxValue)));
+											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(tempCalPropellantStressMaxValue)));
+
+											double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+											double tempCalSteelTemperatureMaxValue = changeSteelTemp * (pow((M / tempM), 2) * pow(L, -1)) + 25;
+
+											double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+											double tempCalPropellantTemperatureMaxValue = changePropellantTemp * (pow((M / tempM), 2) * pow(L, -0.8)) + 25;
+
+											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(tempCalSteelTemperatureMaxValue)));
+											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(tempCalPropellantTemperatureMaxValue)));
 										}
-										TemperatureResult m_fragmentationImpactTemperatureResult = ins->GetFragmentationImpactTemperatureResult();
-										tableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_fragmentationImpactTemperatureResult.metalsMaxTemperature)));
-										tableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_fragmentationImpactTemperatureResult.propellantsMaxTemperature)));
 									}
 									else if (data == "ExplosiveBlastIntelligentAnaly" && Qt::Checked == check)
 									{
@@ -1247,54 +1326,81 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.explosiveBlastStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.explosiveBlastTemperatureCalculation;
+
+										// 绝热层导热系数
+										double limitTemperature = 77.4758 + 0.1 * (1 - insulatingheatPropertyInfo.specificHeatCapacity / insulatingheatPropertyInfo.thermalConductivity / 1100 * 10);
+
+										// 计算厚度=1mm，TNT当量=30的情况
+										double tempL = 1.0;//厚
+										double tempM = 30 / 2;//TNT当量
+
+										std::vector<double> steelStressResults;
+										std::vector<double> propellantStressResults;
+										for (int i = 0; i < stressCalculation.size(); ++i)
+										{
+											double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res * 0.5;
+											res = res + res * difference * 0.1;
+											if (res > limitValue)
+											{
+												res = limitValue;
+											}
+											if (res < 4000)
+											{
+												if (!m_array.contains(i + 1))
+												{
+													res = translateStress(res) * 6.12;
+													propellantStressResults.push_back(res);
+												}
+												else
+												{
+													steelStressResults.push_back(res);
+												}
+											}
+										}
+										double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+										// 温度
+										double calSteelTemperatureMaxValue = limitTemperature;
+										double calPropellantTemperatureMaxValue = limitTemperature * 0.92;
+
 										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
-											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
-											M = tableWidget->item(i, 2)->text().toDouble();//TNT当量
+											L = tableWidget->item(i, 1)->text().toDouble();	// 厚度
+											M = tableWidget->item(i, 2)->text().toDouble() / 2 ;//TNT当量
 
-											std::vector<double> steelStressResults;
-											std::vector<double> propellantStressResults;
-											for (int i = 0; i < stressCalculation.size(); ++i)
+											
+											// 先随高度，再随壁厚
+											double tempCalSteelStressMaxValue = calSteelStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.5));
+											double tempCalPropellantStressMaxValue = calPropellantStressMaxValue * (pow(M / tempM, 0.5) * pow(L, -0.4));
+											if (tempCalSteelStressMaxValue > limitValue)
 											{
-												double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res * 0.5;
-												res = res + res * difference * 0.1;
-												if (res > limitValue)
-												{
-													res = limitValue;
-												}
-												if (res < 4000000)
-												{
-													if (!m_array.contains(i + 1))
-													{
-														res = translateStress(res) * 6.12;
-														propellantStressResults.push_back(res);
-													}
-													else
-													{
-														steelStressResults.push_back(res);
-													}
-												}
+												tempCalSteelStressMaxValue = limitValue;
 											}
-											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
-											double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+											if (tempCalPropellantStressMaxValue > limitValue)
+											{
+												tempCalPropellantStressMaxValue = limitValue;
+											}
 
-											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
-											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
+											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(tempCalSteelStressMaxValue)));
+											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(tempCalPropellantStressMaxValue)));
+
 
 											// 温度
-											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
-											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
-										}
-										/*TemperatureResult m_SacrificeExplosionTemperatureResult = ins->GetSacrificeExplosionTemperatureResult();
-										tableWidget->setItem(1, 5, new QTableWidgetItem(QString::number(m_SacrificeExplosionTemperatureResult.metalsMaxTemperature)));
-										tableWidget->setItem(1, 6, new QTableWidgetItem(QString::number(m_SacrificeExplosionTemperatureResult.propellantsMaxTemperature)));*/
+											double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+											double tempCalSteelTemperatureMaxValue = changeSteelTemp * ((M / tempM) * pow(L, -0.85)) + 25;
 
+											double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+											double tempCalPropellantTemperatureMaxValue = changePropellantTemp * ((M / tempM) * pow(L, -0.7)) + 25;
+											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(tempCalSteelTemperatureMaxValue)));
+											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(tempCalPropellantTemperatureMaxValue)));
+										}
 									}
 									else if (data == "SacrificeExplosionIntelligentAnaly" && Qt::Checked == check)
 									{
@@ -1322,47 +1428,80 @@ void IntelligentAnalyTreeWidget::contextMenuEvent(QContextMenuEvent* event)
 										auto stressCalculation = calInfo.sacrificeExplosionStressCalculation;
 										// 温度
 										auto temperatureCalculation = calInfo.sacrificeExplosionTemperatureCalculation;
+
+										// 绝热层导热系数
+										double limitTemperature = 94.3635 + 0.1 * (1 - insulatingheatPropertyInfo.specificHeatCapacity / insulatingheatPropertyInfo.thermalConductivity / 1100 * 10);
+
+										// 计算厚度=1mm，距离=100的情况
+										double tempL = 1.0;//厚
+										double tempM = 100;//距离
+
+										std::vector<double> steelStressResults;
+										std::vector<double> propellantStressResults;
+
+										for (int i = 0; i < stressCalculation.size(); ++i)
+										{
+											double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, tempL, tempM, A);
+											if (res < 0)
+											{
+												res = 0;
+											}
+											res = res * 0.1;
+											res = res + res * difference * 0.1;
+											if (res > limitValue)
+											{
+												res = limitValue;
+											}
+											if (!m_array.contains(i + 1))
+											{
+												res = translateStress(res) * 9.13;
+												propellantStressResults.push_back(res);
+											}
+											else
+											{
+												steelStressResults.push_back(res);
+											}
+										}
+
+
+										double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
+										double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+
+										// 温度
+										double calSteelTemperatureMaxValue = limitTemperature;
+										double calPropellantTemperatureMaxValue = limitTemperature * 0.83;
+
 										for (size_t i = 1; i < 26; i++)
 										{
 											// 更新计算数值
-											L = tableWidget->item(i, 1)->text().toInt();	// 厚度
+											L = tableWidget->item(i, 1)->text().toDouble();	// 厚度
 											M = tableWidget->item(i, 2)->text().toDouble();//距离
 
-											std::vector<double> steelStressResults;
-											std::vector<double> propellantStressResults;
-
-											for (int i = 0; i < stressCalculation.size(); ++i)
+											
+											// 先随高度，再随壁厚
+											double tempCalSteelStressMaxValue = calSteelStressMaxValue * (pow(tempM / M, 0.5) + pow(L, -0.5));
+											double tempCalPropellantStressMaxValue = calPropellantStressMaxValue * (pow(tempM / M, 0.5) + pow(L, -0.4));
+											if (tempCalSteelStressMaxValue > limitValue)
 											{
-												double res = calculateForm(stressCalculation[i], B, C, D, E, F, G, H, I, J, K, L, M, A);
-												if (res < 0)
-												{
-													res = 0;
-												}
-												res = res * 0.1;
-												res = res + res * difference * 0.1;
-												if (res > limitValue)
-												{
-													res = limitValue;
-												}
-												if (!m_array.contains(i + 1))
-												{
-													res = translateStress(res) * 9.13;
-													propellantStressResults.push_back(res);
-												}
-												else
-												{
-													steelStressResults.push_back(res);
-												}
+												tempCalSteelStressMaxValue = limitValue;
 											}
-											double calSteelStressMaxValue = *std::max_element(steelStressResults.begin(), steelStressResults.end());
-											double calPropellantStressMaxValue = *std::max_element(propellantStressResults.begin(), propellantStressResults.end());
+											if (tempCalPropellantStressMaxValue > limitValue)
+											{
+												tempCalPropellantStressMaxValue = limitValue;
+											}
 
-											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(calSteelStressMaxValue)));
-											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(calPropellantStressMaxValue)));
+											tableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(tempCalSteelStressMaxValue)));
+											tableWidget->setItem(i, 4, new QTableWidgetItem(QString::number(tempCalPropellantStressMaxValue)));
+
 
 											// 温度
-											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
-											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(QRandomGenerator::securelySeeded().bounded(50, 101))));
+											double changeSteelTemp = calSteelTemperatureMaxValue - 25;
+											double tempCalSteelTemperatureMaxValue = changeSteelTemp * ((tempM / M) * pow(L, -0.85)) + 25;
+
+											double changePropellantTemp = calPropellantTemperatureMaxValue - 25;
+											double tempCalPropellantTemperatureMaxValue = changePropellantTemp * ((tempM / M) * pow(L, -0.7)) + 25;
+											tableWidget->setItem(i, 5, new QTableWidgetItem(QString::number(tempCalSteelTemperatureMaxValue)));
+											tableWidget->setItem(i, 6, new QTableWidgetItem(QString::number(tempCalPropellantTemperatureMaxValue)));
 
 										}
 									}

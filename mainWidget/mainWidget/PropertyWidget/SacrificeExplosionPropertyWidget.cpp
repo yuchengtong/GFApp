@@ -185,7 +185,7 @@ void SacrificeExplosionPropertyWidget::initWidget()
 		{
 			auto text = item->text();
 			auto distance = text.toDouble();
-			if (distance >= 10 && distance <= 100)
+			if (distance >= 100 && distance <= 1000)
 			{
 				m_distance = text;
 			}
