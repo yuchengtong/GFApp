@@ -2959,6 +2959,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									auto* tw = importModelWidget->GetFastCombustionPropertyWidget()->GetQTableWidget();
 									tw->item(10, 2)->setText(temp.metalsMaxTemperature > ignitionTemperature ?
 										"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
+									tw->item(11, 2)->setText("推进剂与壳体交界处");
+									// 推进剂发火温度/推进剂最高温度*15min
+									tw->item(12, 2)->setText(QString::number(ignitionTemperature / temp.propellantsMaxTemperature * 15.0, 'f', 2));
 								}
 								else
 								{
@@ -2982,6 +2985,9 @@ void GFTreeModelWidget::contextMenuEvent(QContextMenuEvent* event)
 									auto* tw = importModelWidget->GetSlowCombustionPropertyWidget()->GetQTableWidget();
 									tw->item(10, 2)->setText(temp.metalsMaxTemperature > ignitionTemperature ?
 										"温度超过推进剂最大发火温度，有燃爆风险" : "温度未超过推进剂最大发火温度");
+									tw->item(11, 2)->setText("推进剂与壳体交界处");
+									// 推进剂发火温度/推进剂最高温度*89h
+									tw->item(12, 2)->setText(QString::number(ignitionTemperature / temp.propellantsMaxTemperature * 89.0, 'f', 2));
 								}
 								else
 								{

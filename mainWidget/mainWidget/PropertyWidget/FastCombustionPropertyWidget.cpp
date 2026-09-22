@@ -40,7 +40,7 @@ void FastCombustionPropertyWidget::initWidget()
 
 	m_tableWidget = new QTableWidget(this);
 
-	m_tableWidget->setRowCount(11);
+	m_tableWidget->setRowCount(13);
 	m_tableWidget->setColumnCount(4);
 	// 隐藏表头（如果不需要显示表头文字，可根据需求决定是否隐藏）
 	m_tableWidget->horizontalHeader()->setVisible(false);
@@ -62,7 +62,7 @@ void FastCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","燃油类型", "弹药位置", "温度观测点数量", "应力观测点数量","风速","火焰温度达到550℃时间","结束时间","从达到550℃到弹药开始反应的平均温度","推进剂发火温度判断" };
+	QStringList labels = { "属性","测试项目","燃油类型", "弹药位置", "温度观测点数量", "应力观测点数量","风速","火焰温度达到550℃时间","结束时间","从达到550℃到弹药开始反应的平均温度","推进剂发火温度判断","发火位置","点火时间" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
@@ -82,7 +82,7 @@ void FastCombustionPropertyWidget::initWidget()
 	int itemWidth = QFontMetrics(m_tableWidget->font()).width(colimnItem->text());
 	m_tableWidget->setColumnWidth(1, itemWidth + m_tableWidget->verticalHeader()->width());
 
-	QStringList unitLabels = { " ", " "," ", " ", " ", " "," "," ","min","℃", ""};
+	QStringList unitLabels = { " ", " "," ", " ", " ", " "," "," ","min","℃", "", "" , "min" };
 	for (int row = 0; row < unitLabels.size(); ++row) {
 		if (row != 0)
 		{
@@ -137,7 +137,11 @@ void FastCombustionPropertyWidget::initWidget()
 	m_tableWidget->setItem(8, 2, endTimeValueItem);
 	m_tableWidget->setItem(9, 2, new QTableWidgetItem("800"));
 	m_tableWidget->setItem(10, 2, new QTableWidgetItem(""));
-	m_tableWidget->item(10, 2)->setBackground(QBrush(QColor(230, 230, 230)));
+	m_tableWidget->setItem(11, 2, new QTableWidgetItem(""));
+	m_tableWidget->setItem(12, 2, new QTableWidgetItem(""));
+	m_tableWidget->item(10, 2)->setFlags(m_tableWidget->item(10, 2)->flags() & (~Qt::ItemIsEditable));
+	m_tableWidget->item(11, 2)->setFlags(m_tableWidget->item(11, 2)->flags() & (~Qt::ItemIsEditable));
+	m_tableWidget->item(12, 2)->setFlags(m_tableWidget->item(12, 2)->flags() & (~Qt::ItemIsEditable));
 	
 
 	//文本左对齐
