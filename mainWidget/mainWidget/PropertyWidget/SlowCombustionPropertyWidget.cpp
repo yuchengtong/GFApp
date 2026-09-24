@@ -65,7 +65,7 @@ void SlowCombustionPropertyWidget::initWidget()
 	vlayout->addWidget(m_tableWidget);
 	setLayout(vlayout);
 
-	QStringList labels = { "属性","测试项目","加热类型", "弹药位置", "温度观测点数量", "应力观测点数量","风速","试验件达到50 ℃热平衡时刻","烘箱升温速率","烘箱终止温度","推进剂发火温度判断","发火位置","点火时间" };
+	QStringList labels = { "属性","测试项目","加热类型", "弹药位置", "温度观测点数量", "应力观测点数量","风速","试验件达到50 ℃热平衡时刻","烘箱升温速率","烘箱终止温度","推进剂发火温度判断","点火位置","点火时间" };
 	for (int row = 0; row < labels.size(); ++row) {
 		QTableWidgetItem* serialItem = new QTableWidgetItem(QString::number(row));
 		if (row == 0) {
